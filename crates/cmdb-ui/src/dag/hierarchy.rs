@@ -1,10 +1,3 @@
-//! Account hierarchy layout over borrowed, interned account arrays.
-//!
-//! Groups are stored bottom-up: resource leaves, kinds, services, regions, accounts.
-//! Every non-leaf's children occupy a contiguous range in `groups`. Resource leaves
-//! use the original node index as their label, preserving `node_xy` indexing even
-//! when the input nodes of a kind are interleaved with other kinds.
-
 #[path = "hierarchy/pack.rs"]
 mod pack;
 #[cfg(test)]
@@ -13,13 +6,10 @@ mod tests;
 
 use std::fmt;
 
-/// Width and height of one resource cell. Coordinates are cell top-left corners.
 pub const CELL_SIZE: f32 = 16.0;
 const PADDING: f32 = 16.0;
-/// Matches the default whole-account load limit; also bounds grid conversions.
 pub const MAX_NODES: usize = 4_000_000;
 
-/// Only the D4.2 account arrays needed for grouping; no identities or edges are copied.
 #[derive(Clone, Copy, Debug)]
 pub struct HierarchyInput<'a> {
     pub kinds: &'a [Box<str>],
@@ -28,19 +18,12 @@ pub struct HierarchyInput<'a> {
     pub node_kind: &'a [u32],
 }
 
-/// Flat layout in original node order, with bottom-up, contiguous child ranges.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct HierarchyLayout {
     pub node_xy: Vec<[f32; 2]>,
     pub groups: Vec<Group>,
 }
 
-/// Rectangle `[x, y, width, height]` in world coordinates.
-///
-/// Levels are account=0, region=1, service=2, kind=3, resource=4. Labels are
-/// account/region intern indices, a representative kind index for a service
-/// (the smallest child kind index; resolve its second `::` component), kind
-/// indices, or original node indices respectively. Leaves have no children.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Group {
     pub level: u8,
@@ -51,7 +34,6 @@ pub struct Group {
     pub label: u32,
 }
 
-/// Invalid flat-array input or a layout exceeding bounded numeric/storage limits.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LayoutError {
     LengthMismatch,
@@ -125,15 +107,6 @@ impl Parent {
     }
 }
 
-/// Lay out account, region, service, kind and resource rectangles deterministically.
-///
-/// Uses a square resource grid and descending-area shelf packing with aspect target
-/// 1.5. All ties have deterministic ordering. Work is bounded by the input node count
-/// (at most `MAX_NODES`); buffers are contiguous and no per-resource strings are owned.
-///
-/// # Errors
-/// Returns an error for mismatched arrays, invalid kind/service references, allocation
-/// failure, more than `MAX_NODES`, or coordinates outside the exact cell-grid range.
 pub fn layout(input: HierarchyInput<'_>) -> Result<HierarchyLayout, LayoutError> {
     let nodes = sorted_nodes(input)?;
     let mut groups = buffer(nodes.len())?;
@@ -300,7 +273,6 @@ fn parent_groups<'a>(
 }
 
 fn translate_groups(groups: &mut [Group]) -> Result<(), LayoutError> {
-    // Parents follow their children, so reverse iteration propagates each origin once.
     (0..groups.len()).rev().try_for_each(|i| {
         let (before, tail) = groups.split_at_mut(i);
         let parent = tail.first().ok_or(LayoutError::Capacity)?;

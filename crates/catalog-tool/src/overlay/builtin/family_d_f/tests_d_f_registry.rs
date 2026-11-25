@@ -4,11 +4,9 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
 fn public_registry_dispositions_cover_every_pinned_d_f_service_and_operation() -> TestResult {
-    // Given the exact pinned service/operation counts, excluding the first-wave services.
     let policies = overlay::embedded()?;
     let mut total = 0;
     let mut callable = 0;
-    // When consumers read the public embedded registry.
     for (service, expected_count) in [
         ("data-pipeline", 19),
         ("database-migration-service", 119),
@@ -65,7 +63,6 @@ fn public_registry_dispositions_cover_every_pinned_d_f_service_and_operation() -
             .ok_or(service)?;
         assert_eq!(policy.operations().len(), expected_count, "{service}");
         total += policy.operations().len();
-        // Then every operation has an explicit disposition, never inferred read-name approval.
         for (operation, plan) in policy.operations().iter() {
             match plan.class {
                 Some(OverlayClass::Enumerate | OverlayClass::Expand) => {

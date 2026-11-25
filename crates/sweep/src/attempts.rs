@@ -1,4 +1,3 @@
-//! Optional per-invocation receipt: initialized once, allocation-free during requests.
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -41,7 +40,6 @@ impl AttemptedOperations {
         }
     }
 
-    /// Read after the sweep completes; retries collapse to the same set member.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
         self.entries
             .iter()
@@ -57,7 +55,6 @@ impl AttemptedOperations {
             })
             .map_err(|_| AttemptError::UnknownOperation)?;
         let entry = self.entries.get(index).ok_or(AttemptError::InvalidIndex)?;
-        // Independent monotonic membership bits; no data is published through them.
         entry.sent.store(true, Ordering::Relaxed);
         Ok(())
     }

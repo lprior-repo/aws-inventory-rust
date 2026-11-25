@@ -42,7 +42,6 @@ pub struct ChildEligibilityPlan {
     pub predicate: RowPredicatePlan,
 }
 
-/// Primary-selector policy; operation and actual-branch rules both apply.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct RowPolicyPlan {
     pub owned: Option<RowPredicatePlan>,

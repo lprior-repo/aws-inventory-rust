@@ -18,7 +18,6 @@ identity = "aliasArn"
 policyStoreId = { from = "resource", path = "policyStoreId" }
 aliasName = "policy-store-alias/inventory-seed-policy-store"
 
-# The inventory keys combine the policy store and generated child IDs.
 [[step]]
 id = "policy"
 operation = "CreatePolicy"

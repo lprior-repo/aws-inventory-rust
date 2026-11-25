@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/dax/service/2017-04-19/dax-2017-04-19.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateCluster",

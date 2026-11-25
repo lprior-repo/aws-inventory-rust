@@ -4,7 +4,6 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
 fn hierarchy_empty_graph() -> TestResult {
-    // Given no nodes or kinds, when laying out the account, then both arrays are empty.
     let result = layout(HierarchyInput {
         kinds: &[],
         node_account: &[],
@@ -23,7 +22,6 @@ fn hierarchy_empty_graph() -> TestResult {
 
 #[test]
 fn hierarchy_one_node_has_all_five_levels() -> TestResult {
-    // Given one resource, when laid out, then every ancestor encloses its cell.
     let kinds = [Box::from("AWS::EC2::VPC")];
     let result = layout(HierarchyInput {
         kinds: &kinds,
@@ -56,7 +54,6 @@ fn hierarchy_one_node_has_all_five_levels() -> TestResult {
 
 #[test]
 fn hierarchy_groups_services_and_preserves_node_indices() -> TestResult {
-    // Given interleaved accounts, regions and kinds, when laid out, then EC2 kinds share a service.
     let kinds = [
         Box::from("AWS::EC2::VPC"),
         Box::from("AWS::S3::Bucket"),
@@ -87,7 +84,6 @@ fn hierarchy_groups_services_and_preserves_node_indices() -> TestResult {
 
 #[test]
 fn hierarchy_square_grid_is_fixed_size() -> TestResult {
-    // Given five resources of one kind, when laid out, then cells occupy a three-column square grid.
     let kinds = [Box::from("AWS::EC2::VPC")];
     let result = layout(HierarchyInput {
         kinds: &kinds,
@@ -118,7 +114,6 @@ fn hierarchy_square_grid_is_fixed_size() -> TestResult {
 
 #[test]
 fn hierarchy_is_bitwise_deterministic() -> TestResult {
-    // Given ties in rectangle size, when laying out twice, then every output float has identical bits.
     let kinds = [Box::from("AWS::S3::Bucket"), Box::from("AWS::EC2::VPC")];
     let input = HierarchyInput {
         kinds: &kinds,
@@ -151,7 +146,6 @@ fn hierarchy_is_bitwise_deterministic() -> TestResult {
         .checked_add(usize::try_from(region.child_count)?)
         .ok_or("child overflow")?;
     let services = first.groups.get(start..end).ok_or("missing services")?;
-    // Equal-size services follow their service names, not their reversed kind-table indices.
     assert_eq!(
         services
             .iter()
@@ -164,7 +158,6 @@ fn hierarchy_is_bitwise_deterministic() -> TestResult {
 
 #[test]
 fn hierarchy_rejects_invalid_flat_arrays() -> TestResult {
-    // Given malformed arrays or a missing service, when laid out, then the boundary returns exact errors.
     let kinds = [Box::from("AWS::EC2::VPC")];
     let input = HierarchyInput {
         kinds: &kinds,
@@ -198,8 +191,6 @@ fn hierarchy_rejects_invalid_flat_arrays() -> TestResult {
 
 #[test]
 fn hierarchy_250000_nodes() -> TestResult {
-    // Given 250,000 resources distributed over accounts, regions, services and kinds,
-    // when laid out, then all cells and ancestors are valid. P13 timing is recorded by the coordinator.
     let kinds = [
         Box::from("AWS::EC2::VPC"),
         Box::from("AWS::EC2::Subnet"),
@@ -276,7 +267,6 @@ fn check_cells(layout: &HierarchyLayout) -> TestResult {
             assert!(by - ay >= CELL_SIZE || bx - ax >= CELL_SIZE);
         }
     });
-    // All coordinates lie on the fixed grid, so adjacent cells suffice to detect any overlap.
     assert_eq!(
         cells
             .iter()
@@ -299,7 +289,6 @@ fn float_bits(layout: &HierarchyLayout) -> Vec<u32> {
 
 #[test]
 fn hierarchy_sibling_rectangles_do_not_overlap() -> TestResult {
-    // Given differently sized kinds, when packed bottom-up, then no sibling rectangles overlap.
     let kinds = [
         Box::from("AWS::EC2::VPC"),
         Box::from("AWS::EC2::Subnet"),
@@ -353,7 +342,6 @@ fn overlaps(a: &Group, b: &Group) -> bool {
 
 #[test]
 fn hierarchy_packs_large_kinds_first_and_wraps_rows() -> TestResult {
-    // Given a larger higher-index kind, when packing its service, then size determines order.
     let kinds = [Box::from("AWS::EC2::Subnet"), Box::from("AWS::EC2::VPC")];
     let node_kind = (0_u32..80)
         .map(|i| if i < 20 { 0 } else { 1 })
@@ -393,7 +381,6 @@ fn hierarchy_packs_large_kinds_first_and_wraps_rows() -> TestResult {
 
 #[test]
 fn hierarchy_rejects_excessive_node_count() -> TestResult {
-    // Given more nodes than the load/layout bound, when laid out, then no layout is allocated.
     let count = super::MAX_NODES
         .checked_add(1)
         .ok_or("node count overflow")?;
@@ -415,7 +402,6 @@ fn hierarchy_rejects_excessive_node_count() -> TestResult {
 
 #[test]
 fn hierarchy_rejects_each_misaligned_node_array() -> TestResult {
-    // Given either length comparison mismatches, when laying out, then no node is silently dropped.
     let kinds = [Box::from("AWS::EC2::VPC")];
     let cases: [(&[u16], &[u16], &[u32]); 6] = [
         (&[0, 0], &[0], &[0]),
@@ -444,8 +430,6 @@ fn hierarchy_rejects_each_misaligned_node_array() -> TestResult {
 
 #[test]
 fn hierarchy_aspect_target_keeps_two_singletons_on_the_first_row() -> TestResult {
-    // Given three equal kind rectangles, when packed at aspect 1.5, then two fit on the first row.
-    // At aspect 1.0 only one fits, so changing the target to 1.0 changes these offsets.
     let kinds = [
         Box::from("AWS::EC2::VPC"),
         Box::from("AWS::EC2::Subnet"),
@@ -488,7 +472,6 @@ fn hierarchy_aspect_target_keeps_two_singletons_on_the_first_row() -> TestResult
 
 #[test]
 fn hierarchy_coordinate_guard_checks_both_axes_and_nonfinite_values() -> TestResult {
-    // Given the exact coordinate bound or values beyond it, when checked, then only the bound is valid.
     let limit = 16_777_216.0;
     assert_eq!(super::pack::check_extent(limit, limit), Ok(()));
     let invalid = [
@@ -515,7 +498,6 @@ fn hierarchy_coordinate_guard_checks_both_axes_and_nonfinite_values() -> TestRes
 
 #[test]
 fn hierarchy_capacity_errors_are_explicit() -> TestResult {
-    // Given an empty grid, zero divisor or impossible allocation, when packing, then capacity errors propagate.
     let mut buffer = Vec::<u8>::new();
     let results = [
         super::pack::grid(0).map(|_| ()),
@@ -617,8 +599,6 @@ fn check_node_ancestors(
 
 #[test]
 fn hierarchy_aspect_target_wraps_the_third_of_five_singletons() -> TestResult {
-    // Given five equal kinds, when packed at aspect 1.5, then the third starts the second row.
-    // At aspect 1.8 three fit on the first row instead.
     let kinds = [
         Box::from("AWS::EC2::A"),
         Box::from("AWS::EC2::B"),
@@ -665,7 +645,6 @@ fn hierarchy_aspect_target_wraps_the_third_of_five_singletons() -> TestResult {
 
 #[test]
 fn hierarchy_multi_account_and_region_rectangles_do_not_overlap() -> TestResult {
-    // Given two accounts each with two regions, when packed, then every same-level frame is disjoint.
     let kinds = [Box::from("AWS::EC2::VPC")];
     let input = HierarchyInput {
         kinds: &kinds,
@@ -695,7 +674,6 @@ fn hierarchy_multi_account_and_region_rectangles_do_not_overlap() -> TestResult 
 
 #[test]
 fn hierarchy_accepts_exact_maximum_node_count() -> TestResult {
-    // Given exactly MAX_NODES, when laying out, then the inclusive boundary retains every node.
     let count = super::MAX_NODES;
     let accounts = vec![0; count];
     let node_kind = vec![0; count];
@@ -729,9 +707,6 @@ fn hierarchy_accepts_exact_maximum_node_count() -> TestResult {
 
 #[test]
 fn hierarchy_aspect_target_fits_three_square_kinds_at_one_point_five() -> TestResult {
-    // Given six 49-node kinds, when packed at 1.5, then three 144x144 kind rectangles share each row.
-    // Area = 6*(144+16)^2 = 153600; three kinds need 3*144+2*16 = 464 inner units.
-    // sqrt(153600*1.5) = 480 fits, but sqrt(153600*1.4) ~= 463.724 wraps the third kind.
     let kinds = [
         Box::from("AWS::EC2::A"),
         Box::from("AWS::EC2::B"),
@@ -781,9 +756,6 @@ fn hierarchy_aspect_target_fits_three_square_kinds_at_one_point_five() -> TestRe
 
 #[test]
 fn hierarchy_aspect_target_brackets_lower_at_one_point_four_five() -> TestResult {
-    // Given six 17x17 resource grids, when packed at 1.5, then three 304x304 kinds share each row.
-    // Area = 6*(304+16)^2 = 614400; three kinds need 3*304+2*16 = 944 inner units.
-    // sqrt(614400*1.5) = 960 fits, but sqrt(614400*1.45) ~= 943.864397 wraps the third kind.
     let kinds = [
         Box::from("AWS::EC2::A"),
         Box::from("AWS::EC2::B"),
@@ -833,9 +805,6 @@ fn hierarchy_aspect_target_brackets_lower_at_one_point_four_five() -> TestResult
 
 #[test]
 fn hierarchy_aspect_target_brackets_upper_at_one_point_five_one() -> TestResult {
-    // Given ten 5x5 resource grids, when packed at 1.5, then only three 112x112 kinds fit per row.
-    // Area = 10*(112+16)^2 = 163840; four kinds need 4*112+3*16 = 496 inner units.
-    // sqrt(area*1.5) ~= 495.741868 wraps, but sqrt(area*1.51) ~= 497.391596 fits four.
     let kinds = [
         Box::from("AWS::EC2::A"),
         Box::from("AWS::EC2::B"),

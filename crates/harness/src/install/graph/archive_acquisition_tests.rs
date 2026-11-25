@@ -40,7 +40,6 @@ pub(in super::super) fn checkpoint(snapshot: &File) -> Result<(), HarnessError> 
         let Some((writer, first, second)) = scenario.mutation.as_mut() else {
             return Ok(());
         };
-        // The original inode is still independently writable after digest and after listing.
         let replacement = if scenario.checkpoints == 0 {
             first
         } else {
@@ -53,7 +52,6 @@ pub(in super::super) fn checkpoint(snapshot: &File) -> Result<(), HarnessError> 
                 .map_err(|error| HarnessError::invalid(error.to_string()))?,
         )?;
         writer.sync_all()?;
-        // Even a writer reopened through proc cannot change the snapshot before either tar read.
         let alias = std::fs::OpenOptions::new()
             .write(true)
             .open(crate::install::graph::descriptor_path(snapshot))?;
@@ -79,7 +77,6 @@ pub(in super::super) fn checkpoint(snapshot: &File) -> Result<(), HarnessError> 
 #[test]
 fn given_cache_matching_symlink_after_cache_check_when_public_extract_runs_then_link_is_refused()
 -> TestResult {
-    // Given a cache-validated fixture replaced by a symlink to the same bytes.
     let (given, source, _input) = fixture(&[member("redis-8.10.3/kept", b"verified")])?;
     let path = given.path().join("input.tar");
     let digest = crate::provenance::sha256_hex(&std::fs::read(&path)?);
@@ -88,9 +85,7 @@ fn given_cache_matching_symlink_after_cache_check_when_public_extract_runs_then_
     std::fs::rename(&path, &target)?;
     let before = std::fs::read(&target)?;
     std::os::unix::fs::symlink(&target, &path)?;
-    // When the actual production extraction boundary opens the substituted cache path.
     let result = extract(&path, &source);
-    // Then nofollow refuses acquisition, rather than accepting the digest-matching target.
     assert!(
         matches!(result, Err(HarnessError::Io(error)) if error.raw_os_error() == Some(libc::ELOOP))
     );
@@ -103,7 +98,6 @@ fn given_cache_matching_symlink_after_cache_check_when_public_extract_runs_then_
 #[test]
 fn given_fifo_after_cache_check_when_public_extract_runs_then_refusal_does_not_need_a_writer()
 -> TestResult {
-    // Given an ordinary cache entry swapped for a no-writer FIFO after validation.
     let (given, source, _input) = fixture(&[member("redis-8.10.3/kept", b"verified")])?;
     let path = given.path().join("input.tar");
     let digest = crate::provenance::sha256_hex(&std::fs::read(&path)?);
@@ -117,9 +111,7 @@ fn given_fifo_after_cache_check_when_public_extract_runs_then_refusal_does_not_n
         let result = extract(&opening, &output).map(|_| ());
         sent.send(result).map_err(std::io::Error::other)
     });
-    // When production acquisition runs, it must finish while no FIFO writer exists.
     let result = received.recv_timeout(Duration::from_secs(5));
-    // Rescue a regressed blocking open before joining, so this regression cannot hang the gate.
     let rescue = std::fs::OpenOptions::new()
         .read(true)
         .write(true)
@@ -159,7 +151,6 @@ fn given_oversized_regular_cache_when_public_extract_runs_then_fstat_refuses_bef
 #[test]
 fn given_original_writer_mutations_when_shared_production_extract_runs_then_both_tar_passes_use_sealed_pinned_bytes()
 -> TestResult {
-    // Given a real tar with an explicit fixture pin and an independent original writer.
     let (given, source, _input) = fixture(&[member("redis-8.10.3/kept", b"verified")])?;
     let path = given.path().join("input.tar");
     let digest = crate::provenance::sha256_hex(&std::fs::read(&path)?);
@@ -173,9 +164,7 @@ fn given_original_writer_mutations_when_shared_production_extract_runs_then_both
         std::fs::read(first)?,
         std::fs::read(second)?,
     )));
-    // When the original is overwritten after pin verification, then again after listing.
     let owned = extract_pinned(&path, &source, &digest)?;
-    // Then only the original verified member is extracted; writable aliases cannot alter seals.
     assert_eq!(std::fs::read(owned.anchor().join("kept"))?, b"verified");
     assert!(!owned.anchor().join("substituted").try_exists()?);
     assert!(!given.path().join("escaped").try_exists()?);
@@ -232,7 +221,6 @@ fn given_genuine_pinned_symlink_after_cache_check_when_public_extract_runs_then_
 #[test]
 fn given_genuine_pin_and_original_writer_mutations_when_public_extract_runs_then_verified_snapshot_is_extracted()
 -> TestResult {
-    // Given the genuine provisioned Redis artifact, checked against the production constant.
     let (given, path, source) = genuine_archive()?;
     let first = given.path().join("first.tar");
     let second = given.path().join("second.tar");
@@ -244,9 +232,7 @@ fn given_genuine_pin_and_original_writer_mutations_when_public_extract_runs_then
         std::fs::read(first)?,
         std::fs::read(second)?,
     )));
-    // When mutations occur after genuine production-pin verification and after listing.
     let owned = extract(&path, &source)?;
-    // Then real pinned source survives both passes, not either injected archive.
     assert!(!std::fs::read(owned.anchor().join("Makefile"))?.is_empty());
     assert!(!std::fs::read(owned.anchor().join("src/server.c"))?.is_empty());
     assert!(!owned.anchor().join("substituted").try_exists()?);

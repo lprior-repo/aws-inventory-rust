@@ -6,8 +6,6 @@ const FOREIGN_ACCOUNT: &str = "222222222222";
 
 #[tokio::test]
 async fn same_identifier_in_multiple_kinds_is_ambiguous() -> TestResult {
-    // Two different resource kinds with the same identifier value should be
-    // ambiguous, not silently resolved to one.
     let widget = "arn:aws:service:us-east-1:111111111111:widget/shared-id-01";
     let other = "arn:aws:service:us-east-1:111111111111:other/shared-id-01";
     let source = "arn:aws:service:us-east-1:111111111111:widget/consumer";
@@ -39,8 +37,6 @@ async fn same_identifier_in_multiple_kinds_is_ambiguous() -> TestResult {
 
 #[tokio::test]
 async fn exact_arn_never_ambiguous_across_kinds() -> TestResult {
-    // An exact ARN reference should resolve even when the trailing identifier
-    // matches another resource of a different kind.
     let target = "arn:aws:service:us-east-1:111111111111:widget/exact-match-01";
     let decoy = "arn:aws:service:us-east-1:111111111111:other/decoy-01";
     let source = "arn:aws:service:us-east-1:111111111111:widget/consumer";
@@ -66,7 +62,6 @@ async fn exact_arn_never_ambiguous_across_kinds() -> TestResult {
 
 #[tokio::test]
 async fn same_identifier_across_accounts_never_resolves() -> TestResult {
-    // A bare identifier should not match a target in a different account.
     let foreign = "arn:aws:service:us-east-1:222222222222:widget/shared-acct-01";
     let source = "arn:aws:service:us-east-1:111111111111:widget/consumer";
     let mut target = resource(
@@ -93,7 +88,6 @@ async fn same_identifier_across_accounts_never_resolves() -> TestResult {
 
 #[tokio::test]
 async fn same_identifier_across_regions_never_resolves() -> TestResult {
-    // A bare identifier should not match a target in a different region.
     let foreign = "arn:aws:service:eu-west-1:111111111111:widget/shared-reg-01";
     let source = "arn:aws:service:us-east-1:111111111111:widget/consumer";
     let mut target = resource(

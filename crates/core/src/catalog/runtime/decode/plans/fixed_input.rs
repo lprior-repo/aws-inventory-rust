@@ -441,7 +441,6 @@ mod tests {
     #[test]
     fn given_literal_node_count_when_at_boundary_then_only_one_over_is_rejected() -> TestResult {
         for (first_length, accepted) in [(61, true), (62, true), (63, false)] {
-            // One root + sixteen child lists + first_length + 15*63 leaves.
             let mut children = vec![Value::List(vec![Value::Int(1); 63]); 15];
             children.push(Value::List(vec![Value::Int(1); first_length]));
             let result = decoded(Value::List(children));
@@ -482,7 +481,6 @@ mod tests {
             (BindingValue::MAX_STRING.saturating_add(1), false),
         ] {
             let mut right = vec![Value::Text("x".repeat(BindingValue::MAX_STRING)); 31];
-            // Keep each string within its independent bound even at total+1.
             right.push(Value::Text(
                 "x".repeat(last_length.min(BindingValue::MAX_STRING)),
             ));

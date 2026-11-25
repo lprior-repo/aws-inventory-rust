@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bcm-dashboards/service/2025-08-18/bcm-dashboards-2025-08-18.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -52,7 +50,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires arn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the configuration and metadata of a specified scheduled report.",
             ),
         ),
-        // Model: Returns a list of all dashboards in your account.
         (
             "ListDashboards",
             OperationOverlay {
@@ -65,7 +62,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of scheduled reports in your account.
         (
             "ListScheduledReports",
             OperationOverlay {

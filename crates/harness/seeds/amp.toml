@@ -53,7 +53,6 @@ kind = "AWS::APS::Scraper"
 identity = "arn"
 [step.input]
 alias = "inventory-seed-scraper"
-# The Prometheus configuration has no scrape targets.
 scrapeConfiguration = { configurationBlob = "Z2xvYmFsOgogIHNjcmFwZV9pbnRlcnZhbDogNjBzCnNjcmFwZV9jb25maWdzOgogIC0gam9iX25hbWU6IGludmVudG9yeS1maXh0dXJlCiAgICBzdGF0aWNfY29uZmlnczoKICAgICAgLSB0YXJnZXRzOiBbXQo=" }
 source = { vpcConfiguration = { securityGroupIds = [{ from = "security_group", path = "GroupId" }], subnetIds = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }] } }
 destination = { ampConfiguration = { workspaceArn = { from = "resource", path = "arn" } } }

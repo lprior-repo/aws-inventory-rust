@@ -63,9 +63,6 @@ impl WorkSpec {
         {
             return Err(StoreError::Invalid("work token or bindings exceed bounds"));
         }
-        // Legacy callers seed empty bindings as Vec::new() for plans with no
-        // input; normalize to a valid empty Record (0xA0) so downstream
-        // MapRef::from_bytes_bounded does not fail with Missing at offset 0.
         let bindings = if bindings.is_empty() {
             use inventory_core::record::{Record as CoreRecord, Value as CoreValue};
             let empty = CoreRecord::encode(&CoreValue::Map(std::collections::BTreeMap::new()))?;
@@ -83,8 +80,6 @@ impl WorkSpec {
         })
     }
 
-    /// Records the source enumeration's member represented by this child work.
-    /// The page store persists the membership in the same transaction as the child.
     pub fn mark_scope_member(&mut self, member: ResourceId) {
         self.scope_member = Some(member);
     }
@@ -162,7 +157,6 @@ impl WorkLease {
     pub fn pending_work(&self) -> Option<u64> {
         self.pending_work
     }
-    /// The same lease after a kept page: it carries the next token and its new deadline.
     pub(crate) fn continued(self, token: Option<Vec<u8>>, lease_until_ms: i64) -> Self {
         Self {
             token,
@@ -249,14 +243,12 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
         sqlx::query("INSERT OR IGNORE INTO work_queue(sweep_id,scope_key,token,bindings,state,generation,lease_until,context) VALUES(?1,?2,?3,?4,0,0,0,?5)")
             .bind(work.sweep.as_str()).bind(scope).bind(&work.token).bind(&work.bindings).bind(&work.context).execute(&mut *tx).await?;
     }
-    // Compute last_complete from scope_outcomes for any scopes that have completed before.
     sqlx::query("UPDATE work_queue SET last_complete=(SELECT MAX(o.observed_at) FROM scope_outcomes o WHERE o.scope_key=work_queue.scope_key AND o.outcome='complete') WHERE sweep_id=?1 AND last_complete=-1 AND (SELECT COUNT(1) FROM scope_outcomes o WHERE o.scope_key=work_queue.scope_key AND o.outcome='complete')>0")
         .bind(first.sweep.as_str()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }
 
-/// The interval of a keeping commit, rejected when no lease could use it.
 pub(crate) fn keep_interval(lease_ms: i64) -> Result<i64, StoreError> {
     if lease_ms < 1 {
         return Err(StoreError::Invalid("invalid lease interval"));
@@ -264,12 +256,6 @@ pub(crate) fn keep_interval(lease_ms: i64) -> Result<i64, StoreError> {
     Ok(lease_ms)
 }
 
-/// When a lease kept past a page committed at `observed_at_ms` expires.
-///
-/// The deadline always moves past the committed lease's own, so a copy of
-/// that lease taken before the commit no longer matches the queue. Only a
-/// page that continues its scope has a deadline; a final or repeated page
-/// must not ask for one, because it may not be representable.
 pub(crate) fn kept_until(page: &PageCommit, lease_ms: i64) -> Result<i64, StoreError> {
     let overflow = StoreError::Invalid("lease interval overflow");
     let Some(fresh) = page.observed_at_ms.checked_add(lease_ms) else {
@@ -333,8 +319,6 @@ pub(super) async fn commit_page_keeping(
     commit(store, page, Some(lease_ms)).await
 }
 
-/// Commits one page. With `keep_ms`, a scope that has another page stays
-/// leased for that long and its continued lease is returned.
 async fn commit(
     store: &BinaryStore,
     page: PageCommit,
@@ -392,7 +376,6 @@ pub(super) async fn finish_scope(
         .bind(lease.sweep.as_str()).bind(&scope).bind(outcome.as_str()).bind(observed_at_ms).bind(detail)
         .execute(&mut *tx).await?;
     if matches!(outcome, ScopeOutcome::Complete) {
-        // Update last_complete for future claim ordering.
         sqlx::query("UPDATE work_queue SET state=2,lease_until=0,last_complete=?4 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
             .bind(lease.sweep.as_str()).bind(&scope).bind(lease.generation).bind(observed_at_ms).execute(&mut *tx).await?;
     } else {

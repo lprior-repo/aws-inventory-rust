@@ -1,8 +1,3 @@
-//! Row-level comparison of observed FalkorDB rows with the SQLite expectation.
-//!
-//! Rows are matched by an identity built from fixed cells, so every mismatch names the
-//! graph element it concerns (node key, edge endpoints, or resource key and tag).
-
 use std::collections::BTreeMap;
 
 use serde_json::Value;
@@ -10,7 +5,6 @@ use serde_json::Value;
 use super::get_field;
 use crate::HarnessError;
 
-/// Node row cells, in the order produced by the `verify_graph` node query.
 const NODE_COLUMNS: [&str; 14] = [
     "id",
     "scan_id",
@@ -28,7 +22,6 @@ const NODE_COLUMNS: [&str; 14] = [
     "label_count",
 ];
 
-/// Edge row cells, in the order produced by the `verify_graph` edge query.
 const EDGE_COLUMNS: [&str; 12] = [
     "from_id",
     "to_id",
@@ -44,7 +37,6 @@ const EDGE_COLUMNS: [&str; 12] = [
     "to_key",
 ];
 
-/// HAS_TAG row cells, in the order produced by the `verify_graph` tag query.
 const TAG_COLUMNS: [&str; 7] = [
     "resource_id",
     "resource_key",
@@ -55,7 +47,6 @@ const TAG_COLUMNS: [&str; 7] = [
     "provenance",
 ];
 
-/// Returns the first mismatch between the SQLite model and the observed graph rows, if any.
 pub(super) fn first_difference(
     model: &Value,
     node_rows: &Value,

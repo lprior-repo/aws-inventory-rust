@@ -53,17 +53,14 @@ async fn recover_complete(fixture: &Fixture) -> TestResult<i64> {
 #[tokio::test]
 async fn given_first_claim_committed_when_the_batch_claim_fails_then_the_first_lease_is_released_before_the_error_returns()
 -> TestResult {
-    // Given two durable work items and a database fault on any claim made while one is leased.
     let fixture = Fixture::new("fail-batch-claim").await?;
     seed_pair(&fixture).await?;
     let pool = reject_second_claim(&fixture).await?;
-    // When the depth claim commits and the batch claim for the rest fails.
     let error =
         draining::admission::claim_some(&fixture.store, &fixture.sweep, fixture.lease_ms, 4, true)
             .await
             .err()
             .ok_or("batch claim unexpectedly succeeded")?;
-    // Then the store fault is returned and no lease is left stranded.
     assert!(matches!(&error, SweepError::Store(_)));
     assert!(format!("{error:?}").contains("second-claim fault"));
     let before = fixture.store.sweep_summary(&fixture.sweep).await?;
@@ -97,10 +94,8 @@ async fn given_first_claim_committed_when_the_batch_claim_fails_then_the_first_l
 #[tokio::test]
 async fn given_two_pending_scopes_when_claimed_with_and_without_depth_then_the_limit_holds_and_depth_is_reported()
 -> TestResult {
-    // Given two durable work items.
     let fixture = Fixture::new("claim-some-limits").await?;
     seed_pair(&fixture).await?;
-    // When one lease is claimed with depth, then the rest without, then again with depth.
     let first =
         draining::admission::claim_some(&fixture.store, &fixture.sweep, fixture.lease_ms, 1, true)
             .await?;
@@ -110,7 +105,6 @@ async fn given_two_pending_scopes_when_claimed_with_and_without_depth_then_the_l
     let empty =
         draining::admission::claim_some(&fixture.store, &fixture.sweep, fixture.lease_ms, 4, true)
             .await?;
-    // Then the limit of one is honoured, the depth counts both scopes, and nothing is left.
     assert_eq!(first.len(), 1);
     assert_eq!(
         first.first().and_then(|lease| lease.pending_work()),
@@ -128,15 +122,12 @@ async fn given_two_pending_scopes_when_claimed_with_and_without_depth_then_the_l
 #[test]
 fn given_pages_in_flight_when_a_claim_returns_nothing_then_progress_reports_an_empty_queue()
 -> TestResult {
-    // Given a progress channel and three pages still in flight.
     let (sender, mut receiver) = tokio::sync::mpsc::channel(4);
     let progress = crate::control::Progress::new(Some(sender));
-    // When one claim returns nothing, then the next returns five leases at a depth of forty.
     let (depth, in_flight) = draining::admission::queue_report(None, 3, 0);
     progress.queue(depth, in_flight);
     let (depth, in_flight) = draining::admission::queue_report(Some(40), 3, 5);
     progress.queue(depth, in_flight);
-    // Then the first event shows nothing waiting and the second counts all eight as in flight.
     assert_eq!(
         receiver.try_recv()?,
         crate::control::ProgressEvent::Queue {

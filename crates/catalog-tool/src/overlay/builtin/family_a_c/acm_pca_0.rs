@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/acm-pca/service/2017-08-22/acm-pca-2017-08-22.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -40,7 +38,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the resource-based policy attached to a private CA. Deletion will remove any access that the policy has granted. If there is no policy attached to the private CA, this action will return successful. If you delete a policy…",
             ),
         ),
-        // Model: Lists information about your private certificate authority (CA) or one that has been shared with you. You specify the private CA on input by its ARN (Amazon Resource Name). The output contains the…
         (
             "DescribeCertificateAuthority",
             OperationOverlay {
@@ -105,7 +102,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires CertificateAuthorityArn, Csr, SigningAlgorithm, Validity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Uses your private certificate authority (CA), or one that has been shared with you, to issue a client certificate. This action returns the Amazon Resource Name (ARN) of the certificate. You can retrieve the certificate by calling…",
             ),
         ),
-        // Model: Lists the private certificate authorities that you created by using the CreateCertificateAuthority action.
         (
             "ListCertificateAuthorities",
             OperationOverlay {

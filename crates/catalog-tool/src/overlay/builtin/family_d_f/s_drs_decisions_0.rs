@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/drs/service/2020-02-26/drs-2020-02-26.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AssociateSourceNetworkStack",

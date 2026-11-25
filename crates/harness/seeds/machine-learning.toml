@@ -20,7 +20,6 @@ kind = ""
 Bucket = "inventory-thin-ml-training"
 Key = "training.csv"
 ContentType = "text/csv"
-# Four labeled examples with a numeric feature and a binary target.
 Body = "ZmVhdHVyZSxsYWJlbAoxLDAKMiwwCjMsMQo0LDEK"
 
 [[step]]

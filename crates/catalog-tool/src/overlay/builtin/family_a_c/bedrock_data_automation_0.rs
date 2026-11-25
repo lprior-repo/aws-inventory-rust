@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bedrock-data-automation/service/2023-07-26/bedrock-data-automation-2023-07-26.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -100,7 +98,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires libraryArn, inputConfiguration, entityType, operationType, outputConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Async API: Invoke data automation library ingestion job",
             ),
         ),
-        // Model: Lists all existing Amazon Bedrock Data Automation Blueprints
         (
             "ListBlueprints",
             OperationOverlay {
@@ -119,7 +116,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all existing Amazon Bedrock Data Automation Libraries
         (
             "ListDataAutomationLibraries",
             OperationOverlay {
@@ -144,7 +140,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires libraryArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all data automation library ingestion jobs",
             ),
         ),
-        // Model: Lists all existing Amazon Bedrock Data Automation Projects
         (
             "ListDataAutomationProjects",
             OperationOverlay {

@@ -154,7 +154,6 @@ fn field_context_valid(
 ) -> bool {
     model.operation_id(operation.as_str()).is_some()
         && match source {
-            // Producer-relative selectors require the cross-plan dependency gate, not the consumer model root.
             ContextSource::SelectedItem => true,
             ContextSource::Response => scalar(
                 model

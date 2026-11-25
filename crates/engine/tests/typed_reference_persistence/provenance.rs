@@ -52,13 +52,10 @@ async fn prepared_page(
 async fn given_explicit_catalog_provenance_when_equal_evidence_commits_then_its_source_survives_reopen()
 -> TestResult {
     for (source, code) in SOURCES {
-        // Given a synthetic checked catalog whose field 7 explicitly names the source.
         let (directory, store) = fixture_for(declared_rule(code)?, false).await?;
-        // When matching evidence reaches the real checked SQLite commit path.
         store
             .commit_page(prepared_page(&store, source).await?)
             .await?;
-        // Then the persisted edge retains exactly that source after reopen.
         let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
         assert_edges(&reopened, &["target"], source).await?;
     }
@@ -77,10 +74,8 @@ async fn given_explicit_catalog_provenance_when_another_source_is_claimed_then_e
         .into_iter()
         .filter(|actual| *actual != declared)
         {
-            // Given a valid value and path, but a forged evidence source.
             let (directory, store) = fixture_for(declared_rule(code)?, false).await?;
             let commit = prepared_page(&store, actual).await?;
-            // When the evidence is committed, then the strict source equality refuses it.
             let error = store
                 .commit_page(commit)
                 .await

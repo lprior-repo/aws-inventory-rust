@@ -50,7 +50,6 @@ pub(super) async fn run(
     stderr: &Path,
     budget: Duration,
 ) -> TestResult<Output> {
-    // Regular owned logs eliminate pipe-drain workers and inherited-pipe EOF waits.
     let out = std::fs::File::create(stdout)?;
     let err = std::fs::File::create(stderr)?;
     let mut child = command

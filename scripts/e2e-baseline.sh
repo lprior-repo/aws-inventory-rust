@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# Install missing pinned runtimes, build, then run the owned PostgreSQL e2e flow.
-# Requires INVENTORY_POSTGRES_URL (or --postgres-url passed to this script).
-# Whole-service selectors report all unsupported and failed operations in this
-# catalog; they do not silently reduce EC2 to the archive's four-callable baseline.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

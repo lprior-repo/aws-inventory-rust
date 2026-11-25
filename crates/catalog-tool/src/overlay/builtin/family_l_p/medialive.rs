@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/medialive/service/2017-10-14/medialive-2017-10-14.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

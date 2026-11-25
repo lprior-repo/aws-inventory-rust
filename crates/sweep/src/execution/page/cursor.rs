@@ -12,8 +12,6 @@ use inventory_core::{
 
 use crate::{SweepError, input, record};
 
-/// Reads the completion flag as the cursor does: `None` when the operation has no flag, and an
-/// error when a declared flag is absent or not boolean.
 pub(crate) fn truncation_flag(
     plan: &PagePlan,
     response: &Record,

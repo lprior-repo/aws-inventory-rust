@@ -84,8 +84,6 @@ pub(super) fn compute(
     Ok(ContentHash(*sink.into_writer().0.finalize().as_bytes()))
 }
 
-/// Hash a selected typed value as the existing `{\"$\": value}` envelope,
-/// borrowing its validated representation instead of copying its full tree.
 pub fn selected_content_hash(value: ValueRef<'_>) -> Result<ContentHash, RecordError> {
     validate_selected(value)?;
     let mut hasher = blake3::Hasher::new();

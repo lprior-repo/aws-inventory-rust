@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/fms/service/2018-01-01/fms-2018-01-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AssociateAdminAccount",

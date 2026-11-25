@@ -1,5 +1,3 @@
-//! A page committed with `commit_page_keeping` keeps its lease for the next page.
-
 use super::*;
 use inventory_engine::inventory::{InventoryStore, MAX_OUTCOME_DETAIL_BYTES, WorkLease};
 
@@ -32,7 +30,6 @@ where
         .await
 }
 
-/// Claims at 100 (deadline 120), then keeps one page at 110 for 50 (deadline 160).
 async fn keep_one<S: InventoryStore>(
     store: &S,
     sweep: &str,
@@ -148,8 +145,6 @@ async fn given_zero_interval_when_kept_then_nothing_is_committed<S: InventorySto
     Ok(())
 }
 
-/// Claims at 100 (deadline 120) and keeps one page at 110 for 10, which would
-/// also end at 120: the kept lease must not share the old deadline.
 async fn given_kept_deadline_equal_to_the_old_one_when_kept_then_the_old_copy_is_stale<
     S: InventoryStore,
 >(
@@ -171,8 +166,6 @@ async fn given_kept_deadline_equal_to_the_old_one_when_kept_then_the_old_copy_is
     Ok(())
 }
 
-/// A page committed at 110 with an interval of `i64::MAX` has no
-/// representable deadline. A final page keeps no lease, so it does not need one.
 async fn given_unrepresentable_deadline_when_the_page_is_final_then_the_scope_completes<
     S: InventoryStore,
 >(
@@ -212,8 +205,6 @@ async fn given_unrepresentable_deadline_when_the_token_repeats_then_the_scope_is
     Ok(())
 }
 
-/// A page that continues its scope needs the deadline, so the commit is
-/// rejected whole and the lease it came with still commits.
 async fn given_unrepresentable_deadline_when_the_page_continues_then_nothing_is_committed<
     S: InventoryStore,
 >(
@@ -255,7 +246,6 @@ async fn given_a_reason_over_the_bound_when_finished_then_it_is_refused_and_the_
         .await;
     assert!(matches!(refused, Err(StoreError::Invalid(_))));
 
-    // The refused call should not have stored the outcome.
     let s = summary(store, "bound").await?;
     assert_eq!(s.complete_scopes, 0);
     assert_eq!(s.failed_scopes, 0);

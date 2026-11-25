@@ -129,17 +129,14 @@ fn compile_overlay(
 
 #[test]
 fn last_item_cursor_encodes_scalar_selection_and_truncation() -> TestResult {
-    // Given a string-list response cursor and a scalar request cursor.
     let model = MODEL.replace(
         r#""NextName":{"target":"smithy.api#String"}"#,
         r#""NextName":{"target":"n#Names"}"#,
     ).replace(r#""n#Rows":{"type":"list""#, r#""n#Names":{"type":"list","member":{"target":"smithy.api#String"}},"n#Rows":{"type":"list""#);
-    // When the reviewed cursor is compiled.
     let value = compile_last_item_fixture(&model)?;
     let compiled = tokens(&value)?;
     assert_eq!(compiled.len(), 1);
     let token = inventory_core::record::Record::encode(compiled.first().ok_or("token")?)?;
-    // Then runtime receives last-item selection, not a list-valued request token.
     assert!(matches!(
         token.root().get_field(FieldId::new(7)?)?,
         Some(ValueRef::Int(1))
@@ -170,8 +167,6 @@ fn last_item_cursor_encodes_scalar_selection_and_truncation() -> TestResult {
 
 #[test]
 fn last_item_cursor_rejects_non_list_response() -> TestResult {
-    // Given an ordinary scalar output instead of a last-item list cursor.
-    // When compiled, then the capability error is returned rather than list semantics being lost.
     let error = compile_last_item_fixture(MODEL)
         .err()
         .ok_or("accepted scalar cursor")?;
@@ -185,7 +180,6 @@ fn last_item_cursor_rejects_non_list_response() -> TestResult {
 
 #[test]
 fn last_item_cursor_rejects_nontext_elements_required_input_and_nonboolean_flag() -> TestResult {
-    // Given a valid list cursor, change one modeled invariant at a time.
     let model = MODEL.replace(
         r#""NextName":{"target":"smithy.api#String"}"#,
         r#""NextName":{"target":"n#Names"}"#,
@@ -218,7 +212,6 @@ fn last_item_cursor_rejects_nontext_elements_required_input_and_nonboolean_flag(
         ),
     ];
     for (name, model, expected_path) in cases {
-        // When compiled, then unsafe token/truncation contracts fail explicitly.
         let error = compile_last_item_fixture(&model)
             .err()
             .ok_or_else(|| format!("accepted invalid cursor for {name}"))?;

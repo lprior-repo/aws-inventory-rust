@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/apprunner/service/2020-05-15/apprunner-2020-05-15.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -82,7 +80,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires VpcIngressConnectionArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Delete an App Runner VPC Ingress Connection resource that's associated with an App Runner service. The VPC Ingress Connection must be in one of the following states to be deleted: AVAILABLE FAILED_CREATION FAILED_UPDATE…",
             ),
         ),
-        // Model: Return a full description of an App Runner automatic scaling configuration resource.
         (
             "DescribeAutoScalingConfiguration",
             OperationOverlay {
@@ -111,7 +108,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ServiceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Return a description of custom domain names that are associated with an App Runner service.",
             ),
         ),
-        // Model: Return a full description of an App Runner observability configuration resource.
         (
             "DescribeObservabilityConfiguration",
             OperationOverlay {
@@ -134,9 +130,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Return a full description of an App Runner service.
         ("DescribeService", denied(DenyReason::Secret)),
-        // Model: Return a description of an App Runner VPC connector resource.
         (
             "DescribeVpcConnector",
             OperationOverlay {
@@ -164,7 +158,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Return a full description of an App Runner VPC Ingress Connection resource.
         (
             "DescribeVpcIngressConnection",
             OperationOverlay {
@@ -193,7 +186,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ServiceArn, DomainName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disassociate a custom domain name from an App Runner service. Certificates tracking domain validity are associated with a custom domain and are stored in AWS Certificate Manager (ACM) . These certificates aren't deleted as part…",
             ),
         ),
-        // Model: Returns a list of active App Runner automatic scaling configurations in your Amazon Web Services account. You can query the revisions for a specific configuration name or the revisions for all active…
         (
             "ListAutoScalingConfigurations",
             OperationOverlay {
@@ -209,7 +201,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of App Runner connections that are associated with your Amazon Web Services account.
         (
             "ListConnections",
             OperationOverlay {
@@ -222,7 +213,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of active App Runner observability configurations in your Amazon Web Services account. You can query the revisions for a specific configuration name or the revisions for all active…
         (
             "ListObservabilityConfigurations",
             OperationOverlay {
@@ -244,7 +234,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ServiceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Return a list of operations that occurred on an App Runner service. The resulting list of OperationSummary objects is sorted in reverse chronological order. The first object on the list represents the last started operation.",
             ),
         ),
-        // Model: Returns a list of running App Runner services in your Amazon Web Services account.
         (
             "ListServices",
             OperationOverlay {
@@ -269,7 +258,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: List tags that are associated with for an App Runner resource. The response contains a list of tag key-value pairs.",
             ),
         ),
-        // Model: Returns a list of App Runner VPC connectors in your Amazon Web Services account.
         (
             "ListVpcConnectors",
             OperationOverlay {
@@ -287,7 +275,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Return a list of App Runner VPC Ingress Connections in your Amazon Web Services account.
         (
             "ListVpcIngressConnections",
             OperationOverlay {

@@ -71,8 +71,6 @@ fn native_list_and_detail_views_share_the_exact_canonical_kind() -> TestResult {
 
 #[test]
 fn pinned_schema_absences_remain_explicit_api_only_resources() -> TestResult {
-    // Given resources with native inventory APIs but no exact pinned CFN type.
-    // When compiling the real registry, use the pinned Smithy service identity.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
@@ -96,7 +94,6 @@ fn pinned_schema_absences_remain_explicit_api_only_resources() -> TestResult {
             "AWS::WorkSpaces::Bundle",
         ),
     ] {
-        // Then every exact operation retains its distinct API-only identity and reason.
         assert_eq!(
             map.operations()
                 .iter()
@@ -119,7 +116,6 @@ fn pinned_schema_absences_remain_explicit_api_only_resources() -> TestResult {
 #[test]
 fn given_reviewed_metadata_operations_when_registry_compiles_then_expected_kinds_are_retained()
 -> TestResult {
-    // Given independently specified native metadata identities.
     let additions = [
         (
             "apigatewayv2",
@@ -184,11 +180,9 @@ fn given_reviewed_metadata_operations_when_registry_compiles_then_expected_kinds
             "AWS::DMS::Endpoint",
         ),
     ];
-    // When compiling all reviewed families against the pinned CFN source.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
-    // Then every listed operation keeps its exact canonical or API-only kind.
     for &(service, operation, kind) in additions.iter().chain(NEW_SAFE_METADATA_OPERATIONS) {
         assert_eq!(
             map.operations()
@@ -253,11 +247,9 @@ fn msk_mixed_list_uses_registered_canonical_variants_not_an_api_only_alias() -> 
 
 #[test]
 fn iot_metric_and_dimension_metadata_use_the_exact_pinned_cfn_kinds() -> TestResult {
-    // Given the pinned denominator, when compiling native metric and dimension mappings.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
-    // Then scalar list identities and metric detail stay in their precise CFN kinds.
     for kind in ["AWS::IoT::CustomMetric", "AWS::IoT::Dimension"] {
         assert!(
             matches!(map.lookup(kind).map(|entry| &entry.target),
@@ -285,11 +277,9 @@ fn iot_metric_and_dimension_metadata_use_the_exact_pinned_cfn_kinds() -> TestRes
 
 #[test]
 fn central_metadata_expansions_preserve_function_kind_and_delegated_account_origin() -> TestResult {
-    // Given the central reviewed mappings, when compiling the full pinned denominator.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
-    // Then code-signing discovery identifies functions, not a new signing association kind.
     assert!(
         matches!(map.lookup("AWS::Lambda::Function").map(|entry| &entry.target),
         Some(KindTarget::Mapped { kind, .. }) if kind == "AWS::Lambda::Function")
@@ -306,7 +296,6 @@ fn central_metadata_expansions_preserve_function_kind_and_delegated_account_orig
     let row = joins
         .first()
         .ok_or("missing delegated-service parent join")?;
-    // The bound request carries AccountId; selected service summaries do not.
     assert!(matches!(row.source, ReviewedRelationSource::Request(_)));
     assert_eq!(
         (
@@ -329,8 +318,6 @@ fn central_metadata_expansions_preserve_function_kind_and_delegated_account_orig
 
 #[test]
 fn iam_and_kms_metadata_children_preserve_exact_kinds_and_reference_origins() -> TestResult {
-    // Origin remains an explicit typed namespace, not a parallel request-only collection.
-    // Given the pinned CFN denominator, when compiling the reviewed metadata attachments.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
@@ -351,7 +338,6 @@ fn iam_and_kms_metadata_children_preserve_exact_kinds_and_reference_origins() ->
             "{kind}"
         );
     }
-    // Then each child joins via its actual selected field or bound request, never a fabricated column.
     for (kind, origin, source, target, path, label, scope) in [
         (
             "AWS::ApiOnly::IAMServiceSpecificCredential",

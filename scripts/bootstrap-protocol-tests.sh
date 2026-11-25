@@ -1,13 +1,4 @@
 #!/usr/bin/env bash
-# Regenerates the seven Smithy protocol-test fixtures that aws-wire tests read.
-# The outputs are gitignored; they are never committed.
-#
-# Idempotent: exits at once when every output exists and matches the digests in
-# scripts/protocol-tests/outputs.sha256. Otherwise the converter runs into a
-# temporary directory, and the results are copied in only after every digest
-# matches. Supported hosts: Linux x86_64, Linux aarch64, Darwin arm64.
-#
-# Bash 3.2 compatible (macOS /bin/bash): no arrays, mapfile or associative maps.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -30,7 +21,6 @@ sha256_of() {
     fi
 }
 
-# Succeeds only when every recorded output exists under $1 with its digest.
 outputs_match() {
     while read -r want name; do
         if [ ! -f "$1/$name" ] || [ "$(sha256_of "$1/$name")" != "$want" ]; then

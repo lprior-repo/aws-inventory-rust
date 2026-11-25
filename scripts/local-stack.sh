@@ -1,7 +1,4 @@
 #!/usr/bin/env bash
-# Local, authenticated AWS fixtures and FalkorDB. Never uses a live AWS profile.
-# Linux and macOS (bash 3.2 compatible). No systemd: services run as plain background
-# process groups with pid and log files under the state directory.
 set -euo pipefail
 umask 077
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
@@ -60,7 +57,6 @@ is_running() {
     [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
 }
 
-# Sends PING over a raw TCP socket, so no redis-cli is needed on the host.
 redis_ping() {
     local hostport=${1#redis://}
     (
@@ -93,7 +89,6 @@ container_engine() {
     return 1
 }
 
-# Writes the FalkorDB record consumed by ready and stop. Values are shell-quoted.
 record_falkordb() {
     local temporary
     mkdir -p "$STATE_DIR"
@@ -103,8 +98,6 @@ record_falkordb() {
     mv "$temporary" "$FALKOR_STATE"
 }
 
-# Provider order: an externally supplied FALKORDB_TEST_URL, then docker or podman,
-# then a local redis-server with the FalkorDB module (FALKORDB_REDIS_SERVER, FALKORDB_MODULE).
 start_falkordb() {
     local engine name pid url="redis://127.0.0.1:$FALKORDB_PORT"
     if [[ -n "${FALKORDB_TEST_URL:-}" ]]; then
@@ -137,7 +130,6 @@ start_falkordb() {
 stop_falkordb() {
     [[ -f "$FALKOR_STATE" ]] || return 0
     local FALKORDB_ENGINE="" FALKORDB_NAME="" FALKORDB_PID="" FALKORDB_TEST_URL=""
-    # shellcheck source=/dev/null
     source "$FALKOR_STATE"
     case $FALKORDB_ENGINE in
         docker | podman) "$FALKORDB_ENGINE" rm -f "$FALKORDB_NAME" >/dev/null 2>&1 || true ;;
@@ -165,7 +157,6 @@ start)
         exit 0
     fi
     mkdir -p "$STATE_DIR"
-    # set -m gives the supervisor its own process group, so stop can signal all of it.
     set -m
     nohup "$ROOT/scripts/local-stack.sh" serve >>"$LOG_FILE" 2>&1 &
     printf '%s\n' "$!" >"$PID_FILE"
@@ -179,11 +170,8 @@ serve)
     fixture_command "$destination" "$ROOT/scripts/local-stack.sh" ready "$destination"
     ;;
 ready)
-    # The verified harness supplies path-based emulator credentials and TLS trust.
-    # Persist paths only; the generated keys remain in the emulator credential file.
     destination=${2:?session directory required}
     FALKORDB_TEST_URL=""
-    # shellcheck source=/dev/null
     source "$FALKOR_STATE"
     temporary=$(mktemp "$STATE_DIR/session.env.XXXXXX")
     for name in AWS_ENDPOINT_URL AWS_SHARED_CREDENTIALS_FILE AWS_CONFIG_FILE \
@@ -204,7 +192,6 @@ status)
         exit 1
     fi
     if [[ -f "$SESSION_ENV" ]]; then
-        # shellcheck source=/dev/null
         source "$SESSION_ENV"
         if [[ -r "$SSL_CERT_FILE" ]] \
             && curl --fail --silent --max-time 5 --cacert "$SSL_CERT_FILE" \
@@ -236,7 +223,6 @@ cli)
     require_install
     "$ROOT/scripts/local-stack.sh" status >/dev/null
     clear_aws
-    # shellcheck source=/dev/null
     source "$SESSION_ENV"
     exec "$BINARY" "$@"
     ;;

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/route53-recovery-control-config/service/2020-11-02/route53-recovery-control-config-2020-11-02.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

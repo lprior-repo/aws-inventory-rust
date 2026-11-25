@@ -105,7 +105,6 @@ identity = "ServerCertificateMetadata.Arn"
 scope = "account"
 [step.input]
 ServerCertificateName = "inventory-seed-certificate"
-# Disposable fixture pair, generated solely for the local emulator.
 CertificateBody = '''
 -----BEGIN CERTIFICATE-----
 MIIB1TCCAVqgAwIBAgIUVlBIFAwc3STiPE1MVr9vRMySIRQwCgYIKoZIzj0EAwIw

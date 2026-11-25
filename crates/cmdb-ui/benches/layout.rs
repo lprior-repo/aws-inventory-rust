@@ -1,18 +1,7 @@
-//! Benchmarks for DagLayout::compute over generated graph shapes.
-//!
-//! Measures the layout computation pass across four shapes at three sizes:
-//! deep chain (depth capped at MAX_LAYERS=64), wide fan-out, random forward-edge
-//! DAG with duplicate edges dropped, and cyclic graph. Graph sizes: 100, 500,
-//! 2000 (MAX_LAYOUT_NODES).
-//!
-//! Uses a fixed-seed xorshift PRNG for deterministic graph generation. No rand
-//! dependency required.
-
 use cmdb_ui::dag::graph::{DagGraph, NodeKind};
 use cmdb_ui::dag::layout::DagLayout;
 use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 
-/// Simple xorshift64 PRNG for deterministic graph generation.
 struct Rng(u64);
 
 impl Rng {
@@ -27,7 +16,6 @@ impl Rng {
         u32::try_from(self.0 >> 32).unwrap_or(u32::MAX)
     }
 
-    /// Uniform-ish value in `low..high` (high exclusive). Returns `low` if the range is empty.
     fn range(&mut self, low: usize, high: usize) -> usize {
         let span = u64::try_from(high.saturating_sub(low))
             .unwrap_or(u64::MAX)
@@ -37,7 +25,6 @@ impl Rng {
     }
 }
 
-/// Build a linear chain: 0 -> 1 -> 2 -> ... -> N-1.
 fn build_chain(n: usize) -> DagGraph {
     let mut g = DagGraph::default();
     for i in 0..n {
@@ -53,7 +40,6 @@ fn build_chain(n: usize) -> DagGraph {
     g
 }
 
-/// Build a wide fan-out: 0 (root) -> all others.
 fn build_fanout(n: usize) -> DagGraph {
     let mut g = DagGraph::default();
     g.add_node(NodeKind::Account, "root", "Root");
@@ -66,8 +52,6 @@ fn build_fanout(n: usize) -> DagGraph {
     g
 }
 
-/// Build a random forward-edge DAG with duplicate edges dropped.
-/// Nodes are arranged in layers; edges go from lower layers to higher layers.
 fn build_random_forward(n: usize) -> DagGraph {
     let mut g = DagGraph::default();
     for i in 0..n {
@@ -81,8 +65,6 @@ fn build_random_forward(n: usize) -> DagGraph {
     g
 }
 
-/// Add random forward edges to a graph, targeting approximately 2N edges.
-/// Duplicate edges are dropped by DagGraph.
 fn add_random_forward_edges(g: &mut DagGraph, n: usize) {
     let rng = &mut Rng::new(42);
     let target_edges = n.saturating_mul(2);
@@ -106,7 +88,6 @@ fn add_random_forward_edges(g: &mut DagGraph, n: usize) {
     }
 }
 
-/// Build a graph with cycles: a chain plus back-edges.
 fn build_cyclic(n: usize) -> DagGraph {
     let mut g = DagGraph::default();
     let rng = &mut Rng::new(123);
@@ -125,7 +106,6 @@ fn build_cyclic(n: usize) -> DagGraph {
     g
 }
 
-/// Validate layout results and exit on failure.
 fn validate_layout(name: &str, layout: &DagLayout, n: usize, expect_back_edges: bool) {
     if layout.node_count() != n {
         eprintln!("{}: node count {} != {}", name, layout.node_count(), n);
@@ -146,7 +126,6 @@ fn validate_layout(name: &str, layout: &DagLayout, n: usize, expect_back_edges: 
     }
 }
 
-/// Run a layout benchmark for one graph shape across all sizes.
 fn run_shape_bench(
     c: &mut Criterion,
     name: &str,
@@ -156,7 +135,6 @@ fn run_shape_bench(
     let mut group = c.benchmark_group(name);
     for &n in &[100, 500, 2000] {
         let graph = builder(n);
-        // Validate layout correctness before timing.
         let layout = DagLayout::compute(&graph);
         validate_layout(name, &layout, n, expect_back_edges);
         group.bench_with_input(BenchmarkId::new(name, n), &graph, |b, graph| {
@@ -167,8 +145,6 @@ fn run_shape_bench(
 }
 
 fn bench_deep_chain_capped(c: &mut Criterion) {
-    // Depth is capped at MAX_LAYERS=64, so chains with n>=63 collapse
-    // into layer 63.
     run_shape_bench(c, "layout/deep_chain_capped", build_chain, false);
 }
 

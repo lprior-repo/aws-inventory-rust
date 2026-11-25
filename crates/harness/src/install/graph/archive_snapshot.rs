@@ -7,7 +7,6 @@ use sha2::{Digest, Sha256};
 use super::{MAX_DOWNLOAD, reject};
 use crate::HarnessError;
 
-// This snapshot has no mutable pathname and seals cover every writable descriptor alias.
 pub(super) fn capture(input: File) -> Result<File, HarnessError> {
     let metadata = input.metadata()?;
     if !metadata.is_file() || metadata.len() > MAX_DOWNLOAD {
@@ -23,7 +22,6 @@ pub(super) fn capture(input: File) -> Result<File, HarnessError> {
     if size > MAX_DOWNLOAD {
         return Err(reject("download byte bound"));
     }
-    // Seal before hashing: neither the original writer nor a proc-FD alias can alter later reads.
     let seals = SealFlags::WRITE | SealFlags::SHRINK | SealFlags::GROW | SealFlags::SEAL;
     rustix::fs::fcntl_add_seals(&snapshot, seals).map_err(std::io::Error::from)?;
     snapshot.rewind()?;

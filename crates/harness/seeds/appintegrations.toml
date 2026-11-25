@@ -38,7 +38,6 @@ EventFilter = { Source = "app-integrations.webhooks/inventory-fixture" }
 EventBridgeBus = "inventory-seed-appintegrations"
 ClientToken = "inventory-seed-event-integration"
 
-# Create returns an association ID; the child listing identifies it by ARN.
 [[step]]
 id = "data_association"
 operation = "CreateDataIntegrationAssociation"

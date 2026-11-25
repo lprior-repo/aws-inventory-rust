@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/license-manager/service/2018-08-01/license-manager-2018-08-01.json
 use super::super::{name, path};
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::{
@@ -147,7 +146,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the license configurations for your account.
     Resource {
         operation: "ListLicenseConfigurations",
         items: "LicenseConfigurations",
@@ -166,7 +164,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // The summary ARN supplies the sole required input; this metadata response includes tags.
     Resource {
         operation: "GetLicenseConfiguration",
         items: "$",
@@ -189,7 +186,6 @@ const RESOURCES: &[Resource] = &[
         )],
         fixed: &[],
     },
-    // Lists the licenses for your account.
     Resource {
         operation: "ListLicenses",
         items: "Licenses",
@@ -207,7 +203,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the report generators for your account.
     Resource {
         operation: "ListLicenseManagerReportGenerators",
         items: "ReportGenerators",
@@ -223,7 +218,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists license asset groups.
     Resource {
         operation: "ListLicenseAssetGroups",
         items: "LicenseAssetGroups",
@@ -235,7 +229,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListLicenses; no content-bearing expansion.
     Resource {
         operation: "GetLicense",
         items: "License",
@@ -253,7 +246,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("LicenseArn", "ListLicenses", "LicenseArn")],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListLicenseAssetGroups; no content-bearing expansion.
     Resource {
         operation: "GetLicenseAssetGroup",
         items: "LicenseAssetGroup",
@@ -269,7 +261,6 @@ const RESOURCES: &[Resource] = &[
         )],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListLicenseManagerReportGenerators; no content-bearing expansion.
     Resource {
         operation: "GetLicenseManagerReportGenerator",
         items: "ReportGenerator",

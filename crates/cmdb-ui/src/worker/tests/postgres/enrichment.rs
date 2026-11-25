@@ -90,7 +90,6 @@ async fn postgres_given_locked_payload_when_graph_enriches_then_detail_timeout_i
 -> TestResult {
     let fixture = EnrichmentFixture::new().await?;
     let mut writer = fixture.postgres.pool.begin().await?;
-    // ACCESS EXCLUSIVE is the only table lock conflicting with a plain SELECT.
     sqlx::query("LOCK TABLE inventory.kind_0 IN ACCESS EXCLUSIVE MODE NOWAIT")
         .execute(&mut *writer)
         .await?;

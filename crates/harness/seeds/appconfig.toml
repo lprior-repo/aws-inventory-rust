@@ -9,7 +9,6 @@ identity = "Id"
 [step.input]
 "Name" = "inventory-thin-appconfig"
 
-# The inventory IDs of environments and profiles include their application ID.
 [[step]]
 id = "environment"
 operation = "CreateEnvironment"

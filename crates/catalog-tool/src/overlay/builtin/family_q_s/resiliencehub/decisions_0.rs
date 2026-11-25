@@ -1,73 +1,57 @@
-// Pinned operation purposes: .local/aws-models/models/resiliencehub/service/2020-04-30/resiliencehub-2020-04-30.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Accepts the resource grouping recommendations suggested by Resilience Hub for your application.
     (
         "AcceptResourceGroupingRecommendations",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds the source of resource-maps to the draft version of an application. During assessment, Resilience Hub will use these resource-maps to resolve the latest physical ID for each resource in the application template. For more information about different types of resources supported by Resilience Hub and how to add them in your application, see Step 2: How is your application managed? in the Resili
     (
         "AddDraftAppVersionResourceMappings",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Enables you to include or exclude one or more operational recommendations.
     (
         "BatchUpdateRecommendationStatus",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Resilience Hub application. An Resilience Hub application is a collection of Amazon Web Services resources structured to prevent and recover Amazon Web Services application disruptions. To describe a Resilience Hub application, you provide an application name, resources from one or more CloudFormation stacks, Resource Groups, Terraform state files, AppRegistry applications, and an appro
     ("CreateApp", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new Application Component in the Resilience Hub application. This API updates the Resilience Hub application draft version. To use this Application Component for running assessments, you must publish the Resilience Hub application using the PublishAppVersion API.
     (
         "CreateAppVersionAppComponent",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds a resource to the Resilience Hub application and assigns it to the specified Application Components. If you specify a new Application Component, Resilience Hub will automatically create the Application Component. This action has no effect outside Resilience Hub. This API updates the Resilience Hub application draft version. To use this resource for running resiliency assessments, you must pub
     (
         "CreateAppVersionResource",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new recommendation template for the Resilience Hub application.
     (
         "CreateRecommendationTemplate",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a resiliency policy for an application. Resilience Hub allows you to provide a value of zero for rtoInSecs and rpoInSecs of your resiliency policy. But, while assessing your application, the lowest possible assessment result is near zero. Hence, if you provide value zero for rtoInSecs and rpoInSecs , the estimated workload RTO and estimated workload RPO result will be near zero and the Com
     (
         "CreateResiliencyPolicy",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Resilience Hub application. This is a destructive action that can't be undone.
     ("DeleteApp", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Resilience Hub application assessment. This is a destructive action that can't be undone.
     (
         "DeleteAppAssessment",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the input source and all of its imported resources from the Resilience Hub application.
     (
         "DeleteAppInputSource",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Application Component from the Resilience Hub application. This API updates the Resilience Hub application draft version. To use this Application Component for running assessments, you must publish the Resilience Hub application using the PublishAppVersion API. You will not be able to delete an Application Component if it has resources associated with it.
     (
         "DeleteAppVersionAppComponent",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a resource from the Resilience Hub application. You can only delete a manually added resource. To exclude non-manually added resources, use the UpdateAppVersionResource API. This action has no effect outside Resilience Hub. This API updates the Resilience Hub application draft version. To use this resource for running resiliency assessments, you must publish the Resilience Hub application
     (
         "DeleteAppVersionResource",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a recommendation template. This is a destructive action that can't be undone.
     (
         "DeleteRecommendationTemplate",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a resiliency policy. This is a destructive action that can't be undone.
     (
         "DeleteResiliencyPolicy",
         Decision::Denied(DenyReason::Mutating),
@@ -138,7 +122,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors appArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members groupingId, status, errorMessage. Pinned purpose: Describes the resource grouping recommendation tasks run by Resilience Hub for your application.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Imports resources to Resilience Hub application draft version from different input sources. For more information about the input sources supported by Resilience Hub, see Discover the structure and describe your Resilience Hub application .
     (
         "ImportResourcesToDraftAppVersion",
         Decision::Denied(DenyReason::Mutating),
@@ -221,7 +204,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors assessmentArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members nextToken, sopRecommendations. Pinned purpose: Lists the standard operating procedure (SOP) recommendations for the Resilience Hub applications.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists the suggested resiliency policies for the Resilience Hub applications.
     (
         "ListSuggestedResiliencyPolicies",
         Decision::Denied(DenyReason::ReferenceData),
@@ -250,17 +232,14 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors appArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members appArn, appVersion, identifier, versionName. Pinned purpose: Publishes a new version of a specific Resilience Hub application.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds or updates the app template for an Resilience Hub application draft version.
     (
         "PutDraftAppVersionTemplate",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Rejects resource grouping recommendations.
     (
         "RejectResourceGroupingRecommendations",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes resource mappings from a draft application version.
     (
         "RemoveDraftAppVersionResourceMappings",
         Decision::Denied(DenyReason::Mutating),
@@ -271,19 +250,13 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors appArn, appVersion are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members appArn, appVersion, resolutionId, status. Pinned purpose: Resolves the resources for an application version.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new application assessment for an application.
     ("StartAppAssessment", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Initiates the export task of metrics.
     ("StartMetricsExport", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts grouping recommendation task.
     (
         "StartResourceGroupingRecommendationTask",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Applies one or more tags to a resource.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes one or more tags from a resource.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates an application.
     ("UpdateApp", Decision::Denied(DenyReason::Mutating)),
 ];

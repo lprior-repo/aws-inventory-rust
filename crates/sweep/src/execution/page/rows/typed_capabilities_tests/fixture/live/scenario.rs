@@ -104,7 +104,6 @@ impl Scenario {
                 },
             )
             .await?;
-            // The store and queue are reopened before every continuation or newly discovered child.
             drop(store);
         }
         Err("native page queue exceeded its finite scenario bound".into())

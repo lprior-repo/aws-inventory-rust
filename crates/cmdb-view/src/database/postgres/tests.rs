@@ -26,7 +26,6 @@ async fn database() -> TestResult<TestDatabase> {
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_given_reader_pool_when_all_connections_are_used_then_settings_and_writes_are_read_only()
 -> TestResult {
-    // Given four separately acquired production-reader connections.
     let database = database().await?;
     let reader = Database::open(database.url()).await?;
     let mut connections = Vec::with_capacity(4);
@@ -37,7 +36,6 @@ async fn postgres_given_reader_pool_when_all_connections_are_used_then_settings_
         assert_eq!(settings, ("inventory".to_owned(), "on".to_owned()));
         connections.push(connection);
     }
-    // When a write bypasses the read API, PostgreSQL itself denies it.
     let connection = connections.first_mut().ok_or("missing reader connection")?;
     let error = sqlx::query(
         "INSERT INTO inventory.metadata(key,value) VALUES('reader-write',decode('00','hex'))",
@@ -49,7 +47,6 @@ async fn postgres_given_reader_pool_when_all_connections_are_used_then_settings_
     let error = error.as_database_error().ok_or("expected database error")?;
     assert_eq!(error.code().as_deref(), Some("25006"));
     drop(connections);
-    // Then a retained snapshot has both required transaction characteristics.
     let mut snapshot = reader.snapshot().await?;
     let settings: (String, String) = sqlx::query_as(
         "SELECT current_setting('transaction_isolation'),current_setting('transaction_read_only')",
@@ -67,14 +64,12 @@ async fn postgres_given_reader_pool_when_all_connections_are_used_then_settings_
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_given_incompatible_schema_when_opening_reader_then_version_fails_closed()
 -> TestResult {
-    // Given a real PgStore schema whose metadata is incompatible.
     let database = database().await?;
     let writer = PgPool::connect(database.url()).await?;
     sqlx::query("UPDATE inventory.metadata SET value=$1 WHERE key='schema_version'")
         .bind(b"999".as_slice())
         .execute(&writer)
         .await?;
-    // When opening the external reader, the version diagnostic is exact.
     let error = Database::open(database.url())
         .await
         .err()
@@ -83,7 +78,6 @@ async fn postgres_given_incompatible_schema_when_opening_reader_then_version_fai
         error.to_string(),
         "unsupported PostgreSQL inventory schema; expected 14"
     );
-    // Then absent metadata also fails closed with the same public diagnostic.
     sqlx::query("DELETE FROM inventory.metadata WHERE key='schema_version'")
         .execute(&writer)
         .await?;

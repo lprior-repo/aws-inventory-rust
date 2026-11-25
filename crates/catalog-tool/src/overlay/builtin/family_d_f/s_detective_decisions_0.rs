@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/detective/service/2018-10-26/detective-2018-10-26.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AcceptInvitation",

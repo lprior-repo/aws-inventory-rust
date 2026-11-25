@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mwaa-serverless/service/2024-07-26/mwaa-serverless-2024-07-26.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -51,20 +50,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Lists all workflows in your account, with optional pagination support. This operation returns summary information for workflows, showing only the most recently created version of e
-    Resource {
-        operation: "ListWorkflows",
-        items: "Workflows",
-        id: Id::Arn("WorkflowArn"),
-        scope: Scope::Region,
-        tokens: Some(("NextToken", "NextToken")),
-        query: &["WorkflowArn", "Name", "WorkflowStatus"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListWorkflows",
+    items: "Workflows",
+    id: Id::Arn("WorkflowArn"),
+    scope: Scope::Region,
+    tokens: Some(("NextToken", "NextToken")),
+    query: &["WorkflowArn", "Name", "WorkflowStatus"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("mwaa-serverless", GROUPS, RESOURCES)

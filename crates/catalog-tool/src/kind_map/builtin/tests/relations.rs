@@ -135,11 +135,9 @@ fn serverless_execution_roles_join_global_iam_roles_in_account_scope() -> TestRe
 
 #[test]
 fn global_accelerator_children_preserve_routing_families_and_bound_parent_joins() -> TestResult {
-    // Given the complete pinned registry, when compiling the reviewed mappings.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
-    // Then standard and custom routing children join only to their own parent family.
     for (source, path, target, label) in [
         (
             "AWS::GlobalAccelerator::Listener",
@@ -228,7 +226,6 @@ fn archive_rules_use_the_pinned_cfn_kind_and_actual_bound_analyzer_name() -> Tes
 
 #[test]
 fn route53_signing_key_joins_the_native_kms_arn_across_regions() -> TestResult {
-    // Given a global Route53 key-signing key and its regional KMS key.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
@@ -236,7 +233,6 @@ fn route53_signing_key_joins_the_native_kms_arn_across_regions() -> TestResult {
         .relations()
         .iter()
         .filter(|row| row.source_kind == "AWS::Route53::KeySigningKey");
-    // When resolving reviewed joins, use the selected ARN and actual ListKeys KeyArn field.
     let row = joins.next().ok_or("missing Route53 signing-key KMS join")?;
     assert!(matches!(
         row.source,
@@ -258,7 +254,6 @@ fn route53_signing_key_joins_the_native_kms_arn_across_regions() -> TestResult {
             "arn_region"
         )
     );
-    // Then no unnormalized HostedZoneId-to-Id equality is silently admitted.
     assert!(joins.next().is_none());
     Ok(())
 }
@@ -266,7 +261,6 @@ fn route53_signing_key_joins_the_native_kms_arn_across_regions() -> TestResult {
 #[test]
 fn route53_dnssec_emits_distinct_dnssec_and_key_resources_with_exact_leased_parent_rules()
 -> TestResult {
-    // Given the reviewed source, when compiling DNSSEC's independent emitters.
     let map = SOURCE.compile(&Exceptions::builtin())?;
     assert_eq!(
         map.operations()
@@ -284,7 +278,6 @@ fn route53_dnssec_emits_distinct_dnssec_and_key_resources_with_exact_leased_pare
         map.additional_emission_kind("route-53", "GetDNSSEC", "missing"),
         None
     );
-    // Then both resources link only to the actual leased HostedZone, not raw /hostedzone/ ID equality.
     assert_eq!(map.parent_relations().len(), 2);
     for kind in ["AWS::Route53::DNSSEC", "AWS::Route53::KeySigningKey"] {
         let parent = map

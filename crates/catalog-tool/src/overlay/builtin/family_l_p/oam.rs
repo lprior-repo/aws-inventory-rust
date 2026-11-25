@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/oam/service/2022-06-10/oam-2022-06-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -45,7 +44,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Use this operation in a source account to return a list of links to monitoring account sinks that this source account has. To find a list of links for one monitoring account sink,
     Resource {
         operation: "ListLinks",
         items: "Items",
@@ -57,7 +55,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Use this operation in a monitoring account to return the list of sinks created in that account.
     Resource {
         operation: "ListSinks",
         items: "Items",

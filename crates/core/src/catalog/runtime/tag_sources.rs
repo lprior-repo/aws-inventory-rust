@@ -1,11 +1,6 @@
 use super::{CallablePlan, PlanPurpose, RuntimeCatalog};
 use crate::inventory::Kind;
 
-/// Kinds in the compiled catalog that no tag source reaches. Their resources cannot
-/// receive derived owner/team/application values until a tag source is added.
-///
-/// A kind is sourced when one of its own emissions carries tags, or when a per-resource
-/// tag call (`PlanPurpose::TagEndpoint`) names a parent operation that emits the kind.
 pub fn kinds_without_tag_source(catalog: &RuntimeCatalog<'_>) -> Vec<Kind> {
     let plans = catalog.plans();
     catalog

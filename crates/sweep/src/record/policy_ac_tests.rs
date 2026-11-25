@@ -68,7 +68,6 @@ type RootCase = (&'static str, &'static str, &'static str, &'static str);
 #[test]
 fn given_eight_real_paged_roots_when_resumed_then_wire_requests_and_terminal_pages_are_consumed()
 -> TestResult {
-    // Given: actual embedded policies checked against pinned Smithy operations, not invented plans.
     let groups: &[(&str, &str, &[RootCase])] = &[
         (
             "accessanalyzer",
@@ -144,7 +143,6 @@ fn given_eight_real_paged_roots_when_resumed_then_wire_requests_and_terminal_pag
                 last_id,
                 "{service}.{operation}"
             );
-            // When: the production decoder extracts a continuation and the durable checkpoint is restored.
             let first = decode(plan, &first)?;
             let advance = cursor::Cursor::default()
                 .next(plan.pagination(), &first, &http::HeaderMap::new(), 10)?
@@ -165,7 +163,6 @@ fn given_eight_real_paged_roots_when_resumed_then_wire_requests_and_terminal_pag
                 matches!(&cursor_field.value, inventory_core::record::Value::Text(value) if value == "resume-token")
             );
             assert_eq!(fields.len(), 1, "{service}.{operation}");
-            // Then: actual request serialization carries the exact opaque token in query/body placement.
             let base = crate::input::root_bindings(plan, None, None)?;
             let request =
                 crate::request::encode(plan, "https://fixture.example.test", &base, &fields)?;
@@ -184,7 +181,6 @@ fn given_eight_real_paged_roots_when_resumed_then_wire_requests_and_terminal_pag
                     .is_none(),
                 "{service}.{operation}"
             );
-            // Wrongly typed cursors cannot be silently accepted as a terminal successful page.
             assert!(
                 decode(plan, &json!({(*items):[],(*token):42})).is_err(),
                 "{service}.{operation}"

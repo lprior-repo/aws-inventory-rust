@@ -1,7 +1,4 @@
 use super::*;
-// A small Smithy REST-JSON service, not a replacement collector: the production
-// compiler, request encoder, signer, TLS transport, response decoder and SQLite
-// writer all run unchanged. The peer serves fixed pages selected by wire cursors.
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n.pagination#Service":{"type":"service","version":"1","operations":[{"target":"n.pagination#GetCallerIdentity"},{"target":"n.pagination#DescribeRegions"},{"target":"n.pagination#ListItems"}],"traits":{"aws.api#service":{"sdkId":"Pagination","endpointPrefix":"pagination","arnNamespace":"pagination"},"aws.auth#sigv4":{"name":"pagination"},"aws.protocols#restJson1":{}}},
 "n.pagination#GetCallerIdentity":{"type":"operation","output":{"target":"n.pagination#IdentityOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/identity"}}},

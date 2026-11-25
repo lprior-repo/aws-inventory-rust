@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codeguru-security/service/2018-05-10/codeguru-security-2018-05-10.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -52,7 +50,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires startDate, endDate. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metrics about all findings in an account within a specified time range.",
             ),
         ),
-        // Model: Returns a list of all scans in an account. Does not return EXPRESS scans.
         (
             "ListScans",
             OperationOverlay {

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/neptune-graph/service/2023-11-29/neptune-graph-2023-11-29.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -89,7 +88,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists available Neptune Analytics graphs.
     Resource {
         operation: "ListGraphs",
         items: "graphs",
@@ -101,7 +99,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists available snapshots of a specified Neptune Analytics graph.
     Resource {
         operation: "ListGraphSnapshots",
         items: "graphSnapshots",

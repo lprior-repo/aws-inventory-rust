@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloud9/service/2017-09-23/cloud9-2017-09-23.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -46,7 +44,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires environmentIds. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about Cloud9 development environments. Cloud9 is no longer available to new customers. Existing customers of Cloud9 can continue to use the service as normal. Learn more\"",
             ),
         ),
-        // Model: Gets a list of Cloud9 development environment identifiers. Cloud9 is no longer available to new customers. Existing customers of Cloud9 can continue to use the service as normal. Learn more" Cloud9…
         (
             "ListEnvironments",
             OperationOverlay {

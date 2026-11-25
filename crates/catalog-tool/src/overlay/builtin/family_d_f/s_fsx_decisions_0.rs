@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/fsx/service/2018-03-01/fsx-2018-03-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AssociateFileSystemAliases",

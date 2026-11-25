@@ -1,5 +1,3 @@
-// DMS and migration hub operation mappings.
-
 use crate::kind_map::{ApiOnlyMapping, OperationMapping};
 
 pub(super) const API_ONLY: &[ApiOnlyMapping<'static>] = &[

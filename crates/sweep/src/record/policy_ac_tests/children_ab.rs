@@ -60,7 +60,6 @@ impl Page {
     }
 }
 
-// Fixture values are independent of runtime requests: a cross-parent request has no matching page.
 fn later_pages(
     (operation, request): (&'static str, Value),
     parent: &str,

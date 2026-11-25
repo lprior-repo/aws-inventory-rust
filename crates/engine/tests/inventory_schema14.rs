@@ -35,7 +35,6 @@ fn given_schema_exceeding_sqlite_column_limit_when_validated_then_rejected_at_ad
 -> Result<(), Box<dyn std::error::Error>> {
     let kind = Kind::parse("AWS::Test::Oversized")?;
     let mut columns = Vec::new();
-    // 7 fixed columns + 256 projected = 263 total, exceeding SQLITE_MAX_COLUMN=256.
     for i in 1..=256 {
         let id = FieldId::new(i)?;
         columns.push(inventory_core::inventory::Column::new(
@@ -52,7 +51,6 @@ fn given_schema_exceeding_sqlite_column_limit_when_validated_then_rejected_at_ad
         ),
         "schema with 256 projected columns (263 total) should exceed SQLite limit"
     );
-    // 249 projected columns (256 total) is the maximum allowed.
     let mut ok_columns = Vec::new();
     for i in 1..=249 {
         let id = FieldId::new(i)?;
@@ -63,7 +61,6 @@ fn given_schema_exceeding_sqlite_column_limit_when_validated_then_rejected_at_ad
     }
     let result = KindSchema::new(kind.clone(), table.clone(), ok_columns);
     result?;
-    // 250 projected columns (257 total) exceeds the limit.
     let mut over_columns = Vec::new();
     for i in 1..=250 {
         let id = FieldId::new(i)?;
@@ -80,8 +77,6 @@ fn given_schema_exceeding_sqlite_column_limit_when_validated_then_rejected_at_ad
         ),
         "schema with 250 projected columns (257 total) should exceed SQLite limit"
     );
-    // Drift guard: ensure the constant in core matches the build config.
-    // Parse manually to extract the value without regex dependency.
     let config = CARGO_CONFIG;
     let config_value = config
         .split("SQLITE_MAX_COLUMN=")

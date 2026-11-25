@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codeguru-reviewer/service/2019-09-19/codeguru-reviewer-2019-09-19.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -28,7 +26,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires CodeReviewArn, RecommendationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the customer feedback for a CodeGuru Reviewer recommendation.",
             ),
         ),
-        // Model: Returns a RepositoryAssociation object that contains information about the requested repository association.
         (
             "DescribeRepositoryAssociation",
             OperationOverlay {
@@ -75,7 +72,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires CodeReviewArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the list of all recommendations for a completed code review.",
             ),
         ),
-        // Model: Returns a list of RepositoryAssociationSummary objects that contain summary information about a repository association. You can filter the returned list by ProviderType , Name , State , and Owner .
         (
             "ListRepositoryAssociations",
             OperationOverlay {

@@ -7,7 +7,6 @@ license = "MIT"
 publish = false
 autotests = false
 
-# Keep official HTTP test utilities out of the production/EC2 feature graph.
 [workspace]
 resolver = "3"
 

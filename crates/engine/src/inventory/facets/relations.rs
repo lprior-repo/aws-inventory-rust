@@ -151,7 +151,6 @@ fn owns_dependencies(
     match value {
         Some(ValueRef::Null) => Ok(true),
         Some(ValueRef::Bytes(bytes)) => {
-            // V3 encoded alternative single-path authorities as one flat OR.
             let paths = dependency_paths(&Record::from_bytes(bytes.to_vec())?)?;
             Ok(paths.iter().any(|path| owns_path(path, facet, owners)))
         }

@@ -1,12 +1,5 @@
 #!/bin/sh
-# Offline-build fixture maintenance only; never invoked by the product build.
-# Regenerates the seven Smithy protocol-test ASTs. Normally run through
-# scripts/bootstrap-protocol-tests.sh, which verifies the output digests.
-# Source: https://github.com/smithy-lang/smithy, released 2026-11-12.
-# Smithy 1.75.0, bundled Corretto 25.0.5+10-LTS; canonicalizer jq-1.8.2.
 set -eu
-# Recorded ancillary tools: git 2.56.0, curl 8.23.0, UnZip 6.00.
-# Only Smithy and jq determine output bytes.
 export LC_ALL=C TZ=UTC
 
 TAG=1.75.0
@@ -14,8 +7,6 @@ COMMIT=981f95a2cae567752b70749c1f04502c076a7a63
 REPOSITORY=https://github.com/smithy-lang/smithy
 JQ_REPOSITORY=https://github.com/jqlang/jq/releases/download/jq-1.8.2
 
-# Pinned asset digests: GitHub release asset digests for smithy-lang/smithy
-# 1.75.0 and jqlang/jq jq-1.8.2, checked against the release API.
 case "$(uname -s)/$(uname -m)" in
     Linux/x86_64 | Linux/amd64)
         platform=linux-x86_64
@@ -72,7 +63,6 @@ tmp=$(mktemp -d "${TMPDIR:-/tmp}/smithy-protocol-fixtures.XXXXXX")
 trap 'rm -rf -- "$tmp"' 0
 trap 'exit 1' HUP INT TERM
 
-# jq-1.8.2 is pinned, because its number preservation fixes the output bytes.
 mkdir -p -- "$tmp/tools"
 curl --fail --location --silent --show-error \
     "$JQ_REPOSITORY/$jq_asset" --output "$tmp/tools/jq"
@@ -86,7 +76,6 @@ fi
 
 cd "$tmp"
 
-# The tag identifies the release; the immutable commit guards against retagging.
 git clone --quiet --depth 1 --branch "$TAG" "$REPOSITORY" source
 if [ "$(git -C source rev-parse HEAD)" != "$COMMIT" ]; then
     printf 'Smithy release commit does not match the pinned commit.\n' >&2
@@ -118,8 +107,6 @@ for protocol in awsJson1_0 awsJson1_1 awsQuery ec2Query restJson1 restXml rpcv2C
                 "$generic"/v2/*.smithy "$generic/v2/rpcv2cbor"
             ;;
     esac
-    # Keep the complete AST, prelude, mixins, traits, metadata and test cases.
-    # Separate commands ensure a failing Smithy process cannot hide in a pipe.
     "$smithy" ast --no-config --include-prelude --output "$tmp/build" "$@" \
         > "$protocol.ast.json"
     "$jq" --sort-keys . "$protocol.ast.json" > "$protocol.json"

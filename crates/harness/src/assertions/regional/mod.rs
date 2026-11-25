@@ -1,5 +1,3 @@
-//! Regional assertion execution.
-
 pub mod fixture;
 pub mod observations;
 
@@ -19,7 +17,6 @@ pub async fn check(
 ) -> Result<Vec<Value>, HarnessError> {
     let mut checks = Vec::new();
 
-    // Try to load fixtures
     let fixtures = match fixture::load_fixtures(root) {
         Ok((doc, sha)) => Some((doc, sha)),
         Err(_) => None,
@@ -32,7 +29,6 @@ pub async fn check(
         None,
     );
 
-    // Try to read observations
     let (resources, edges, status) = observations::for_scan(database, scan_id).await.unwrap_or((
         Vec::new(),
         Vec::new(),

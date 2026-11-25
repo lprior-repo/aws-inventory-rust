@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mturk/service/2017-01-17/mturk-2017-01-17.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

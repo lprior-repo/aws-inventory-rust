@@ -10,7 +10,6 @@ struct Node<'p, 'catalog> {
     depth: Option<u16>,
 }
 
-/// Operations may recur only through explicitly named, acyclic finite stages.
 pub(super) fn depths(plans: &[CallablePlan<'_>]) -> Result<Vec<u16>, RuntimeCatalogError> {
     let mut nodes = Vec::new();
     let mut keys = BTreeMap::new();

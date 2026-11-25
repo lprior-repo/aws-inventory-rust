@@ -38,8 +38,6 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     }
 }
 
-// Pin: qbusiness/service/2023-11-27/qbusiness-2023-11-27.json.
-// Index/plugin/web summaries and data-source summaries contain no indexed documents or secrets.
 fn qbusiness(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
         ("ListIndices", "indices", "indexId"),
@@ -74,8 +72,6 @@ fn qbusiness(service: &mut ServiceOverlay) -> Result<(), NameError> {
     put(service, "ListDataSources", plan)
 }
 
-// Pin: qconnect/service/2020-10-19/qconnect-2020-10-19.json.
-// AIPromptSummary has model/template TYPE metadata, not the template text in GetAIPrompt.
 fn prompts(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut plan = arn(
         "aiPromptSummaries",
@@ -113,9 +109,6 @@ fn prompts(service: &mut ServiceOverlay) -> Result<(), NameError> {
     put(service, "ListAIPromptVersions", versions)
 }
 
-// Pin: sesv2/service/2019-09-27/sesv2-2019-09-27.json.
-// FromAddress distinguishes registrations under domain identities; email-only registrations may omit it.
-// List returns certificate ARN, from-address, state and expiry only; no certificate/key bytes.
 fn certificates(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut plan = qualified(
         "Certificates",
@@ -151,8 +144,6 @@ fn certificates(service: &mut ServiceOverlay) -> Result<(), NameError> {
     put(service, "ListEmailIdentityCertificates", plan)
 }
 
-// Pin: service-catalog/service/2015-12-10/service-catalog-2015-12-10.json.
-// IAM_PATTERN is an association selector, not necessarily an ARN of a concrete IAM principal.
 fn principals(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut plan = qualified(
         "Principals",

@@ -15,8 +15,6 @@ pub(super) fn additional(
     service: Service<'_>,
     operation: Operation<'_>,
 ) -> Result<Vec<ResourceEmissionPlan>, RuntimeCatalogError> {
-    // Older capability records explicitly contain only the primary resource fields.
-    // New compilers always write field 23, including an empty reviewed list.
     let Some(value) = fields.get_field(FieldId::new(23)?)? else {
         return Ok(Vec::new());
     };

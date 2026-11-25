@@ -28,7 +28,6 @@ pub(super) fn run(
         .stderr(Stdio::null())
         .spawn()?;
     let output = capture(&mut child, timeout);
-    // The leader stays unreaped until its whole owned group is signalled, even on success.
     let cleanup = build::terminate_and_reap(&mut child).and_then(|status| {
         if status.success() {
             Ok(())

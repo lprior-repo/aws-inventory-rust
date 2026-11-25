@@ -18,8 +18,6 @@ impl MatchEvent for App {
 
 impl App {
     fn stop_worker(&mut self, cx: &mut Cx) {
-        // Standalone Makepad retains App through Cx's self-reference. Shutdown
-        // must discharge these owners here, not wait for App/DataWorker Drop.
         self.shutting_down = true;
         cx.stop_timer(std::mem::take(&mut self.completion_poll));
         drop(self.worker.take());
@@ -251,7 +249,6 @@ mod tests {
 
     #[test]
     fn given_tag_value_mode_when_filtering_then_empty_exact_values_and_key_only_are_distinct() {
-        // Given a key with the value matcher disabled, no value restriction is sent.
         assert_eq!(
             tag_filter("Environment", None),
             Some(TagFilter {
@@ -259,7 +256,6 @@ mod tests {
                 value: None,
             })
         );
-        // When exact value matching is enabled, an empty value remains a real value.
         assert_eq!(
             tag_filter("Environment", Some("")),
             Some(TagFilter {
@@ -267,16 +263,12 @@ mod tests {
                 value: Some(String::new()),
             })
         );
-        // Then clearing the key disables the filter, irrespective of value mode.
         assert_eq!(tag_filter("", Some("production")), None);
     }
 
     #[test]
     fn given_significant_tag_whitespace_when_filtering_then_exact_identity_is_preserved() {
-        // Given literal spaces and Unicode in valid tag key/value text.
-        // When transformed into the query boundary, neither side is normalized.
         let filter = tag_filter(" owner ", Some(" équipe "));
-        // Then the exact stored tag can still be queried.
         assert_eq!(
             filter,
             Some(TagFilter {

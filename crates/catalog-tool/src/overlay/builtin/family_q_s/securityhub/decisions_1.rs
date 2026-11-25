@@ -1,9 +1,7 @@
-// Pinned operation purposes: .local/aws-models/models/securityhub/service/2018-10-26/securityhub-2018-10-26.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Enables the service in account for the current Amazon Web Services Region or specified Amazon Web Services Region.
     (
         "EnableSecurityHubV2",
         Decision::Denied(DenyReason::Mutating),
@@ -68,14 +66,11 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors FindingAggregatorArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members FindingAggregatorArn, FindingAggregationRegion, RegionLinkingMode, Regions. Pinned purpose: The aggregation Region is now called the home Region . Returns the current configuration in the calling account for cross-Region aggregation. A finding aggregator is a resource that establishes the home Region and any linked Regions.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns the history of a Security Hub CSPM finding. The history includes changes made to any fields in the Amazon Web Services Security Finding Format (ASFF) except top-level timestamp fields, such as the CreatedAt and UpdatedAt fields. This operation might return fewer results than the maximum number of results ( MaxResults ) specified in a request, even when more results are available. If this o
     ("GetFindingHistory", Decision::Denied(DenyReason::Content)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns aggregated statistical data about findings. You can use the Scopes parameter to define the data boundary for the query. Currently, Scopes supports AwsOrganizations , which lets you aggregate findings from your entire organization or from specific organizational units. Only the delegated administrator account can use Scopes . GetFindingStatisticsV2 uses securityhub:GetAdhocInsightResults in
     (
         "GetFindingStatisticsV2",
         Decision::Denied(DenyReason::Content),
     ),
-    // Full modeled response contains authentication/secret material Findings[].Resources[].Details.AwsCodeBuildProject.Environment.EnvironmentVariables, Findings[].Resources[].Details.AwsRedshiftCluster.PendingModifiedValues.MasterUserPassword, Findings[].Resources[].Details.AwsRdsDbInstance.PendingModifiedValues.MasterUserPassword, Findings[].Resources[].Details.AwsOpenSearchServiceDomain.AdvancedSecurityOptions.MasterUserOptions.MasterUserPassword. Pinned purpose: Returns a list of findings that match the specified criteria. If cross-Region aggregation is enabled, then when you call GetFindings from the home Region, the results include all of the matching findings from both the home Region and linked Regions.. Projection cannot authorize this call.
     ("GetFindings", Decision::Denied(DenyReason::Secret)),
     (
         "GetFindingsTrendsV2",
@@ -83,7 +78,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors StartTime, EndTime are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Granularity, TrendsMetrics, NextToken. Pinned purpose: Returns findings trend data based on the specified criteria. This operation helps you analyze patterns and changes in findings over time.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns a list of findings that match the specified criteria. You can use the Scopes parameter to define the data boundary for the query. Currently, Scopes supports AwsOrganizations , which lets you retrieve findings from your entire organization or from specific organizational units. Only the delegated administrator account can use Scopes . You can use the Filters parameter to refine results base
     ("GetFindingsV2", Decision::Denied(DenyReason::Content)),
     (
         "GetInsightResults",
@@ -115,7 +109,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors MetadataUid are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members NextToken, RecommendationType, RecommendationSteps, Error, Status, ResourceArn. Pinned purpose: Retrieves the recommended policy to remediate a Security Hub finding. GetRecommendedPolicyV2 only supports findings for unused permissions.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieves remediation targets for the account, or for all member accounts if the caller is the delegated administrator. Results are sorted by priority, highest first, and are paginated. Use TargetUid or MetadataUid to scope the request to a single target or finding.
     ("GetRemediationsV2", Decision::Denied(DenyReason::Content)),
     (
         "GetResourcesStatisticsV2",
@@ -129,7 +122,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors StartTime, EndTime are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Granularity, TrendsMetrics, NextToken. Pinned purpose: Returns resource trend data based on the specified criteria. This operation helps you analyze patterns and changes in resource compliance over time.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns a list of resources. You can use the Scopes parameter to define the data boundary for the query. Currently, Scopes supports AwsOrganizations , which lets you retrieve resources from your entire organization or from specific organizational units. Only the delegated administrator account can use Scopes . You can use the Filters parameter to refine results based on resource attributes. You ca
     ("GetResourcesV2", Decision::Denied(DenyReason::Content)),
     (
         "GetSecurityControlDefinition",
@@ -149,7 +141,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors GroupByRules are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members GroupByResults. Pinned purpose: Retrieves aggregated counts of software packages installed on your resources, grouped by a field that you specify. For example, you can return the most common package types or the accounts with the most installed packages. Each count is the number of",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns a list of software packages installed on your resources. Each result identifies a package by name, version, and type, and includes the number of resources that contain that package. You can use the Scopes parameter to define the data boundary for the query. Currently, Scopes supports AwsOrganizations . With AwsOrganizations , you can retrieve software from your entire organization or from
     ("GetSoftwareV2", Decision::Denied(DenyReason::Content)),
     (
         "InviteMembers",
@@ -169,7 +160,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors TargetUid are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Items, TargetUid, Resource, TotalCount, Trait, NextToken. Pinned purpose: Retrieves the exposure findings tied to a specific remediation target. Results are sorted by previous severity, highest first, and are paginated.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists all of the security controls that apply to a specified standard.
     (
         "ListSecurityControlDefinitions",
         Decision::Denied(DenyReason::ReferenceData),
@@ -186,70 +176,51 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceArn. Pinned purpose: Returns a list of tags associated with a resource.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Grants permission to complete the authorization based on input parameters.
     (
         "RegisterConnectorV2",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Associates a target account, organizational unit, or the root with a specified configuration. The target can be associated with a configuration policy or self-managed behavior. Only the Security Hub CSPM delegated administrator can invoke this operation from the home Region.
     (
         "StartConfigurationPolicyAssociation",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Disassociates a target account, organizational unit, or the root from a specified configuration. When you disassociate a configuration from its target, the target inherits the configuration of the closest parent. If there’s no configuration to inherit, the target retains its settings but becomes a self-managed account. A target can be disassociated from a configuration policy or self-managed behav
     (
         "StartConfigurationPolicyDisassociation",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts an ad hoc export job that writes Security Hub findings to an Amazon Simple Storage Service (Amazon S3) bucket that you own. Because the export runs asynchronously, this operation returns only the ExportJobId of the new job; it doesn't wait for the export to finish. Use GetExportJobV2 to poll the job, and ListExportJobsV2 to view the export jobs in your account. Security Hub allows only one
     ("StartExportJobV2", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds one or more tags to a resource.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes one or more tags from a resource.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the name and description of a custom action target in Security Hub CSPM.
     ("UpdateActionTarget", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Udpates the configuration for the Aggregator V2.
     ("UpdateAggregatorV2", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a V2 automation rule.
     (
         "UpdateAutomationRuleV2",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a configuration policy. Only the Security Hub CSPM delegated administrator can invoke this operation from the home Region.
     (
         "UpdateConfigurationPolicy",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a CSPM connector's configuration, such as the scope or regions for the connected cloud provider.
     ("UpdateConnector", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Grants permission to update a connectorV2 based on its id and input parameters.
     ("UpdateConnectorV2", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: The aggregation Region is now called the home Region . Updates cross-Region aggregation settings. You can use this operation to update the Region linking mode and the list of included or excluded Amazon Web Services Regions. However, you can't use this operation to change the home Region. You can invoke this operation from the current home Region only.
     (
         "UpdateFindingAggregator",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: UpdateFindings is a deprecated operation. Instead of UpdateFindings , use the BatchUpdateFindings operation. The UpdateFindings operation updates the Note and RecordState of the Security Hub CSPM aggregated findings that the filter attributes specify. Any member account that can view the finding can also see the update to the finding. Finding updates made with UpdateFindings aren't persisted if th
     ("UpdateFindings", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the Security Hub CSPM insight identified by the specified insight ARN.
     ("UpdateInsight", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the configuration of your organization in Security Hub CSPM. Only the Security Hub CSPM administrator account can invoke this operation.
     (
         "UpdateOrganizationConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the properties of a security control.
     (
         "UpdateSecurityControl",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates configuration options for Security Hub CSPM.
     (
         "UpdateSecurityHubConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Used to control whether an individual security standard control is enabled or disabled. Calls to this operation return a RESOURCE_NOT_FOUND_EXCEPTION error when the standard subscription for the control has StandardsControlsUpdatable value NOT_READY_FOR_UPDATES .
     (
         "UpdateStandardsControl",
         Decision::Denied(DenyReason::Mutating),

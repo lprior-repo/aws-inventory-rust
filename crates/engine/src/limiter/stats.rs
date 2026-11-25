@@ -69,7 +69,6 @@ impl Counters {
         }
     }
 
-    /// Publishes the registry's sizes; called with the registry lock held.
     pub(super) fn record_registry(&self, registry: &Registry) {
         self.active_buckets
             .store(gauge(registry.active()), Ordering::Relaxed);

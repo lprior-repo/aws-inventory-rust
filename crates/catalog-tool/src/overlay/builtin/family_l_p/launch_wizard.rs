@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/launch-wizard/service/2018-05-10/launch-wizard-2018-05-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -65,20 +64,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Lists the deployments that have been created.
-    Resource {
-        operation: "ListDeployments",
-        items: "deployments",
-        id: Id::Key(&["id"]),
-        scope: Scope::Region,
-        tokens: Some(("nextToken", "nextToken")),
-        query: &["id", "name", "workloadName", "patternName", "status"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListDeployments",
+    items: "deployments",
+    id: Id::Key(&["id"]),
+    scope: Scope::Region,
+    tokens: Some(("nextToken", "nextToken")),
+    query: &["id", "name", "workloadName", "patternName", "status"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("launch-wizard", GROUPS, RESOURCES)

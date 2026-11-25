@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/athena/service/2017-05-18/athena-2017-05-18.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::IdentityField;
 
@@ -268,7 +266,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SessionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the calculations that have been submitted to a session in descending order. Newer calculations are listed first; older calculations are listed later.",
             ),
         ),
-        // Model: Lists the capacity reservations for the current account.
         (
             "ListCapacityReservations",
             OperationOverlay {
@@ -281,7 +278,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the data catalogs in the current Amazon Web Services account. In the Athena console, data catalogs are listed as "data sources" on the Data sources page under the Data source name column.
         (
             "ListDataCatalogs",
             OperationOverlay {
@@ -312,7 +308,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SessionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists, in descending order, the executors that joined a session. Newer executors are listed first; older executors are listed later. The result can be optionally filtered by state.",
             ),
         ),
-        // Reviewed full response: saved-query IDs and continuation only; do not retrieve SQL via GetNamedQuery.
         (
             "ListNamedQueries",
             OperationOverlay {
@@ -350,7 +345,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires NotebookId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists, in descending order, the sessions that have been created in a notebook that are in an active state like CREATING , CREATED , IDLE or BUSY . Newer sessions are listed first; older sessions are listed later.",
             ),
         ),
-        // Reviewed full response: statement name/last-modified summaries only; SQL-bearing GetPreparedStatement remains excluded.
         (
             "ListPreparedStatements",
             OperationOverlay {
@@ -406,7 +400,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags associated with an Athena resource.",
             ),
         ),
-        // Model: Lists available workgroups for the account.
         (
             "ListWorkGroups",
             OperationOverlay {

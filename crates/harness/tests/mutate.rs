@@ -1,5 +1,3 @@
-//! Mutation testing harness tests.
-
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::Read;
@@ -16,14 +14,10 @@ fn create_temp_dir(prefix: &str) -> Result<TempDir, Box<dyn Error>> {
 
 #[test]
 fn test_drain_budget_default() -> TestResult {
-    // Don't use unsafe env functions - just test default behavior
     let budget = mutate::command_drain_budget()?;
     assert_eq!(budget, 35);
     Ok(())
 }
-
-// Custom and invalid drain budget tests require setting environment variables,
-// which uses unsafe functions. These are tested via integration tests instead.
 
 #[test]
 fn test_receipt_json_serialization() -> TestResult {
@@ -102,7 +96,6 @@ async fn test_execute_command_simple() -> TestResult {
     assert_eq!(receipt.exit_code, Some(0));
     assert!(receipt.elapsed_seconds >= 0.0);
 
-    // Check log file exists and contains output
     let log_path = output.join("simple.log");
     assert!(log_path.exists());
     let mut log = File::open(&log_path)?;
@@ -110,7 +103,6 @@ async fn test_execute_command_simple() -> TestResult {
     log.read_to_string(&mut content)?;
     assert!(content.contains("hello"));
 
-    // Check receipt file exists
     let receipt_path = output.join("simple.json");
     assert!(receipt_path.exists());
 

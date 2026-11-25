@@ -4,7 +4,6 @@ use super::{
 
 #[test]
 fn tags_constructor_exact_cardinality_and_char_bounds_preserve_literal_text() -> TestResult {
-    // Given each cardinality edge independently of storage, with reversed input order.
     for count in [0, 1, 100] {
         let tags = (0..count)
             .rev()
@@ -42,7 +41,6 @@ fn tags_constructor_exact_cardinality_and_char_bounds_preserve_literal_text() ->
             Err(InventoryError::DuplicateTag)
         ));
     }
-    // Tag limits are Unicode character counts per AWS tag documentation.
     for key in ["x".to_owned(), "x".repeat(128), "é".repeat(128)] {
         let tag = Tag::new(key.clone(), "")?;
         assert_eq!((tag.key(), tag.value()), (key.as_str(), ""));
@@ -71,7 +69,6 @@ fn tags_constructor_exact_cardinality_and_char_bounds_preserve_literal_text() ->
             Err(InventoryError::TagValue)
         ));
     }
-    // All Unicode Cc control code points are forbidden in keys, not only ASCII NUL.
     for code in (0..=31).chain(127..=159) {
         let control = char::from_u32(code).ok_or("invalid control fixture")?;
         assert!(matches!(
@@ -91,7 +88,6 @@ fn tags_constructor_exact_cardinality_and_char_bounds_preserve_literal_text() ->
 #[tokio::test]
 async fn tag_pages_return_every_literal_pair_with_exact_cursor_and_limit_boundaries() -> TestResult
 {
-    // Given 100 legitimate pairs, including a newline value, written through public commit.
     let (_directory, store, _) = support::fixture().await?;
     let expected = (0..100)
         .map(|index| state::pair(&format!("key-{index:03}"), &format!("line-{index}\nnext")))
@@ -121,7 +117,6 @@ async fn tag_pages_return_every_literal_pair_with_exact_cursor_and_limit_boundar
             Err(StoreError::Invalid("projection page size exceeds bounds"))
         ));
     }
-    // When read one pair per page, assert the actual sequence, not only counts/cursors.
     let mut cursor = None;
     for (index, expected_pair) in expected.iter().enumerate() {
         let page = view.tags_for(&key, cursor.clone(), 1).await?;

@@ -9,7 +9,6 @@ use crate::{ScopeOutcome, SweepSummary};
 pub struct SweepControl {
     pub cancel: CancellationToken,
     pub progress: Option<Sender<ProgressEvent>>,
-    /// Optional receipt, constructed from the invocation's catalog before running.
     pub attempts: Option<std::sync::Arc<crate::AttemptedOperations>>,
 }
 

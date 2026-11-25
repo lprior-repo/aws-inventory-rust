@@ -30,7 +30,6 @@ kind = ""
 [step.input]
 Bucket = "inventory-seed-comprehend"
 Key = "training.csv"
-# CSV with one synthetic positive and negative example.
 Body = "cG9zaXRpdmUsVGhlIHNlcnZpY2Ugd29ya3Mgd2VsbC4KbmVnYXRpdmUsVGhlIHNlcnZpY2UgZGlkIG5vdCB3b3JrLgo="
 
 [[step]]

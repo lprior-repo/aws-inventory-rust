@@ -82,8 +82,6 @@ pub(super) fn fields() -> TestResult<smithy::Registry> {
     )))?)
 }
 
-// Independent conversion of the persisted numeric record into member names lets the tests
-// compare every descendant to literal metadata, rather than reusing the wire decoder as oracle.
 pub(super) fn json_value(value: Value, fields: &smithy::Registry) -> TestResult<Json> {
     match value {
         Value::Text(value) => Ok(json!(value)),

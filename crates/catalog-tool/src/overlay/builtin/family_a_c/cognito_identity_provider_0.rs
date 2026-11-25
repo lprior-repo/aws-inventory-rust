@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cognito-identity-provider/service/2016-04-18/cognito-identity-provider-2016-04-18.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::{
     ContextSource, IdentityField, MissingSelected, RowOperand, RowPolicy, RowPredicate,
@@ -421,7 +419,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ClientId, UserPoolId, TermsName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns details for the terms documents that are associated with an app client, identified by the app client ID, user pool ID, and terms name. For more information, see Terms documents . To call DescribeTermsByClient , you must…",
             ),
         ),
-        // Model: Describes a user import job. For more information about user CSV import, see Importing users from a CSV file .
         ("DescribeUserImportJob", denied(DenyReason::Secret)),
         (
             "DescribeUserPool",
@@ -429,7 +426,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Returns message and email templates and Lambda configuration, not just the safe ListUserPools summary; this broad response is not authorized by selecting only metadata.",
             ),
         ),
-        // Model: Given an app client ID, returns configuration information. This operation is useful when you want to inspect an existing app client and programmatically replicate the configuration to another app…
         ("DescribeUserPoolClient", denied(DenyReason::Secret)),
         (
             "DescribeUserPoolDomain",
@@ -568,7 +564,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AccessToken. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the devices that Amazon Cognito has registered to the currently signed-in user. For more information about device authentication, see Working with user devices in your user pool . Authorize this action with a signed-in…",
             ),
         ),
-        // GroupType contains group configuration, not member profiles, tokens or credentials.
         (
             "ListGroups",
             OperationOverlay {
@@ -591,7 +586,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // ProviderDescription excludes the secret-bearing ProviderDetails returned by DescribeIdentityProvider.
         (
             "ListIdentityProviders",
             OperationOverlay {
@@ -617,7 +611,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Cognito-managed provider references declare ManagedBy; customer-created resource servers omit it.
         (
             "ListResourceServers",
             OperationOverlay {
@@ -660,7 +653,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags that are assigned to an Amazon Cognito user pool. For more information, see Tagging resources .",
             ),
         ),
-        // TermsDescriptionType contains lifecycle/identity metadata only, never document bodies.
         (
             "ListTerms",
             OperationOverlay {
@@ -686,7 +678,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Given a user pool ID, returns user import jobs and their details. Import jobs are retained in user pool configuration so that you can stage, stop, start, review, and delete them. For more information…
         ("ListUserImportJobs", denied(DenyReason::Secret)),
         (
             "ListUserPoolClientSecrets",
@@ -694,7 +685,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires UserPoolId, ClientId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all client secrets associated with a user pool app client. Returns metadata about the secrets. The response does not include pagination tokens as there are only 2 secrets at any given time and we return both with every…",
             ),
         ),
-        // Model: Given a user pool ID, lists app clients. App clients are sets of rules for the access that you want a user pool to grant to one application. For more information, see App clients . Amazon Cognito…
         (
             "ListUserPoolClients",
             OperationOverlay {
@@ -723,7 +713,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires UserPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all replicas for a user pool, including both primary and secondary replicas. We recommend using pagination to ensure that the operation returns quickly and successfully. Amazon Cognito evaluates Identity and Access…",
             ),
         ),
-        // Model: Lists user pools and their details in the current Amazon Web Services account. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this…
         (
             "ListUserPools",
             OperationOverlay {

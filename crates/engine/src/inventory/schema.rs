@@ -80,15 +80,10 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
             .await?;
     }
     if version < 17 {
-        // ES-10: Add derived index table for unresolved reference candidate kinds.
-        // One row per candidate kind (including primary), indexed by candidate kind
-        // to drive resolution lookups without scanning the candidate-kind blob.
-        // Derived data: rebuild from unresolved_refs so a stale table never survives.
         sqlx::query("DROP TABLE IF EXISTS unresolved_ref_candidates")
             .execute(&mut *tx)
             .await?;
         create_ref_candidates_table(&mut tx).await?;
-        // Backfill from existing unresolved_refs rows.
         migrate_backfill_ref_candidates(&mut tx).await?;
         sqlx::query("PRAGMA user_version=17")
             .execute(&mut *tx)
@@ -114,9 +109,7 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         Ok::<_, sqlx::Error>(found || row.try_get::<&str, _>("name")? == "last_complete")
     })?;
     if !has_last_complete {
-        // Add column with never-completed sentinel (-1), then backfill from scope_outcomes.
         sqlx::query("ALTER TABLE work_queue ADD COLUMN last_complete INTEGER NOT NULL DEFAULT -1 CHECK(last_complete>=-1)").execute(&mut *tx).await?;
-        // Backfill last_complete from scope_outcomes for scopes that have completed.
         sqlx::query("UPDATE work_queue SET last_complete=(SELECT MAX(o.observed_at) FROM scope_outcomes o WHERE o.scope_key=work_queue.scope_key AND o.outcome='complete') WHERE (SELECT COUNT(1) FROM scope_outcomes o WHERE o.scope_key=work_queue.scope_key AND o.outcome='complete')>0").execute(&mut *tx).await?;
     }
     add_outcome_detail(&mut tx).await?;
@@ -145,8 +138,6 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     })?;
     let checked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM metadata WHERE key='canonical_facet_dependencies_v3' AND value=X'01')").fetch_one(&mut *tx).await?;
     if version < 16 || !attributed || !source_authority || !has_epoch || !has_prefix || !checked {
-        // Catalog equality cannot certify a dependency written under the old
-        // stage/input proof domain. Preserve its data, never promote its proof.
         super::legacy::demote_facets(&mut tx, attributed).await?;
         super::relation_permissions::invalidate_prior_authority(&mut tx).await?;
         sqlx::query("DROP TABLE resource_facets")
@@ -159,7 +150,6 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         row.try_get::<&str, _>("name")
             .is_ok_and(|name| name == "bound_request")
     }) {
-        // Existing V3 facets remain readable; absent validated requests cannot authorize bound-context targets.
         sqlx::query("ALTER TABLE resource_facets ADD COLUMN bound_request BLOB")
             .execute(&mut *tx)
             .await?;
@@ -178,8 +168,6 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     Ok(())
 }
 
-/// ES-10: derived index with one row per candidate kind of each unresolved
-/// reference, so resolution lookups never scan the packed candidate-kind blob.
 async fn create_ref_candidates_table(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
 ) -> Result<(), StoreError> {
@@ -204,8 +192,6 @@ async fn create_ref_candidates_table(
     )
     .execute(&mut **tx)
     .await?;
-    // The reference key leads this index so cascade deletes and per-reference
-    // refreshes are index lookups, not scans of the candidate table.
     sqlx::query("CREATE INDEX IF NOT EXISTS unresolved_ref_candidates_ref ON unresolved_ref_candidates(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source)")
         .execute(&mut **tx)
         .await?;
@@ -215,8 +201,6 @@ async fn create_ref_candidates_table(
 async fn migrate_backfill_ref_candidates(
     tx: &mut Transaction<'_, Sqlite>,
 ) -> Result<(), StoreError> {
-    // Backfill from existing unresolved_refs rows.
-    // For each reference, insert one candidate row per candidate kind.
     let rows = sqlx::query("SELECT from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds FROM unresolved_refs")
         .fetch_all(&mut **tx).await?;
 
@@ -253,7 +237,6 @@ async fn migrate_backfill_ref_candidates(
     Ok(())
 }
 
-/// Databases made before outcome reasons were stored gain the column in place.
 async fn add_outcome_detail(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
 ) -> Result<(), StoreError> {
@@ -271,8 +254,6 @@ async fn add_outcome_detail(
     Ok(())
 }
 
-/// The scope freshness view is derived data: it is replaced on every open so a
-/// definition change reaches existing databases without a schema version bump.
 async fn create_scope_freshness_view(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
 ) -> Result<(), StoreError> {

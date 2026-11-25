@@ -6,7 +6,6 @@ use crate::overlay::{
     TagEndpointParent, TagEndpointRequest, TagEndpointSelector, TokenPair, UrlResourceKind,
 };
 
-// Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
 ("AddPermission", OperationOverlay {

@@ -1,5 +1,3 @@
--- Native Step Functions projections over the durable observation table.
--- Definitions, variable references and execution data are never stored.
 CREATE VIEW IF NOT EXISTS aws_step_functions_state_machine AS
 SELECT r.*,
        json_extract(properties, '$.state_machine_arn') AS state_machine_arn,

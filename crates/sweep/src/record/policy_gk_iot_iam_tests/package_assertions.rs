@@ -13,7 +13,6 @@ async fn given_bound_package_when_native_duplicate_owner_is_equal_absent_or_host
         ("null", Some(Json::Null), true),
         ("wrong-type", Some(json!(7)), false),
     ] {
-        // Given an account-owned package and the actual compiled parent-bound native request.
         let mut scenario = Scenario::new(&catalog, label).await?;
         scenario.seed(root).await?;
         let lease = scenario.claim("ListPackages").await?;
@@ -41,7 +40,6 @@ async fn given_bound_package_when_native_duplicate_owner_is_equal_absent_or_host
                 .ok_or("summary is not an object")?
                 .insert("packageName".to_owned(), value);
         }
-        // When a valid first row precedes the row whose duplicate owner is under review.
         let body = serde_json::to_vec(&json!({"packageVersionSummaries":[
             {"packageName":"owner","versionName":"v1","status":"DRAFT"}, second
         ]}))?;
@@ -57,7 +55,6 @@ async fn given_bound_package_when_native_duplicate_owner_is_equal_absent_or_host
             );
         }
         scenario = scenario.reopen().await?;
-        // Then reopening SQLite retains both valid rows/owner edges or neither partial row.
         scenario
             .assert_nodes(
                 "AWS::IoT::SoftwarePackageVersion",

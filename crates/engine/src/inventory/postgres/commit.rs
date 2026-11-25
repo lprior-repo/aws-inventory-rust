@@ -27,7 +27,6 @@ impl PgStore {
         Ok(self.commit(page, None).await?.0)
     }
 
-    /// Commits a page and keeps the lease for `lease_ms` more when the scope has another page.
     pub async fn commit_page_keeping(
         &self,
         page: PageCommit,
@@ -52,8 +51,6 @@ impl PgStore {
         .await?;
         let mut stats = persist(self, &mut tx, &page).await?;
         queue::children(&mut tx, &page).await?;
-        // The statement decides whether the token repeated, so an
-        // unrepresentable deadline is raised after it and before the commit.
         let deadline = keep_ms
             .filter(|_| !page.done)
             .map(|lease_ms| crate::inventory::work::kept_until(&page, lease_ms));

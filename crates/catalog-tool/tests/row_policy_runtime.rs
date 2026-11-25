@@ -28,7 +28,6 @@ fn equality() -> TestResult<RowPredicate> {
 #[test]
 fn given_selected_request_response_policies_when_compiled_then_native_loader_retains_distinct_decisions()
 -> TestResult {
-    // Given bounded predicates over three actual namespaces.
     let owned = absent(ContextSource::SelectedItem, "Id")?;
     let assertion = equality()?;
     let response = absent(ContextSource::Response, "ResponseId")?;
@@ -41,13 +40,11 @@ fn given_selected_request_response_policies_when_compiled_then_native_loader_ret
         plan.row_policy.assertions = vec![assertion, response];
         plan.row_policy.child = Some(child);
     })?;
-    // When native metadata is model-checked at load.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let child = catalog
         .lookup("bindings", "ListChildren")
         .ok_or("child missing")?;
     let policy = child.row_policy();
-    // Then filtering, assertions and child eligibility are not interchangeable.
     assert!(matches!(policy.owned, Some(RowPredicatePlan::Absent(_))));
     assert_eq!(policy.assertions.len(), 2);
     assert!(matches!(
@@ -99,11 +96,9 @@ fn given_invalid_paths_types_or_predicate_bounds_when_compiled_then_checker_reje
         }),
     ];
     for predicate in invalid {
-        // Given a field not modeled in the named namespace/type. When compiled.
         let error = compiled(1, |plan| plan.row_policy.owned = Some(predicate))
             .err()
             .ok_or("invalid policy accepted")?;
-        // Then the pinned checker—not a serialization accident—rejects the policy.
         let error = error
             .downcast_ref::<overlay::CheckError>()
             .ok_or("wrong rejection boundary")?;
@@ -187,7 +182,6 @@ fn corrupt(bytes: &[u8], mutation: usize) -> TestResult<Record> {
         }
         _ => return Err("unknown corruption".into()),
     }
-    // Reseal the compiled-input receipt: validation must not rely on the digest alone.
     let encoded = Record::encode(extension)?;
     let digest = inventory_core::catalog::runtime::compiled_inputs_sha256(encoded.root())?;
     *get(get(extension, 7)?, 7)? = Value::Bytes(digest.to_vec());
@@ -197,13 +191,10 @@ fn corrupt(bytes: &[u8], mutation: usize) -> TestResult<Record> {
 #[test]
 fn given_resealed_corrupt_row_predicates_when_native_catalog_loads_then_model_and_bounded_codec_reject_each()
 -> TestResult {
-    // Given a valid producer-checked owned filter.
     let predicate = absent(ContextSource::SelectedItem, "Id")?;
     let bytes = compiled(1, |plan| plan.row_policy.owned = Some(predicate))?;
     for mutation in 0..5 {
-        // When corruption is resealed with a correct compiled-input receipt.
         let corrupt = corrupt(&bytes, mutation)?;
-        // Then malformed tags/unknown fields/model-incompatible types never reach scheduling.
         assert!(
             matches!(
                 RuntimeCatalog::from_bytes(corrupt.as_bytes()),

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/backupsearch/service/2018-05-10/backupsearch-2018-05-10.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -28,7 +26,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SearchJobIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This operation returns a list of a specified search job.",
             ),
         ),
-        // Model: This operation returns a list of search jobs belonging to an account.
         (
             "ListSearchJobs",
             OperationOverlay {

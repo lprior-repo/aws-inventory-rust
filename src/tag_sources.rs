@@ -4,8 +4,6 @@ use serde_json::{Value, json};
 
 const CATALOG: &[u8] = include_bytes!("../catalog/aws-api.catalog");
 
-/// Lists the compiled catalog kinds that no tag source reaches. Their owner/team/application
-/// roles stay unassigned until a tag source is added for them.
 pub fn report() -> Result<Value> {
     let catalog = RuntimeCatalog::from_bytes(CATALOG)?;
     let missing = kinds_without_tag_source(&catalog);

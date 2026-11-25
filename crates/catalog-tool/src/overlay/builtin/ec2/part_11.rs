@@ -5,7 +5,6 @@ use crate::overlay::{
     TokenPair,
 };
 
-// Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
 ("GetInstanceTpmEkPub", OperationOverlay {

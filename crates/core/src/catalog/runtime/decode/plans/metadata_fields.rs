@@ -50,7 +50,6 @@ pub(super) fn endpoint(
 
 fn endpoint_exception(value: ValueRef<'_>) -> Result<EndpointException, RuntimeCatalogError> {
     let fields = map(value)?;
-    // The compiler names the global pseudo-region `aws-global`; the runtime names a request without a region `-`. Both are that request.
     let region = match metadata::text(fields, 1)?.as_str() {
         "aws-global" => "-".to_owned(),
         other => other.to_owned(),

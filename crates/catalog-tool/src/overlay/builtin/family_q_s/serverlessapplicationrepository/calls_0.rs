@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/serverlessapplicationrepository/service/2017-09-08/serverlessapplicationrepository-2017-09-08.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

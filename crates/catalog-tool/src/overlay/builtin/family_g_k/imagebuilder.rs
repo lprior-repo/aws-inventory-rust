@@ -1,5 +1,3 @@
-//! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/imagebuilder/service.
-//! Review is source-only; no live service or emulator support claim.
 use super::policy;
 use crate::overlay::{NameError, OperationOverlay, ServiceOverlay};
 
@@ -64,7 +62,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
 
 fn listing(items: &str, members: &[&str]) -> Result<OperationOverlay, NameError> {
     let mut plan = policy::enumerate(items, policy::arn("arn")?, Some(("nextToken", "nextToken")))?;
-    // The pinned model documents a default of 25; the emulator also enforces it as its limit.
     plan.page_size = Some(25);
     policy::query(plan, members)
 }
@@ -77,8 +74,6 @@ fn tagged(items: &str, members: &[&str]) -> Result<OperationOverlay, NameError> 
     policy::tags(listing(items, members)?, "tags")
 }
 
-// Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
-// Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
     "GetComponentPolicy",
     "GetContainerRecipePolicy",

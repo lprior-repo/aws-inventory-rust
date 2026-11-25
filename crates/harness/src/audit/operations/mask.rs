@@ -1,4 +1,3 @@
-/// Mask non-code content (strings, comments, literals) with spaces.
 use crate::HarnessError;
 
 fn source_location(text: &str, offset: usize) -> (usize, usize) {
@@ -46,11 +45,9 @@ fn mask_step(
     current: u8,
     next_byte: u8,
 ) -> Result<usize, HarnessError> {
-    // Line comment
     if current == b'/' && next_byte == b'/' {
         return Ok(mask_line_comment(output, text, position));
     }
-    // Block comment
     if current == b'/' && next_byte == b'*' {
         let (ok, end) = mask_block_comment(output, text, position);
         if !ok {
@@ -62,7 +59,6 @@ fn mask_step(
         }
         return Ok(end);
     }
-    // String literal
     if current == b'"' {
         let (ok, end) = mask_string_literal(output, text, position);
         if !ok {
@@ -91,25 +87,15 @@ fn mask_line_comment(output: &mut [u8], text: &str, position: usize) -> usize {
 
 fn mask_literal_step(output: &mut [u8], text: &str, position: usize, current: u8) -> usize {
     let next_pos = position.saturating_add(1);
-    // Raw string
     if current == b'r' {
         let (ok, end) = mask_raw_string(output, text, position);
         if ok { end } else { next_pos }
-    }
-    // Byte string
-    else if current == b'b' {
+    } else if current == b'b' {
         let (ok, end) = mask_byte_string(output, text, position);
         if ok { end } else { next_pos }
-    }
-    // Character literal
-    else if current == b'\'' {
+    } else if current == b'\'' {
         let (ok, end) = mask_char_literal(output, text, position);
-        if !ok {
-            // Not a char literal (e.g. lifetime parameter)
-            next_pos
-        } else {
-            end
-        }
+        if !ok { next_pos } else { end }
     } else {
         next_pos
     }
@@ -146,19 +132,16 @@ fn mask_string_literal(output: &mut [u8], text: &str, position: usize) -> (bool,
 
 fn mask_raw_string(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let bytes = text.as_bytes();
-    // Count # symbols
     let mut hash_count: usize = 0;
     let mut cursor = position.saturating_add(1);
     while bytes.get(cursor) == Some(&b'#') {
         hash_count = hash_count.saturating_add(1);
         cursor = cursor.saturating_add(1);
     }
-    // Find opening quote
     if bytes.get(cursor) != Some(&b'"') {
         return (false, position.saturating_add(1));
     }
     cursor = cursor.saturating_add(1);
-    // Find closing quote followed by # symbols
     while let Some(b) = bytes.get(cursor) {
         if *b == b'"' {
             let mut hash_cursor = cursor.saturating_add(1);
@@ -179,7 +162,6 @@ fn mask_raw_string(output: &mut [u8], text: &str, position: usize) -> (bool, usi
 
 fn mask_byte_string(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let bytes = text.as_bytes();
-    // Check for b" or b'
     let next = position.saturating_add(1);
     let quote = bytes.get(next);
     if quote != Some(&b'"') && quote != Some(&b'\'') {
@@ -194,7 +176,6 @@ fn mask_byte_string(output: &mut [u8], text: &str, position: usize) -> (bool, us
             return (true, end);
         }
     }
-    // Byte character literal
     if quote == Some(&b'\'') {
         let (ok, end) = mask_byte_char(output, text, position);
         if ok {

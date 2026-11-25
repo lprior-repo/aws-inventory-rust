@@ -1,7 +1,6 @@
 use super::{IdentityPlan, ItemPlan, KindClassificationPlan, ResourceProjectionPlan, TagPlan};
 use crate::{inventory::Kind, record::Exclusions};
 
-/// A prevalidated resource selection sharing its operation's request and cursor.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceEmissionPlan {
     pub(crate) key: Box<str>,
@@ -15,7 +14,6 @@ pub struct ResourceEmissionPlan {
 }
 
 impl ResourceEmissionPlan {
-    /// The operation's primary selection, keyed `primary`, as decoded from the plan's own fields.
     pub(crate) fn primary(
         kind: &Kind,
         items: &ItemPlan,
@@ -48,7 +46,6 @@ impl ResourceEmissionPlan {
     pub fn identity(&self) -> &IdentityPlan {
         &self.identity
     }
-    /// None is unobserved, not an invented empty tag snapshot.
     pub fn tags(&self) -> Option<&TagPlan> {
         self.tags.as_ref()
     }
@@ -71,7 +68,6 @@ impl ResourceEmissionPlan {
             })
     }
 
-    /// Kind evidence only: stage, source, identity and receipt checks remain separate.
     pub fn matches_observed_kind(
         &self,
         kind: &Kind,

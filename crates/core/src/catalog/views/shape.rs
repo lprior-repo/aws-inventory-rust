@@ -71,35 +71,21 @@ impl<'a> Shape<'a> {
             .copied()
             .ok_or(CatalogError::Reference)
     }
-    /// Tests a scalar against retained modeled enum wire values.
-    ///
-    /// # Errors
-    /// Returns an error when enum metadata is malformed or exceeds its bounds.
     pub fn accepts_enum_value(self, value: ValueRef<'_>) -> Result<bool, CatalogError> {
         enum_values::accepts(self.map, self.kind()?, value)
     }
-    /// Borrows the first retained enum wire value, if this shape declares any.
-    ///
-    /// # Errors
-    /// Returns an error when the retained enum metadata is malformed.
     pub fn first_enum_value(self) -> Result<Option<ValueRef<'a>>, CatalogError> {
         enum_values::first(self.map, self.kind()?)
     }
-    /// Borrows retained Smithy length, pattern and integer range constraints.
-    ///
-    /// Missing metadata fails closed; explicit null means unconstrained.
     pub fn value_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
         value_constraints::read(self.map)
     }
-    /// Constraints on a list's modeled member, separate from the member target.
     pub fn element_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
         value_constraints::nested(self.map, CatalogKey::ElementWire)
     }
-    /// Constraints on a map's modeled key member.
     pub fn map_key_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
         value_constraints::nested(self.map, CatalogKey::MapKeyWire)
     }
-    /// Constraints on a map's modeled value member.
     pub fn map_value_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
         value_constraints::nested(self.map, CatalogKey::MapValueWire)
     }
@@ -159,17 +145,14 @@ impl<'a> Shape<'a> {
             _ => Err(CatalogError::Field(CatalogKey::Arn)),
         }
     }
-    /// Retained payload of the structure's Smithy reference declarations.
     pub fn references(self) -> Result<Option<&'a str>, CatalogError> {
         super::optional_text(self.map, CatalogKey::References)
     }
 
-    /// Retained payload of the shape's ARN reference declaration.
     pub fn arn_reference(self) -> Result<Option<&'a str>, CatalogError> {
         super::optional_text(self.map, CatalogKey::ArnReference)
     }
 
-    /// List and read operation names declared by a resource shape.
     pub fn resource_operations(
         self,
     ) -> Result<impl Iterator<Item = Result<&'a str, CatalogError>>, CatalogError> {
@@ -181,7 +164,6 @@ impl<'a> Shape<'a> {
                 _ => Err(CatalogError::Field(CatalogKey::ResourceOperations)),
             }))
     }
-    /// Identifier names declared by a resource shape.
     pub fn resource_identifiers(
         self,
     ) -> Result<impl Iterator<Item = Result<&'a str, CatalogError>>, CatalogError> {
@@ -271,19 +253,16 @@ impl<'a> Member<'a> {
     pub fn default_value(self) -> Result<Option<ValueRef<'a>>, CatalogError> {
         self.wire()?.default_value()
     }
-    /// Borrows constraints attached to this member, independently of its target.
     pub fn value_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
         value_constraints::read(self.map)
     }
     pub fn client_optional(self) -> Result<bool, CatalogError> {
         self.wire()?.client_optional()
     }
-    /// Retained payload of this member's ARN reference declaration.
     pub fn arn_reference(self) -> Result<Option<&'a str>, CatalogError> {
         super::optional_text(self.map, CatalogKey::ArnReference)
     }
 
-    /// Retained payload of this member's Smithy reference declarations.
     pub fn references(self) -> Result<Option<&'a str>, CatalogError> {
         super::optional_text(self.map, CatalogKey::References)
     }

@@ -146,7 +146,6 @@ workspaceName = { from = "workspace", path = "workspaceName" }
 pipelineName = "inventory-seed-pipeline"
 computations = [{ computeNodeName = "compute", taskName = { from = "task", path = "taskName" } }]
 
-# SiteWise only ingests recent samples. IoT Jobs exposes its queue time as epoch seconds.
 [[step]]
 id = "sample_clock_thing"
 service = "iot"

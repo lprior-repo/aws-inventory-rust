@@ -31,7 +31,6 @@ fn sessions_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
         "PoolId",
         true,
     )?;
-    // Neither operation has a pagination trait. Both document NextToken explicitly.
     sessions
         .fixed
         .insert(path("Limit")?, FixedValue::Integer(50));

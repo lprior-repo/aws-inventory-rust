@@ -58,10 +58,6 @@ struct Rule {
     target_format: String,
 }
 
-/// Remaps reviewed CloudFormation pointers and publishes both deterministic artifacts.
-///
-/// # Errors
-/// Returns input, model, validation, publication or comparison failures.
 pub fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let catalogs = read_catalogs(root)?;
     let cfn = report::read_text(&root.join("catalog/cloudcontrol-universal.json"))?;

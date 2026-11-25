@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/efs/service/2015-02-01/efs-2015-02-01.json
 use super::support::{arn, bound, inventory, key, queried, reviewed, tagged, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "efs",
         vec![
-            // Returns the description of a specific Amazon EFS file system if either the file system CreationToken or the FileSystemId is provided.
             queried(
                 tagged(
                     inventory(
@@ -28,7 +26,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "AvailabilityZoneId",
                 ],
             )?,
-            // Returns the description of a specific Amazon EFS access point if the AccessPointId is provided.
             queried(
                 tagged(
                     bound(
@@ -51,7 +48,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "LifeCycleState",
                 ],
             )?,
-            // Retrieves the replication configuration for a specific file system.
             queried(
                 inventory(
                     "DescribeReplicationConfigurations",
@@ -65,7 +61,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "SourceFileSystemOwnerId",
                 ],
             )?,
-            // Returns the descriptions of all the current mount targets, or a specific mount target, for a file system.
             queried(
                 bound(
                     inventory(

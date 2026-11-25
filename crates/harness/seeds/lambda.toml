@@ -85,7 +85,6 @@ Runtime = "nodejs22.x"
 Handler = "index.handler"
 CodeSigningConfigArn = { from = "config", path = "CodeSigningConfig.CodeSigningConfigArn" }
 CapacityProviderConfig = { LambdaManagedInstancesCapacityProviderConfig = { CapacityProviderArn = { from = "capacity_provider", path = "CapacityProvider.CapacityProviderArn" }, PerExecutionEnvironmentMaxConcurrency = 1, ExecutionEnvironmentMemoryGiBPerVCpu = 2.0 } }
-# ZIP containing index.mjs with a no-op HTTP success handler.
 "Code.ZipFile" = "UEsDBBQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAaW5kZXgubWpzZXhwb3J0IGNvbnN0IGhhbmRsZXIgPSBhc3luYyAoKSA9PiAoeyBzdGF0dXNDb2RlOiAyMDAgfSk7ClBLAQIUABQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAAAAAAAAAAAAAAAAAAABpbmRleC5tanNQSwUGAAAAAAEAAQA3AAAAYQAAAAAA"
 
 [[step]]
@@ -113,7 +112,6 @@ kind = "AWS::Lambda::LayerVersion"
 identity = "LayerVersionArn"
 [step.input]
 LayerName = "inventory-thin-layer"
-# ZIP containing the sample index.mjs module.
 "Content.ZipFile" = "UEsDBBQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAaW5kZXgubWpzZXhwb3J0IGNvbnN0IGhhbmRsZXIgPSBhc3luYyAoKSA9PiAoeyBzdGF0dXNDb2RlOiAyMDAgfSk7ClBLAQIUABQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAAAAAAAAAAAAAAAAAAABpbmRleC5tanNQSwUGAAAAAAEAAQA3AAAAYQAAAAAA"
 CompatibleRuntimes = ["nodejs22.x"]
 

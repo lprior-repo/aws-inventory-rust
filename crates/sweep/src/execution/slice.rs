@@ -1,21 +1,13 @@
-/// Wall-clock budget for one sweep invocation.
-///
-/// A bounded invocation (for example a Lambda run) stops claiming new work
-/// once the budget is spent and leaves the rest of the sweep for a later
-/// `--resume` invocation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct SliceBudget {
     deadline_ms: Option<i64>,
 }
 
 impl SliceBudget {
-    /// No limit: drain until the queue is empty.
     pub(super) const fn unbounded() -> Self {
         Self { deadline_ms: None }
     }
 
-    /// Budget of `timeout_secs` starting at `started_ms`; a saturated
-    /// deadline means "never expires" rather than wrapping.
     pub(super) fn starting_at(started_ms: i64, timeout_secs: u64) -> Self {
         let millis = i64::try_from(timeout_secs)
             .unwrap_or(i64::MAX)

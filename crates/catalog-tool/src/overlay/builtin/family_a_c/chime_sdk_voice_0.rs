@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/chime-sdk-voice/service/2022-08-03/chime-sdk-voice-2022-08-03.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -214,7 +212,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires VoiceConnectorId, ProxySessionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the specified proxy session details for the specified Amazon Chime SDK Voice Connector. End of support notice: On April 7, 2026, AWS will end support for Amazon Chime SDK proxy sessions.",
             ),
         ),
-        // Model: Retrieves the information for a SIP media application, including name, AWS Region, and endpoints.
         (
             "GetSipMediaApplication",
             OperationOverlay {
@@ -254,7 +251,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SipMediaApplicationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the logging configuration for the specified SIP media application.",
             ),
         ),
-        // Model: Retrieves the details of a SIP rule, such as the rule ID, name, triggers, and target endpoints.
         (
             "GetSipRule",
             OperationOverlay {
@@ -283,7 +279,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires VoiceConnectorId, SpeakerSearchTaskId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the details of the specified speaker search task.",
             ),
         ),
-        // Model: Retrieves details for the specified Amazon Chime SDK Voice Connector, such as timestamps,name, outbound host, and encryption requirements.
         (
             "GetVoiceConnector",
             OperationOverlay {
@@ -318,7 +313,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires VoiceConnectorId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about an external systems configuration for a Voice Connector.",
             ),
         ),
-        // Model: Retrieves details for the specified Amazon Chime SDK Voice Connector group, such as timestamps,name, and associated VoiceConnectorItems .
         (
             "GetVoiceConnectorGroup",
             OperationOverlay {
@@ -410,7 +404,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         (
             "ListPhoneNumbers",
             OperationOverlay {
-                // The emulator rejects the modeled maximum of 100 for this operation.
                 page_size: Some(99),
                 queryable: vec![path("PhoneNumberArn")?],
                 ..read(
@@ -432,7 +425,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists the SIP media applications under the administrator's AWS account.
         (
             "ListSipMediaApplications",
             OperationOverlay {
@@ -445,7 +437,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the SIP rules under the administrator's AWS account.
         (
             "ListSipRules",
             OperationOverlay {
@@ -470,7 +461,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of the tags in a given resource.",
             ),
         ),
-        // Model: Lists the Amazon Chime SDK Voice Connector groups in the administrator's AWS account.
         (
             "ListVoiceConnectorGroups",
             OperationOverlay {
@@ -489,7 +479,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires VoiceConnectorId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the SIP credentials for the specified Amazon Chime SDK Voice Connector.",
             ),
         ),
-        // Model: Lists the Amazon Chime SDK Voice Connectors in the administrators AWS account.
         (
             "ListVoiceConnectors",
             OperationOverlay {

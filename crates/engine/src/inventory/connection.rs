@@ -7,8 +7,6 @@ use std::time::Duration;
 use tokio::sync::{Mutex, MutexGuard};
 
 impl BinaryStore {
-    /// Queue for SQLite outside the pool's connection-acquisition deadline.
-    /// The caller keeps the FIFO turn until its transaction has been settled or dropped.
     pub(super) async fn begin_write(
         &self,
     ) -> Result<(MutexGuard<'_, ()>, Transaction<'static, Sqlite>), StoreError> {
@@ -91,8 +89,6 @@ async fn reader_pool(path: &Path, writer: &SqlitePool) -> Result<SqlitePool, Sto
     if path == Path::new(":memory:") {
         return Ok(writer.clone());
     }
-    // WAL readers do not block each other; a retained projection snapshot must not starve
-    // latest-state reads. The writer pool stays single-connection.
     Ok(pool()
         .max_connections(4)
         .connect_with(
@@ -120,8 +116,6 @@ fn options(path: &Path, create: bool) -> Result<SqliteConnectOptions, StoreError
     if name.is_empty() || name.starts_with("file:") || name.contains('\0') {
         return Err(StoreError::Invalid("invalid database path"));
     }
-    // Pool options are also the immutable delivery-lock path capability. Resolve
-    // relative disk paths at open, but retain SQLite's special in-memory name.
     let options = SqliteConnectOptions::new();
     let options = if path == Path::new(":memory:") {
         options.filename(path)

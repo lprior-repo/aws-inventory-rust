@@ -28,9 +28,7 @@ pub(super) struct Call<'a, 'catalog, C: CredentialSource> {
     pub base: &'a Record,
     pub fields: &'a [InputField],
     pub metrics: &'a crate::metrics::Accumulators,
-    /// Account whose limiter bucket paces this call.
     pub account: &'a str,
-    /// Scope region whose limiter bucket paces this call.
     pub scope: &'a inventory_core::inventory::Region,
 }
 
@@ -190,10 +188,6 @@ fn decode_record(
     aws_wire::response::decode(context).map_err(SweepError::from)
 }
 
-/// Enumeration decodes apply SDK defaults, which turn an omitted required or defaulted
-/// truncation flag into `false`; the cursor reads `false` as completion. A `false` flag is
-/// therefore accepted only when the presence-preserving decode also carries it, so an omitted
-/// flag fails here instead of ending enumeration.
 fn confirm_truncation_presence(
     plan: &CallablePlan<'_>,
     response: &Response,

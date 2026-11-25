@@ -72,7 +72,6 @@ fn given_wrong_truncated_type_when_compiling_then_review_is_rejected() -> TestRe
 
 #[test]
 fn given_all_optional_or_empty_typed_schema_when_reviewed_then_review_is_rejected() -> TestResult {
-    // Non-boolean optional flags are unrepresentable in the typed Rust policy.
     for pairs in [vec![("StartName", "NextName", true)], vec![]] {
         assert!(compile_fixture(MODEL, &pairs).is_err());
     }
@@ -95,11 +94,8 @@ fn given_overlay_only_marker_when_compiling_then_single_pair_is_preserved() -> T
 #[test]
 fn given_request_only_binding_on_response_token_when_compiling_then_token_is_read_from_body()
 -> TestResult {
-    // Given an output token member carrying a binding Smithy only honors on input,
     let model = MODEL.replace("\"NextName\":{\"target\":\"smithy.api#String\"}",
         "\"NextName\":{\"target\":\"smithy.api#String\",\"traits\":{\"smithy.api#httpQuery\":\"next\"}}");
-    // When the reviewed cursor compiles,
-    // Then the token is placed in the response body exactly as an unbound member.
     assert_eq!(
         tokens(&compile_fixture(&model, PAIRS)?)?,
         tokens(&compile_fixture(MODEL, PAIRS)?)?
@@ -109,7 +105,6 @@ fn given_request_only_binding_on_response_token_when_compiling_then_token_is_rea
 
 #[test]
 fn given_unsupported_response_placement_when_compiling_then_review_is_rejected() -> TestResult {
-    // Given an integer cursor whose response member is the HTTP status code,
     let code = |traits: &str| {
         MODEL
         .replace("\"StartName\":", "\"StartCode\":{\"target\":\"smithy.api#Integer\",\"traits\":{\"smithy.api#httpQuery\":\"code\"}},\"StartName\":")
@@ -117,7 +112,6 @@ fn given_unsupported_response_placement_when_compiling_then_review_is_rejected()
     };
     let registry = "A\nId\nIsTruncated\nItems\nNextCode\nNextId\nNextName\nNextType\nStartCode\nStartId\nStartName\nStartType\n";
     let pairs = [("StartCode", "NextCode", false)];
-    // Then the same cursor compiles from the body but never from the status line.
     assert!(compile_fixture_with_registry(&code(""), &pairs, registry).is_ok());
     let status = code(",\"traits\":{\"smithy.api#httpResponseCode\":{}}");
     assert!(compile_fixture_with_registry(&status, &pairs, registry).is_err());
@@ -196,13 +190,10 @@ fn given_modeled_page_items_when_tag_endpoint_selects_root_then_only_the_tag_col
             ..OperationOverlay::default()
         })
     };
-    // Given a paginated response whose modeled page collection is `Items`.
-    // When the tag selector names that collection, the page plan carries its token.
     assert_eq!(
         tokens(&compile_overlay(&model, &paged(Some("Items"))?)?)?.len(),
         1
     );
-    // Then a different tag collection, or a root selection with no tag endpoint, is rejected.
     assert!(compile_overlay(&model, &paged(Some("NextId"))?).is_err());
     assert!(compile_overlay(&model, &paged(None)?).is_err());
     Ok(())

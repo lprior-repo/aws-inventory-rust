@@ -124,7 +124,6 @@ impl ServeEnv {
     fn catalog(&self) -> inventory_core::catalog::runtime::RuntimeCatalog<'_> {
         inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&self.catalog_bytes)
             .unwrap_or_else(|_| {
-                // Catalog was validated at construction; this is internal state.
                 std::process::exit(1);
             })
     }
@@ -211,7 +210,6 @@ impl Environment for ServeEnv {
         .await;
         match result {
             Ok(summary) => {
-                // Discover the account from the completed sweep
                 let account = match self.store.discover_active_sweep().await {
                     Ok(Some(id)) => match self.store.sweep_manifest_account(&id).await {
                         Ok(Some(acc)) => Some(acc),

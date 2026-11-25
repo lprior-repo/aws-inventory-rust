@@ -51,7 +51,6 @@ fn lenses(service: &mut ServiceOverlay) -> Result<(), NameError> {
 }
 
 fn wisdom(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    // List summary shapes do not contain body/contents/download URL fields from getters.
     [
         (
             "ListContents",
@@ -91,7 +90,6 @@ fn wisdom(service: &mut ServiceOverlay) -> Result<(), NameError> {
 }
 
 fn bots(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    // Bot.hasChallenge is a boolean; unlike ListUsers there is no inviteCode.
     let mut plan = inventory(
         "bots",
         correlated(&["networkId"], &["botId"])?,
@@ -115,7 +113,6 @@ fn bots(service: &mut ServiceOverlay) -> Result<(), NameError> {
 }
 
 fn voice(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    // Summary-only operations: no voiceprint, audio or enrollment file payloads.
     [
         ("ListWatchlists", "WatchlistSummaries", "WatchlistId"),
         ("ListSpeakers", "SpeakerSummaries", "GeneratedSpeakerId"),

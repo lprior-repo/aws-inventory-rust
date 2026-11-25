@@ -4,7 +4,6 @@ use inventory_core::{
     record::FieldId,
 };
 
-/// Pure recipe unit tests can deliberately omit models; that route is absent in release code.
 pub(crate) enum IdentityTextValidation<'p, 'catalog> {
     Modeled(&'p IdentityTextPlan<'catalog>),
     #[cfg(test)]
@@ -26,7 +25,6 @@ impl<'p, 'catalog> IdentityTextValidation<'p, 'catalog> {
     }
 }
 
-/// One leaf's validator, resolved once even when that leaf is a string list.
 pub(super) enum IdentityTextOperandValidation<'p, 'catalog> {
     Modeled(&'p IdentityTextOperand<'catalog>),
     #[cfg(test)]

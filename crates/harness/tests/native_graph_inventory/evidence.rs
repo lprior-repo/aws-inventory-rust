@@ -30,8 +30,6 @@ pub(super) async fn retain(
         .max_connections(1)
         .connect_with(SqliteConnectOptions::new().filename(database))
         .await?;
-    // SQLite creates a consistent self-contained snapshot; never copy a live
-    // database without its WAL, and never rewrite an existing artifact path.
     sqlx::query("VACUUM INTO ?1")
         .bind(output.to_str().ok_or("non-UTF8 artifact path")?)
         .execute(&pool)

@@ -10,7 +10,6 @@ identity = "Domain.Arn"
 "Name" = "inventory-thin-voice-id"
 "ServerSideEncryptionConfiguration" = { "KmsKeyId" = "inventory-thin-voice-id" }
 
-# Watchlist identity is correlated with its generated domain ID.
 [[step]]
 id = "watchlist"
 operation = "CreateWatchlist"

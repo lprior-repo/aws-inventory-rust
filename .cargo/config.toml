@@ -1,3 +1,2 @@
 [env]
-# Bound SQLite VM allocations before application row/byte checks can run.
 LIBSQLITE3_FLAGS = "SQLITE_MAX_LENGTH=8388608 SQLITE_MAX_SQL_LENGTH=65536 SQLITE_MAX_COLUMN=256 SQLITE_MAX_EXPR_DEPTH=128"

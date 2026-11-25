@@ -20,7 +20,6 @@ name = "inventory-thin-workflow"
 requestId = "inventory-thin-workflow"
 engine = "WDL"
 main = "main.wdl"
-# ZIP with main.wdl, a no-task workflow that returns a constant string.
 definitionZip = "UEsDBBQAAAAAAAAAIQAR6Y6nWgAAAFoAAAAIAAAAbWFpbi53ZGx2ZXJzaW9uIDEuMAoKd29ya2Zsb3cgaW52ZW50b3J5X3NlZWQgewogIG91dHB1dCB7CiAgICBTdHJpbmcgZ3JlZXRpbmcgPSAiaW52ZW50b3J5IgogIH0KfQpQSwECFAAUAAAAAAAAACEAEemOp1oAAABaAAAACAAAAAAAAAAAAAAAAAAAAAAAbWFpbi53ZGxQSwUGAAAAAAEAAQA2AAAAgAAAAAAA"
 
 [[step]]

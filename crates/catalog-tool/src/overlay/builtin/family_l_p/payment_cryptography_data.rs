@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/payment-cryptography-data/service/2022-02-03/payment-cryptography-data-2022-02-03.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

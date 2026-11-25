@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Function-length gate: covered production surfaces must stay under 60 lines.
-# Span is measured from the `fn` line through the closing brace. Macro-heavy
-# bodies are counted conservatively; the check intentionally fails closed.
-# Reviewed data tables are exempt: their bodies are one literal row per
-# decision, with no control flow to split. Under overlay/builtin only the
-# table functions (`part_N`, `operations`, `overlay`, `overlays`) are exempt,
-# and only while their body has no `if`/`match`/`for`/`while`/`loop` outside
-# string literals; every other function there is held to the limit.
 MAX_LINES="${MAX_FUNCTION_LINES:-59}"
 status=0
 
@@ -80,7 +72,6 @@ paths=(
     crates/sweep/src
     crates/catalog-tool/src
 )
-# Explicit paths override the default list for scoped lane checks.
 if (( $# > 0 )); then
     paths=("$@")
 fi

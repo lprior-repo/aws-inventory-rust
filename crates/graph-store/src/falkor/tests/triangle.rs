@@ -69,7 +69,6 @@ fn script(
 }
 
 async fn triangle_case(path: bool, additional: bool, edge_budget: usize) -> TestResult {
-    // Given: both root edges precede the digest-ordered cross edge in breadth-first discovery.
     let (keys, edges) = fixture()?;
     let mut script = script(&keys, &edges, additional, edge_budget)?;
     let expected_queries = script
@@ -87,16 +86,13 @@ async fn triangle_case(path: bool, additional: bool, edge_budget: usize) -> Test
     let [root, _, target] = keys;
     let [cross, ra, rs] = edges;
     let limits = GraphLimits::new(1, 3, edge_budget)?;
-    // When: a one-hop traversal or path search reaches the selected edge budget.
     if path {
-        // Then: truncation must not remove the direct path.
         assert_eq!(
             graph.path(&root, &target, limits).await?,
             PathResult::Path(vec![rs])
         );
     } else {
         let result = graph.neighbors(&root, limits).await?;
-        // Then: breadth-first edges remain first and the exact truncation is exposed.
         let mut expected = vec![ra, rs];
         if additional && edge_budget > 2 {
             expected.push(cross);
@@ -132,7 +128,6 @@ async fn completion_appends_induced_edges_after_breadth_first_discovery_order() 
 
 #[tokio::test]
 async fn a_depth_boundary_reports_a_node_outside_the_visited_triangle() -> TestResult {
-    // Given: the triangle's last frontier also reaches a fourth node.
     let (keys, edges) = fixture()?;
     let [root, a, _] = &keys;
     let mut outside = root.clone();
@@ -154,9 +149,7 @@ async fn a_depth_boundary_reports_a_node_outside_the_visited_triangle() -> TestR
         Ok(response)
     })?;
     let graph = FalkorDb::connect(&peer.endpoint, "depth-cutoff")?;
-    // When: the traversal stops after one hop.
     let result = graph.neighbors(root, GraphLimits::new(1, 3, 3)?).await?;
-    // Then: internal cross edges remain visible but the outside node is cut off.
     let [cross, ra, rs] = edges;
     assert_eq!(result.edges, vec![ra, rs, cross]);
     assert_eq!(result.truncation, Truncation::Depth);

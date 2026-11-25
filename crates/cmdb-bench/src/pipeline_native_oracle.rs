@@ -5,8 +5,6 @@ use inventory_core::{
 };
 use inventory_graph::NodeRow;
 
-// Each indexed native lookup is checked against independently constructed
-// fixture identity/hash bytes. At most 1,000 expected resources enter a query.
 pub(super) fn rows(workload: &Workload, start: usize) -> BenchResult<Vec<NodeRow>> {
     let total = workload.resources()?;
     let end = start.saturating_add(1000).min(total);

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/freetier/service/2023-09-07/freetier-2023-09-07.json
 use super::support::reviewed;
 use crate::overlay::{NameError, ServiceOverlay};
 

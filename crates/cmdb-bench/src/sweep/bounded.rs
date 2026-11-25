@@ -1,4 +1,3 @@
-//! Bounded reads of collector reports and individual seed recipes.
 use std::{io::Read, path::Path};
 use tokio::io::AsyncReadExt;
 pub(super) const REPORT_LIMIT: u64 = 16_777_216;

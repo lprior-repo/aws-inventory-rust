@@ -1,7 +1,5 @@
 use crate::kind_map::{CfnMapping, OperationMapping};
 
-// Pinned cloudcontrol-universal.json includes these exact resource types. Each listed operation
-// returns the modeled identifier directly; no synthetic ARN or API-only alias is needed.
 pub(super) const CFN: &[CfnMapping<'static>] = &[
     CfnMapping::canonical("AWS::GameLift::ContainerFleet"),
     CfnMapping::canonical("AWS::GameLift::ContainerGroupDefinition"),

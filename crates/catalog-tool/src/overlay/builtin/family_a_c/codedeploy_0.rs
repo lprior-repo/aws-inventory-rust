@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codedeploy/service/2014-10-06/codedeploy-2014-10-06.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::IdentityField;
 
@@ -119,7 +117,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires instanceName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deregisters an on-premises instance.",
             ),
         ),
-        // Model: Gets information about an application.
         (
             "GetApplication",
             OperationOverlay {
@@ -154,7 +151,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires deploymentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a deployment. The content property of the appSpecContent object in the returned revision is always null. Use GetApplicationRevision and the sha256 property of the returned appSpecContent object to get the…",
             ),
         ),
-        // Model: Gets information about a deployment configuration.
         (
             "GetDeploymentConfig",
             OperationOverlay {
@@ -212,7 +208,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists the applications registered with the user or Amazon Web Services account.
         (
             "ListApplications",
             OperationOverlay {
@@ -225,7 +220,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the deployment configurations with the user or Amazon Web Services account.
         (
             "ListDeploymentConfigs",
             OperationOverlay {
@@ -238,7 +232,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Reviewed full response: application name, deployment-group names and continuation; no revision contents or credentials.
         (
             "ListDeploymentGroups",
             OperationOverlay {
@@ -276,7 +269,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires deploymentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns an array of target IDs that are associated a deployment.",
             ),
         ),
-        // Model: Lists the deployments in a deployment group for an application registered with the user or Amazon Web Services account.
         (
             "ListDeployments",
             OperationOverlay {
@@ -295,7 +287,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is not an inventory record; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the names of stored connections to GitHub accounts.",
             ),
         ),
-        // Model: Gets a list of names for one or more on-premises instances. Unless otherwise specified, both registered and deregistered on-premises instance names are listed. To list only registered or deregistered…
         (
             "ListOnPremisesInstances",
             OperationOverlay {

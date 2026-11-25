@@ -93,8 +93,6 @@ pub struct PeriodLimits {
     pub concurrency: usize,
 }
 
-/// A rate that starts at `start_rps`, rises with successes up to
-/// `ceiling_rps` and is cut by a throttle, never below `floor_rps`.
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct AdaptiveLimits {

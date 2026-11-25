@@ -29,7 +29,6 @@ kind = ""
 Bucket = "inventory-thin-kafka-connect-plugins"
 Key = "inventory-plugin.zip"
 ContentType = "application/zip"
-# ZIP containing a JAR manifest for the inventory fixture.
 Body = "UEsDBBQAAAAAAAAAIQA2tVvIRwAAAEcAAAAUAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZNYW5pZmVzdC1WZXJzaW9uOiAxLjANCkltcGxlbWVudGF0aW9uLVRpdGxlOiBJbnZlbnRvcnkgc2VlZCBmaXh0dXJlDQoNClBLAQIUABQAAAAAAAAAIQA2tVvIRwAAAEcAAAAUAAAAAAAAAAAAAAAAAAAAAABNRVRBLUlORi9NQU5JRkVTVC5NRlBLBQYAAAAAAQABAEIAAAB5AAAAAAA="
 
 [[step]]

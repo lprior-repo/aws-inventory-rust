@@ -63,7 +63,6 @@ pub(super) async fn persist_children(
     Ok(())
 }
 
-/// With `keep_until`, a scope that has another page stays leased until then.
 pub(super) async fn persist_page_state(
     store: &BinaryStore,
     tx: &mut Transaction<'_, Sqlite>,
@@ -114,14 +113,12 @@ pub(in super::super) async fn resume_sweep(
 ) -> Result<(), StoreError> {
     let (_turn, mut tx) = store.begin_write().await?;
 
-    // Ensure the sweeps table exists (may not exist in legacy databases).
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS sweeps(sweep_id TEXT NOT NULL PRIMARY KEY,account TEXT,started_at INTEGER NOT NULL DEFAULT 0)",
     )
     .execute(&mut *tx)
     .await?;
 
-    // Verify this sweep is active
     let count: i64 =
         sqlx::query_scalar("SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state IN(0,1)")
             .bind(sweep.as_str())
@@ -132,7 +129,6 @@ pub(in super::super) async fn resume_sweep(
         return Ok(());
     }
 
-    // Check for other active sweeps
     let other: i64 = sqlx::query_scalar(
         "SELECT COUNT(DISTINCT sweep_id) FROM work_queue WHERE sweep_id != ?1 AND state IN(0,1)",
     )
@@ -143,7 +139,6 @@ pub(in super::super) async fn resume_sweep(
         return Err(StoreError::MultipleActiveSweeps);
     }
 
-    // Verify manifest account matches expected
     let manifest: Option<String> =
         sqlx::query_scalar("SELECT account FROM sweeps WHERE sweep_id=?1")
             .bind(sweep.as_str())
@@ -158,13 +153,11 @@ pub(in super::super) async fn resume_sweep(
         ));
     }
 
-    // Check for generation overflow
     let exhausted: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state=1 AND generation=9223372036854775807").bind(sweep.as_str()).fetch_one(&mut *tx).await?;
     if exhausted != 0 {
         return Err(StoreError::LeaseGenerationOverflow);
     }
 
-    // Check for live leases
     let now_ms = std::time::UNIX_EPOCH
         .elapsed()
         .map_err(|_| StoreError::Invalid("system clock before epoch"))?

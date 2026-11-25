@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# The AWS API models are a git submodule at .local/aws-models. The commit it is
-# pinned to is recorded in this repository's tree, so git itself is the lock.
-# This check fails unless the checkout is at that commit with no file changed
-# or added. Fetch it with: git submodule update --init --depth 1 .local/aws-models
 set -euo pipefail
 cd "$(dirname "$0")/.."
 path=.local/aws-models

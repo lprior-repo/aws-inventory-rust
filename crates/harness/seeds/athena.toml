@@ -9,7 +9,6 @@ identity = { input = "Name" }
 [step.input]
 "Name" = "inventory-thin-athena"
 
-# Prepared statement identity is correlated with its workgroup.
 [[step]]
 id = "prepared_statement"
 operation = "CreatePreparedStatement"

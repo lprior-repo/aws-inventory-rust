@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/databrew/service/2017-07-25/databrew-2017-07-25.json
 use super::support::{inventory, key, queried, reviewed, tagged, token};
 use crate::classes::DenyReason;
 use crate::overlay::{NameError, ServiceOverlay};
@@ -7,7 +6,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "databrew",
         vec![
-            // Lists all of the DataBrew jobs that are defined.
             queried(
                 tagged(
                     inventory(
@@ -29,7 +27,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "ProjectName",
                 ],
             )?,
-            // Lists all of the DataBrew projects that are defined.
             queried(
                 tagged(
                     inventory(
@@ -49,7 +46,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "RecipeName",
                 ],
             )?,
-            // List all rulesets available in the current account or rulesets associated with a specific resource (dataset).
             queried(
                 tagged(
                     inventory(
@@ -62,7 +58,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ResourceArn", "AccountId", "Name"],
             )?,
-            // Lists the DataBrew schedules that are defined.
             queried(
                 tagged(
                     inventory(
@@ -80,9 +75,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             super::s_databrew_decisions_0::ENTRIES,
             super::s_databrew_decisions_1::ENTRIES,
         ],
-        &[
-            // Datasets[].Input.DatabaseInputDefinition.QueryString returns stored custom SQL, not just dataset metadata.
-            ("ListDatasets", DenyReason::Content),
-        ],
+        &[("ListDatasets", DenyReason::Content)],
     )
 }

@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/quicksight/service/2018-04-01/quicksight-2018-04-01.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
@@ -153,14 +152,11 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors AwsAccountId, QueryText are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PrimaryResult, AdditionalResults, RequestId, Status. Pinned purpose: Predicts existing visuals or generates new visuals to answer a given query. This API uses trusted identity propagation to ensure that an end user is authenticated and receives the embed URL that is specific to that user. The IAM Identity Center appli",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates or updates the dataset refresh properties for the dataset.
     (
         "PutDataSetRefreshProperties",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Quick Sight user whose identity is associated with the Identity and Access Management (IAM) identity or role specified in the request. When you register a new user from the Quick Sight API, Quick Sight generates a registration URL. The user accesses this registration URL to create their account. Quick Sight doesn't send a registration email to users who are registered from the Qu
     ("RegisterUser", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Restores an analysis.
     ("RestoreAnalysis", Decision::Denied(DenyReason::Mutating)),
     (
         "SearchActionConnectors",
@@ -246,12 +242,10 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for any Q topic that exists in an Amazon Web Services account.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts an Asset Bundle export job. An Asset Bundle export job exports specified Amazon Quick Sight assets. You can also choose to export any asset dependencies in the same job. Export jobs run asynchronously and can be polled with a DescribeAssetBundleExportJob API call. When a job is successfully completed, a download URL that contains the exported assets is returned. The URL is valid for 5 minut
     (
         "StartAssetBundleExportJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts an Asset Bundle import job. An Asset Bundle import job imports specified Amazon Quick Sight assets into an Amazon Quick Sight account. You can also choose to import a naming prefix and specified configuration overrides. The assets that are contained in the bundle file that you provide are used to create or update a new or existing asset in your Amazon Quick Sight account. Each Amazon Quick
     (
         "StartAssetBundleImportJob",
         Decision::Denied(DenyReason::Mutating),

@@ -112,7 +112,6 @@ domainNameArn = { from = "domain", path = "domainNameArn" }
 accessAssociationSourceType = "VPCE"
 accessAssociationSource = { from = "vpc_endpoint", path = "VpcEndpoint.VpcEndpointId" }
 
-# REST API child identities are correlated with the generated REST API ID.
 [[step]]
 id = "rest_root"
 operation = "GetResources"

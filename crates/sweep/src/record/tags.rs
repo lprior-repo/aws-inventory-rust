@@ -115,7 +115,6 @@ impl Tags {
     }
 }
 
-// Missing is unobserved, but a present non-map ancestor is malformed, not empty.
 fn tag_value<'a>(root: MapRef<'a>, path: &[FieldId]) -> Result<Option<ValueRef<'a>>, SweepError> {
     let Some((leaf, parents)) = path.split_last() else {
         return Ok(Some(ValueRef::Map(root)));

@@ -75,7 +75,6 @@ pub(crate) fn validate_kind_arn(kind: &Kind, value: &str) -> Result<(), SweepErr
     }
 }
 
-// Lightsail domains are account-global, unlike other Lightsail resources.
 fn global_domain(arn: &Arn<'_>) -> bool {
     arn.service == "lightsail" && arn.region == "global" && arn.resource.starts_with("Domain/")
 }
@@ -178,8 +177,6 @@ fn valid_name(value: &str, max: usize) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-'))
 }
 
-/// Queue identifiers: docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-queue-message-identifiers.html
-/// Endpoint families: docs.aws.amazon.com/general/latest/gr/sqs-service.html
 pub(crate) fn queue_url<'a>(
     url: &'a str,
     trusted: &IdentityContext<'_>,
@@ -251,7 +248,6 @@ fn legacy_queue_region(region: &str) -> bool {
     )
 }
 
-// AWS SDK partition outputs: github.com/aws/aws-sdk-go-v2/blob/main/internal/endpoints/awsrulesfn/partitions.json
 fn partition(region: &str) -> (&'static str, &'static str, &'static str) {
     if region.starts_with("cn-") {
         ("aws-cn", "amazonaws.com.cn", "api.amazonwebservices.com.cn")

@@ -240,9 +240,6 @@ fn other_parameters(case: &Case) -> bool {
     case.params.iter().any(|(name, value)| match name.as_str() {
         "Region" => !value.is_string(),
         "UseFIPS" | "UseDualStack" => value != &Value::Bool(false),
-        // The runtime never supplies an account ID (any case carrying one is
-        // skipped below), so `disabled` and the SDK-default `preferred` both
-        // describe its requests; `required` without an account is an error.
         "AccountIdEndpointMode" => !matches!(value.as_str(), Some("disabled" | "preferred")),
         _ => true,
     })

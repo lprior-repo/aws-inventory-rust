@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/amplify/service/2017-07-25/amplify-2017-07-25.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -82,7 +80,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domainName, appId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the website access logs for a specific time range using a presigned URL.",
             ),
         ),
-        // Model: Returns an existing Amplify app specified by an app ID.
         ("GetApp", denied(DenyReason::Secret)),
         (
             "GetArtifactUrl",
@@ -96,7 +93,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires appId, environmentName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a backend environment for an Amplify app. This API is available only to Amplify Gen 1 applications where the backend is created using Amplify Studio or the Amplify command line interface (CLI). This API isn’t available to…",
             ),
         ),
-        // Model: Returns a branch for an Amplify app.
         ("GetBranch", denied(DenyReason::Secret)),
         (
             "GetDomainAssociation",
@@ -116,7 +112,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires webhookId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the webhook information that corresponds to a specified webhook ID.",
             ),
         ),
-        // Model: Returns a list of the existing Amplify apps.
         ("ListApps", denied(DenyReason::Secret)),
         (
             "ListArtifacts",
@@ -130,7 +125,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires appId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the backend environments for an Amplify app. This API is available only to Amplify Gen 1 applications where the backend is created using Amplify Studio or the Amplify command line interface (CLI). This API isn’t available…",
             ),
         ),
-        // Model: Lists the branches of an Amplify app.
         ("ListBranches", denied(DenyReason::Secret)),
         (
             "ListDomainAssociations",

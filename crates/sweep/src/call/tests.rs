@@ -23,8 +23,6 @@ const FIREHOSE_TRUE: &str = r#"{"DeliveryStreamNames":["alpha"],"HasMoreDelivery
 const IAM_ROLES_OPEN: &str = "<ListRolesResponse xmlns=\"https://iam.amazonaws.com/doc/2010-05-08/\"><ListRolesResult><Roles><member><RoleName>alpha</RoleName></member></Roles>";
 const IAM_ROLES_CLOSE: &str = "</ListRolesResult><ResponseMetadata><RequestId>r</RequestId></ResponseMetadata></ListRolesResponse>";
 
-/// Decodes a raw successful HTTP body through production `decode_response`, then asks the
-/// production cursor for the next page. `Ok(true)` means the cursor continues.
 fn continues(
     compiled: &fixture::Compiled,
     service: &str,

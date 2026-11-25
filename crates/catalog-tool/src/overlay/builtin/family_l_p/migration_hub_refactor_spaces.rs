@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/migration-hub-refactor-spaces/service/2021-10-26/migration-hub-refactor-spaces-2021-10-26.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -71,7 +70,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists Amazon Web Services Migration Hub Refactor Spaces environments owned by a caller account or shared with the caller account.
     Resource {
         operation: "ListEnvironments",
         items: "EnvironmentSummaryList",
@@ -91,7 +89,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all the Amazon Web Services Migration Hub Refactor Spaces applications within an environment.
     Resource {
         operation: "ListApplications",
         items: "ApplicationSummaryList",
@@ -113,7 +110,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("EnvironmentIdentifier", "ListEnvironments", "EnvironmentId")],
         fixed: &[],
     },
-    // Lists all the Amazon Web Services Migration Hub Refactor Spaces services within an application.
     Resource {
         operation: "ListServices",
         items: "ServiceSummaryList",

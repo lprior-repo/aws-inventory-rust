@@ -53,8 +53,6 @@ fn report(
     Ok(code)
 }
 
-/// Exit 4: a time-bounded slice ended with work queued; rerun with `--resume`.
-/// It outranks every other code because the sweep is not finished at all.
 fn exit_code(
     outcomes: &inventory_sweep::ScopeOutcomes,
     work_remaining: u64,
@@ -78,9 +76,6 @@ fn exit_code(
     {
         return std::process::ExitCode::from(2);
     }
-    // Collection succeeded; if a graph was requested but delivery is not
-    // complete, report it with a distinct exit code so that automation
-    // does not confuse "graph synchronized" with "nothing to collect."
     if projection_attempted && (state.pending > 0 || state.rebuild_required) {
         return std::process::ExitCode::from(5);
     }
@@ -273,7 +268,6 @@ mod tests {
             pending: 0,
             rebuild_required: false,
         };
-        // Even with projection attempted, exit is success when drained
         assert_eq!(
             exit_code(&outcomes, 0, 0, false, true, &state),
             ExitCode::SUCCESS

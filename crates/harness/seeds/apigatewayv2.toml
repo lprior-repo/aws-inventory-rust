@@ -73,7 +73,6 @@ Authorization = { None = {} }
 EndpointConfiguration = { None = {} }
 PortalContent = { DisplayName = "Inventory seed portal", Theme = { CustomColors = { AccentColor = "#2463A6", BackgroundColor = "#FFFFFF", ErrorValidationColor = "#B00020", HeaderColor = "#142539", NavigationColor = "#314860", TextColor = "#142539" } } }
 
-# Both child identities are correlated with the generated HTTP API ID.
 [[step]]
 id = "route"
 operation = "CreateRoute"

@@ -38,7 +38,6 @@ kind = ""
 Bucket = "inventory-thin-mediapackage-assets"
 Key = "index.m3u8"
 ContentType = "application/vnd.apple.mpegurl"
-# HLS master playlist for the inventory fixture.
 Body = "I0VYVE0zVQojRVhULVgtVkVSU0lPTjozCiNFWFQtWC1TVFJFQU0tSU5GOkJBTkRXSURUSD0xMDAwMDAwCnZpZGVvLm0zdTgK"
 
 [[step]]

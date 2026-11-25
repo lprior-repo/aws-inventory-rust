@@ -1,5 +1,3 @@
-//! Parent scope assertion execution.
-
 use std::path::Path;
 
 use serde_json::Value;
@@ -15,7 +13,6 @@ pub async fn check(
 ) -> Result<Vec<Value>, HarnessError> {
     let mut checks = Vec::new();
 
-    // Simple scope checks
     add_check(
         &mut checks,
         "scope:fixtures_present",

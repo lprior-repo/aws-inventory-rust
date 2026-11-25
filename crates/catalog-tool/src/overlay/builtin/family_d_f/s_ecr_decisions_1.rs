@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/ecr/service/2015-09-21/ecr-2015-09-21.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "PutImageScanningConfiguration",

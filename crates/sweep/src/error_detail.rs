@@ -161,7 +161,6 @@ mod tests {
     fn given_long_multibyte_message_when_detail_then_ends_on_char_boundary() {
         let error = SweepError::Credentials("\u{20ac}".repeat(5_000));
         let detail = detail(&error, None);
-        // A three-byte character can leave at most two bytes unused.
         assert!(detail.len() <= MAX_DETAIL_BYTES);
         assert!(detail.len() >= 1_022);
         let last = detail.chars().last();

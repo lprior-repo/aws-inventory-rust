@@ -220,8 +220,6 @@ fn rejects_bounds(bytes: &[u8]) -> TestResult {
 #[test]
 fn loader_preserves_scalar_self_and_each_identity_context_when_template_is_canonical() -> TestResult
 {
-    // Given: a modeled catalog whose item resolves to a scalar string,
-    // so a scalar-self identity part (empty selected path) is valid.
     let identity = map([
         (1, Value::Int(1)),
         (
@@ -237,14 +235,12 @@ fn loader_preserves_scalar_self_and_each_identity_context_when_template_is_canon
     ])?;
     let pagination = map([(1, Value::List(vec![]))])?;
     let bytes = scalar_item_catalog(identity, pagination)?;
-    // When: loading through the production public consumer boundary.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .plans()
         .iter()
         .find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
-    // Then: empty selected paths stay scalar-self, never becoming context tags.
     assert_eq!(
         plan.identity(),
         &IdentityPlan::Template(
@@ -263,7 +259,6 @@ fn loader_preserves_scalar_self_and_each_identity_context_when_template_is_canon
 
 #[test]
 fn loader_rejects_capability_when_identity_context_discriminant_is_unknown() -> TestResult {
-    // Given/When/Then: hostile encoded context tags must fail before a plan is exposed.
     [-1, 5, i64::MAX]
         .into_iter()
         .try_for_each(|tag| rejects_capability(&template(vec![map([(1, Value::Int(tag))])?])?))
@@ -271,7 +266,6 @@ fn loader_rejects_capability_when_identity_context_discriminant_is_unknown() -> 
 
 #[test]
 fn loader_rejects_capability_when_identity_parts_are_mistyped_or_noncanonical() -> TestResult {
-    // Given: each mutation violates one identity-part representation invariant.
     let mut named_context = BTreeMap::new();
     named_context.insert(key(1)?, Value::Int(2));
     named_context.insert(Key::Name("payload".to_owned()), Value::Null);
@@ -284,7 +278,6 @@ fn loader_rejects_capability_when_identity_parts_are_mistyped_or_noncanonical() 
         map([(1, Value::Int(1)), (2, Value::Text("self".to_owned()))])?,
         Value::Map(named_context),
     ];
-    // When/Then: the public loader reports exactly Capability for every mutant.
     parts
         .into_iter()
         .try_for_each(|part| rejects_capability(&template(vec![part])?))
@@ -292,7 +285,6 @@ fn loader_rejects_capability_when_identity_parts_are_mistyped_or_noncanonical() 
 
 #[test]
 fn loader_rejects_capability_when_context_parts_carry_even_null_payloads() -> TestResult {
-    // Given/When/Then: context-only parts cannot carry field/literal payloads.
     [2, 3, 4].into_iter().try_for_each(|tag| {
         rejects_capability(&template(vec![map([
             (1, Value::Int(tag)),
@@ -303,7 +295,6 @@ fn loader_rejects_capability_when_context_parts_carry_even_null_payloads() -> Te
 
 #[test]
 fn loader_rejects_capability_when_identity_tuple_or_template_has_no_parts() -> TestResult {
-    // Given/When/Then: neither empty key tuples nor empty rendered identities are capabilities.
     [1, 2]
         .into_iter()
         .try_for_each(|kind| rejects_capability(&replacing(6, identity(kind, vec![])?)?))
@@ -311,23 +302,18 @@ fn loader_rejects_capability_when_identity_tuple_or_template_has_no_parts() -> T
 
 #[test]
 fn loader_rejects_bounds_when_identity_key_tuple_has_nine_parts() -> TestResult {
-    // Given: one component beyond the eight-key artifact bound.
     let bytes = replacing(6, identity(2, vec![path([1]); 9])?)?;
-    // When/Then.
     rejects_bounds(&bytes)
 }
 
 #[test]
 fn loader_rejects_bounds_when_identity_template_has_sixty_five_parts() -> TestResult {
-    // Given: one component beyond the sixty-four-part artifact bound.
     let bytes = template(vec![map([(1, Value::Int(2))])?; 65])?;
-    // When/Then.
     rejects_bounds(&bytes)
 }
 
 #[test]
 fn loader_rejects_capability_when_scalar_selected_path_contains_non_field_values() -> TestResult {
-    // Given: empty means scalar-self, but text, boolean and out-of-range IDs do not.
     [
         Value::Text("1".to_owned()),
         Value::Bool(true),
@@ -336,7 +322,6 @@ fn loader_rejects_capability_when_scalar_selected_path_contains_non_field_values
     ]
     .into_iter()
     .try_for_each(|part| {
-        // When/Then.
         rejects_capability(&template(vec![map([
             (1, Value::Int(1)),
             (2, Value::List(vec![part])),
@@ -346,9 +331,7 @@ fn loader_rejects_capability_when_scalar_selected_path_contains_non_field_values
 
 #[test]
 fn loader_preserves_record_error_when_scalar_selected_path_contains_field_zero() -> TestResult {
-    // Given: zero is encoded as a value, not an invalid CBOR map key.
     let bytes = template(vec![map([(1, Value::Int(1)), (2, path([0]))])?])?;
-    // When/Then: preserve the typed field-ID failure, including its constructor offset.
     match RuntimeCatalog::from_bytes(&bytes) {
         Err(RuntimeCatalogError::Record(error)) => {
             assert_eq!(error, RecordError::FieldIdZero { offset: 0 });
@@ -361,7 +344,6 @@ fn loader_preserves_record_error_when_scalar_selected_path_contains_field_zero()
 
 #[test]
 fn loader_rejects_bounds_when_scalar_selected_path_has_nine_segments() -> TestResult {
-    // Given/When/Then: selected paths share the eight-segment bound, including scalar plans.
     rejects_bounds(&template(vec![map([
         (1, Value::Int(1)),
         (2, path([1; 9])),
@@ -370,19 +352,15 @@ fn loader_rejects_bounds_when_scalar_selected_path_has_nine_segments() -> TestRe
 
 #[test]
 fn loader_preserves_eight_segment_selected_path_at_the_exact_bound() -> TestResult {
-    // Given: a modeled catalog with eight levels of nesting,
-    // so eight-segment selected paths resolve to scalar fields.
     let identity = identity(2, vec![path([1; 8]); 8])?;
     let pagination = map([(1, Value::List(vec![]))])?;
     let bytes = nested_structure_catalog(8, identity, pagination)?;
-    // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .plans()
         .iter()
         .find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
-    // Then: both tuple and path upper bounds are inclusive.
     assert_eq!(
         plan.identity(),
         &IdentityPlan::Key(
@@ -394,7 +372,6 @@ fn loader_preserves_eight_segment_selected_path_at_the_exact_bound() -> TestResu
 
 #[test]
 fn loader_rejects_capability_when_any_required_plan_field_is_missing() -> TestResult {
-    // Given: an otherwise real, reviewed plan, not an already-empty plan map.
     (1..=13).try_for_each(|id| {
         let bytes = artifact(|fields| {
             fields
@@ -402,14 +379,12 @@ fn loader_rejects_capability_when_any_required_plan_field_is_missing() -> TestRe
                 .ok_or("required fixture field missing")?;
             Ok(())
         })?;
-        // When/Then: every required field must independently fail closed.
         rejects_capability(&bytes)
     })
 }
 
 #[test]
 fn loader_rejects_capability_when_plan_has_unknown_numeric_fields() -> TestResult {
-    // Given: the unmodified control must load with its genuine source receipt.
     let runtime = RuntimeCatalog::from_bytes(base()?)?;
     assert_eq!(
         runtime
@@ -418,13 +393,11 @@ fn loader_rejects_capability_when_plan_has_unknown_numeric_fields() -> TestResul
             .operation_name(),
         OPERATION
     );
-    // When/Then: an unknown numeric field cannot be mistaken for malformed tags.
     rejects_capability(&replacing(65_535, Value::Null)?)
 }
 
 #[test]
 fn loader_rejects_capability_when_plan_has_named_fields() -> TestResult {
-    // Given/When/Then: named keys are a separate noncanonical representation.
     let bytes = artifact(|fields| {
         fields.insert(Key::Name("identity".to_owned()), Value::Null);
         Ok(())
@@ -434,59 +407,48 @@ fn loader_rejects_capability_when_plan_has_named_fields() -> TestResult {
 
 #[test]
 fn loader_rejects_capability_when_tag_metadata_is_not_a_map() -> TestResult {
-    // Given/When/Then: field 14 is known tag metadata, not an unknown numeric key.
     rejects_capability(&replacing(14, Value::Null)?)
 }
 
 #[test]
 fn loader_rejects_capability_when_emit_field_is_not_boolean_int() -> TestResult {
-    // Given/When/Then: field 25 is the emit plan field; only 0 and 1 are allowed.
     rejects_capability(&replacing(25, Value::Int(2))?)
 }
 
 #[test]
 fn loader_rejects_capability_when_emit_field_is_null() -> TestResult {
-    // Given/When/Then: field 25 must be an integer, not null or any other type.
     rejects_capability(&replacing(25, Value::Null)?)
 }
 
 #[test]
 fn loader_rejects_capability_when_cursor_tuple_component_path_is_empty() -> TestResult {
-    // Given: tokens=[] is valid single-page metadata; an empty component path is not.
     [(path([]), path([2])), (path([1]), path([]))]
         .into_iter()
         .try_for_each(|(request, response)| {
-            // When/Then.
             rejects_capability(&pagination(vec![token(request, response, false)?])?)
         })
 }
 
 #[test]
 fn loader_rejects_bounds_when_cursor_tuple_has_nine_components() -> TestResult {
-    // Given: individually valid, distinct required cursor components.
     let tokens = (1..=9)
         .map(|id| token(path([id]), path([id + 10]), false))
         .collect::<TestResult<Vec<_>>>()?;
-    // When/Then.
     rejects_bounds(&pagination(tokens)?)
 }
 
 #[test]
 fn loader_rejects_capability_when_cursor_components_overwrite_the_same_request_path() -> TestResult
 {
-    // Given: response paths differ, but request replay would overwrite one tuple component.
     let bytes = pagination(vec![
         token(path([1]), path([2]), false)?,
         token(path([1]), path([3]), true)?,
     ])?;
-    // When/Then: duplicate request paths cannot become a callable capability.
     rejects_capability(&bytes)
 }
 
 #[test]
 fn loader_preserves_required_and_optional_components_at_cursor_tuple_limit() -> TestResult {
-    // Given: a modeled catalog with input/output members at the required field IDs,
-    // supporting an eight-component cursor tuple.
     let input_fields: Vec<u32> = (1..=8).collect();
     let output_fields: Vec<u32> = (11..=18).collect();
     let tokens = (1..=8)
@@ -501,14 +463,12 @@ fn loader_preserves_required_and_optional_components_at_cursor_tuple_limit() -> 
         .collect::<TestResult<Vec<_>>>()?;
     let pagination = map([(1, Value::List(tokens))])?;
     let bytes = pagination_catalog(&input_fields, &output_fields, pagination)?;
-    // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .plans()
         .iter()
         .find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
-    // Then: no component is truncated, reordered, or made required by default.
     let actual = plan
         .pagination()
         .tokens

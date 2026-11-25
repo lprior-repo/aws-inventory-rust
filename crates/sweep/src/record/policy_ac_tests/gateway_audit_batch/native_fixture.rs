@@ -41,7 +41,6 @@ pub(super) fn child_body(
     Ok(body)
 }
 
-// This oracle reads literal native fixture IDs, never projected observations or runtime identity selectors.
 pub(super) fn page_keys(
     case: &ChildCase,
     parent: &str,

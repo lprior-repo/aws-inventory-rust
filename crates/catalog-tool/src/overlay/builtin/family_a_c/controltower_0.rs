@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/controltower/service/2018-05-10/controltower-2018-05-10.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -88,7 +86,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is baselines; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a summary list of all available baselines. For usage examples, see the Amazon Web Services Control Tower User Guide .",
             ),
         ),
-        // Model: Provides a list of operations in progress or queued. For usage examples, see ListControlOperation examples .
         (
             "ListControlOperations",
             OperationOverlay {
@@ -101,7 +98,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of summaries describing EnabledBaseline resources. You can filter the list by the corresponding Baseline or Target of the EnabledBaseline resources. For usage examples, see the Amazon…
         (
             "ListEnabledBaselines",
             OperationOverlay {
@@ -117,7 +113,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the controls enabled by Amazon Web Services Control Tower on the specified organizational unit and the accounts it contains. For usage examples, see the Controls Reference Guide .
         (
             "ListEnabledControls",
             OperationOverlay {
@@ -133,7 +128,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all landing zone operations from the past 90 days. Results are sorted by time, with the most recent operation first.
         (
             "ListLandingZoneOperations",
             OperationOverlay {
@@ -146,7 +140,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns the landing zone ARN for the landing zone deployed in your managed account. This API also creates an ARN for existing accounts that do not yet have a landing zone ARN. Returns one landing…
         ("ListLandingZones", denied(DenyReason::Mutating)),
         (
             "ListTagsForResource",

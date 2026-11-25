@@ -6,7 +6,6 @@ async fn given_reviewed_direct_trust_edge_and_current_target_when_source_is_allo
     let catalog = fixture::catalog()?;
     for allow in [false, true] {
         let (_directory, store) = trust_store(&catalog).await?;
-        // Both endpoints are the same actual observed IAM role; no endpoint is missing.
         let mut page = trust_page(
             &store,
             &catalog,
@@ -34,7 +33,6 @@ async fn given_reviewed_direct_trust_edge_and_current_target_when_source_is_allo
             )?
             .1;
         }
-        // A reviewed label alone cannot grant an edge, even with both real endpoints present.
         let result = store.commit_page(page).await;
         if allow {
             result?;

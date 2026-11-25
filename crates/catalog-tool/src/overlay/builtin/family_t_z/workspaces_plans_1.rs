@@ -17,7 +17,6 @@ pub(super) fn describe_applications() -> Result<OperationOverlay, NameError> {
         "State",
     ])?;
     operation.page_size = Some(25);
-    // Owner accepts an account ID or AMAZON; never inventory vendor applications as ours.
     operation.bind.insert(path("Owner")?, Binding::Account);
     Ok(operation)
 }

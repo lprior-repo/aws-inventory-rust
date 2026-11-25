@@ -9,7 +9,6 @@ use crate::json::canonical;
 
 pub const MAX_SOURCE_FILES: usize = 4_096;
 
-/// 32 MiB of sources plus one embedded catalog at its 64 MiB container bound.
 pub const MAX_SOURCE_BYTES: u64 = 96 * 1024 * 1024;
 
 const MAX_CATALOG_ROWS: usize = 512;

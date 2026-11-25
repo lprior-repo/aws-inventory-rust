@@ -42,16 +42,13 @@ async fn pending_resource() -> TestResult<(tempfile::TempDir, BinaryStore, NodeR
 #[tokio::test]
 async fn given_pending_resource_when_projected_then_one_upsert_and_incident_replacement_are_acknowledged()
 -> TestResult {
-    // Given: a committed resource and its real durable outbox revision.
     let (directory, store, expected) = pending_resource().await?;
     let mut edges =
         edge_fixture::seed_edges(&directory.path().join("inventory.sqlite"), &expected.key, 2)
             .await?;
     edge_fixture::sort_edges(&mut edges);
     let graph = RecordingBackend::new(false);
-    // When: projection runs through the backend port.
     let result = run_projection(&store, &graph, 1).await?;
-    // Then: exactly one node and one incident replacement precede acknowledgement.
     assert_eq!(
         graph.calls().await,
         vec![
@@ -84,7 +81,6 @@ async fn given_pending_resource_when_projected_then_one_upsert_and_incident_repl
 
 #[tokio::test]
 async fn given_deleted_key_when_projected_then_only_one_delete_is_acknowledged() -> TestResult {
-    // Given: a tombstone in the real durable outbox.
     let (directory, store, expected) = pending_resource().await?;
     let pool = sqlx::SqlitePool::connect_with(
         sqlx::sqlite::SqliteConnectOptions::new()
@@ -97,9 +93,7 @@ async fn given_deleted_key_when_projected_then_only_one_delete_is_acknowledged()
         .await?;
     pool.close().await;
     let graph = RecordingBackend::new(false);
-    // When: projection drains the tombstone through the port.
     let result = run_projection(&store, &graph, 1).await?;
-    // Then: deletion, not upsert/replacement, is acknowledged exactly once.
     assert_eq!(
         graph.calls().await,
         vec![Call::Claim, Call::Delete(expected.key)]
@@ -120,13 +114,10 @@ async fn given_deleted_key_when_projected_then_only_one_delete_is_acknowledged()
 #[tokio::test]
 async fn given_offline_backend_when_delivery_fails_then_exact_outbox_revision_survives()
 -> TestResult {
-    // Given: pending durable work and an unavailable node-write backend.
     let (_directory, store, expected) = pending_resource().await?;
     let pending = store.drain_projection(1).await?;
     let graph = RecordingBackend::new(true);
-    // When: the claimed session fails its first graph write.
     let result = run_projection(&store, &graph, 1).await?;
-    // Then: no acknowledgement or target identity is persisted.
     assert_eq!(
         graph.calls().await,
         vec![Call::Claim, Call::Upsert(expected)]

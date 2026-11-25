@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudfront-keyvaluestore/service/2022-07-26/cloudfront-keyvaluestore-2022-07-26.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -22,7 +20,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires KvsARN, Key. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a key value pair.",
             ),
         ),
-        // Model: Returns a list of key value pairs.
         ("ListKeys", denied(DenyReason::Content)),
         (
             "PutKey",

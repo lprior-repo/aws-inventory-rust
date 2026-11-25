@@ -1,4 +1,3 @@
-//! Reviewed safe metadata gaps grounded in the adjacent pinned service models.
 use super::super::{name, path};
 use crate::overlay::{
     Binding, ContextSource, ExecutionBranch, FixedValue, Identity, IdentityField, ItemSelector,

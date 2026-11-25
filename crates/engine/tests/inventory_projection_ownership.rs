@@ -14,7 +14,6 @@ use support::{TestResult, fixture, observation, page, work};
 #[tokio::test]
 async fn given_another_delivery_owner_when_any_handle_projects_then_it_fails_busy_without_blocking_resource_writers()
 -> TestResult {
-    // Given: an OS-managed SQLite delivery lock on the separate persistent file.
     let (directory, store, _) = fixture().await?;
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let mut lock = SqliteConnection::connect_with(
@@ -28,13 +27,11 @@ async fn given_another_delivery_owner_when_any_handle_projects_then_it_fails_bus
     )
     .await?;
     sqlx::query("BEGIN IMMEDIATE").execute(&mut lock).await?;
-    // When: an independent handle attempts projection, no network is needed.
     let backend = inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "ownership")?;
     assert!(matches!(
         run_projection(&reopened, &backend, 1).await,
         Err(ProjectionError::DeliveryBusy)
     ));
-    // Then: ordinary resource commits still progress while delivery is owned.
     store
         .seed_work(work("writer-progress", "us-east-1")?)
         .await?;
@@ -131,7 +128,6 @@ async fn given_superseded_and_replayed_acknowledgements_when_applied_then_only_r
         return Err("wrong revision count".into());
     };
     let key = old.key.clone().ok_or("missing key")?;
-    // When/Then: obsolete delivery is a no-op, newest delivery removes one row.
     assert_eq!(
         store
             .ack_projection(ProjectionAck::new(key.clone(), old.revision)?)
@@ -162,7 +158,6 @@ async fn given_delivery_ownership_in_another_process_when_projecting_then_it_is_
     const TEST: &str =
         "given_delivery_ownership_in_another_process_when_projecting_then_it_is_busy";
     if let Some(path) = std::env::var_os(CHILD_DATABASE) {
-        // Child process opens its own pools, never inheriting an in-memory lock.
         let store = BinaryStore::open(std::path::Path::new(&path)).await?;
         let backend =
             inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "ownership")?;
@@ -214,8 +209,6 @@ async fn given_relative_inventory_path_when_cwd_changes_then_delivery_uses_its_o
     const TEST: &str =
         "given_relative_inventory_path_when_cwd_changes_then_delivery_uses_its_original_sidecar";
     if std::env::var_os(CHILD).is_some() {
-        // Only this exact test runs in the child, so cwd mutation cannot race
-        // another test. Open relative paths before moving into an unrelated dir.
         let store = BinaryStore::open(std::path::Path::new("inventory.sqlite")).await?;
         let mut lock = SqliteConnection::connect_with(
             &SqliteConnectOptions::new()

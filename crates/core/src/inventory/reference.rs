@@ -5,7 +5,6 @@ use super::{
 use crate::catalog::runtime::RelationTargetMode;
 use crate::record::FieldId;
 
-/// One additional conjunct evaluated against the same target and target facet.
 #[derive(Debug, PartialEq, Eq)]
 pub struct ReferenceComponent {
     pub mode: RelationTargetMode,
@@ -98,7 +97,6 @@ impl ReferenceTarget {
         Ok(self)
     }
 
-    /// Targets a selected scalar only when its schema declares a text root.
     pub fn root_text(
         account: AccountId,
         region: Region,
@@ -190,9 +188,7 @@ mod tests {
     #[test]
     fn given_single_reference_when_no_alternatives_then_primary_is_the_only_candidate()
     -> Result<(), InventoryError> {
-        // Given/When: the existing single-kind constructor.
         let target = target()?;
-        // Then: no other resource type is invented.
         assert_eq!(
             target.candidate_kinds(),
             std::slice::from_ref(target.kind())
@@ -203,12 +199,9 @@ mod tests {
     #[test]
     fn given_reviewed_alternatives_when_constructed_then_candidates_are_unique_and_ordered()
     -> Result<(), InventoryError> {
-        // Given two explicitly reviewed candidates.
         let cluster = Kind::parse("AWS::MSK::Cluster")?;
         let serverless = Kind::parse("AWS::MSK::ServerlessCluster")?;
-        // When input order differs from canonical order.
         let target = target()?.with_candidate_kinds(vec![serverless.clone(), cluster.clone()])?;
-        // Then both and only those types remain.
         assert_eq!(target.candidate_kinds(), &[cluster, serverless]);
         Ok(())
     }
@@ -216,7 +209,6 @@ mod tests {
     #[test]
     fn given_invalid_candidate_sets_when_constructed_then_domain_rejects_them()
     -> Result<(), InventoryError> {
-        // Given empty, duplicate, excessive, and missing-primary declarations.
         let cluster = Kind::parse("AWS::MSK::Cluster")?;
         let other = Kind::parse("AWS::MSK::ServerlessCluster")?;
         let excessive = std::iter::once(cluster.clone()).chain(
@@ -231,7 +223,6 @@ mod tests {
             excessive.collect(),
         ];
         for kinds in cases {
-            // When/Then invalid kinds cannot reach persistence.
             assert!(matches!(
                 target()?.with_candidate_kinds(kinds),
                 Err(InventoryError::ReferenceKinds)
@@ -336,7 +327,6 @@ mod tests {
     fn given_typed_target_modes_when_paths_cross_boundaries_then_only_the_matching_path_domain_is_accepted()
     -> Result<(), InventoryError> {
         use RelationTargetMode::*;
-        // Given all typed target domains and empty/minimum/maximum/excessive paths.
         for mode in [
             SelectedFields,
             SelectedRootText,
@@ -346,7 +336,6 @@ mod tests {
         ] {
             for length in [0, 1, 8, 9] {
                 let path = vec![FieldId::new(1)?; length];
-                // When construction checks the path domain before persistence.
                 let result = ReferenceTarget::typed(
                     AccountId::parse("123456789012")?,
                     Region::Global,
@@ -359,7 +348,6 @@ mod tests {
                     SelectedFields | BoundContextFields => (1..=8).contains(&length),
                     _ => length == 0,
                 };
-                // Then field paths cannot masquerade as canonical IDs or scalar roots.
                 if expected {
                     let target = result?;
                     assert_eq!(
@@ -380,7 +368,6 @@ mod tests {
     #[test]
     fn given_additional_terms_when_count_or_path_exceeds_bounds_then_the_compound_target_is_rejected()
     -> Result<(), InventoryError> {
-        // Given zero through eight additional conjuncts, and both legal/illegal paths.
         for count in [0, 1, 7, 8] {
             for length in [0, 1, 8, 9] {
                 let terms = (0..count)
@@ -392,9 +379,7 @@ mod tests {
                         })
                     })
                     .collect::<Result<Vec<_>, InventoryError>>()?;
-                // When extra predicates are attached to an otherwise legal target.
                 let result = target()?.with_components(terms);
-                // Then all terms must be valid, not merely the first one.
                 if count <= 7 && (count == 0 || (1..=8).contains(&length)) {
                     assert_eq!(result?.components().len(), count);
                 } else {

@@ -55,7 +55,6 @@ kind = ""
 [step.input]
 Bucket = "inventory-seed-cloudformation-registry"
 Key = "schema.zip"
-# ZIP containing the InventorySeed::Emulator::Fixture resource schema.
 Body = "UEsDBBQAAAAAAAAAIQBwziLT8wAAAPMAAAALAAAAc2NoZW1hLmpzb257InR5cGVOYW1lIjoiSW52ZW50b3J5U2VlZDo6RW11bGF0b3I6OkZpeHR1cmUiLCJkZXNjcmlwdGlvbiI6IkludmVudG9yeSBlbXVsYXRvciBmaXh0dXJlIHNjaGVtYSIsInByb3BlcnRpZXMiOnsiSWQiOnsidHlwZSI6InN0cmluZyJ9fSwicHJpbWFyeUlkZW50aWZpZXIiOlsiL3Byb3BlcnRpZXMvSWQiXSwicmVhZE9ubHlQcm9wZXJ0aWVzIjpbIi9wcm9wZXJ0aWVzL0lkIl0sImFkZGl0aW9uYWxQcm9wZXJ0aWVzIjpmYWxzZX1QSwECFAAUAAAAAAAAACEAcM4i0/MAAADzAAAACwAAAAAAAAAAAAAAAAAAAAAAc2NoZW1hLmpzb25QSwUGAAAAAAEAAQA5AAAAHAEAAAAA"
 
 [[step]]

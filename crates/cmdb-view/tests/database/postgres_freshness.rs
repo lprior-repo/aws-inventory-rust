@@ -8,7 +8,6 @@ async fn outcomes(fixture: &pg::Fixture) -> TestResult {
     fixture
         .commit("six", "111111111111", "ap-south-1", 0, &["shared"], 60)
         .await?;
-    // Keep each scope's own observation rather than carried unobserved history.
     sqlx::query("DELETE FROM inventory.scope_outcomes WHERE (sweep_id,observed_at) NOT IN (('one',10),('two',20),('three',30),('four',40),('five',50),('six',60))")
         .execute(&fixture.pool).await?;
     sqlx::query("UPDATE inventory.scope_outcomes SET outcome=CASE sweep_id WHEN 'two' THEN 'inaccessible' WHEN 'three' THEN 'failed' WHEN 'five' THEN 'unobserved' WHEN 'six' THEN 'unsupported' ELSE outcome END").execute(&fixture.pool).await?;

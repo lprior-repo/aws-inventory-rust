@@ -28,7 +28,6 @@ impl Scenario {
             store,
             sweep: SweepId::new(name.to_owned())?,
             account: AccountId::parse("123456789012")?,
-            // Deliberately not the request region: identity admission must use the real request scope.
             home: RegionId::parse("us-west-2")?,
             path,
             _directory: directory,

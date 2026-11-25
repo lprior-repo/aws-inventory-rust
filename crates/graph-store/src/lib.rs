@@ -73,26 +73,11 @@ pub trait GraphBackend: Send + Sync {
     ) -> impl Future<Output = Result<TagAffiliations, GraphError>> + Send;
     fn upsert_node(&self, node: &NodeRow) -> impl Future<Output = Result<(), GraphError>> + Send;
     fn delete_node(&self, key: &NodeKey) -> impl Future<Output = Result<(), GraphError>> + Send;
-    /// Replaces all incident edges, subdividing bounded queries when necessary.
-    ///
-    /// Readers may observe no edges after the clear and only an applied prefix
-    /// between appends. Failure leaves that partial set until a complete replay.
-    /// A caller must acknowledge durable work only after success.
     fn replace_edges(
         &self,
         key: &NodeKey,
         edges: &[EdgeRow],
     ) -> impl Future<Output = Result<(), GraphError>> + Send;
-    /// Replaces the complete incident set from ordered chunks of at most 2,000 edges.
-    ///
-    /// Removes stale incident edges once, then applies each chunk in order. This is
-    /// not atomic: readers can see no edges or only the applied prefix between
-    /// queries, as with the previous projector's clear-then-stream delivery.
-    /// Each emitted query is bounded to 1 MiB; adapters may subdivide a chunk.
-    /// Errors or cancellation leave a partial set; replay must restart the complete
-    /// replacement. A caller must acknowledge durable work only after success.
-    /// Producers must emit only edges incident to the owner. A bad later page is
-    /// rejected after earlier pages have already become visible to readers.
     fn replace_edges_paged<Pages, E>(
         &self,
         key: &NodeKey,

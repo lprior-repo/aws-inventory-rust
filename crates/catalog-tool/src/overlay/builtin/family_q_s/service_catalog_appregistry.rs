@@ -1,4 +1,3 @@
-// Entire pinned service accounted for; no runtime name-prefix authorization.
 use super::{NameError, ServiceOverlay, construction};
 mod calls_0;
 mod decisions_0;

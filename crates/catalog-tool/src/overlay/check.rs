@@ -222,8 +222,6 @@ pub fn check(root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> 
     orchestration::check(root, source)
 }
 
-/// Checks typed policies against the pinned model, always retaining mandatory built-in denials.
-/// The supplied list may add denial rules; an empty list cannot authorize prohibited calls.
 pub fn check_policies(
     source: &Path,
     overlays: &[super::ServiceOverlay],

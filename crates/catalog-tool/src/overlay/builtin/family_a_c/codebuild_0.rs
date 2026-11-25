@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codebuild/service/2016-10-06/codebuild-2016-10-06.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -10,9 +8,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ids. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes one or more builds.",
             ),
         ),
-        // Model: Retrieves information about one or more batch builds.
         ("BatchGetBuildBatches", denied(DenyReason::Secret)),
-        // Model: Gets information about one or more builds.
         ("BatchGetBuilds", denied(DenyReason::Secret)),
         (
             "BatchGetCommandExecutions",
@@ -26,7 +22,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires names. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about one or more compute fleets.",
             ),
         ),
-        // Model: Gets information about one or more build projects.
         ("BatchGetProjects", denied(DenyReason::Secret)),
         (
             "BatchGetReportGroups",
@@ -154,7 +149,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires projectName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Resets the cache for a project.",
             ),
         ),
-        // Model: Retrieves the identifiers of your build batches in the current region.
         (
             "ListBuildBatches",
             OperationOverlay {
@@ -173,7 +167,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is ids; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the identifiers of the build batches for a specific project.",
             ),
         ),
-        // Model: Gets a list of build IDs, with each build ID representing a single build.
         (
             "ListBuilds",
             OperationOverlay {
@@ -197,7 +190,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Gets a list of command executions for a sandbox.
         (
             "ListCommandExecutionsForSandbox",
             denied(DenyReason::Content),
@@ -208,7 +200,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is platforms; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets information about Docker images that are managed by CodeBuild.",
             ),
         ),
-        // Model: Gets a list of compute fleet names with each compute fleet name representing a single compute fleet.
         (
             "ListFleets",
             OperationOverlay {
@@ -221,7 +212,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of build project names, with each build project name representing a single build project.
         (
             "ListProjects",
             OperationOverlay {
@@ -234,7 +224,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list ARNs for the report groups in the current Amazon Web Services account.
         (
             "ListReportGroups",
             OperationOverlay {
@@ -247,7 +236,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of ARNs for the reports in the current Amazon Web Services account.
         (
             "ListReports",
             OperationOverlay {
@@ -266,7 +254,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires reportGroupArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of ARNs for the reports that belong to a ReportGroup .",
             ),
         ),
-        // Model: Gets a list of sandboxes.
         (
             "ListSandboxes",
             OperationOverlay {

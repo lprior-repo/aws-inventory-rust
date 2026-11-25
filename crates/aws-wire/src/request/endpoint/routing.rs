@@ -1,8 +1,6 @@
 use super::{EncodeError, RequestContext};
 use inventory_core::{catalog::Target, record::ValueRef};
 
-/// S3 Control's modeled OutpostId selects a different host and SigV4 service.
-/// The caller resolves that route before signing; its account host-prefix is absent.
 pub(super) fn suppress_prefix(context: RequestContext<'_>) -> Result<bool, EncodeError> {
     let uri = context
         .endpoint

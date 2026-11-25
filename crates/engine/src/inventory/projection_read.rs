@@ -17,7 +17,6 @@ pub struct ProjectionSnapshot {
 }
 
 impl ProjectionSnapshot {
-    /// Reads only persisted tags in this resource's exact account/region scope.
     pub async fn tags_for(
         &mut self,
         key: &ResourceKey,

@@ -185,7 +185,7 @@ fn identity_field(
             )
         }
         IdentityFieldPlan::MapValue { path, .. } => map_text(parts.service, item, path),
-        IdentityFieldPlan::Context { .. } => Ok(()), // Cross-plan source validation is performed by dependencies.
+        IdentityFieldPlan::Context { .. } => Ok(()),
     }
 }
 

@@ -32,7 +32,6 @@ async fn tag_replacement(
     native: &NativeGraph,
     target: &ResourceKey,
 ) -> TestResult {
-    // Given: P1 retains alice and pauses a real native tag transaction.
     let (_directory, path, store) = isolated(database, native, "native_fence_tags").await?;
     let second = BinaryStore::open(&path).await?;
     tag_commit::replace(
@@ -47,8 +46,6 @@ async fn tag_replacement(
     let (mut proxy, backend) = start_tag_barrier(native, "native_fence_tags").await?;
     let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
-    // The same handle's single reader is held by P1's snapshot. Admission must
-    // check the independent cached sidecar path, not wait for that reader.
     let second_backend =
         inventory_graph::falkor::FalkorDb::connect(native.endpoint(), "native_fence_tags")?;
     let same_handle = tokio::time::timeout(
@@ -57,7 +54,6 @@ async fn tag_replacement(
     )
     .await?;
     assert!(matches!(same_handle, Err(ProjectionError::DeliveryBusy)));
-    // When: a separate writer commits bob, P2 cannot overtake P1.
     tag_commit::replace(
         &second,
         target,
@@ -79,7 +75,6 @@ async fn tag_replacement(
     let (_, running) = proxy.resume().await.map_err(|error| error.to_string())?;
     let delivered = first.await?;
     running.close().await.map_err(|error| error.to_string())?;
-    // Then: R removed no row, S remains exact, and final graph contains only bob.
     assert_eq!(delivered.acknowledged, 0);
     assert_eq!(delivered.pending, 1);
     assert_eq!(second.drain_projection(1000).await?, latest);
@@ -95,7 +90,6 @@ async fn cancelled_claim(
     native: &NativeGraph,
     target: &ResourceKey,
 ) -> TestResult {
-    // Given: A's atomic compare/SET claim has not yet reached native Redis.
     let (_directory, path, store) = isolated(database, native, "native_fence_claim").await?;
     tag_commit::replace(
         &store,
@@ -115,7 +109,6 @@ async fn cancelled_claim(
     tokio::select! { result = &mut old => return Err(format!("A finished before claim barrier: {result:?}").into()), paused = old_proxy.paused() => paused.map_err(|error| error.to_string())? }
     drop(old);
     wait_for_release(&path).await?;
-    // When: successor B owns delivery and pauses inside its real tag transaction.
     let second = BinaryStore::open(&path).await?;
     tag_commit::replace(
         &second,
@@ -148,7 +141,6 @@ async fn cancelled_claim(
         .close()
         .await
         .map_err(|error| error.to_string())?;
-    // Then: B's already-watched EXEC still succeeds: a stale claim cannot abort it.
     let (_, running) = successor_proxy
         .resume()
         .await
@@ -166,7 +158,6 @@ async fn cancelled_tag_replacement(
     native: &NativeGraph,
     target: &ResourceKey,
 ) -> TestResult {
-    // Given: alice's actual tag command is queued in MULTI, with EXEC delayed.
     let (_directory, path, store) = isolated(database, native, "native_fence_cancel_tags").await?;
     tag_commit::replace(
         &store,
@@ -180,7 +171,6 @@ async fn cancelled_tag_replacement(
     let (mut proxy, backend) = start_tag_barrier(native, "native_fence_cancel_tags").await?;
     let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before tag barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
-    // When: cancelling P1 releases local ownership; P2 delivers bob first.
     drop(first);
     wait_for_release(&path).await?;
     let second = BinaryStore::open(&path).await?;
@@ -201,7 +191,6 @@ async fn cancelled_tag_replacement(
     assert_eq!(delivered.acknowledged, 1);
     assert_eq!(delivered.pending, 0);
     assert_target(native, "native_fence_cancel_tags", target, "bob").await?;
-    // Then: real Redis rejects alice's late tag EXEC, not merely node upserts.
     let (response, running) = proxy.resume().await.map_err(|error| error.to_string())?;
     assert_eq!(
         response, b"*-1\r\n",
@@ -232,7 +221,6 @@ async fn cancelled_resurrection(
     native: &NativeGraph,
     target: &ResourceKey,
 ) -> TestResult {
-    // Given: a native upsert is queued in MULTI, but its EXEC is still in transit.
     let (_directory, path, store) = isolated(database, native, "native_fence_delete").await?;
     tag_commit::replace(
         &store,
@@ -252,7 +240,6 @@ async fn cancelled_resurrection(
     let backend = inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_delete")?;
     let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
-    // When: public complete sweeps delete while the old native request is in flight.
     delete_after_two_misses(&store, target).await?;
     drop(first);
     wait_for_release(&path).await?;
@@ -266,7 +253,6 @@ async fn cancelled_resurrection(
     let delivered = project(&second, native, "native_fence_delete").await?;
     assert_eq!(delivered.acknowledged, u64::try_from(pending.len())?);
     assert_eq!(delivered.pending, 0);
-    // Then: a late old EXEC is rejected by real FalkorDB/Redis, not the proxy.
     let (response, running) = proxy.resume().await.map_err(|error| error.to_string())?;
     assert_eq!(
         response, b"*-1\r\n",
@@ -279,7 +265,6 @@ async fn cancelled_resurrection(
 }
 
 async fn stale_rebuild(database: &Path, native: &NativeGraph) -> TestResult {
-    // Given: rebuild and incremental delivery use the same durable owner.
     let (_directory, path, store) = isolated(database, native, "native_fence_rebuild").await?;
     recovery::request_rebuild(&path).await?;
     let mut proxy = proxy::Proxy::start(
@@ -292,8 +277,6 @@ async fn stale_rebuild(database: &Path, native: &NativeGraph) -> TestResult {
     let backend = inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_rebuild")?;
     let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("rebuild finished before barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
-    // When: only the persisted rebuild control revision advances mid-snapshot.
-    // No public request-rebuild API exists; this is transparent control injection.
     advance_marker(&path).await?;
     let second = BinaryStore::open(&path).await?;
     let latest = second.drain_projection(1000).await?;
@@ -306,7 +289,6 @@ async fn stale_rebuild(database: &Path, native: &NativeGraph) -> TestResult {
     let (_, running) = proxy.resume().await.map_err(|error| error.to_string())?;
     let delivered = first.await?;
     running.close().await.map_err(|error| error.to_string())?;
-    // Then: stale marker attempts count zero and the next rebuild counts one.
     assert_eq!(delivered.acknowledged, 0);
     assert_eq!(delivered.pending, 1);
     assert_eq!(second.drain_projection(1000).await?, latest);

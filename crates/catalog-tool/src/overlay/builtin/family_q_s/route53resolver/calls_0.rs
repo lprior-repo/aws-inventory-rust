@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/route53resolver/service/2018-04-01/route53resolver-2018-04-01.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

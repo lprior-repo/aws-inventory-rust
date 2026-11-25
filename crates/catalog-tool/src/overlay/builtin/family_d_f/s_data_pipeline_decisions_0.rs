@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/data-pipeline/service/2012-10-29/data-pipeline-2012-10-29.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "ActivatePipeline",

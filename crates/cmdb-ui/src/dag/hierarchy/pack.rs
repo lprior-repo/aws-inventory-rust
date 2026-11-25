@@ -1,8 +1,6 @@
 use super::{CELL_SIZE, Entry, LayoutError, PADDING, count32};
 
 const ASPECT_TARGET: f32 = 1.5;
-// Coordinates remain exact multiples of CELL_SIZE throughout the hierarchy.
-// This conservative bound keeps even one-unit offsets exactly representable.
 const MAX_COORDINATE: f32 = 16_777_216.0;
 
 pub(super) fn grid(count: usize) -> Result<(u16, u16), LayoutError> {

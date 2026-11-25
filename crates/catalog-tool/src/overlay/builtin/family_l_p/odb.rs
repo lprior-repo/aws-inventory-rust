@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/odb/service/2024-08-20/odb-2024-08-20.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -196,7 +195,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists all Autonomous VM clusters in a specified Cloud Exadata infrastructure.
     Resource {
         operation: "ListCloudAutonomousVmClusters",
         items: "cloudAutonomousVmClusters",
@@ -220,7 +218,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the Exadata infrastructures owned by your Amazon Web Services account.
     Resource {
         operation: "ListCloudExadataInfrastructures",
         items: "cloudExadataInfrastructures",
@@ -244,7 +241,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the VM clusters owned by your Amazon Web Services account or only the ones on the specified Exadata infrastructure.
     Resource {
         operation: "ListCloudVmClusters",
         items: "cloudVmClusters",
@@ -277,7 +273,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the ODB networks owned by your Amazon Web Services account.
     Resource {
         operation: "ListOdbNetworks",
         items: "odbNetworks",
@@ -299,7 +294,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all ODB peering connections or those associated with a specific ODB network.
     Resource {
         operation: "ListOdbPeeringConnections",
         items: "odbPeeringConnections",
@@ -319,7 +313,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the Autonomous Databases owned by your Amazon Web Services account in the current Amazon Web Services Region.
     Resource {
         operation: "ListAutonomousDatabases",
         items: "autonomousDatabases",
@@ -351,7 +344,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the Exascale VM clusters owned by your Amazon Web Services account.
     Resource {
         operation: "ListExadbVmClusters",
         items: "exadbVmClusters",
@@ -381,7 +373,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the Exascale storage vaults owned by your Amazon Web Services account.
     Resource {
         operation: "ListExascaleDbStorageVaults",
         items: "exascaleDbStorageVaults",

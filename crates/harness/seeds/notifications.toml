@@ -1,7 +1,6 @@
 format = 1
 service = "notifications"
 
-# The emulator's configuration list has an invalid timestamp; this parent enables the event-rule fixture.
 [[step]]
 id = "configuration"
 operation = "CreateNotificationConfiguration"

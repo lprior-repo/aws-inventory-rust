@@ -22,12 +22,9 @@ fn classes(root: &Path, flags: &[&str]) -> io::Result<Output> {
 
 #[test]
 fn explicit_policy_print_preserves_exact_report_without_creating_an_artifact() -> TestResult {
-    // Given a model fixture and an explicitly injected classifier policy.
     let dir = fixture()?;
-    // When the public report and publication boundaries run.
     assert_eq!(build_report_with_policy(dir.path(), &policy()?)?, REPORT);
     run_with_policy(dir.path(), dir.path(), ReportMode::Print, &policy()?)?;
-    // Then printing cannot create an artifact.
     assert!(!dir.path().join(COMMITTED).exists());
     Ok(())
 }

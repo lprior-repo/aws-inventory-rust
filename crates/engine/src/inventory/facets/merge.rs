@@ -8,7 +8,6 @@ const MAX_FIELDS: usize = 65_536;
 
 pub(in crate::inventory) fn fields(record: &Record) -> Result<Fields, StoreError> {
     let pending = vec![(Vec::new(), ValueRef::Map(record.root()))];
-    // Each step consumes one node; the terminal step exits without scanning the cap.
     let result = (0..MAX_FIELDS).try_fold(
         (pending, BTreeMap::new()),
         |(mut pending, mut result), _| {
@@ -68,8 +67,6 @@ pub(in crate::inventory) fn owned(
     if paths.len() > MAX_FIELDS {
         return Err(StoreError::Invalid("facet ownership exceeds bounds"));
     }
-    // Containers organize descendants; only terminal paths own values. Otherwise
-    // omitting one source's map would erase another source's sibling leaves.
     let next = paths.iter().skip(1).map(Some).chain(std::iter::once(None));
     encode_paths(paths.iter().zip(next).filter_map(|(path, next)| {
         (!next.is_some_and(|next| next.starts_with(path))).then_some(path.as_slice())

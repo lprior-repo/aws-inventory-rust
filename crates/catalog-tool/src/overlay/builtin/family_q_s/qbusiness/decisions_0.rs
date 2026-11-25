@@ -1,25 +1,18 @@
-// Pinned operation purposes: .local/aws-models/models/qbusiness/service/2023-11-27/qbusiness-2023-11-27.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Adds or updates a permission policy for a Amazon Q Business application, allowing cross-account access for an ISV. This operation creates a new policy statement for the specified Amazon Q Business application. The policy statement defines the IAM actions that the ISV is allowed to perform on the Amazon Q Business application's resources.
     (
         "AssociatePermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Asynchronously deletes one or more documents added using the BatchPutDocument API from an Amazon Q Business index. You can see the progress of the deletion, and any error messages related to the process, by using CloudWatch.
     (
         "BatchDeleteDocument",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds one or more documents to an Amazon Q Business index. You use this API to: ingest your structured and unstructured documents and documents stored in an Amazon S3 bucket into an Amazon Q Business index. add custom attributes to documents in an Amazon Q Business index. attach an access control list to the documents added to an Amazon Q Business index. You can see the progress of the deletion, an
     ("BatchPutDocument", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Unsubscribes a user or a group from their pricing tier in an Amazon Q Business application. An unsubscribed user or group loses all Amazon Q Business feature access at the start of next month.
     ("CancelSubscription", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts or continues a streaming Amazon Q Business conversation.
     ("Chat", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts or continues a non-streaming Amazon Q Business conversation.
     ("ChatSync", Decision::Denied(DenyReason::Mutating)),
     (
         "CheckDocumentAccess",
@@ -27,73 +20,48 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors applicationId, indexId, userId, documentId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userGroups, userAliases, hasAccess, documentAcl. Pinned purpose: Verifies if a user has access permissions for a specified document and returns the actual ACL attached to the document. Resolves user access on the document via user aliases and groups when verifying user access.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a unique URL for anonymous Amazon Q Business web experience. This URL can only be used once and must be used within 5 minutes after it's generated.
     (
         "CreateAnonymousWebExperienceUrl",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Q Business application. There are new tiers for Amazon Q Business. Not all features in Amazon Q Business Pro are also available in Amazon Q Business Lite. For information on what's included in Amazon Q Business Lite and what's included in Amazon Q Business Pro, see Amazon Q Business tiers . You must use the Amazon Q Business console to assign subscription tiers to users. An Amazo
     ("CreateApplication", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new chat response configuration for an Amazon Q Business application. This operation establishes a set of parameters that define how the system generates and formats responses to user queries in chat interactions.
     (
         "CreateChatResponseConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new data accessor for an ISV to access data from a Amazon Q Business application. The data accessor is an entity that represents the ISV's access to the Amazon Q Business application's data. It includes the IAM role ARN for the ISV, a friendly name, and a set of action configurations that define the specific actions the ISV is allowed to perform and any associated data filters. When the
     ("CreateDataAccessor", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a data source connector for an Amazon Q Business application. CreateDataSource is a synchronous operation. The operation returns 200 if the data source was successfully created. Otherwise, an exception is raised.
     ("CreateDataSource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Q Business index. To determine if index creation has completed, check the Status field returned from a call to DescribeIndex . The Status field is set to ACTIVE when the index is ready to use. Once the index is active, you can index your documents using the BatchPutDocument API or the CreateDataSource API.
     ("CreateIndex", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Q Business plugin.
     ("CreatePlugin", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds a retriever to your Amazon Q Business application.
     ("CreateRetriever", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Subscribes an IAM Identity Center user or a group to a pricing tier for an Amazon Q Business application. Amazon Q Business offers two subscription tiers: Q_LITE and Q_BUSINESS . Subscription tier determines feature access for the user. For more information on subscriptions and pricing tiers, see Amazon Q Business pricing . For an example IAM role policy for assigning subscriptions, see Set up req
     ("CreateSubscription", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a universally unique identifier (UUID) mapped to a list of local user ids within an application.
     ("CreateUser", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Q Business web experience.
     (
         "CreateWebExperience",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business application.
     ("DeleteApplication", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an attachment associated with a specific Amazon Q Business conversation.
     ("DeleteAttachment", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes chat controls configured for an existing Amazon Q Business application.
     (
         "DeleteChatControlsConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a specified chat response configuration from an Amazon Q Business application.
     (
         "DeleteChatResponseConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business web experience conversation.
     ("DeleteConversation", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a specified data accessor. This operation permanently removes the data accessor and its associated IAM Identity Center application. Any access granted to the ISV through this data accessor will be revoked.
     ("DeleteDataAccessor", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business data source connector. While the data source is being deleted, the Status field returned by a call to the DescribeDataSource API is set to DELETING .
     ("DeleteDataSource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a group so that all users and sub groups that belong to the group can no longer access documents only available to that group. For example, after deleting the group "Summer Interns", all interns who belonged to that group no longer see intern-only documents in their chat results. If you want to delete, update, or replace users or sub groups of a group, you need to use the PutGroup operatio
     ("DeleteGroup", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business index.
     ("DeleteIndex", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business plugin.
     ("DeletePlugin", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the retriever used by an Amazon Q Business application.
     ("DeleteRetriever", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a user by email id.
     ("DeleteUser", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business web experience.
     (
         "DeleteWebExperience",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes a permission policy from a Amazon Q Business application, revoking the cross-account access that was previously granted to an ISV. This operation deletes the specified policy statement from the application's permission policy.
     (
         "DisassociatePermission",
         Decision::Denied(DenyReason::Mutating),
@@ -128,7 +96,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors applicationId, indexId, dataSourceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, indexId, dataSourceId, dataSourceArn, displayName, type, configuration, vpcConfiguration, createdAt, updatedAt, description, status, syncSchedule, roleArn, error, documentEnrichmentConfiguration, mediaExtractionConfiguration. Pinned purpose: Gets information about an existing Amazon Q Business data source connector.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieves the content of a document that was ingested into Amazon Q Business. This API validates user authorization against document ACLs before returning a pre-signed URL for secure document access. You can download or view source documents referenced in chat responses through the URL.
     ("GetDocumentContent", Decision::Denied(DenyReason::Content)),
     (
         "GetGroup",
@@ -142,7 +109,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors applicationId, indexId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, indexId, displayName, indexArn, status, type, description, createdAt, updatedAt, capacityConfiguration, documentAttributeConfigurations, error, indexStatistics. Pinned purpose: Gets information about an existing Amazon Q Business index.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns the image bytes corresponding to a media object. If you have implemented your own application with the Chat and ChatSync APIs, and have enabled content extraction from visual data in Amazon Q Business, you use the GetMedia API operation to download the images so you can show them in your UI with responses. For more information, see Extracting semantic meaning from images and visuals .
     ("GetMedia", Decision::Denied(DenyReason::Content)),
     (
         "GetPlugin",

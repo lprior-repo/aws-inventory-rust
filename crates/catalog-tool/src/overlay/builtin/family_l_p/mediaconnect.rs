@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mediaconnect/service/2018-11-14/mediaconnect-2018-11-14.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -158,7 +157,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Displays a list of bridges that are associated with this account and an optionally specified Amazon Resource Name (ARN). This request returns a paginated result.
     Resource {
         operation: "ListBridges",
         items: "Bridges",
@@ -176,7 +174,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Displays a list of flows that are associated with this account. This request returns a paginated result.
     Resource {
         operation: "ListFlows",
         items: "Flows",
@@ -188,7 +185,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Displays a list of gateways that are associated with this account. This request returns a paginated result.
     Resource {
         operation: "ListGateways",
         items: "Gateways",
@@ -200,7 +196,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of router inputs in AWS Elemental MediaConnect.
     Resource {
         operation: "ListRouterInputs",
         items: "RouterInputs",
@@ -221,7 +216,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of router network interfaces in AWS Elemental MediaConnect.
     Resource {
         operation: "ListRouterNetworkInterfaces",
         items: "RouterNetworkInterfaces",
@@ -240,7 +234,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of router outputs in AWS Elemental MediaConnect.
     Resource {
         operation: "ListRouterOutputs",
         items: "RouterOutputs",

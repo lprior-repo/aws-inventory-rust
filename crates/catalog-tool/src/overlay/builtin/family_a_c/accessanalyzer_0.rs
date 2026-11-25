@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/accessanalyzer/service/2019-11-01/accessanalyzer-2019-11-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::{ContextSource, IdentityField};
 
@@ -95,7 +93,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires analyzerArn, resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a resource that was analyzed. This action is supported only for external access analyzers.",
             ),
         ),
-        // Model: Retrieves information about the specified analyzer.
         (
             "GetAnalyzer",
             OperationOverlay {
@@ -202,7 +199,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires analyzerArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves a list of resources of the specified type that have been analyzed by the specified analyzer.",
             ),
         ),
-        // Model: Retrieves a list of analyzers.
         (
             "ListAnalyzers",
             OperationOverlay {

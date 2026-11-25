@@ -12,9 +12,7 @@ use inventory_core::{catalog::runtime::RuntimeCatalog, inventory::EdgeSource, re
 #[test]
 fn given_each_reference_trait_when_compiled_then_paths_and_model_provenance_roundtrip() -> TestResult
 {
-    // Given a structure reference, an ARN-reference member and an implicit nested reference.
     let (bytes, report) = compile(TargetState::Callable, &[])?;
-    // When the compiled catalog is read through the native runtime decoder.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let paths = catalog
         .relationships()
@@ -28,7 +26,6 @@ fn given_each_reference_trait_when_compiled_then_paths_and_model_provenance_roun
             Ok(relation.source_path.to_vec())
         })
         .collect::<TestResult<Vec<_>>>()?;
-    // Then all three declarations survive, with no duplicate list/read edge.
     assert_eq!(
         paths,
         [
@@ -64,9 +61,7 @@ fn given_each_reference_trait_when_compiled_then_paths_and_model_provenance_roun
 #[test]
 fn given_noncallable_reference_target_when_compiled_then_declarations_remain_pending() -> TestResult
 {
-    // Given the same resource association but a deferred target operation.
     let (bytes, report) = compile(TargetState::Deferred, &[])?;
-    // When compiling the full fixture, then no dangling relationship reaches runtime.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(catalog.relationships(), &[]);
     assert_eq!(report.declared, 0);
@@ -106,7 +101,6 @@ fn given_noncallable_reference_target_when_compiled_then_declarations_remain_pen
 
 #[test]
 fn given_reviewed_rule_for_same_path_and_kind_when_compiled_then_rule_wins_once() -> TestResult {
-    // Given a reviewed rule with a different label for the same declared source and target.
     let rule = kind_map::RelationMapping {
         source_kind: SOURCE,
         source: kind_map::RelationSource::SelectedOutput(kind_map::RelationPath::Fields("ArnRef")),
@@ -116,7 +110,6 @@ fn given_reviewed_rule_for_same_path_and_kind_when_compiled_then_rule_wins_once(
         scope: "account_region",
         guard: None,
     };
-    // When both forms are compiled, then review is the sole authority for this path.
     let (bytes, report) = compile(TargetState::Callable, &[rule])?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let source_path = [FieldId::new(1)?];
@@ -136,7 +129,6 @@ fn given_reviewed_rule_for_same_path_and_kind_when_compiled_then_rule_wins_once(
 #[test]
 fn given_trait_payloads_when_base_catalog_is_read_then_payloads_and_resource_operations_are_retained()
 -> TestResult {
-    // Given compiled declarations, when borrowing their base catalog metadata.
     let (bytes, _) = compile(TargetState::Callable, &[])?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let service = runtime
@@ -170,7 +162,6 @@ fn given_trait_payloads_when_base_catalog_is_read_then_payloads_and_resource_ope
     let arn = members.get("ArnRef").ok_or("ARN member missing")?;
     let payload: serde_json::Value =
         serde_json::from_str(arn.arn_reference()?.ok_or("ARN reference missing")?)?;
-    // Then neither retention nor binary encoding erases the model's reference payload.
     assert_eq!(payload, serde_json::json!({"resource":"n#Resource"}));
     let resource = shapes.get("Resource").ok_or("resource shape missing")?;
     assert_eq!(
@@ -191,9 +182,7 @@ fn given_trait_payloads_when_base_catalog_is_read_then_payloads_and_resource_ope
 #[test]
 fn given_compound_identifiers_when_compiled_then_members_remain_one_joint_reference() -> TestResult
 {
-    // Given two resource identifiers whose source member names are different.
     let (bytes, report) = compile(TargetState::Compound, &[])?;
-    // When reading the real catalog, then neither identifier becomes an independent edge.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let paths = runtime
         .relationships()
@@ -256,9 +245,7 @@ fn reviewed_rule(path: &str) -> kind_map::RelationMapping<'_> {
 #[test]
 fn given_inactive_reviewed_target_group_when_compiled_then_declaration_remains_live() -> TestResult
 {
-    // Given a reviewed row whose second target kind cannot be called.
     let (bytes, report) = compile(TargetState::InactiveReview, &[reviewed_rule("ArnRef")])?;
-    // When compiling the catalog, then that inactive row cannot suppress the declaration.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let path = [FieldId::new(1)?];
     let sources = catalog
@@ -282,9 +269,7 @@ fn given_inactive_reviewed_target_group_when_compiled_then_declaration_remains_l
 #[test]
 fn given_reviewed_secondary_binding_when_compiled_then_joint_primary_declaration_is_preserved()
 -> TestResult {
-    // Given review of Id, which is only the second operand of the declaration rooted at IdRef.
     let (bytes, report) = compile(TargetState::Compound, &[reviewed_rule("Id")])?;
-    // When compiling, then the different primary path still has its joint model edge.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let path = [FieldId::new(4)?];
     let rule = catalog
@@ -301,9 +286,7 @@ fn given_reviewed_secondary_binding_when_compiled_then_joint_primary_declaration
 #[test]
 fn given_container_references_when_compiled_then_each_path_has_an_explicit_pending_reason()
 -> TestResult {
-    // Given references inside both list elements and map values.
     let (bytes, report) = compile(TargetState::Collections, &[])?;
-    // When compiling before container extraction is available, then neither path vanishes.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(catalog.relationships().len(), 3);
     assert_eq!((report.declared, report.inactive.len()), (3, 4));
@@ -328,9 +311,7 @@ fn given_container_references_when_compiled_then_each_path_has_an_explicit_pendi
 #[test]
 fn given_missing_implicit_identifier_when_compiled_then_invalid_reference_is_pending() -> TestResult
 {
-    // Given a referenced resource identifier absent from the source structure.
     let (bytes, report) = compile(TargetState::MissingMember, &[])?;
-    // When compiling, then it is not counted as a live edge.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(catalog.relationships().len(), 2);
     assert_eq!(report.declared, 2);
@@ -349,9 +330,7 @@ fn given_missing_implicit_identifier_when_compiled_then_invalid_reference_is_pen
 #[test]
 fn given_ambiguous_nested_identity_names_when_compiled_then_no_identifier_is_reused() -> TestResult
 {
-    // Given target paths Nested.Id and Other.Id, with no distinct resource identifier bindings.
     let (bytes, report) = compile(TargetState::RepeatedIdentity, &[])?;
-    // When compiling, then one source value cannot stand in for both target operands.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(catalog.relationships(), &[]);
     assert_eq!(report.declared, 0);
@@ -368,9 +347,7 @@ fn given_ambiguous_nested_identity_names_when_compiled_then_no_identifier_is_reu
 #[test]
 fn given_shared_primary_with_distinct_joint_bindings_when_compiled_then_neither_chain_is_lost()
 -> TestResult {
-    // Given two declarations with the same primary and different secondary source bindings.
     let (bytes, _) = compile(TargetState::DistinctBindings, &[])?;
-    // When compiling, then deduplication distinguishes the complete chains.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let path = [FieldId::new(4)?];
     let mut paths = catalog
@@ -391,9 +368,7 @@ fn given_shared_primary_with_distinct_joint_bindings_when_compiled_then_neither_
 #[test]
 fn given_thin_service_reference_when_compiled_then_report_contains_nonzero_live_count() -> TestResult
 {
-    // Given one model declaration on the fixture's explicitly pinned ec2 service.
     let (bytes, report) = compile(TargetState::Thin, &[])?;
-    // When generating the same report used by models compile.
     let text = report.report()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let service = catalog
@@ -443,9 +418,7 @@ fn given_same_kind_declaration_when_compiled_then_its_identity_selector_remains_
 #[test]
 fn given_seventeen_shared_shapes_without_references_when_compiled_then_existing_edges_are_unchanged()
 -> TestResult {
-    // Given a seventeen-structure binary DAG with no reference trait in that subtree.
     let (bytes, report) = compile(TargetState::Branching, &[])?;
-    // When compiling the real model, then irrelevant routes cannot exhaust the declaration walk.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let paths = catalog
         .relationships()

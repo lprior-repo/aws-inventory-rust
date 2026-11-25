@@ -7,7 +7,6 @@ use inventory_engine::inventory::{ChangeStats, PendingProjection};
 #[tokio::test]
 async fn tags_only_changes_survive_reopen_and_stale_ack_while_newer_revision_is_pending()
 -> TestResult {
-    // Given an acknowledged resource image and a tag-only replacement still in flight.
     let (directory, store, _) = support::fixture().await?;
     state::commit_resources(
         &store,
@@ -53,7 +52,6 @@ async fn tags_only_changes_survive_reopen_and_stale_ack_while_newer_revision_is_
         ]
     );
 
-    // When complete-empty S replaces the pending row, not a previously acknowledged row.
     assert_eq!(
         state::commit_tags(
             &store,
@@ -90,7 +88,6 @@ async fn tags_only_changes_survive_reopen_and_stale_ack_while_newer_revision_is_
     pool.close().await;
     drop(store);
 
-    // Then old ACKs before and after S's ACK cannot clear S or resurrect R across reopen.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let stale = ProjectionAck::new(key.clone(), r.revision)?;
     store.ack_projection(stale.clone()).await?;
@@ -106,7 +103,6 @@ async fn tags_only_changes_survive_reopen_and_stale_ack_while_newer_revision_is_
     store.ack_projection(stale).await?;
     assert_eq!(store.drain_projection(100).await?, vec![]);
 
-    // Identical metadata plus a tag replacement also has zero resource writes/timestamp churn.
     let result = state::commit_resources(
         &store,
         "same-record-new-tags",
@@ -142,7 +138,6 @@ async fn tags_only_changes_survive_reopen_and_stale_ack_while_newer_revision_is_
 #[tokio::test]
 async fn absent_and_every_degraded_observation_retain_last_complete_and_known_pairs() -> TestResult
 {
-    // Given literal complete evidence at 100, including an empty value.
     let (directory, store, _) = support::fixture().await?;
     state::commit_resources(
         &store,
@@ -163,7 +158,6 @@ async fn absent_and_every_degraded_observation_retain_last_complete_and_known_pa
         ("failed", TagCoverage::Failed, 300),
         ("unobserved", TagCoverage::Unobserved, 400),
     ] {
-        // When delivered degraded evidence has a different time and non-authoritative pairs.
         state::commit_resources(
             &store,
             name,
@@ -172,7 +166,6 @@ async fn absent_and_every_degraded_observation_retain_last_complete_and_known_pa
             at,
         )
         .await?;
-        // Then all three historical transitions preserve the last complete observation.
         assert_eq!(
             coverage(&directory).await?,
             vec![("one".into(), name.into(), at, Some(100))]

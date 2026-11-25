@@ -33,7 +33,6 @@ pub use types::{
 
 const MAX_PLANS: usize = 65_536;
 
-/// Hashes the canonical compiled capability fields without including their source receipt.
 pub fn compiled_inputs_sha256(
     extension: crate::record::MapRef<'_>,
 ) -> Result<[u8; 32], RuntimeCatalogError> {
@@ -120,7 +119,6 @@ impl<'a> RuntimeCatalog<'a> {
         self.index.lookup(&self.plans, service, operation)
     }
 
-    /// Returns the position of a reviewed operation in this catalog's plans.
     pub fn plan_index(&self, service: &str, operation: &str) -> Option<usize> {
         self.index.lookup_index(&self.plans, service, operation)
     }

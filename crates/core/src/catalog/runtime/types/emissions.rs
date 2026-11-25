@@ -2,8 +2,6 @@ use super::super::RuntimeCatalogError;
 use super::emission::{MAX_RESOURCE_EMISSIONS, ResourceEmissionPlan};
 use std::collections::BTreeSet;
 
-/// The primary resource declaration and all additional selections, normalized once.
-/// The primary discovery selector is stored separately on CallablePlan.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceEmissions {
     primary: ResourceEmissionPlan,
