@@ -1,5 +1,7 @@
 #[path = "projection_trait/backend.rs"]
 mod backend;
+#[path = "projection_trait/destination.rs"]
+mod destination;
 #[path = "projection_trait/fault.rs"]
 mod fault;
 #[path = "projection_trait/high_degree.rs"]
