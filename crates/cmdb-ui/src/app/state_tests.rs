@@ -207,7 +207,10 @@ fn given_loaded_selection_when_fresh_graph_arrives_then_name_hash_and_tags_updat
     let mut fresh = old.clone();
     fresh.name = "renamed".to_owned();
     fresh.content_hash = Some("new-hash".to_owned());
-    fresh.tags.iter_mut().for_each(|tag| tag.value = "prod".to_owned());
+    fresh
+        .tags
+        .iter_mut()
+        .for_each(|tag| tag.value = "prod".to_owned());
     assert!(apply_graph_data(&mut data, graph(&fresh), None));
     assert_eq!(data.selected_row(), Some(&fresh));
 }

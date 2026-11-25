@@ -112,10 +112,8 @@ impl Data {
         };
         if node.record_bytes.is_some() {
             self.selected = Some(node.clone());
-        } else if selected_loaded {
-            if let Some(selected) = self.selected.as_ref() {
-                *node = selected.clone();
-            }
+        } else if let Some(selected) = self.selected.as_ref().filter(|_| selected_loaded) {
+            *node = selected.clone();
         }
     }
 
