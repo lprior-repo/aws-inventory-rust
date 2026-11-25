@@ -136,7 +136,7 @@ async fn upgrades_existing_v04_inventory_without_recollecting_or_replacing_user_
         store
             .query("SELECT user_version AS version FROM pragma_user_version", 1)
             .await?,
-        json!([{"version":13}])
+        json!([{"version":inventory_engine::store::SCHEMA_VERSION}])
     );
     store.close().await;
     Ok(())

@@ -5,7 +5,10 @@ use sqlx::SqliteConnection;
 use std::collections::{BTreeMap, BTreeSet};
 
 mod snapshot;
-pub(crate) use snapshot::{SyntheticSnapshot, restore_synthetic, snapshot_synthetic};
+pub(crate) use snapshot::{RestoreOutcome, SyntheticRollback, restore_synthetic};
+use snapshot::{next_generation, snapshot_synthetic};
+#[cfg(test)]
+mod tests;
 mod write;
 use write::{clear, edge_count, fingerprint, insert_edge, insert_scope_page};
 
@@ -16,14 +19,39 @@ pub async fn persist_scan(
     scan_id: &str,
     config: &ReferenceConfig,
 ) -> Result<ReferenceSummary, StoreError> {
+    persist_scan_owned(store, scan_id, config)
+        .await
+        .map(|persisted| persisted.summary)
+}
+
+pub(crate) struct OwnedPersist {
+    pub(crate) summary: ReferenceSummary,
+    pub(crate) rollback: SyntheticRollback,
+}
+
+/// Replaces the scan's derived references and returns the means to undo exactly
+/// this replacement. The previous state is captured and the generation advanced
+/// inside the same write transaction as the replacement, so concurrent writers
+/// on other connections serialize around it and `restore_synthetic` can tell
+/// whether the state it would overwrite is still the one written here.
+pub(crate) async fn persist_scan_owned(
+    store: &Store,
+    scan_id: &str,
+    config: &ReferenceConfig,
+) -> Result<OwnedPersist, StoreError> {
     let resolution = resolve_scan(store, scan_id, config).await?;
     let provenance = edge_provenance(store, scan_id, &resolution.edges).await?;
     let groups = group_edges(&resolution.edges, &provenance);
     let mut tx = store.writer_pool().begin_with("BEGIN IMMEDIATE").await?;
+    let before = snapshot_synthetic(&mut tx, scan_id).await?;
     clear(scan_id, &mut tx).await?;
     write_groups(&mut tx, scan_id, groups).await?;
+    let generation = next_generation(&mut tx, scan_id).await?;
     tx.commit().await?;
-    Ok(resolution.summary)
+    Ok(OwnedPersist {
+        summary: resolution.summary,
+        rollback: SyntheticRollback::new(before, generation),
+    })
 }
 
 async fn edge_provenance(

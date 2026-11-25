@@ -6,7 +6,7 @@ use anyhow::{Context, Result, ensure};
 use inventory_aws::model_credentials::ProfileCredentials;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{
-    BinaryStore, DatabaseUrl, InventoryStore, PgStore, PgWriteConfig, SchemaRegistry,
+    BinaryStore, DatabaseUrl, InventoryStore, PgStore, PgWriteConfig, SchemaRegistry, StoreState,
 };
 use inventory_sweep::SweepConfig;
 use std::{fs::File, io::Read, path::Path};
@@ -60,7 +60,7 @@ async fn collect<S: InventoryStore>(
 async fn open_postgres(options: &SweepArgs, catalog: &RuntimeCatalog<'_>) -> Result<PgStore> {
     let url = DatabaseUrl::parse(&options.database)?;
     let config = postgres_config()?;
-    if PgStore::exists(&url, config).await? {
+    if PgStore::is_ready(&url, config).await? {
         return open_current(&url, config, catalog.raw_bytes()).await;
     }
     ensure!(!options.resume, "cannot resume a missing inventory schema");
@@ -119,7 +119,7 @@ async fn open_current(url: &DatabaseUrl, config: PgWriteConfig, bytes: &[u8]) ->
 
 async fn open_file(options: &SweepArgs, catalog: &RuntimeCatalog<'_>) -> Result<BinaryStore> {
     let path = Path::new(&options.database);
-    if std::fs::metadata(&options.database).is_ok_and(|metadata| metadata.len() > 0) {
+    if BinaryStore::probe(path).await? == StoreState::Initialized {
         return Ok(BinaryStore::open_with_catalog(path, catalog.raw_bytes()).await?);
     }
     ensure!(!options.resume, "cannot resume a missing database");

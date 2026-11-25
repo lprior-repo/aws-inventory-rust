@@ -126,7 +126,7 @@ async fn schema_thirteen_preserves_every_old_view_and_immutable_payload() -> Tes
         store
             .query("SELECT user_version AS version FROM pragma_user_version", 1)
             .await?,
-        json!([{"version":13}])
+        json!([{"version":inventory_engine::store::SCHEMA_VERSION}])
     );
     assert_eq!(store.query("SELECT count(*) AS n FROM sqlite_schema WHERE type='view' AND name GLOB 'aws_cc_*'",1).await?, json!([{"n":421}]));
     store.close().await;

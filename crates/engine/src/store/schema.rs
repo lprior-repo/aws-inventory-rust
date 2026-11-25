@@ -1,6 +1,6 @@
 use super::*;
 
-pub const SCHEMA_VERSION: i64 = 13;
+pub const SCHEMA_VERSION: i64 = 14;
 
 pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreError> {
     let application: i64 = sqlx::query_scalar("PRAGMA application_id")
@@ -76,6 +76,13 @@ pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreErro
         migrate_cloud_control_views(
             &mut tx,
             include_str!("../../sql/013_cloudcontrol_parent_additions.sql"),
+        )
+        .await?;
+    }
+    if version < 14 {
+        apply(
+            &mut tx,
+            include_str!("../../sql/014_synthetic_generations.sql"),
         )
         .await?;
     }

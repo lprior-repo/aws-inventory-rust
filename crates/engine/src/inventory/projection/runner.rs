@@ -82,8 +82,12 @@ async fn run_owned_projection<S: InventoryStore, G: GraphBackend>(
     generation: i64,
 ) -> Result<ProjectionReport, ProjectionError> {
     let state = store.projection_state().await?;
+    if destination_needs_rebuild(store, graph, state.pending).await? {
+        store.mark_projection_rebuild_required().await?;
+        return Ok(report(state.pending, 0, false, true));
+    }
     if state.pending == 0 {
-        return target_identity_check(store, graph, state.pending).await;
+        return Ok(report(0, 0, false, false));
     }
     if let Err(error) = graph.claim_projection(generation).await {
         return failed_delivery(store, error, 0).await;
@@ -95,19 +99,24 @@ async fn run_owned_projection<S: InventoryStore, G: GraphBackend>(
     Ok(report)
 }
 
-async fn target_identity_check<S: InventoryStore, G: GraphBackend>(
+/// A changed destination may only be fed by a full rebuild: deltas computed for
+/// the previous destination would leave the new graph incomplete. The check runs
+/// before any delivery regardless of the pending count, and the new identity is
+/// only recorded (by `persist_identity`) after a queued rebuild was delivered.
+async fn destination_needs_rebuild<S: InventoryStore, G: GraphBackend>(
     store: &S,
     backend: &G,
     pending: u64,
-) -> Result<ProjectionReport, ProjectionError> {
+) -> Result<bool, StoreError> {
     let stored = store.read_projection_identity().await?;
     let changed = stored
         .zip(backend.target_identity())
         .is_some_and(|(identity, (endpoint, graph))| identity.differs(endpoint, graph));
-    if changed {
-        store.mark_projection_rebuild_required().await?;
+    if !changed || pending == 0 {
+        return Ok(changed);
     }
-    Ok(report(pending, 0, false, changed))
+    let head = store.drain_projection(1).await?;
+    Ok(!head.first().is_some_and(|entry| entry.full_rebuild))
 }
 
 async fn deliver_batch<S: InventoryStore, G: GraphBackend>(

@@ -13,7 +13,7 @@ async fn account_and_coverage_registry_round_trip() -> TestResult {
         store
             .query("SELECT user_version AS version FROM pragma_user_version", 1)
             .await?,
-        json!([{"version":13}])
+        json!([{"version":inventory_engine::store::SCHEMA_VERSION}])
     );
     store
         .register_account("111111111111", "aws", None, 10)
