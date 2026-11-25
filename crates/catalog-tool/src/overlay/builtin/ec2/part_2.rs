@@ -24,6 +24,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("ClientVpnEndpoints")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ClientVpnEndpointId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -46,6 +47,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("CoipPools")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("PoolId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -54,6 +56,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("CustomerGateways")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("CustomerGatewayId")?])),
         paginator: Some(Paginator::None),
         ..empty()
@@ -62,6 +65,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("Reports")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ReportId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -70,6 +74,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("DhcpOptions")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("DhcpOptionsId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -78,6 +83,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("EgressOnlyInternetGateways")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("EgressOnlyInternetGatewayId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -86,6 +92,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("ElasticGpuSet")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ElasticGpuId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -94,6 +101,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("ExportImageTasks")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ExportImageTaskId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -102,6 +110,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("ExportTasks")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ExportTaskId")?])),
         paginator: Some(Paginator::None),
         ..empty()
@@ -141,6 +150,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("FlowLogs")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("FlowLogId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()

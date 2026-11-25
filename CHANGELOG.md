@@ -32,8 +32,13 @@
   by earlier versions keep the omitted values in their stored records until the
   resource is swept again, which replaces the record without them. Records for
   resources that are no longer swept are not rewritten.
-- VPC and subnet records carry the tags returned by `DescribeVpcs` and
-  `DescribeSubnets`.
+- EC2 records now carry the tags returned on each item by the operations that
+  list them, including VPCs, subnets, network interfaces, internet and NAT
+  gateways, security groups, volumes, snapshots, images, and transit gateway
+  resources. Five operations are deliberately not covered because their `Tags`
+  member holds another resource's tags, such as `DescribeVpcClassicLink`, which
+  returns the VPC's tags. Operations that are deferred or denied, such as
+  `DescribeInstances`, store no records, so they carry no tags.
 - Seed bindings resolve outputs by step ID after rejected or skipped steps. A
   binding to an unavailable step names that step, and the dependent request is
   not sent.

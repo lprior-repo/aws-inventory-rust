@@ -11,6 +11,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("FpgaImages")?),
+        tags: Some(path("Tags")?),
         fixed: [(path("Owners")?, FixedValue::Strings(vec!["self".to_owned()]))].into_iter().collect(),
         identity: Some(Identity::Key(vec![path("FpgaImageId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
@@ -24,6 +25,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("HostReservationSet")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("HostReservationId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -32,6 +34,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("Hosts")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("HostId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -79,6 +82,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("ImageUsageReports")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ReportId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -87,6 +91,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("Images")?),
+        tags: Some(path("Tags")?),
         fixed: [(path("Owners")?, FixedValue::Strings(vec!["self".to_owned()])), (path("IncludeDeprecated")?, FixedValue::Boolean(true)), (path("IncludeDisabled")?, FixedValue::Boolean(true))].into_iter().collect(),
         identity: Some(Identity::Key(vec![path("ImageId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
@@ -109,6 +114,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("InstanceConnectEndpoints")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("InstanceConnectEndpointId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -138,6 +144,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("InstanceImageMetadata")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("InstanceId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
