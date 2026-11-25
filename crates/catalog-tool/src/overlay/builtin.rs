@@ -128,3 +128,21 @@ pub(super) fn path(value: &str) -> Result<MemberPath, NameError> {
 pub(super) fn name(value: &str) -> Result<OperationName, NameError> {
     OperationName::new(value)
 }
+
+pub(super) fn exclude_members(
+    service: &mut ServiceOverlay,
+    operation: &str,
+    members: &[&str],
+) -> Result<(), NameError> {
+    let plan = service
+        .operations
+        .get_mut(&name(operation)?)
+        .ok_or_else(|| NameError {
+            value: format!("{}/{operation}: operation absent", service.service),
+        })?;
+    plan.exclude_response_members = members
+        .iter()
+        .map(|member| path(member))
+        .collect::<Result<_, _>>()?;
+    Ok(())
+}

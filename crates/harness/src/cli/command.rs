@@ -23,9 +23,11 @@ inventory-harness assert-parents --db <file> --scan-id <id> [--seed-results <fil
 [--root <dir>]\n  \
 inventory-harness assert-regional --db <file> --scan-id <id> [--seed-results <file>] \
 [--root <dir>] [--region <region>]\n  \
+inventory-harness head-to-head --work <dir> --ours <binary> --tool <name>=<definition.toml> ... [--runs 3]\n  \
 inventory-harness postgres up [--runtime docker|podman] | down [--volumes] | url | prune";
 
 pub(super) enum Command {
+    HeadToHead(inventory_harness::head_to_head::Args),
     Freeze {
         evidence: PathBuf,
         output: PathBuf,

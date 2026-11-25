@@ -69,6 +69,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Expand),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamPoolAllocations")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamPoolAllocationId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         bind: [(path("IpamPoolId")?, Binding::From { operation: name("DescribeIpamPools")?, path: path("IpamPoolId")? })].into_iter().collect(),

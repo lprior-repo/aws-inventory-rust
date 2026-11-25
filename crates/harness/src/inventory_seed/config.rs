@@ -11,6 +11,12 @@ pub enum SeedError {
     Invalid(&'static str),
     #[error("emulator seed error: {0}")]
     Message(String),
+    #[error("seed response identity list count differs: expected {expected}, observed {observed}")]
+    ResponseListCount { expected: usize, observed: usize },
+    #[error("seed response identity list has continuation token {member}")]
+    ResponseListContinuation { member: String },
+    #[error("seed response identity list: output member {member} has no modeled paginator")]
+    ResponseListUnmodeledToken { member: String },
     #[error("emulator rejected seed: {code}: {message}")]
     Rejected { code: String, message: String },
     #[error("emulator seed file could not be read")]

@@ -10,6 +10,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayConnectPeers")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayConnectPeerId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -18,6 +19,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayConnects")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayAttachmentId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -26,6 +28,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayMeteringPolicies")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayMeteringPolicyId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -34,6 +37,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayMulticastDomains")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayMulticastDomainId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -42,6 +46,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayPeeringAttachments")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayAttachmentId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -50,6 +55,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayPolicyTables")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayPolicyTableId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -58,6 +64,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayRouteTableAnnouncements")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayRouteTableAnnouncementId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -66,6 +73,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayRouteTables")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayRouteTableId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -74,6 +82,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayVpcAttachments")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayAttachmentId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -82,6 +91,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGateways")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -90,6 +100,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("InterfaceAssociations")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("AssociationId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -98,6 +109,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VerifiedAccessEndpoints")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("VerifiedAccessEndpointId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -106,6 +118,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VerifiedAccessGroups")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("VerifiedAccessGroupId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -122,6 +135,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VerifiedAccessInstances")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("VerifiedAccessInstanceId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -158,6 +172,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VpcBlockPublicAccessExclusions")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ExclusionId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()

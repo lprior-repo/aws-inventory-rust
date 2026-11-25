@@ -173,6 +173,7 @@ fn resource_value(resource: &SeedResourceIdentity) -> Value {
     let evidence = match resource.evidence {
         SeedIdentityEvidence::Response => "response",
         SeedIdentityEvidence::Request => "request",
+        SeedIdentityEvidence::ServiceCreated => "service-created",
     };
     Value::List(vec![
         key_value(&resource.key),

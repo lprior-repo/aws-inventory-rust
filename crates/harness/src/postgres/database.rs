@@ -1,8 +1,12 @@
 use sqlx::postgres::{PgConnectOptions, PgConnection};
 use sqlx::{ConnectOptions, Executor};
 
-use super::{URL_LIMIT, bounded, names};
+use super::{
+    CleanupFailures, URL_LIMIT, bounded, creation, names,
+    worker::{Actions, Worker},
+};
 use crate::HarnessError;
+use std::future::Future;
 
 const DDL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(65);
 
@@ -10,8 +14,7 @@ const DDL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(65);
 pub struct TestDatabase {
     name: names::DatabaseName,
     url: String,
-    admin_url: String,
-    cleanup: bool,
+    owner: Worker,
 }
 
 impl std::fmt::Debug for TestDatabase {
@@ -25,49 +28,63 @@ impl std::fmt::Debug for TestDatabase {
 
 impl TestDatabase {
     pub async fn create(admin_url: &str) -> Result<Self, HarnessError> {
-        Self::create_named(admin_url, names::generate()?).await
+        Self::create_tracked(admin_url, &CleanupFailures::default()).await
+    }
+
+    pub async fn create_tracked(
+        admin_url: &str,
+        failures: &CleanupFailures,
+    ) -> Result<Self, HarnessError> {
+        Self::create_named(admin_url, names::generate()?, failures).await
     }
 
     async fn create_named(
         admin_url: &str,
         name: names::DatabaseName,
+        failures: &CleanupFailures,
     ) -> Result<Self, HarnessError> {
-        let mut connection = connect_for_ddl(admin_url).await?;
-        let database = Self {
-            url: database_url(admin_url, name.as_str())?,
-            name,
-            admin_url: admin_url.to_owned(),
-            cleanup: true,
+        let actions = creation::Postgres {
+            admin: admin_url.into(),
+            name: name.as_str().into(),
         };
-        let result = execute_ddl(
-            &mut connection,
-            format!("CREATE DATABASE {}", database.name()),
-        )
-        .await;
-        drop(connection);
-        database.complete_creation(result)
+        Self::create_owned(admin_url, name, failures, actions).await
     }
 
-    fn complete_creation(mut self, result: Result<(), HarnessError>) -> Result<Self, HarnessError> {
-        match result {
-            Ok(()) => Ok(self),
-            Err(error) => {
-                if is_database_exists(&error) {
-                    self.cleanup = false;
-                }
-                match &error {
-                    HarnessError::Sqlx(sqlx::Error::Database(db)) => Err(HarnessError::invalid(
-                        creation_reason(db.code().as_deref(), db.message()),
-                    )),
-                    _ => Err(error),
-                }
-            }
-        }
+    async fn create_owned(
+        admin_url: &str,
+        name: names::DatabaseName,
+        failures: &CleanupFailures,
+        actions: impl Actions,
+    ) -> Result<Self, HarnessError> {
+        let url = database_url(admin_url, name.as_str())?;
+        let (owner, ready) = Worker::start(name.as_str().into(), failures.clone(), actions)?;
+        let database = Self { name, url, owner };
+        bounded_ddl(async {
+            ready
+                .await
+                .map_err(|_| HarnessError::invalid("database worker stopped during creation"))?
+        })
+        .await?;
+        Ok(database)
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn create_with_actions(
+        admin: &str,
+        failures: &CleanupFailures,
+        actions: impl Actions,
+    ) -> Result<Self, HarnessError> {
+        Self::create_owned(admin, names::generate()?, failures, actions).await
     }
 
     #[cfg(test)]
     pub(super) async fn create_at(admin_url: &str, seconds: u32) -> Result<Self, HarnessError> {
-        Self::create_named(admin_url, names::DatabaseName::at(seconds)).await
+        Self::create_named(
+            admin_url,
+            names::DatabaseName::at(seconds),
+            &CleanupFailures::default(),
+        )
+        .await
     }
 
     pub fn url(&self) -> &str {
@@ -78,34 +95,18 @@ impl TestDatabase {
         self.name.as_str()
     }
 
-    pub fn keep(mut self) {
-        self.cleanup = false;
-    }
-
-    pub async fn finish(mut self) -> Result<(), HarnessError> {
-        drop_database(&self.admin_url, self.name()).await?;
-        self.cleanup = false;
-        Ok(())
-    }
-}
-
-impl Drop for TestDatabase {
-    fn drop(&mut self) {
-        if !self.cleanup {
-            return;
-        }
-        if let Err(error) = cleanup_on_thread(&self.admin_url, self.name()) {
-            eprintln!(
-                "PostgreSQL test database cleanup failed: {error}; run inventory-harness postgres prune"
-            );
+    pub fn keep(self) {
+        if let Err(error) = self.owner.keep() {
+            eprintln!("PostgreSQL database retention failed: {error}");
         }
     }
+
+    pub async fn finish(self) -> Result<(), HarnessError> {
+        self.owner.finish().await
+    }
 }
 
-fn is_database_exists(error: &HarnessError) -> bool {
-    matches!(error, HarnessError::Sqlx(sqlx::Error::Database(e)) if e.code().as_deref() == Some("42P04"))
-}
-
+#[cfg(test)]
 fn creation_reason(code: Option<&str>, message: &str) -> String {
     match code {
         Some("42501") => {
@@ -114,22 +115,6 @@ fn creation_reason(code: Option<&str>, message: &str) -> String {
         Some(other) => format!("CREATE DATABASE failed (SQLSTATE {other}): {message}"),
         None => format!("CREATE DATABASE failed: {message}"),
     }
-}
-
-fn cleanup_on_thread(admin_url: &str, name: &str) -> Result<(), HarnessError> {
-    std::thread::scope(|scope| {
-        let thread = std::thread::Builder::new()
-            .name("postgres-cleanup".into())
-            .spawn_scoped(scope, || {
-                let runtime = tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()?;
-                runtime.block_on(drop_database(admin_url, name))
-            })?;
-        thread
-            .join()
-            .map_err(|_| HarnessError::invalid("PostgreSQL cleanup thread failed"))?
-    })
 }
 
 pub(super) fn options(url: &str) -> Result<PgConnectOptions, HarnessError> {
@@ -182,6 +167,12 @@ async fn ddl_bounded<T>(
         })?
 }
 
+pub(super) async fn bounded_ddl<T>(
+    future: impl Future<Output = Result<T, HarnessError>>,
+) -> Result<T, HarnessError> {
+    ddl_bounded(future).await
+}
+
 pub(super) async fn drop_database(admin_url: &str, name: &str) -> Result<(), HarnessError> {
     if names::created_at(name).is_none() {
         return Err(HarnessError::invalid(
@@ -198,7 +189,7 @@ pub(super) async fn drop_database(admin_url: &str, name: &str) -> Result<(), Har
 
 #[cfg(test)]
 mod creation_tests {
-    use super::{TestDatabase, connect, connect_for_ddl, creation_reason, names};
+    use super::{CleanupFailures, TestDatabase, connect, connect_for_ddl, creation_reason, names};
     use crate::{HarnessError, postgres::admin_url};
 
     #[test]
@@ -232,8 +223,9 @@ mod creation_tests {
     async fn duplicate_create_does_not_remove_the_existing_database() -> Result<(), HarnessError> {
         let admin = admin_url()?;
         let name = names::generate()?;
-        let original = TestDatabase::create_named(&admin, name.clone()).await?;
-        let duplicate = TestDatabase::create_named(&admin, name).await;
+        let original =
+            TestDatabase::create_named(&admin, name.clone(), &CleanupFailures::default()).await?;
+        let duplicate = TestDatabase::create_named(&admin, name, &CleanupFailures::default()).await;
         let Err(error) = duplicate else {
             return Err(HarnessError::invalid(
                 "duplicate database creation unexpectedly succeeded",
@@ -268,3 +260,6 @@ mod creation_tests {
 
 #[cfg(test)]
 mod ddl_tests;
+
+#[cfg(test)]
+mod tests;

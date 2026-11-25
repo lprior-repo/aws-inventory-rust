@@ -56,9 +56,27 @@ fn replace(value: &mut Value, key: &str, replacement: Value) -> TestResult {
 }
 
 pub(super) fn executable(path: &Path, body: &str) -> TestResult {
-    fs::write(path, format!("#!/bin/sh\n{body}\n"))?;
+    fs::write(
+        path,
+        format!("#!/bin/sh\n[ -z \"$FIXTURE_PROBE\" ] || exit 0\n{body}\n"),
+    )?;
     fs::set_permissions(path, fs::Permissions::from_mode(0o755))?;
-    Ok(())
+    settle(path)
+}
+
+fn settle(path: &Path) -> TestResult {
+    for _ in 0..500 {
+        match std::process::Command::new(path)
+            .env("FIXTURE_PROBE", "1")
+            .status()
+        {
+            Err(error) if error.raw_os_error() == Some(libc::ETXTBSY) => {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            other => return other.map(|_| ()).map_err(Into::into),
+        }
+    }
+    Err("fixture program stayed busy".into())
 }
 
 #[test]

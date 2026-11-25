@@ -183,6 +183,13 @@ async fn assert_regional(
 
 async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
     match command {
+        Command::HeadToHead(args) => {
+            inventory_harness::head_to_head::execute(
+                args,
+                &inventory_harness::postgres::admin_url()?,
+            )
+            .await
+        }
         Command::Mutate {
             emulator,
             binary,
@@ -273,6 +280,7 @@ async fn dispatch_inventory(command: Command) -> Result<serde_json::Value, Harne
         Command::SeedCloudControl { prefix, count } => {
             seed::cloud_control_topics(&prefix, count).await
         }
+        Command::HeadToHead(_) => Err(HarnessError::invalid(USAGE)),
         Command::Mutate { .. }
         | Command::VerifyDelivery { .. }
         | Command::CatalogOperations { .. } => Err(HarnessError::invalid(USAGE)),

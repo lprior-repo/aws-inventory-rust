@@ -1,10 +1,22 @@
 use super::*;
+use crate::overlay::builtin::exclude_members;
 
 pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     aliases_and_permissions(service)?;
     organization_children(service)?;
+    contact_exclusions(service)?;
     rule_children(service)?;
     member_children(service)
+}
+
+fn contact_exclusions(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    [
+        ("ListGroups", "Groups.Email"),
+        ("ListUsers", "Users.Email"),
+        ("ListResources", "Resources.Email"),
+    ]
+    .into_iter()
+    .try_for_each(|(operation, member)| exclude_members(service, operation, &[member]))
 }
 
 fn organization_children(service: &mut ServiceOverlay) -> Result<(), NameError> {

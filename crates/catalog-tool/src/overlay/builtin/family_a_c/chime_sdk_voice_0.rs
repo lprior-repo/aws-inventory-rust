@@ -406,6 +406,7 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             OperationOverlay {
                 page_size: Some(99),
                 queryable: vec![path("PhoneNumberArn")?],
+                exclude_response_members: vec![path("PhoneNumbers.E164PhoneNumber")?],
                 ..read(
                     "PhoneNumbers",
                     Identity::Arn(path("PhoneNumberArn")?),

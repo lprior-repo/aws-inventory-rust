@@ -15,8 +15,30 @@
   by earlier versions keep the addresses in their stored records until the
   resource is swept again, which replaces the record without them. Records for
   resources that are no longer swept are not rewritten.
-- VPC and subnet records carry the tags returned by `DescribeVpcs` and
-  `DescribeSubnets`.
+- Sweeps of ACM, ACM Private CA, AWS B2B Data Interchange, Amazon Chime SDK
+  Voice, Amazon Connect, Amazon Connect Outbound Campaigns (v1 and v2),
+  Detective, Macie, AWS User Notifications Contacts, Oracle Database@AWS, AWS
+  End User Messaging SMS (v2), Security Hub, SES (v1 and v2), Systems Manager
+  Incident Manager Contacts, and WorkMail omit these contact fields from stored
+  records: certificate validation emails and RFC 822 names, member,
+  invitation, user, group and resource emails, contact and customer-contact
+  addresses, sender addresses of custom verification templates and
+  deliverability reports, and the phone number fields of phone number,
+  partnership, profile and campaign records. Other fields that can hold a
+  contact value are still stored: SNS origination numbers and SES certificate
+  sender addresses (they identify the resource), Chime SIP rule trigger values
+  (a phone number or a hostname), Chime phone number IDs, and the Google Cloud
+  service account email on Config connectors. Databases written
+  by earlier versions keep the omitted values in their stored records until the
+  resource is swept again, which replaces the record without them. Records for
+  resources that are no longer swept are not rewritten.
+- EC2 records now carry the tags returned on each item by the operations that
+  list them, including VPCs, subnets, network interfaces, internet and NAT
+  gateways, security groups, volumes, snapshots, images, and transit gateway
+  resources. Four operations are deliberately not covered because their `Tags`
+  member holds another resource's tags, such as `DescribeVpcClassicLink`, which
+  returns the VPC's tags. Operations that are deferred or denied, such as
+  `DescribeInstances`, store no records, so they carry no tags.
 - Seed bindings resolve outputs by step ID after rejected or skipped steps. A
   binding to an unavailable step names that step, and the dependent request is
   not sent.
@@ -784,6 +806,25 @@
   execution evidence never transfers SDK versions; receipts require matching
   source, version and module fingerprints. Current exact-version evidence
   credits 47 operations, not the former 76 cross-version rollup.
+- `inventory-harness head-to-head` times repeated collector runs against one
+  seeded emulator and a PostgreSQL database it creates and drops. It compares
+  results only when every tool reports the seeded scope and counts.
+- E2E seeds now record the nine default Connect flows the pinned emulator
+  creates with each instance, and use an explicitly seeded KMS key for
+  CodeArtifact domains.
+- E2E coverage reports distinguish unselected kinds, and count verification
+  reports unexpected kinds and pre-existing seeded identities.
+- Seed validation now rejects a relationship endpoint that names a step with a
+  response identity list, because such a step does not yield one resource.
+- E2E count verification now fails when the run adds resources of a kind that
+  the seed oracle does not list.
+- Head-to-head comparisons enforce exact seeded counts, except for the EC2
+  defaults documented for VPCs and subnets. They handle SIGINT, SIGTERM, SIGHUP
+  and SIGQUIT throughout startup and collection, settle database creation
+  before cleanup, and report a failed deletion.
+- Head-to-head samples report killed leftover processes, retain leaders until
+  group signalling, and stop the native stack on interruption.
+- Fixture downloads retry reads interrupted by a signal.
 
 ## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
 

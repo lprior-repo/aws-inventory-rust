@@ -1,4 +1,4 @@
-use super::support::{arn, bound, inventory, key, queried, reviewed, token};
+use super::support::{arn, bound, excluded, inventory, key, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
@@ -15,11 +15,14 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["Arn"],
             )?,
             queried(
-                inventory(
-                    "ListInvitations",
-                    "Invitations",
-                    key(&["GraphArn", "AccountId"])?,
-                    token("NextToken", "NextToken")?,
+                excluded(
+                    inventory(
+                        "ListInvitations",
+                        "Invitations",
+                        key(&["GraphArn", "AccountId"])?,
+                        token("NextToken", "NextToken")?,
+                    )?,
+                    &["Invitations.EmailAddress"],
                 )?,
                 &["GraphArn", "AccountId", "Status"],
             )?,
@@ -33,14 +36,17 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["AccountId", "GraphArn"],
             )?,
             queried(
-                bound(
-                    inventory(
-                        "ListMembers",
-                        "MemberDetails",
-                        key(&["GraphArn", "AccountId"])?,
-                        token("NextToken", "NextToken")?,
+                excluded(
+                    bound(
+                        inventory(
+                            "ListMembers",
+                            "MemberDetails",
+                            key(&["GraphArn", "AccountId"])?,
+                            token("NextToken", "NextToken")?,
+                        )?,
+                        &[("GraphArn", "ListGraphs", "Arn")],
                     )?,
-                    &[("GraphArn", "ListGraphs", "Arn")],
+                    &["MemberDetails.EmailAddress"],
                 )?,
                 &["GraphArn", "AccountId", "Status", "AdministratorId"],
             )?,

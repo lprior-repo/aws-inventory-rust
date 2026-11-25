@@ -169,6 +169,14 @@ pub(super) fn queried(mut entry: Entry, members: &[&str]) -> Result<Entry, NameE
     Ok(entry)
 }
 
+pub(super) fn excluded(mut entry: Entry, members: &[&str]) -> Result<Entry, NameError> {
+    entry.1.exclude_response_members = members
+        .iter()
+        .map(|member| MemberPath::selected(member))
+        .collect::<Result<_, _>>()?;
+    Ok(entry)
+}
+
 pub(super) fn scoped(mut entry: Entry, scope: Scope) -> Entry {
     entry.1.scope = Some(scope);
     entry

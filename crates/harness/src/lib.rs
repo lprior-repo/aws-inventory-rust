@@ -4,6 +4,7 @@ pub mod catalog;
 pub mod e2e;
 pub mod emulator;
 mod files;
+pub mod head_to_head;
 pub mod install;
 pub mod inventory_seed;
 pub mod json;

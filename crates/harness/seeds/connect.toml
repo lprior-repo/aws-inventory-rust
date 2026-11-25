@@ -11,3 +11,12 @@ IdentityManagementType = "CONNECT_MANAGED"
 InstanceAlias = "inventory-thin-connect"
 InboundCallsEnabled = false
 OutboundCallsEnabled = false
+
+[[step]]
+id = "default-flows"
+operation = "ListContactFlows"
+kind = "AWS::Connect::ContactFlow"
+identity = { list = "ContactFlowSummaryList", member = "Arn", count = 9 }
+[step.input]
+InstanceId = { from = "instance", path = "Id" }
+MaxResults = 100
