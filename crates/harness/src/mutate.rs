@@ -148,6 +148,11 @@ pub fn command_drain_budget() -> Result<i64, HarnessError> {
     Ok(parsed)
 }
 
+/// Executes one command and persists its final receipt, including launch failures.
+///
+/// # Errors
+/// Returns an error if the request is invalid or the command cannot be prepared
+/// or its receipt written.
 pub async fn execute_command(request: CommandRequest) -> Result<Receipt, HarnessError> {
     let arguments = request.arguments;
     let workspace = request.workspace;
@@ -171,6 +176,7 @@ pub async fn execute_command(request: CommandRequest) -> Result<Receipt, Harness
     write_receipt(&receipt, &output, &label)?;
 
     let mut command = child_command(&arguments, &workspace, &receipt.log, child_budget)?;
+    let spawn_start = Instant::now();
     let mut child = match command.spawn() {
         Ok(c) => c,
         Err(e) => {
@@ -179,6 +185,9 @@ pub async fn execute_command(request: CommandRequest) -> Result<Receipt, Harness
                 "phase": "spawn",
                 "type": std::any::type_name_of_val(&e),
             }));
+            settle_receipt(&mut receipt, spawn_start, 0);
+            write_receipt(&receipt, &output, &label)?;
+            report_settled(&label, &receipt);
             return Ok(receipt);
         }
     };
@@ -416,7 +425,7 @@ pub async fn run(args: &Args) -> Result<Value, HarnessError> {
             arguments: baseline_cmd.clone(),
             workspace: args.workspace.clone(),
             output: output.clone(),
-            label: label.clone(),
+            label,
             scan_id: None,
             port: 0,
             deadline_seconds: 600,
@@ -470,4 +479,53 @@ fn baseline_command() -> Vec<String> {
         "--ignored".to_string(),
         "--test-threads=1".to_string(),
     ]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn missing_program_persists_a_final_spawn_failure_receipt() -> Result<(), HarnessError> {
+        // Given an executable path that does not exist in an isolated workspace.
+        let work = tempfile::tempdir()?;
+        let program = work.path().join("missing-program");
+
+        // When the harness attempts to start the command.
+        let receipt = execute_command(CommandRequest {
+            arguments: vec![program.to_string_lossy().into_owned()],
+            workspace: work.path().to_path_buf(),
+            output: work.path().to_path_buf(),
+            label: String::from("missing"),
+            scan_id: None,
+            port: 0,
+            deadline_seconds: 1,
+            health_check: None,
+        })
+        .await?;
+
+        // Then both the return value and the file describe the settled failure.
+        assert_eq!(receipt.status, "supervisor_error");
+        assert_eq!(receipt.exit_code, Some(124));
+        assert_eq!(receipt.pid, None);
+        assert_eq!(
+            receipt
+                .supervisor_error
+                .as_ref()
+                .and_then(|error| error.get("phase")),
+            Some(&json!("spawn"))
+        );
+        let persisted: Value =
+            serde_json::from_reader(File::open(work.path().join("missing.json"))?)?;
+        assert_eq!(persisted.get("status"), Some(&json!("supervisor_error")));
+        assert_eq!(persisted.get("exit_code"), Some(&json!(124)));
+        assert_eq!(
+            persisted.get("supervisor_error"),
+            receipt.supervisor_error.as_ref()
+        );
+        let empty_log_sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+        assert_eq!(receipt.log_sha256.as_deref(), Some(empty_log_sha256));
+        assert_eq!(persisted.get("log_sha256"), Some(&json!(empty_log_sha256)));
+        Ok(())
+    }
 }

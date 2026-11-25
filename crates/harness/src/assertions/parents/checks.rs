@@ -18,23 +18,9 @@ pub struct ChildCheckContext<'a> {
 }
 
 pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
-    let children = ctx.children;
-    let pages = ctx.pages;
-    let _resources = ctx.resources;
-    let _fixture = ctx.fixture;
-    let _child_types: std::collections::HashSet<String> = children
+    ctx.children
         .iter()
-        .chain(pages.iter())
-        .filter_map(|c| {
-            c.get("type_name")
-                .and_then(Value::as_str)
-                .map(str::to_owned)
-        })
-        .collect();
-
-    for child in children {
-        push_one_child_checks(checks, child, ctx);
-    }
+        .for_each(|child| push_one_child_checks(checks, child, ctx));
 }
 
 fn push_one_child_checks(checks: &mut Vec<Value>, child: &Value, ctx: &ChildCheckContext) {
@@ -46,10 +32,6 @@ fn push_one_child_checks(checks: &mut Vec<Value>, child: &Value, ctx: &ChildChec
         .unwrap_or("");
 
     let parent = ctx.parents.get(parent_key).cloned().unwrap_or(Value::Null);
-    let _parent_type = parent
-        .get("type_name")
-        .and_then(Value::as_str)
-        .unwrap_or("");
 
     let (seed, parent_seed) = seed_pair(ctx.seeds, name, parent_key);
     push_seed_complete_checks(checks, name, &seed, &parent_seed);
@@ -277,11 +259,6 @@ fn push_architecture_edge_check(
         .unwrap_or("");
     let target = edge.get("target").and_then(Value::as_str).unwrap_or("");
     let type_name = edge.get("type_name").and_then(Value::as_str).unwrap_or("");
-    let _owner_resolution = edge
-        .get("owner_resolution")
-        .and_then(Value::as_str)
-        .unwrap_or("");
-    let _paths = edge.get("paths").cloned().unwrap_or(Value::Array(vec![]));
 
     let matching: Vec<Value> = architecture
         .iter()
