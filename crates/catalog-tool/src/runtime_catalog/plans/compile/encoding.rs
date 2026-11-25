@@ -331,6 +331,9 @@ fn leaf_uses_member(leaf: &crate::overlay::IdentityLeaf, member: &str) -> bool {
     };
     match leaf {
         IdentityLeaf::Arn(path) => member_path_matches(path, member),
+        IdentityLeaf::OwnedArn { path, owner, .. } => {
+            member_path_matches(path, member) || member_path_matches(owner, member)
+        }
         IdentityLeaf::Key(paths) => paths.iter().any(|path| member_path_matches(path, member)),
         IdentityLeaf::Template(template) => super::super::identity::fields(template)
             .any(|path| member_path_matches_text(path, member)),

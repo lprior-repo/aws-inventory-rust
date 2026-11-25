@@ -109,6 +109,10 @@ fn leaf(
 ) -> Result<(), RuntimeCatalogError> {
     match leaf {
         IdentityLeafPlan::Arn(path) => text(parts.service, selected(parts.service, item, path)?),
+        IdentityLeafPlan::OwnedArn { path, owner, .. } => {
+            text(parts.service, selected(parts.service, item, path)?)?;
+            text(parts.service, selected(parts.service, item, owner)?)
+        }
         IdentityLeafPlan::Key(paths) => paths
             .iter()
             .try_for_each(|path| scalar(parts.service, selected(parts.service, item, path)?)),

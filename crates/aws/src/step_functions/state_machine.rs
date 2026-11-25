@@ -1,8 +1,11 @@
 use std::collections::BTreeMap;
 
 use aws_sdk_sfn::{
-    Client, operation::describe_state_machine::DescribeStateMachineOutput,
-    types::StateMachineListItem,
+    Client,
+    operation::describe_state_machine::{
+        DescribeStateMachineOutput, builders::DescribeStateMachineFluentBuilder,
+    },
+    types::{IncludedData, StateMachineListItem},
 };
 use inventory_core::{Edge, Resource};
 use inventory_engine::limiter::ApiError;
@@ -30,11 +33,9 @@ pub(super) async fn enrich_state_machine(
         Ok(value) => value,
         Err(error) => return reject(ctx, KIND, None, error).await,
     };
-    let Some(described) = describe(ctx, client, arn).await? else {
-        return Ok(None);
-    };
+    let described = describe(ctx, client, arn).await?;
     let tags = tags(ctx, client, arn).await?;
-    match map_state_machine(ctx, item, &described, tags) {
+    match map_state_machine(ctx, item, described.as_ref(), tags) {
         Ok(observation) => Ok(Some(observation)),
         Err(error) => reject(ctx, KIND, Some(arn), error).await,
     }
@@ -80,14 +81,21 @@ async fn describe_call(
     arn: &str,
 ) -> Result<DescribeStateMachineOutput, ApiError> {
     ctx.execute("sfn", "control_read", || async {
-        client
-            .describe_state_machine()
-            .state_machine_arn(arn)
+        describe_request(client, arn)
             .send()
             .await
             .map_err(sdk_error)
     })
     .await
+}
+
+/// Inventory never reads the definition, so ask for metadata only: an
+/// encrypted definition would otherwise require `kms:Decrypt`.
+pub(super) fn describe_request(client: &Client, arn: &str) -> DescribeStateMachineFluentBuilder {
+    client
+        .describe_state_machine()
+        .state_machine_arn(arn)
+        .included_data(IncludedData::MetadataOnly)
 }
 
 async fn tags(
@@ -134,19 +142,28 @@ async fn record(
 pub(super) fn map_state_machine(
     ctx: &Context,
     listed: &StateMachineListItem,
-    described: &DescribeStateMachineOutput,
+    described: Option<&DescribeStateMachineOutput>,
     tags: Option<BTreeMap<String, String>>,
 ) -> Result<Observation, AwsScanError> {
-    let parts = identity(ctx, listed, described)?;
+    let (id, name) = match described {
+        Some(described) => (
+            described.state_machine_arn(),
+            identity(ctx, listed, described)?.name,
+        ),
+        None => {
+            let arn = self::listed(ctx, listed)?;
+            (arn, listed.name())
+        }
+    };
     let tags_collected = tags.is_some();
     let resource = ctx.resource(
         KIND,
-        described.state_machine_arn().to_owned(),
-        Some(parts.name.to_owned()),
+        id.to_owned(),
+        Some(name.to_owned()),
         properties(listed, described, tags_collected)?,
         tags.unwrap_or_default(),
     )?;
-    let edges = edges(ctx, &resource, described);
+    let edges = described.map_or_else(Vec::new, |described| edges(ctx, &resource, described));
     Ok(Observation { resource, edges })
 }
 
@@ -172,24 +189,30 @@ fn identity<'a>(
     Ok(parts)
 }
 
+/// `describe_collected` states the coverage outcome of the DescribeStateMachine
+/// enrichment: when it is false only list-derived fields are populated.
 fn properties(
     listed: &StateMachineListItem,
-    described: &DescribeStateMachineOutput,
+    described: Option<&DescribeStateMachineOutput>,
     tags_collected: bool,
 ) -> Result<Value, AwsScanError> {
+    let created = described.map_or_else(|| listed.creation_date(), |d| d.creation_date());
     Ok(json!({
-        "state_machine_arn": described.state_machine_arn(),
-        "name": described.name(),
-        "state_machine_type": described.r#type().as_str(),
+        "state_machine_arn": listed.state_machine_arn(),
+        "name": listed.name(),
+        "state_machine_type": described.map(|d| d.r#type().as_str()),
         "type": listed.r#type().as_str(),
-        "status": described.status().map(|status| status.as_str()),
-        "creation_date": values::millis(described.creation_date(), "state machine")?,
-        "role_arn": described.role_arn(),
-        "revision_id": described.revision_id(),
-        "description": described.description(),
-        "logging_configuration": values::logging(described.logging_configuration()),
-        "tracing_configuration": values::tracing(described.tracing_configuration()),
-        "encryption_configuration": values::encryption(described.encryption_configuration()),
+        "status": described.and_then(|d| d.status()).map(|status| status.as_str()),
+        "creation_date": values::millis(created, "state machine")?,
+        "role_arn": described.map(|d| d.role_arn()),
+        "revision_id": described.and_then(|d| d.revision_id()),
+        "description": described.and_then(|d| d.description()),
+        "logging_configuration": values::logging(described.and_then(|d| d.logging_configuration())),
+        "tracing_configuration": values::tracing(described.and_then(|d| d.tracing_configuration())),
+        "encryption_configuration": values::encryption(
+            described.and_then(|d| d.encryption_configuration())
+        ),
+        "describe_collected": described.is_some(),
         "tags_collected": tags_collected,
     }))
 }

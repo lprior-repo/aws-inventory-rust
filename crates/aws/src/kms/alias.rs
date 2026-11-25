@@ -24,11 +24,15 @@ pub(super) fn map_alias(ctx: &Context, entry: &AliasListEntry) -> Result<Resourc
             "ListAliases AliasName does not match the alias ARN",
         ));
     }
-    let target = entry
-        .target_key_id()
-        .filter(|value| !value.is_empty())
-        .ok_or_else(|| invalid("ListAliases lacks TargetKeyId"))?;
-    validate_target_key_id(target, ctx).map_err(invalid)?;
+    // Predefined aliases (for example alias/aws/s3 before first use) carry no
+    // target key; an absent TargetKeyId is valid, an empty one is malformed.
+    let target = entry.target_key_id();
+    if let Some(target) = target {
+        if target.is_empty() {
+            return Err(invalid("ListAliases TargetKeyId is empty"));
+        }
+        validate_target_key_id(target, ctx).map_err(invalid)?;
+    }
     ctx.resource(
         "aws_kms_alias",
         arn.to_owned(),

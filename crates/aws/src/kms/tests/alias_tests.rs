@@ -41,16 +41,29 @@ fn maps_alias_identity_and_target_without_an_edge() -> TestResult {
 }
 
 #[test]
-fn missing_alias_arn_or_target_is_rejected() -> TestResult {
+fn missing_alias_arn_or_empty_target_is_rejected() -> TestResult {
     let (ctx, _receiver) = context("us-east-1")?;
     assert!(map_alias(&ctx, &alias_entry(None, Some(ALIAS_NAME), Some(KEY_ID))).is_err());
-    assert!(map_alias(&ctx, &alias_entry(Some(ALIAS_ARN), None, None)).is_err());
     assert!(
         map_alias(
             &ctx,
             &alias_entry(Some(ALIAS_ARN), Some(ALIAS_NAME), Some(""))
         )
         .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn alias_without_a_target_key_is_preserved_with_a_null_reference() -> TestResult {
+    let (ctx, _receiver) = context("us-east-1")?;
+    let resource = map_alias(&ctx, &alias_entry(Some(ALIAS_ARN), None, None))?;
+    assert_eq!(resource.id, ALIAS_ARN);
+    assert_eq!(resource.kind, "aws_kms_alias");
+    assert_eq!(resource.name.as_deref(), Some(ALIAS_NAME));
+    assert_eq!(
+        resource.properties.get("target_key_id"),
+        Some(&serde_json::Value::Null)
     );
     Ok(())
 }

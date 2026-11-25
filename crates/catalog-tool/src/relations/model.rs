@@ -161,7 +161,7 @@ pub(super) fn identity_path(identity: &Identity, format: &str) -> Option<String>
 
 fn leaf_path(identity: &IdentityLeaf) -> Option<String> {
     match identity {
-        IdentityLeaf::Arn(_) => None,
+        IdentityLeaf::Arn(_) | IdentityLeaf::OwnedArn { .. } => None,
         IdentityLeaf::Key(paths) if paths.len() == 1 => {
             paths.first().map(|path| path.as_str().to_owned())
         }

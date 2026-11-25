@@ -15,7 +15,9 @@ fn leaf_arity(leaf: &IdentityLeafPlan) -> usize {
     match leaf {
         IdentityLeafPlan::Key(paths) => paths.len(),
         IdentityLeafPlan::Fields(fields) => fields.len(),
-        IdentityLeafPlan::Arn(_) | IdentityLeafPlan::Template(_) => 1,
+        IdentityLeafPlan::Arn(_)
+        | IdentityLeafPlan::OwnedArn { .. }
+        | IdentityLeafPlan::Template(_) => 1,
     }
 }
 

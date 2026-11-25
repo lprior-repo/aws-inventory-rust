@@ -400,7 +400,10 @@ fn row_identity(identity: &IdentityPlan) -> bool {
 
 fn row_leaf(identity: &IdentityLeafPlan) -> bool {
     match identity {
-        IdentityLeafPlan::Arn(_) | IdentityLeafPlan::Template(_) | IdentityLeafPlan::Key(_) => true,
+        IdentityLeafPlan::Arn(_)
+        | IdentityLeafPlan::OwnedArn { .. }
+        | IdentityLeafPlan::Template(_)
+        | IdentityLeafPlan::Key(_) => true,
         IdentityLeafPlan::Fields(fields) => row_fields(fields),
     }
 }

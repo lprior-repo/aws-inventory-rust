@@ -173,14 +173,15 @@ fn arn_sentinel(branch: &IdentityBranchPlan, branches: &[IdentityBranchPlan]) ->
     let IdentityPredicatePlan::TextEquals { path, .. } = &branch.predicate else {
         return false;
     };
-    branches
-        .iter()
-        .any(|other| matches!(&other.identity, IdentityLeafPlan::Arn(arn) if arn == path))
+    branches.iter().any(|other| match &other.identity {
+        IdentityLeafPlan::Arn(arn) | IdentityLeafPlan::OwnedArn { path: arn, .. } => arn == path,
+        _ => false,
+    })
 }
 
 fn leaf_arn(identity: &IdentityLeafPlan) -> bool {
     match identity {
-        IdentityLeafPlan::Arn(_) => true,
+        IdentityLeafPlan::Arn(_) | IdentityLeafPlan::OwnedArn { .. } => true,
         IdentityLeafPlan::Template(parts) => {
             matches!(parts.first(), Some(super::IdentityPart::Literal(prefix)) if prefix.starts_with("arn:"))
                 && parts

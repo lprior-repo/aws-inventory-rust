@@ -111,6 +111,16 @@ fn leaf(
             (1, Value::Int(0)),
             (2, selected_path(services, path.as_str())?),
         ]),
+        IdentityLeaf::OwnedArn {
+            path,
+            owner,
+            resource_kind,
+        } => encode::map([
+            (1, Value::Int(7)),
+            (2, selected_path(services, path.as_str())?),
+            (3, selected_path(services, owner.as_str())?),
+            (4, Value::Int(arn_kind(*resource_kind))),
+        ]),
         IdentityLeaf::Template(template) => identity::compile(template, services),
         IdentityLeaf::Key(paths) => encode::map([
             (1, Value::Int(2)),

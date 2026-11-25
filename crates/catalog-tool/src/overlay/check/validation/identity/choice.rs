@@ -69,6 +69,10 @@ pub(super) fn valid<'m>(
 fn leaf<'m>(operation: &str, model: &Model<'m>, item: ShapeRef<'m>, leaf: &IdentityLeaf) -> bool {
     match leaf {
         IdentityLeaf::Arn(path) => text(selected(model, item, path.as_str())),
+        IdentityLeaf::OwnedArn { path, owner, .. } => {
+            text(selected(model, item, path.as_str()))
+                && text(selected(model, item, owner.as_str()))
+        }
         IdentityLeaf::Key(paths) => {
             !paths.is_empty()
                 && paths.len() <= 8

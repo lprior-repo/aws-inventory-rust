@@ -62,6 +62,13 @@ pub enum IdentityFieldPlan {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IdentityLeafPlan {
     Arn(Box<[FieldId]>),
+    /// ARN whose account segment may belong to another account; the selected
+    /// row's `owner` member names the account that owns the resource.
+    OwnedArn {
+        path: Box<[FieldId]>,
+        owner: Box<[FieldId]>,
+        resource_kind: super::ArnResourceKind,
+    },
     Template(Box<[super::IdentityPart]>),
     Key(Box<[Box<[FieldId]>]>),
     Fields(Box<[IdentityFieldPlan]>),

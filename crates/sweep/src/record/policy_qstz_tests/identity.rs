@@ -232,7 +232,6 @@ fn given_malformed_subscription_arns_when_details_bind_then_errors_are_not_silen
         "",
         "pendingconfirmation",
         "arn:aws:sns:us-east-1:123456789012:topic",
-        "arn:aws:sns:us-east-1:999999999999:topic:id",
         "arn:aws:sns:us-west-2:123456789012:topic:id",
         "arn:aws:sqs:us-east-1:123456789012:topic:id",
     ] {
@@ -249,5 +248,111 @@ fn given_malformed_subscription_arns_when_details_bind_then_errors_are_not_silen
             "malformed ARN was skipped or accepted: {arn}"
         );
     }
+    Ok(())
+}
+
+const TOPIC_OWNER_ACCOUNT: &str = "999999999999";
+const SCANNED_ACCOUNT: &str = "123456789012";
+const CROSS_ACCOUNT_SUBSCRIPTION: &str =
+    "arn:aws:sns:us-east-1:999999999999:topic:0fbbf013-2c09-4c13-b31a-62857ec41b47";
+
+fn owned_subscriptions_xml(arn: &str, owner: &str) -> String {
+    format!(
+        "<ListSubscriptionsResponse><ListSubscriptionsResult><Subscriptions><member><SubscriptionArn>{arn}</SubscriptionArn><TopicArn>arn:aws:sns:us-east-1:{TOPIC_OWNER_ACCOUNT}:topic</TopicArn><Protocol>https</Protocol><Endpoint>https://example.com</Endpoint><Owner>{owner}</Owner></member></Subscriptions></ListSubscriptionsResult></ListSubscriptionsResponse>"
+    )
+}
+
+fn subscription_attributes_xml(arn: &str, owner: &str) -> String {
+    format!(
+        "<GetSubscriptionAttributesResponse><GetSubscriptionAttributesResult><Attributes><entry><key>SubscriptionArn</key><value>{arn}</value></entry><entry><key>Owner</key><value>{owner}</value></entry><entry><key>Endpoint</key><value>https://example.com</value></entry></Attributes></GetSubscriptionAttributesResult></GetSubscriptionAttributesResponse>"
+    )
+}
+
+#[tokio::test]
+async fn given_cross_account_topic_subscription_owned_by_scanned_account_when_collected_then_list_and_detail_persist()
+-> TestResult {
+    let catalog = RuntimeCatalog::from_bytes(bytes()?)?;
+    let list = catalog
+        .lookup("sns", "ListSubscriptions")
+        .ok_or("subscription list absent")?;
+    let detail = catalog
+        .lookup("sns", "GetSubscriptionAttributes")
+        .ok_or("subscription attributes absent")?;
+    let response = decode(
+        list,
+        owned_subscriptions_xml(CROSS_ACCOUNT_SUBSCRIPTION, SCANNED_ACCOUNT).as_bytes(),
+    )?;
+    let row = item_records(&response, list.items())?
+        .into_iter()
+        .next()
+        .ok_or("subscription row absent")?;
+    let fields = child_fields_optional(&catalog, list, detail, &row)?
+        .ok_or("cross-account subscription detail was skipped")?;
+    let encoded = request(detail, &fields)?;
+    assert!(
+        std::str::from_utf8(encoded.body())?
+            .contains("SubscriptionArn=arn%3Aaws%3Asns%3Aus-east-1%3A999999999999%3Atopic%3A")
+    );
+    let bindings = request_bindings(list, &[])?;
+    let observations = observations_with_request(list, vec![row], &bindings)?;
+    let (persisted, _) = persist(list, vec![(list, None, bindings, observations)]).await?;
+    assert_eq!(
+        persisted
+            .iter()
+            .map(|(kind, id, _)| (kind.as_str(), id.as_str()))
+            .collect::<Vec<_>>(),
+        [("AWS::SNS::Subscription", CROSS_ACCOUNT_SUBSCRIPTION)]
+    );
+    let request_record = request_bindings(detail, &fields)?;
+    let attributes = decode(
+        detail,
+        subscription_attributes_xml(CROSS_ACCOUNT_SUBSCRIPTION, SCANNED_ACCOUNT).as_bytes(),
+    )?;
+    let observations = observations_with_request(
+        detail,
+        item_records(&attributes, detail.items())?,
+        &request_record,
+    )?;
+    let (persisted, _) =
+        persist(detail, vec![(detail, None, request_record, observations)]).await?;
+    assert_eq!(
+        persisted
+            .iter()
+            .map(|(kind, id, _)| (kind.as_str(), id.as_str()))
+            .collect::<Vec<_>>(),
+        [("AWS::SNS::Subscription", CROSS_ACCOUNT_SUBSCRIPTION)]
+    );
+    Ok(())
+}
+
+#[test]
+fn given_subscription_owned_by_another_account_when_collected_then_identity_is_rejected()
+-> TestResult {
+    let catalog = RuntimeCatalog::from_bytes(bytes()?)?;
+    let list = catalog
+        .lookup("sns", "ListSubscriptions")
+        .ok_or("subscription list absent")?;
+    let detail = catalog
+        .lookup("sns", "GetSubscriptionAttributes")
+        .ok_or("subscription attributes absent")?;
+    let response = decode(
+        list,
+        owned_subscriptions_xml(CROSS_ACCOUNT_SUBSCRIPTION, TOPIC_OWNER_ACCOUNT).as_bytes(),
+    )?;
+    let row = item_records(&response, list.items())?
+        .into_iter()
+        .next()
+        .ok_or("subscription row absent")?;
+    let bindings = request_bindings(list, &[])?;
+    assert!(observations_with_request(list, vec![row], &bindings).is_err());
+    let fields = request_bindings(detail, &[])?;
+    let attributes = decode(
+        detail,
+        subscription_attributes_xml(CROSS_ACCOUNT_SUBSCRIPTION, TOPIC_OWNER_ACCOUNT).as_bytes(),
+    )?;
+    assert!(
+        observations_with_request(detail, item_records(&attributes, detail.items())?, &fields)
+            .is_err()
+    );
     Ok(())
 }
