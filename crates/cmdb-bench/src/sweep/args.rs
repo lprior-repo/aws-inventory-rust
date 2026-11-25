@@ -239,6 +239,34 @@ pub(crate) fn setting_text<T: ToString>(value: Option<T>) -> String {
     value.map_or_else(|| "default".into(), |value| value.to_string())
 }
 
+const CLEARED_ENVIRONMENT: [&str; 2] = [
+    "INVENTORY_SWEEP_IDLE_TIMEOUT_MS",
+    "INVENTORY_SWEEP_POOL_IDLE_PER_HOST",
+];
+const RECORDED_ENVIRONMENT: [(&str, &str); 2] = [
+    ("postgres_copy_min_rows", "INVENTORY_POSTGRES_COPY_MIN_ROWS"),
+    ("postgres_copy_direct", "INVENTORY_POSTGRES_COPY_DIRECT"),
+];
+
+pub(crate) fn apply_collector_options(command: &mut tokio::process::Command, args: &SweepArgs) {
+    CLEARED_ENVIRONMENT.iter().for_each(|name| {
+        command.env_remove(name);
+    });
+    command.args(collector_options(args));
+}
+
+pub(crate) fn environment_headers(read: impl Fn(&str) -> Option<String>) -> Vec<(String, String)> {
+    RECORDED_ENVIRONMENT
+        .iter()
+        .map(|(header, name)| {
+            (
+                (*header).to_owned(),
+                read(name).unwrap_or_else(|| "unset".into()),
+            )
+        })
+        .collect()
+}
+
 pub(crate) fn rate_text(milli: u32) -> String {
     if milli.is_multiple_of(1_000) {
         (milli / 1_000).to_string()
@@ -455,6 +483,30 @@ mod tests {
             .into_iter(),
         )?;
         assert_eq!(collector_options(&pool_only), ["--pool-idle-per-host", "2"]);
+        let mut command = tokio::process::Command::new("c");
+        apply_collector_options(&mut command, &pool_only);
+        let removed = command
+            .as_std()
+            .get_envs()
+            .filter(|(_, value)| value.is_none())
+            .filter_map(|(name, _)| name.to_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            removed,
+            [
+                "INVENTORY_SWEEP_IDLE_TIMEOUT_MS",
+                "INVENTORY_SWEEP_POOL_IDLE_PER_HOST"
+            ]
+        );
+        assert_eq!(
+            environment_headers(|name| {
+                (name == "INVENTORY_POSTGRES_COPY_MIN_ROWS").then(|| "64".to_owned())
+            }),
+            [
+                ("postgres_copy_min_rows".to_owned(), "64".to_owned()),
+                ("postgres_copy_direct".to_owned(), "unset".to_owned()),
+            ]
+        );
         [
             ["--concurrency", "0", "--runs", "1"],
             ["--idle-timeout-ms", "90001", "--runs", "1"],

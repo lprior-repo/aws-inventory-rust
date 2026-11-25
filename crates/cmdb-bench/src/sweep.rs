@@ -269,7 +269,7 @@ impl Session<'_> {
                 "--max-pages",
                 "100000",
             ]);
-        command.args(args::collector_options(self.args));
+        args::apply_collector_options(&mut command, self.args);
         self.plan.services.iter().for_each(|service| {
             command.args(["--service", service]);
         });
@@ -338,6 +338,7 @@ impl Session<'_> {
                 "aggregate admitted responses against one per-scope quota; not proof of scope saturation".into(),
             ));
         }
+        headers.extend(args::environment_headers(|name| std::env::var(name).ok()));
         headers.extend(settings);
         Ok(headers)
     }
