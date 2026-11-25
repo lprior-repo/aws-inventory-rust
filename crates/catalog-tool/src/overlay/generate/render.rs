@@ -1,6 +1,6 @@
 use crate::overlay::{
     Identity, ItemSelector, OperationOverlay, OverlayClass, OverlayError, Paginator, Scope,
-    ServiceOverlay,
+    ServiceOverlay, SkipEvidence,
 };
 
 #[derive(Default)]
@@ -40,7 +40,22 @@ impl Output {
     }
 
     fn table(&mut self, operation: &str, suffix: &str) -> Result<(), OverlayError> {
-        self.append("[operation.")?;
+        self.operation_table(None, operation, suffix)
+    }
+
+    fn operation_table(
+        &mut self,
+        service: Option<&str>,
+        operation: &str,
+        suffix: &str,
+    ) -> Result<(), OverlayError> {
+        self.append("[")?;
+        if let Some(service) = service {
+            self.append("service.")?;
+            self.quoted(service)?;
+            self.append(".")?;
+        }
+        self.append("operation.")?;
         self.append(operation)?;
         self.append(suffix)?;
         self.append("]\n")
@@ -63,6 +78,21 @@ pub(super) fn render(policy: &ServiceOverlay) -> Result<String, OverlayError> {
     Ok(output.0)
 }
 
+/// Render a reviewed comparison fragment namespaced by the service to be edited.
+pub fn render_skip_receipts(policy: &ServiceOverlay) -> Result<String, OverlayError> {
+    let mut output = Output::default();
+    output
+        .append("# Merge the operation tables under this service into its existing overlay.\n")?;
+    policy.operations().iter().try_for_each(|(parent, entry)| {
+        let service = Some(policy.service());
+        output.operation_table(service, parent.as_str(), "")?;
+        skips(&mut output, entry)?;
+        receipts(&mut output, service, parent.as_str(), entry)?;
+        output.append("\n")
+    })?;
+    Ok(output.0)
+}
+
 fn operation(
     output: &mut Output,
     name: &str,
@@ -79,9 +109,36 @@ fn operation(
         output.line("defer_reason", reason)?;
     }
     fields(output, entry)?;
+    skips(output, entry)?;
     identity(output, name, entry.identity.as_ref())?;
     paginator(output, name, entry.paginator.as_ref())?;
-    bindings(output, name, entry)
+    bindings(output, name, entry)?;
+    receipts(output, None, name, entry)
+}
+
+fn receipts(
+    output: &mut Output,
+    service: Option<&str>,
+    parent: &str,
+    entry: &OperationOverlay,
+) -> Result<(), OverlayError> {
+    entry
+        .skip_evidence
+        .iter()
+        .try_for_each(|(child, evidence)| {
+            output.operation_table(service, parent, &format!(".skip_evidence.{child}"))?;
+            receipt(output, evidence)
+        })
+}
+
+fn receipt(output: &mut Output, evidence: &SkipEvidence) -> Result<(), OverlayError> {
+    output.line("service", &evidence.service)?;
+    output.line("list", evidence.list.as_str())?;
+    output.line("describe", evidence.describe.as_str())?;
+    output.line("inputs_sha256", &evidence.inputs_sha256)?;
+    output.line("compared", &evidence.compared)?;
+    output.append(&format!("resources = {}\n", evidence.resources))?;
+    output.line("when", &evidence.when)
 }
 
 fn fields(output: &mut Output, entry: &OperationOverlay) -> Result<(), OverlayError> {
@@ -101,6 +158,24 @@ fn fields(output: &mut Output, entry: &OperationOverlay) -> Result<(), OverlayEr
         }
     }
     Ok(())
+}
+
+fn skips(output: &mut Output, entry: &OperationOverlay) -> Result<(), OverlayError> {
+    if entry.skip.is_empty() {
+        return Ok(());
+    }
+    output.append("skip = [")?;
+    entry
+        .skip
+        .iter()
+        .enumerate()
+        .try_for_each(|(index, name)| {
+            if index != 0 {
+                output.append(", ")?;
+            }
+            output.quoted(name.as_str())
+        })?;
+    output.append("]\n")
 }
 
 fn identity(

@@ -8,6 +8,8 @@ pub(super) struct Args {
     pub region: String,
     pub report: PathBuf,
     pub services: Vec<String>,
+    pub pairs: Vec<String>,
+    pub compared_at: Option<String>,
 }
 
 impl Args {
@@ -36,6 +38,8 @@ struct Options<'a> {
     region: Option<&'a str>,
     report: Option<&'a str>,
     services: Vec<&'a str>,
+    pairs: Vec<&'a str>,
+    compared_at: Option<&'a str>,
 }
 
 impl<'a> Options<'a> {
@@ -44,6 +48,11 @@ impl<'a> Options<'a> {
             return Err(ProbeError::Invalid(
                 "probe option value is empty or too long",
             ));
+        }
+        if name == "--compare-pair" {
+            self.pairs.try_reserve(1)?;
+            self.pairs.push(value);
+            return Ok(());
         }
         if name == "--service" {
             self.services.try_reserve(1)?;
@@ -56,6 +65,7 @@ impl<'a> Options<'a> {
             "--ca-bundle" => &mut self.ca_bundle,
             "--region" => &mut self.region,
             "--report" => &mut self.report,
+            "--compared-at" => &mut self.compared_at,
             _ => return Err(ProbeError::Invalid("unknown probe option")),
         };
         if slot.replace(value).is_some() {
@@ -65,6 +75,11 @@ impl<'a> Options<'a> {
     }
 
     fn finish(self) -> Result<Args, ProbeError> {
+        if !self.services.is_empty() && !self.pairs.is_empty() {
+            return Err(ProbeError::Invalid(
+                "--service cannot be combined with --compare-pair",
+            ));
+        }
         let args = Args {
             catalog: required(self.catalog)?.into(),
             endpoint: required(self.endpoint)?.into(),
@@ -72,8 +87,15 @@ impl<'a> Options<'a> {
             region: required(self.region)?.into(),
             report: required(self.report)?.into(),
             services: self.services.into_iter().map(str::to_owned).collect(),
+            pairs: self.pairs.into_iter().map(str::to_owned).collect(),
+            compared_at: self.compared_at.map(str::to_owned),
         };
         endpoint(&args.endpoint)?;
+        if args.pairs.is_empty() != args.compared_at.is_none() {
+            return Err(ProbeError::Invalid(
+                "compare-pair and compared-at must be supplied together",
+            ));
+        }
         Ok(args)
     }
 }

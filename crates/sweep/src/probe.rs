@@ -1,3 +1,4 @@
+mod pair;
 use crate::{CredentialSource, SweepError, call, execution::routing, input, metrics, record};
 use aws_wire::transport::Client;
 use inventory_core::{
@@ -6,6 +7,7 @@ use inventory_core::{
     record::Record,
 };
 use inventory_engine::limiter::ApiExecutor;
+pub use pair::{ProbePage, ProbeSession, probe_pair};
 
 #[cfg(test)]
 mod tests;

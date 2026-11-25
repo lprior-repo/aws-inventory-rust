@@ -1,6 +1,7 @@
 mod args;
 mod credentials;
 mod load;
+mod receipt;
 
 use super::ProbeError;
 use args::Args;
@@ -27,6 +28,19 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
         tokio::task::spawn_blocking(move || load::load(&args.catalog, &args.ca_bundle)).await??;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let executor = executor()?;
+    if let Some(when) = &args.compared_at {
+        let probe = super::Probe {
+            catalog: &catalog,
+            credentials: &credentials,
+            client: &client,
+            executor: &executor,
+            region: &region,
+            endpoint: &args.endpoint,
+            services: &args.services,
+        };
+        let (report, overlays) = probe.compare(&args.pairs, when).await?;
+        return receipt::publish(args.report, report, Some(overlays)).await;
+    }
     let text = super::run(
         &catalog,
         &credentials,
@@ -37,8 +51,7 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
         &args.services,
     )
     .await?;
-    tokio::fs::write(args.report, text).await?;
-    Ok(())
+    receipt::publish(args.report, text, None).await
 }
 
 fn executor() -> Result<ApiExecutor, ProbeError> {

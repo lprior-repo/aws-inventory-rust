@@ -1,3 +1,5 @@
+mod skip_bindings;
+
 use super::super::RuntimeCatalogError;
 use super::{
     BindingPlan, ContextProjectionPlan, Emission, EndpointClass, EndpointPathMode, ExecutionBranch,
@@ -100,6 +102,7 @@ pub(crate) struct PlanParts<'a> {
     pub(crate) identity: IdentityPlan,
     pub(crate) tags: Option<TagPlan>,
     pub(crate) bindings: Box<[BindingPlan]>,
+    pub(crate) skips: Box<[Box<str>]>,
     pub(crate) pagination: PagePlan,
     pub(crate) exclusions: Exclusions,
     pub(crate) endpoint: EndpointTemplate,
@@ -124,6 +127,11 @@ pub struct CallablePlan<'a> {
 }
 
 impl<'a> CallablePlan<'a> {
+    /// Reviewed child operations whose values are already supplied by this plan.
+    pub fn skips(&self) -> &[Box<str>] {
+        &self.parts.skips
+    }
+
     pub fn excluded_members(&self) -> crate::record::MemberExclusions {
         self.parts.excluded_members
     }

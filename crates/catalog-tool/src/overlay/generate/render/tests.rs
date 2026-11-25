@@ -122,3 +122,34 @@ fn given_unresolved_endpoint_when_generated_then_all_enumeration_is_deferred() -
     assert_eq!(parsed.operations(), generated.policy.operations());
     Ok(())
 }
+
+#[test]
+fn hand_skip_evidence_roundtrips_without_shape_inference() -> Result {
+    let text = r#"format = 1
+reviewed = "2026-11-15"
+reviewer = "test"
+[operation.ListThings]
+class = "enumerate"
+scope = "region"
+items = "Things"
+skip = ["DescribeThing"]
+[operation.ListThings.skip_evidence.DescribeThing]
+service = "sample"
+list = "ListThings"
+describe = "DescribeThing"
+inputs_sha256 = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+compared = "ListThings.Things[] == DescribeThing.Thing"
+resources = 3
+when = "2026-11-24T00:00:00Z"
+"#;
+    let policy = ServiceOverlay::parse("sample", text, Origin::Hand)?;
+    let rendered = render(&policy)?;
+    let parsed = ServiceOverlay::parse("sample", &rendered, Origin::Generated)?;
+    assert_eq!(policy.operations(), parsed.operations());
+    let without_evidence = text
+        .split("[operation.ListThings.skip_evidence")
+        .next()
+        .ok_or("missing text")?;
+    assert!(ServiceOverlay::parse("sample", without_evidence, Origin::Hand).is_err());
+    Ok(())
+}

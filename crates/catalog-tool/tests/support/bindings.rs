@@ -15,8 +15,17 @@ pub fn compiled(
 
 pub fn compiled_with_parents(
     count: usize,
-    mut change_parent: impl FnMut(&mut overlay::OperationOverlay),
+    change_parent: impl FnMut(&mut overlay::OperationOverlay),
     change: impl FnOnce(&mut overlay::OperationOverlay),
+) -> TestResult<Vec<u8>> {
+    compiled_with_model(count, change_parent, change, |_| {})
+}
+
+pub fn compiled_with_model(
+    count: usize,
+    change_parent: impl FnMut(&mut overlay::OperationOverlay),
+    change: impl FnOnce(&mut overlay::OperationOverlay),
+    change_model: impl FnOnce(&mut serde_json::Map<String, serde_json::Value>),
 ) -> TestResult<Vec<u8>> {
     let source = tempfile::tempdir()?;
     let directory = source.path().join("models/bindings/service/2020-01-01");
@@ -29,6 +38,17 @@ pub fn compiled_with_parents(
         .map(String::as_str)
         .chain(std::iter::once("ListChildren"))
         .collect::<Vec<_>>();
+    let mut shapes = model_shapes(&operations);
+    change_model(&mut shapes);
+    fs::write(
+        directory.join("bindings.json"),
+        serde_json::to_vec(&json!({"smithy":"2.0","shapes":shapes}))?,
+    )?;
+    let policy = policy(&producers, change_parent, change)?;
+    compile_source(source.path(), &operations, policy)
+}
+
+fn model_shapes(operations: &[&str]) -> serde_json::Map<String, serde_json::Value> {
     let mut shapes = serde_json::Map::from_iter([
         (
             "n#Service".to_owned(),
@@ -61,10 +81,14 @@ pub fn compiled_with_parents(
             json!({"type":"operation","input":{"target":"n#Input"},"output":{"target":"n#Output"}}),
         );
     });
-    fs::write(
-        directory.join("bindings.json"),
-        serde_json::to_vec(&json!({"smithy":"2.0","shapes":shapes}))?,
-    )?;
+    shapes
+}
+
+fn policy(
+    producers: &[String],
+    mut change_parent: impl FnMut(&mut overlay::OperationOverlay),
+    change: impl FnOnce(&mut overlay::OperationOverlay),
+) -> TestResult<overlay::ServiceOverlay> {
     let mut plans = producers
         .iter()
         .enumerate()
@@ -82,24 +106,35 @@ pub fn compiled_with_parents(
     child.class = Some(overlay::OverlayClass::Expand);
     child.bind.insert(
         overlay::MemberPath::new("EntityId")?,
-        alternatives(&producers, overlay::ContextSource::SelectedItem, "Id")?,
+        alternatives(producers, overlay::ContextSource::SelectedItem, "Id")?,
     );
     child.bind.insert(
         overlay::MemberPath::new("OrganizationId")?,
-        alternatives(
-            &producers,
-            overlay::ContextSource::Request,
-            "OrganizationId",
-        )?,
+        alternatives(producers, overlay::ContextSource::Request, "OrganizationId")?,
     );
     change(&mut child);
     plans.push(("ListChildren", child));
-    let policy = overlay::ServiceOverlay::new("bindings", plans)?;
-    let checked = overlay::check_policies(source.path(), &[policy], &DenyList::builtin())?;
+    Ok(overlay::ServiceOverlay::new("bindings", plans)?)
+}
+
+fn compile_source(
+    source: &Path,
+    operations: &[&str],
+    policy: overlay::ServiceOverlay,
+) -> TestResult<Vec<u8>> {
+    let checked = overlay::check_policies(source, &[policy], &DenyList::builtin())?;
     let fields = smithy::Registry::parse(
         "Count\nEntityId\nId\nItems\nNextToken\nOrganizationId\nRegions\nResponseId\n",
     )?;
-    let base = smithy::build_catalog(source.path(), &fields, "typed-binding-fixture")?;
+    let base = smithy::build_catalog(source, &fields, "typed-binding-fixture")?;
+    let kinds = kinds(operations)?;
+    let endpoints = BTreeMap::from([("bindings".to_owned(), endpoint()?)]);
+    Ok(runtime_catalog::augment(
+        &base, &checked, &kinds, &endpoints,
+    )?)
+}
+
+fn kinds(operations: &[&str]) -> TestResult<kind_map::KindMap> {
     let mappings = operations
         .iter()
         .map(|operation| kind_map::OperationMapping {
@@ -112,7 +147,7 @@ pub fn compiled_with_parents(
             },
         })
         .collect::<Vec<_>>();
-    let kinds = kind_map::MappingSource {
+    Ok(kind_map::MappingSource {
         relations: &[kind_map::RelationMapping {
             source_kind: "AWS::ApiOnly::BindingChild",
             source: kind_map::RelationSource::Request(kind_map::RelationPath::Fields("EntityId")),
@@ -135,11 +170,7 @@ pub fn compiled_with_parents(
         operations: &mappings,
         ..kind_map::MappingSource::default()
     }
-    .compile(&names::Exceptions::none())?;
-    let endpoints = BTreeMap::from([("bindings".to_owned(), endpoint()?)]);
-    Ok(runtime_catalog::augment(
-        &base, &checked, &kinds, &endpoints,
-    )?)
+    .compile(&names::Exceptions::none())?)
 }
 
 fn plan() -> TestResult<overlay::OperationOverlay> {

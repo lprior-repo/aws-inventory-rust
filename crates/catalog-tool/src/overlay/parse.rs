@@ -26,6 +26,10 @@ struct Entry {
     identity: Option<IdentityEntry>,
     paginator: Option<PaginatorEntry>,
     #[serde(default)]
+    skip: Vec<String>,
+    #[serde(default)]
+    skip_evidence: BTreeMap<String, super::SkipEvidence>,
+    #[serde(default)]
     bind: BTreeMap<String, BindingEntry>,
 }
 
@@ -116,6 +120,16 @@ impl Entry {
         Ok(OperationOverlay {
             class: Some(class(&self.class)?),
             defer_reason: self.defer_reason.clone(),
+            skip: self
+                .skip
+                .iter()
+                .map(|name| super::OperationName::new(name))
+                .collect::<Result<_, _>>()?,
+            skip_evidence: self
+                .skip_evidence
+                .iter()
+                .map(|(name, evidence)| Ok((super::OperationName::new(name)?, evidence.clone())))
+                .collect::<Result<_, OverlayError>>()?,
             bind: self
                 .bind
                 .iter()

@@ -3,8 +3,16 @@
 pub enum ProbeError {
     #[error("invalid probe arguments: {0}")]
     Invalid(&'static str),
+    #[error("comparison pair was supplied more than once: {0}")]
+    DuplicatePair(String),
     #[error("probe file access failed: {0}")]
     Io(#[from] std::io::Error),
+    #[error("probe receipt {path} could not be published: {source}")]
+    Receipt {
+        path: std::path::PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
     #[error("probe allocation failed: {0}")]
     Allocation(#[from] std::collections::TryReserveError),
     #[error("probe catalog is invalid: {0}")]
@@ -23,4 +31,14 @@ pub enum ProbeError {
     Report(#[from] std::fmt::Error),
     #[error("probe total overflow")]
     TotalOverflow,
+    #[error("comparison call failed: {0}")]
+    Sweep(#[from] inventory_sweep::SweepError),
+    #[error("comparison record is invalid: {0}")]
+    Record(#[from] inventory_core::record::RecordError),
+    #[error("comparison model is invalid: {0}")]
+    Model(#[from] inventory_core::catalog::CatalogError),
+    #[error("comparison overlay is invalid: {0}")]
+    OverlayName(#[from] catalog_tool::overlay::NameError),
+    #[error("comparison overlay cannot be rendered: {0}")]
+    Overlay(#[from] catalog_tool::overlay::OverlayError),
 }

@@ -65,6 +65,32 @@ impl Server {
         }
         Ok(requests)
     }
+
+    pub async fn serve_until(
+        &self,
+        bodies: &[&str],
+        mut completed: tokio::sync::oneshot::Receiver<()>,
+    ) -> TestResult<Vec<String>> {
+        let mut requests = Vec::new();
+        for _ in 0..=32 {
+            let (socket, _) = tokio::select! {
+                _ = &mut completed => return Ok(requests),
+                socket = self.listener.accept() => socket?,
+            };
+            let body = bodies
+                .get(requests.len())
+                .ok_or("unexpected comparison request")?;
+            let mut socket = self.acceptor.accept(socket).await?;
+            requests.push(read_request(&mut socket).await?);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: application/x-amz-json-1.1\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len(),
+            );
+            socket.write_all(response.as_bytes()).await?;
+            socket.shutdown().await?;
+        }
+        Err("comparison test request bound exceeded".into())
+    }
 }
 
 async fn read_request(socket: &mut Socket) -> io::Result<String> {

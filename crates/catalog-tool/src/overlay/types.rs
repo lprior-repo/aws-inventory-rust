@@ -187,6 +187,7 @@ pub struct OperationOverlay {
     pub exclude_response_members: Vec<MemberPath>,
 
     pub skip: Vec<OperationName>,
+    pub skip_evidence: BTreeMap<OperationName, super::SkipEvidence>,
 
     pub quota_group: Option<String>,
 

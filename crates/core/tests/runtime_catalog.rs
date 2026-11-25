@@ -78,7 +78,7 @@ fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         _ => return Err("base compiled catalog is not a map".into()),
     };
     let extension = field_map([
-        (1, Value::Int(3)),
+        (1, Value::Int(4)),
         (2, Value::List(Vec::new())),
         (3, Value::List(Vec::new())),
         (4, Value::List(Vec::new())),
@@ -119,10 +119,20 @@ fn relationship_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 
 #[test]
 fn unknown_runtime_extension_version_is_rejected() -> Result<(), Box<dyn std::error::Error>> {
-    let bytes = runtime_bytes(4)?;
+    let bytes = runtime_bytes(5)?;
     assert!(matches!(
         RuntimeCatalog::from_bytes(&bytes),
-        Err(RuntimeCatalogError::ExtensionVersion(4))
+        Err(RuntimeCatalogError::ExtensionVersion(5))
+    ));
+    Ok(())
+}
+
+#[test]
+fn previous_version_three_runtime_schema_is_rejected() -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = runtime_bytes(3)?;
+    assert!(matches!(
+        RuntimeCatalog::from_bytes(&bytes),
+        Err(RuntimeCatalogError::ExtensionVersion(3))
     ));
     Ok(())
 }
@@ -151,7 +161,7 @@ fn tagless_previous_runtime_schema_is_rejected_without_guessing_observation_stat
 #[test]
 fn valid_empty_runtime_extension_keeps_borrowed_catalog_and_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    let bytes = runtime_bytes(3)?;
+    let bytes = runtime_bytes(4)?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     assert!(runtime.plans().is_empty());
     assert!(runtime.schemas().is_empty());
@@ -173,7 +183,7 @@ fn incomplete_plan_metadata_is_rejected_as_a_closed_capability()
         _ => return Err("base compiled catalog is not a map".into()),
     };
     let extension = field_map([
-        (1, Value::Int(3)),
+        (1, Value::Int(4)),
         (2, Value::List(vec![field_map([])?])),
         (3, Value::List(Vec::new())),
         (4, Value::List(Vec::new())),
@@ -254,7 +264,7 @@ fn receipt(root: &mut Value) -> TestResult<&mut Fields> {
 }
 
 fn mutated_receipt(change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult<Vec<u8>> {
-    let bytes = runtime_bytes(3)?;
+    let bytes = runtime_bytes(4)?;
     mutate_receipt_in(&bytes, change)
 }
 
@@ -289,7 +299,7 @@ fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or
 -> TestResult {
     // Given: a real compiler-generated control and an assembled empty extension.
     let control = RuntimeCatalog::from_bytes(base()?)?;
-    let bytes = runtime_bytes(3)?;
+    let bytes = runtime_bytes(4)?;
     let base_input = runtime_provenance::base_bytes(base()?)?;
     let mut restored = ValueRef::Map(MapRef::from_container_bytes(
         &base_input,
@@ -338,7 +348,7 @@ fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or
 #[test]
 fn loader_rejects_capability_when_runtime_source_receipt_is_missing() -> TestResult {
     // Given: the exact same valid empty extension, with only its receipt removed.
-    let bytes = runtime_bytes(3)?;
+    let bytes = runtime_bytes(4)?;
     let control = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(control.source_provenance().version, 1);
     let mut root = ValueRef::Map(MapRef::from_container_bytes(
@@ -523,7 +533,7 @@ fn loader_rejects_capability_when_source_receipt_is_not_a_map() -> TestResult {
     [Value::Null, Value::Bytes(vec![0; 32]), Value::List(vec![])]
         .into_iter()
         .try_for_each(|malformed| {
-            let bytes = runtime_bytes(3)?;
+            let bytes = runtime_bytes(4)?;
             let control = RuntimeCatalog::from_bytes(&bytes)?;
             assert_eq!(control.source_provenance().version, 1);
             let mut root = ValueRef::Map(MapRef::from_container_bytes(
@@ -581,7 +591,7 @@ fn reviewed_checksum(bytes: &[u8]) -> TestResult<[u8; 32]> {
 fn public_reviewed_checksum_excludes_receipt_even_when_that_receipt_is_absent_or_corrupt()
 -> TestResult {
     // Given: a loadable artifact and its reviewed checksum.
-    let bytes = runtime_bytes(3)?;
+    let bytes = runtime_bytes(4)?;
     let expected = reviewed_checksum(&bytes)?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(runtime.source_provenance().reviewed_inputs_sha256, expected);
@@ -613,7 +623,7 @@ fn public_reviewed_checksum_excludes_receipt_even_when_that_receipt_is_absent_or
 #[test]
 fn public_reviewed_checksum_binds_actual_version_and_each_capability_list() -> TestResult {
     // Given: the empty extension's accepted version and canonical lists.
-    let bytes = runtime_bytes(3)?;
+    let bytes = runtime_bytes(4)?;
     let expected = reviewed_checksum(&bytes)?;
     // When/Then: the actual encoded version, not a hardcoded current version, is hashed.
     assert_ne!(reviewed_checksum(&runtime_bytes(2)?)?, expected);

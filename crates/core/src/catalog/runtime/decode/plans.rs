@@ -25,6 +25,7 @@ mod protocol_check;
 mod routing;
 mod row_policy;
 mod selection;
+mod skips;
 mod stages;
 mod tag_endpoint;
 mod tags;
@@ -59,6 +60,7 @@ pub(super) fn read<'a>(
         metadata::MAX_ITEMS,
     )?;
     dependencies::validate(&mut plans)?;
+    skips::validate(&plans)?;
     Ok(plans)
 }
 
@@ -72,7 +74,7 @@ fn plan<'a>(
         fields,
         &[
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
-            25,
+            25, 26,
         ],
     )?;
     let service_name = metadata::text(fields, 1)?;
@@ -96,15 +98,8 @@ fn decode_plan<'a>(
     cache: &mut IdentityPatternCache<'a>,
 ) -> Result<CallablePlan<'a>, RuntimeCatalogError> {
     let kind = Kind::parse(&metadata::text(fields, 3)?)?;
-    let scope = scope(metadata::integer(fields, 4)?)?;
     let items = selection::item(metadata::map_field(fields, 5)?)?;
     let tags = tags::read(fields, service, operation, &items)?;
-    let purpose_fields = metadata::map_field(fields, 12)?;
-    let purpose = if metadata::integer(purpose_fields, 1)? == 3 {
-        PlanPurpose::TagEndpoint(tag_endpoint::read(purpose_fields, service, operation)?)
-    } else {
-        purpose(purpose_fields)?
-    };
     let emission = selection::emission(fields)?;
     // Field 25 is the effective emit flag: 1 = work, 0 = resources.
     // If the emit flag is 1, the effective emission is WorkOnly.
@@ -114,23 +109,8 @@ fn decode_plan<'a>(
         Some(ValueRef::Int(1)) => super::super::Emission::WorkOnly,
         _ => return Err(RuntimeCatalogError::Capability),
     };
-    let identity = identity_for(
-        metadata::map_field(fields, 6)?,
-        &purpose,
-        effective_emission,
-    )?;
-    let bindings = bindings(metadata::list(fields, 7)?)?;
-    let pagination = page(metadata::map_field(fields, 8)?)?;
-    validation::exclusions(service, operation, &items, metadata::list(fields, 9)?)?;
-    let exclusions = map_exclusions::read(
-        fields,
-        service,
-        operation,
-        &items,
-        exclusions(metadata::list(fields, 9)?)?,
-    )?;
-    let endpoint = endpoint(metadata::map_field(fields, 10)?)?;
-    let review = review(metadata::map_field(fields, 11)?)?;
+    let (purpose, identity, exclusions) =
+        plan_base(fields, service, operation, &items, effective_emission)?;
     let protocol = protocol(metadata::integer(fields, 13)?)?;
     let (projection, classification) = capabilities::read(fields, service, operation, &items)?;
     let resources = super::super::types::ResourceEmissions::new(
@@ -145,7 +125,93 @@ fn decode_plan<'a>(
         ),
         emissions::additional(fields, &service_name, service, operation)?,
     )?;
-    let identity_text = resources
+    protocol_check::validate(service, protocol)?;
+    let parts = PlanParts {
+        service_name: service_name.into_boxed_str(),
+        operation_name: operation_name.into_boxed_str(),
+        service,
+        operation,
+        kind,
+        scope: scope(metadata::integer(fields, 4)?)?,
+        items,
+        identity,
+        tags,
+        bindings: bindings(metadata::list(fields, 7)?)?.into_boxed_slice(),
+        skips: skips::read(fields)?,
+        pagination: page(metadata::map_field(fields, 8)?)?,
+        exclusions,
+        endpoint: endpoint(metadata::map_field(fields, 10)?)?,
+        review: review(metadata::map_field(fields, 11)?)?,
+        purpose,
+        protocol,
+        facet_precedence: 0,
+        routing: routing::read(fields)?,
+        branches: routing::branches(fields)?,
+        projection,
+        classification,
+        identity_text: compiled_identity_text(service, operation, &resources, cache)?,
+        emission: effective_emission,
+        resources,
+        row_policy: row_policy::read(fields)?,
+        context_projection: selection::projection(fields)?,
+        excluded_members: member_exclusions::read(fields, service, operation)?,
+    };
+    validation::validate(&parts).map(|()| CallablePlan::new(parts))
+}
+
+fn plan_base(
+    fields: crate::record::MapRef<'_>,
+    service: crate::catalog::Service<'_>,
+    operation: crate::catalog::Operation<'_>,
+    items: &ItemPlan,
+    emission: super::super::Emission,
+) -> Result<(PlanPurpose, IdentityPlan, Exclusions), RuntimeCatalogError> {
+    let purpose = plan_purpose(fields, service, operation)?;
+    let identity = identity_for(metadata::map_field(fields, 6)?, &purpose, emission)?;
+    let exclusions = plan_exclusions(fields, service, operation, items)?;
+    Ok((purpose, identity, exclusions))
+}
+
+fn plan_purpose(
+    fields: crate::record::MapRef<'_>,
+    service: crate::catalog::Service<'_>,
+    operation: crate::catalog::Operation<'_>,
+) -> Result<PlanPurpose, RuntimeCatalogError> {
+    let fields = metadata::map_field(fields, 12)?;
+    if metadata::integer(fields, 1)? == 3 {
+        Ok(PlanPurpose::TagEndpoint(tag_endpoint::read(
+            fields, service, operation,
+        )?))
+    } else {
+        purpose(fields)
+    }
+}
+
+fn plan_exclusions(
+    fields: crate::record::MapRef<'_>,
+    service: crate::catalog::Service<'_>,
+    operation: crate::catalog::Operation<'_>,
+    items: &ItemPlan,
+) -> Result<Exclusions, RuntimeCatalogError> {
+    validation::exclusions(service, operation, items, metadata::list(fields, 9)?)?;
+    map_exclusions::read(
+        fields,
+        service,
+        operation,
+        items,
+        exclusions(metadata::list(fields, 9)?)?,
+    )
+}
+
+type CompiledIdentityText<'a> = Box<[(Box<str>, super::super::types::IdentityTextPlan<'a>)]>;
+
+fn compiled_identity_text<'a>(
+    service: crate::catalog::Service<'a>,
+    operation: crate::catalog::Operation<'a>,
+    resources: &super::super::types::ResourceEmissions,
+    cache: &mut IdentityPatternCache<'a>,
+) -> Result<CompiledIdentityText<'a>, RuntimeCatalogError> {
+    resources
         .iter()
         .map(|emission| {
             Ok((
@@ -159,39 +225,7 @@ fn decode_plan<'a>(
                 )?,
             ))
         })
-        .collect::<Result<Box<[_]>, RuntimeCatalogError>>()?;
-    protocol_check::validate(service, protocol)?;
-    let parts = PlanParts {
-        service_name: service_name.into_boxed_str(),
-        operation_name: operation_name.into_boxed_str(),
-        service,
-        operation,
-        kind,
-        scope,
-        items,
-        identity,
-        tags,
-        bindings: bindings.into_boxed_slice(),
-        pagination,
-        exclusions,
-        endpoint,
-        review,
-        purpose,
-        protocol,
-        facet_precedence: 0,
-        routing: routing::read(fields)?,
-        branches: routing::branches(fields)?,
-        projection,
-        classification,
-        emission: effective_emission,
-        resources,
-        identity_text,
-        row_policy: row_policy::read(fields)?,
-        context_projection: selection::projection(fields)?,
-        excluded_members: member_exclusions::read(fields, service, operation)?,
-    };
-    validation::validate(&parts)?;
-    Ok(CallablePlan::new(parts))
+        .collect()
 }
 
 fn identity_for(

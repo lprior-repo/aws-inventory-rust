@@ -84,8 +84,10 @@ async fn try_claim<L, ClaimFut, PageFut>(
 
 /// Schedule lease claims and page processing at bounded concurrency.
 /// Returns when the queue is empty and all in-flight pages have finished.
-/// Errors are deferred: once any error is observed no new work is claimed,
-/// but every already-admitted page is still polled to completion.
+/// Errors are deferred: once any error is observed no new claim is started,
+/// but every already-admitted page is still polled to completion. Leases
+/// returned by a claim that was already pending when the error arrived are
+/// processed too, so they are not left claimed until their lease expires.
 pub(super) async fn run<L, ClaimFut, PageFut>(
     concurrency: usize,
     mut may_claim: impl FnMut() -> bool,

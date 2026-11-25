@@ -75,6 +75,7 @@ impl Engine<'_, '_> {
         key: Key,
     ) -> Result<(Option<Target>, Key), DecodeError> {
         if self.parser.peek().map_err(syntax)? == Peek::Null
+            && !self.context.limits.raw_values
             && !schema::preserves_null(self.context, parent)?
         {
             if self.context.limits.preserve_fields && target.is_some() {

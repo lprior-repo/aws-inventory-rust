@@ -7,6 +7,7 @@ mod provenance;
 mod relations;
 mod schemas;
 pub(crate) mod selection;
+pub(crate) mod skips;
 pub use provenance::CatalogSources;
 
 use inventory_core::catalog::MAX_CATALOG_BYTES;
@@ -175,6 +176,13 @@ pub fn augment_with_sources(
     let catalog = inventory_core::catalog::Catalog::borrow(base_bytes)?;
     sources.validate(catalog)?;
     let services = ServiceIndex::build(catalog)?;
+    skips::validate(checked, kind_map).map_err(|error| {
+        RuntimeCatalogCompileError::CapabilityContext {
+            service: "-".to_owned(),
+            operation: "skip".to_owned(),
+            path: error.to_string(),
+        }
+    })?;
     model_path::validate_reviewed_paths(&model_path::ValidationContext {
         kinds: kind_map,
         checked,
@@ -184,8 +192,9 @@ pub fn augment_with_sources(
     let (extension, inactive) = compile_extension(checked, kind_map, &services, plans, sources)?;
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let bytes = inventory_core::record::encode_container(&Value::Map(root), MAX_CATALOG_BYTES)?;
-    inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)
+    let runtime = inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)
         .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+    skips::validate_receipts(&runtime, checked)?;
     Ok((bytes, inactive))
 }
 fn decode_root(bytes: &[u8]) -> Result<BTreeMap<Key, Value>, RuntimeCatalogCompileError> {
