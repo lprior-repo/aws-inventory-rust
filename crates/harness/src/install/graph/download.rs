@@ -20,7 +20,12 @@ use crate::HarnessError;
 #[path = "download_tests.rs"]
 mod tests;
 
+#[cfg(test)]
+#[path = "download_interrupt_tests.rs"]
+mod interrupt_tests;
+
 const LIFETIME: Duration = Duration::from_secs(180);
+const INTERRUPT_BUDGET: usize = 1_000_000;
 
 struct DownloadBudget {
     started: Instant,
@@ -28,24 +33,56 @@ struct DownloadBudget {
     lifetime: Duration,
 }
 
-struct DeadlineInput<'a> {
-    input: &'a mut UnixStream,
+trait BoundedRead: Read {
+    fn bound(&mut self, duration: Duration) -> std::io::Result<()>;
+}
+
+impl BoundedRead for UnixStream {
+    fn bound(&mut self, duration: Duration) -> std::io::Result<()> {
+        self.set_read_timeout(Some(duration))
+    }
+}
+
+struct DeadlineInput<'a, S> {
+    input: &'a mut S,
     budget: &'a DownloadBudget,
 }
 
-impl Read for DeadlineInput<'_> {
-    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
-        let duration = remaining(self.budget)
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::TimedOut, error))?;
-        self.input.set_read_timeout(Some(duration))?;
+impl<S: BoundedRead> DeadlineInput<'_, S> {
+    fn attempt(&mut self, buffer: &mut [u8]) -> Option<std::io::Result<usize>> {
+        let duration = match remaining(self.budget) {
+            Ok(duration) => duration,
+            Err(error) => {
+                return Some(Err(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    error,
+                )));
+            }
+        };
+        if let Err(error) = self.input.bound(duration) {
+            return Some(Err(error));
+        }
         match self.input.read(buffer) {
+            Err(error) if error.kind() == std::io::ErrorKind::Interrupted => None,
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                Err(std::io::Error::new(
+                Some(Err(std::io::Error::new(
                     std::io::ErrorKind::TimedOut,
                     "fixture download deadline exceeded",
-                ))
+                )))
             }
-            result => result,
+            result => Some(result),
+        }
+    }
+}
+
+impl<S: BoundedRead> Read for DeadlineInput<'_, S> {
+    fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        match (0..INTERRUPT_BUDGET).find_map(|_| self.attempt(buffer)) {
+            Some(result) => result,
+            None => Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "fixture download interrupt limit exceeded",
+            )),
         }
     }
 }
