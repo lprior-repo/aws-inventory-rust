@@ -45,6 +45,7 @@ impl SeedState {
     fn resources(&self) -> Vec<super::super::SeedResourceIdentity> {
         self.outputs
             .iter()
+            .flatten()
             .filter_map(|output| output.resource.clone())
             .collect()
     }
@@ -107,12 +108,9 @@ impl SeedState {
         &self,
         step: super::super::scenario::StepId,
     ) -> Result<&SeedOutput, SeedError> {
-        self.outputs
-            .iter()
-            .find(|output| output.step == step)
-            .ok_or(SeedError::Invalid(
-                "relationship resource output is unavailable",
-            ))
+        self.accepted_output(step).ok_or(SeedError::Invalid(
+            "relationship resource output is unavailable",
+        ))
     }
 }
 

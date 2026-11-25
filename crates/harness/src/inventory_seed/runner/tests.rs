@@ -13,6 +13,7 @@ fn state() -> Result<SeedState, SeedError> {
         AccountId::parse("123456789012")?,
         Region::parse("us-east-1")?,
         String::from("aws"),
+        1,
     ))
 }
 
