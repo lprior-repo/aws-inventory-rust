@@ -3,6 +3,9 @@ use crate::{SweepConfig, credentials::TestCredentials};
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{BinaryStore, SchemaRegistry};
 use sha2::{Digest, Sha256};
+use std::time::Duration;
+
+const RUN_TIMEOUT: Duration = Duration::from_secs(20);
 
 struct Environment {
     root: tempfile::TempDir,
@@ -11,10 +14,10 @@ struct Environment {
 }
 
 impl Environment {
-    async fn new() -> TestResult<Self> {
+    async fn new(mode: peer::Mode) -> TestResult<Self> {
         let root = tempfile::tempdir()?;
         let catalog = fixture::catalog(root.path(), false)?;
-        let peer = peer::Peer::start(root.path(), None).await?;
+        let peer = peer::Peer::start(root.path(), mode).await?;
         Ok(Self {
             root,
             catalog,
@@ -62,7 +65,7 @@ impl Environment {
 
 #[tokio::test]
 async fn control_started_precedes_claims_and_finished_follows_committed_scopes() -> TestResult {
-    let environment = Environment::new().await?;
+    let environment = Environment::new(peer::Mode::Normal).await?;
     let store = environment.store("ordered.sqlite").await?;
     let (sender, mut receiver) = tokio::sync::mpsc::channel(32);
     let summary = environment.run(&store, false, listener(sender)).await?;
@@ -125,11 +128,11 @@ fn listener(sender: tokio::sync::mpsc::Sender<ProgressEvent>) -> SweepControl {
 
 #[tokio::test]
 async fn control_unread_capacity_one_never_blocks_collection() -> TestResult {
-    let environment = Environment::new().await?;
+    let environment = Environment::new(peer::Mode::Normal).await?;
     let store = environment.store("unread.sqlite").await?;
     let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
     let summary = tokio::time::timeout(
-        std::time::Duration::from_secs(20),
+        RUN_TIMEOUT,
         environment.run(&store, false, listener(sender)),
     )
     .await??;
@@ -142,9 +145,10 @@ async fn control_unread_capacity_one_never_blocks_collection() -> TestResult {
 #[tokio::test]
 async fn control_cancellation_preserves_pending_cursor_and_resume_matches_uninterrupted_digest()
 -> TestResult {
-    let environment = Environment::new().await?;
+    let pause = std::sync::Arc::new(peer::ContinuationPause::default());
+    let environment = Environment::new(peer::Mode::PauseFirstContinuation(pause.clone())).await?;
     let store = environment.store("cancel.sqlite").await?;
-    cancel_after_first_page(&environment, &store).await?;
+    cancel_after_first_page(&environment, &store, &pause).await?;
     let sweep = store
         .discover_active_sweep()
         .await?
@@ -153,43 +157,73 @@ async fn control_cancellation_preserves_pending_cursor_and_resume_matches_uninte
     assert_eq!(pending.work_pending, 1);
     assert_eq!(pending.resources_observed, 1);
     assert_eq!(pending.partial_scopes, 0);
-    resume_matches_uninterrupted(&environment, &store).await?;
+    resume_matches_uninterrupted(&environment, &store, &pause).await?;
     environment.peer.stop().await
 }
 
 async fn resume_matches_uninterrupted(
     environment: &Environment,
     store: &BinaryStore,
+    pause: &peer::ContinuationPause,
 ) -> TestResult {
-    let resumed = environment
-        .run(store, true, SweepControl::default())
-        .await?;
+    let resumed = tokio::time::timeout(
+        RUN_TIMEOUT,
+        environment.run(store, true, SweepControl::default()),
+    )
+    .await??;
+    assert_eq!(
+        pause.take_item_queries().await,
+        [Some(String::from("marker=next"))],
+        "resume must fetch the persisted continuation without replaying the first page",
+    );
     let baseline = environment.store("baseline.sqlite").await?;
-    let uninterrupted = environment
-        .run(&baseline, false, SweepControl::default())
-        .await?;
+    let uninterrupted = tokio::time::timeout(
+        RUN_TIMEOUT,
+        environment.run(&baseline, false, SweepControl::default()),
+    )
+    .await??;
     assert_eq!(resumed.rows, uninterrupted.rows);
     assert_eq!(resumed.outcomes, uninterrupted.outcomes);
     assert_eq!(digest(store).await?, digest(&baseline).await?);
     Ok(())
 }
 
-async fn cancel_after_first_page(environment: &Environment, store: &BinaryStore) -> TestResult {
+async fn cancel_after_first_page(
+    environment: &Environment,
+    store: &BinaryStore,
+    pause: &peer::ContinuationPause,
+) -> TestResult {
     let (sender, receiver) = tokio::sync::mpsc::channel(32);
     let control = listener(sender);
-    let observer = cancel_on_page(receiver, control.cancel.clone());
-    let (result, observed) = tokio::join!(environment.run(store, false, control), observer);
+    let observer = cancel_on_page(receiver, control.cancel.clone(), pause);
+    let run = tokio::time::timeout(RUN_TIMEOUT, environment.run(store, false, control));
+    let (result, observed) = tokio::join!(run, observer);
+    pause.release.cancel();
     observed?;
-    assert_cancelled(result)
+    assert_cancelled(result?)?;
+    assert_eq!(
+        pause.take_item_queries().await,
+        [None, Some(String::from("marker=next"))],
+        "cancellation must interrupt the continuation request",
+    );
+    Ok(())
 }
 
 async fn cancel_on_page(
     mut receiver: tokio::sync::mpsc::Receiver<ProgressEvent>,
     cancel: CancellationToken,
+    pause: &peer::ContinuationPause,
 ) -> TestResult {
     for _ in 0..16 {
         let event = receiver.recv().await.ok_or("progress ended before page")?;
         if matches!(event, ProgressEvent::Page { .. }) {
+            // Stop in flight without racing the fixture's TLS handshake or its
+            // second response. The peer discards the response after settlement.
+            tokio::time::timeout(
+                std::time::Duration::from_secs(10),
+                pause.requested.notified(),
+            )
+            .await?;
             cancel.cancel();
             return Ok(());
         }
@@ -210,7 +244,7 @@ async fn digest(store: &BinaryStore) -> TestResult<[u8; 32]> {
 
 #[tokio::test]
 async fn control_pre_cancelled_bootstrap_does_not_create_a_sweep() -> TestResult {
-    let environment = Environment::new().await?;
+    let environment = Environment::new(peer::Mode::Normal).await?;
     let store = environment.store("pre-cancel.sqlite").await?;
     let control = SweepControl::default();
     control.cancel.cancel();
@@ -233,7 +267,7 @@ fn assert_cancelled(result: TestResult<SweepSummary>) -> TestResult {
 
 #[tokio::test]
 async fn metrics_report_real_decode_claim_commit_executor_and_transport_activity() -> TestResult {
-    let environment = Environment::new().await?;
+    let environment = Environment::new(peer::Mode::Normal).await?;
     let store = environment.store("metrics.sqlite").await?;
     let summary = environment
         .run(&store, false, SweepControl::default())
@@ -258,7 +292,7 @@ async fn metrics_report_real_decode_claim_commit_executor_and_transport_activity
 #[tokio::test]
 async fn given_sweep_when_requests_are_sent_then_attempted_actions_are_in_generated_policy()
 -> TestResult {
-    let mut environment = Environment::new().await?;
+    let mut environment = Environment::new(peer::Mode::Normal).await?;
     environment.catalog = fixture::catalog(environment.root.path(), true)?;
     let catalog = RuntimeCatalog::from_bytes(&environment.catalog)?;
     assert_eq!(catalog.plans().len(), 4);
@@ -338,7 +372,7 @@ fn assert_attempt_coverage(
 #[tokio::test]
 async fn given_wrong_attempt_table_when_sweep_signs_then_unknown_operation_is_an_error()
 -> TestResult {
-    let environment = Environment::new().await?;
+    let environment = Environment::new(peer::Mode::Normal).await?;
     let unrelated =
         crate::record::policy_dfgk_tests::fixture::catalog().map_err(|error| error.to_string())?;
     let attempts = std::sync::Arc::new(crate::AttemptedOperations::new(&unrelated));
@@ -367,13 +401,8 @@ async fn given_wrong_attempt_table_when_sweep_signs_then_unknown_operation_is_an
 #[tokio::test]
 async fn given_rejected_and_retried_calls_when_responses_are_blocked_then_attempts_are_already_recorded()
 -> TestResult {
-    let root = tempfile::tempdir()?;
     let failures = std::sync::Arc::new(peer::Rejections::default());
-    let environment = Environment {
-        catalog: fixture::catalog(root.path(), false)?,
-        peer: peer::Peer::start(root.path(), Some(failures.clone())).await?,
-        root,
-    };
+    let environment = Environment::new(peer::Mode::Reject(failures.clone())).await?;
     let catalog = RuntimeCatalog::from_bytes(&environment.catalog)?;
     let attempts = std::sync::Arc::new(crate::AttemptedOperations::new(&catalog));
     let policy = catalog_tool::iam_policy::render(

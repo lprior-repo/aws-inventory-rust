@@ -1,9 +1,7 @@
 #[path = "projection_fence/proxy.rs"]
 mod proxy;
-#[path = "tag_commit.rs"]
-mod tag_commit;
 
-use super::{TestResult, compare, native::NativeGraph, recovery};
+use super::{TestResult, compare, native::NativeGraph, recovery, tags::tag_commit};
 use cmdb_view::GraphConnection;
 use inventory_core::inventory::{OperationId, ResourceKey, ScopeKey, ScopeOutcome, ServiceId};
 use inventory_engine::inventory::{
@@ -46,14 +44,7 @@ async fn tag_replacement(
     )
     .await?;
     let old = store.drain_projection(1000).await?;
-    let mut proxy = proxy::Proxy::start(
-        native.endpoint(),
-        inventory_graph::cypher::diagnostics::TAG_MERGE,
-    )
-    .await
-    .map_err(|error| error.to_string())?;
-    let endpoint = proxy.endpoint.clone();
-    let backend = inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_tags")?;
+    let (mut proxy, backend) = start_tag_barrier(native, "native_fence_tags").await?;
     let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
     // The same handle's single reader is held by P1's snapshot. Admission must
@@ -76,8 +67,11 @@ async fn tag_replacement(
     )
     .await?;
     let latest = second.drain_projection(1000).await?;
-    assert_eq!(latest.len(), 1);
-    assert!(latest[0].revision > old[0].revision);
+    let [delivery] = latest.as_slice() else {
+        return Err("expected one newer delivery".into());
+    };
+    let previous = old.first().ok_or("missing previous delivery")?;
+    assert!(delivery.revision > previous.revision);
     assert!(matches!(
         run_projection(&second, &second_backend, 1000).await,
         Err(ProjectionError::DeliveryBusy)
@@ -183,15 +177,7 @@ async fn cancelled_tag_replacement(
     )
     .await?;
     let old = store.drain_projection(1000).await?;
-    let mut proxy = proxy::Proxy::start(
-        native.endpoint(),
-        inventory_graph::cypher::diagnostics::TAG_MERGE,
-    )
-    .await
-    .map_err(|error| error.to_string())?;
-    let endpoint = proxy.endpoint.clone();
-    let backend =
-        inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_cancel_tags")?;
+    let (mut proxy, backend) = start_tag_barrier(native, "native_fence_cancel_tags").await?;
     let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before tag barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
     // When: cancelling P1 releases local ownership; P2 delivers bob first.
@@ -207,9 +193,10 @@ async fn cancelled_tag_replacement(
     )
     .await?;
     let latest = second.drain_projection(1000).await?;
-    assert_eq!(old.len(), 1);
-    assert_eq!(latest.len(), 1);
-    assert!(latest[0].revision > old[0].revision);
+    let ([previous], [delivery]) = (old.as_slice(), latest.as_slice()) else {
+        return Err("expected one previous and one newer delivery".into());
+    };
+    assert!(delivery.revision > previous.revision);
     let delivered = project(&second, native, "native_fence_cancel_tags").await?;
     assert_eq!(delivered.acknowledged, 1);
     assert_eq!(delivered.pending, 0);
@@ -224,6 +211,20 @@ async fn cancelled_tag_replacement(
     assert_eq!(second.projection_state().await?.pending, 0);
     assert_target(native, "native_fence_cancel_tags", target, "bob").await?;
     assert_sets(&path, &second, native, "native_fence_cancel_tags").await
+}
+
+async fn start_tag_barrier(
+    native: &NativeGraph,
+    name: &str,
+) -> TestResult<(proxy::Proxy, inventory_graph::falkor::FalkorDb)> {
+    let proxy = proxy::Proxy::start(
+        native.endpoint(),
+        inventory_graph::cypher::diagnostics::TAG_MERGE,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(&proxy.endpoint, name)?;
+    Ok((proxy, backend))
 }
 
 async fn cancelled_resurrection(
@@ -437,8 +438,9 @@ async fn assert_target(
         .tag_affiliations(&compare::node(target), 1000)
         .await?;
     assert!(!affiliations.truncated);
-    assert_eq!(affiliations.affiliations.len(), 1);
-    let affiliation = &affiliations.affiliations[0];
+    let [affiliation] = affiliations.affiliations.as_slice() else {
+        return Err("expected one tag affiliation".into());
+    };
     assert_eq!(affiliation.provenance, "inventory.tags");
     assert_eq!(affiliation.tag.account, target.account.as_str());
     assert_eq!(affiliation.tag.region, target.region.as_str());
@@ -472,8 +474,19 @@ async fn assert_sets(
     );
     assert_eq!(actual.into_iter().collect::<BTreeSet<_>>(), expected);
     let mut connection = connect(path).await?;
+    let (affiliations, vertices) = assert_tag_sets(&mut connection, native, name).await?;
+    assert_topology(store, native, name, resources.len(), affiliations, vertices).await?;
+    connection.close().await?;
+    Ok(())
+}
+
+async fn assert_tag_sets(
+    connection: &mut SqliteConnection,
+    native: &NativeGraph,
+    name: &str,
+) -> TestResult<(usize, usize)> {
     let tags = sqlx::query("SELECT account,region,kind,id,tag_key,tag_value FROM tags")
-        .fetch_all(&mut connection)
+        .fetch_all(connection)
         .await?;
     let expected = tags
         .into_iter()
@@ -492,14 +505,17 @@ async fn assert_sets(
     let vertices: BTreeSet<_> = expected
         .iter()
         .map(|row| {
-            vec![
-                row[0].clone(),
-                row[1].clone(),
-                row[4].clone(),
-                row[5].clone(),
-            ]
+            let [account, region, _, _, key, value, _] = row.as_slice() else {
+                return Err("expected seven tag affiliation columns".into());
+            };
+            Ok(vec![
+                account.clone(),
+                region.clone(),
+                key.clone(),
+                value.clone(),
+            ])
         })
-        .collect();
+        .collect::<TestResult<_>>()?;
     let actual = rows(
         native,
         name,
@@ -515,6 +531,17 @@ async fn assert_sets(
         "no orphan or duplicate native tag vertices"
     );
     assert_eq!(actual.into_iter().collect::<BTreeSet<_>>(), vertices);
+    Ok((expected.len(), vertices.len()))
+}
+
+async fn assert_topology(
+    store: &BinaryStore,
+    native: &NativeGraph,
+    name: &str,
+    resources: usize,
+    affiliations: usize,
+    vertices: usize,
+) -> TestResult {
     let dependencies = store.projection_edges(None, 1000).await?;
     assert_eq!(dependencies.next, None);
     let expected_edges: BTreeSet<_> = dependencies
@@ -546,7 +573,7 @@ async fn assert_sets(
         inventory_graph::cypher::diagnostics::NODE_LABELS,
     )
     .await?;
-    assert_eq!(nodes.len(), resources.len() + vertices.len());
+    assert_eq!(nodes.len().checked_sub(vertices), Some(resources));
     assert!(
         nodes
             .iter()
@@ -560,9 +587,10 @@ async fn assert_sets(
     .await?;
     assert_eq!(
         relationships.len(),
-        expected.len() + dependencies.edges.len()
+        affiliations
+            .checked_add(dependencies.edges.len())
+            .ok_or("native relationship count overflow")?
     );
-    connection.close().await?;
     Ok(())
 }
 

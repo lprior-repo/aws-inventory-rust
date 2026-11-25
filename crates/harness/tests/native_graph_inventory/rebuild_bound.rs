@@ -1,7 +1,5 @@
-#[path = "../../../engine/tests/inventory_store/support.rs"]
-mod support;
-
-use super::{TestResult, native, recovery, runtime};
+use super::{TestResult, collisions, native, recovery, runtime};
+use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
 use inventory_engine::inventory::{BinaryStore, SweepId, run_projection};
 
 async fn insert_resources(
@@ -10,17 +8,45 @@ async fn insert_resources(
     first: usize,
     count: usize,
 ) -> TestResult {
-    store.seed_work(support::work(sweep, "us-east-1")?).await?;
-    let lease = store
-        .claim(&SweepId::new(sweep.to_owned())?, 1, 60_000)
-        .await?
-        .ok_or("boundary fixture work was not claimable")?;
-    let observations = (first..first + count)
-        .map(|index| support::observation(&format!("rebuild{index:05}"), "retained"))
-        .collect::<Result<Vec<_>, _>>()?;
-    store
-        .commit_page(support::page(lease, observations, true, None, 2))
+    let end = first.checked_add(count).ok_or("invalid fixture range")?;
+    let account = AccountId::parse("111111111111")?;
+    let region = Region::parse("us-east-1")?;
+    let kind = Kind::parse("AWS::EC2::VPC")?;
+    let keys = (first..end).map(|index| {
+        Ok(ResourceKey {
+            account: account.clone(),
+            region: region.clone(),
+            kind: kind.clone(),
+            id: ResourceId::parse(&format!("rebuild{index:05}"))?,
+        })
+    });
+    collisions::insert(store, SweepId::new(sweep.to_owned())?, keys).await
+}
+
+#[tokio::test]
+async fn given_rebuild_fixture_ranges_when_committed_then_all_resource_ids_are_retained()
+-> TestResult {
+    use sqlx::{Connection, SqliteConnection, sqlite::SqliteConnectOptions};
+
+    let directory = tempfile::tempdir()?;
+    let database = directory.path().join("inventory.sqlite");
+    let store = collisions::create_store(&database).await?;
+    insert_resources(&store, "boundary_initial", 0, 10_000).await?;
+    insert_resources(&store, "boundary_extra", 10_000, 1).await?;
+
+    let mut reader = SqliteConnection::connect_with(
+        &SqliteConnectOptions::new()
+            .filename(database)
+            .read_only(true),
+    )
+    .await?;
+    let ids: Vec<String> = sqlx::query_scalar("SELECT id FROM resources ORDER BY id")
+        .fetch_all(&mut reader)
         .await?;
+    assert_eq!(ids.len(), 10_001);
+    ids.into_iter().enumerate().for_each(|(index, id)| {
+        assert_eq!(id, format!("rebuild{index:05}"));
+    });
     Ok(())
 }
 
@@ -31,8 +57,9 @@ async fn given_exact_rebuild_page_budget_when_native_projection_runs_then_eof_co
     let prepared = native::PreparedGraph::install()?;
     let emulator = runtime::NativeRuntime::start()?;
     let graph = prepared.start(&emulator).await?;
-    let (directory, store, _) = support::fixture().await?;
+    let directory = tempfile::tempdir()?;
     let database = directory.path().join("inventory.sqlite");
+    let store = collisions::create_store(&database).await?;
     let expected = (0..10_000)
         .map(|index| vec![format!("rebuild{index:05}")])
         .collect::<Vec<_>>();
@@ -50,12 +77,7 @@ async fn given_exact_rebuild_page_budget_when_native_projection_runs_then_eof_co
     assert_eq!(exact.pending, 0);
     assert_eq!(exact.acknowledged, 1);
     assert!(!store.projection_state().await?.rebuild_required);
-    assert_eq!(
-        graph
-            .rows(inventory_graph::cypher::diagnostics::SORTED_RESOURCE_IDS)
-            .await?,
-        expected
-    );
+    assert_eq!(resource_ids(&graph).await?, expected);
 
     insert_resources(&store, "boundary_extra", 10_000, 1).await?;
     native::project(&store, &graph).await?;
@@ -69,12 +91,13 @@ async fn given_exact_rebuild_page_budget_when_native_projection_runs_then_eof_co
     assert_eq!(exceeded.pending, 1);
     assert_eq!(exceeded.acknowledged, 0);
     assert!(store.projection_state().await?.rebuild_required);
-    assert_eq!(
-        graph
-            .rows(inventory_graph::cypher::diagnostics::SORTED_RESOURCE_IDS)
-            .await?,
-        expected
-    );
+    assert_eq!(resource_ids(&graph).await?, expected);
     graph.stop().await?;
     emulator.stop()
+}
+
+async fn resource_ids(graph: &native::NativeGraph) -> TestResult<Vec<Vec<String>>> {
+    graph
+        .rows(inventory_graph::cypher::diagnostics::SORTED_RESOURCE_IDS)
+        .await
 }

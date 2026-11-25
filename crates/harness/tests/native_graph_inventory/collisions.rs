@@ -22,15 +22,19 @@ use std::{
     path::Path,
 };
 
+pub(super) async fn create_store(database: &Path) -> TestResult<BinaryStore> {
+    let bytes = std::fs::read(runtime::catalog_path())?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let registry = SchemaRegistry::new(&bytes, catalog.schemas().to_vec())?;
+    Ok(BinaryStore::create(database, registry).await?)
+}
+
 pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &Path) -> TestResult {
     graph
         .select_empty_graph("native_inventory_five_keys")
         .await?;
     let database = directory.join("five-key-inventory.sqlite");
-    let bytes = std::fs::read(runtime::catalog_path())?;
-    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let registry = SchemaRegistry::new(&bytes, catalog.schemas().to_vec())?;
-    let store = BinaryStore::create(&database, registry).await?;
+    let store = create_store(&database).await?;
     let keys = keys()?;
     let resources = keys.iter().cloned().collect();
     let expected = Expected {
@@ -38,23 +42,17 @@ pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &P
         edges: BTreeSet::new(),
         safe_records: BTreeMap::new(),
     };
-    let mut pairs = baseline(&keys)?;
-    for (index, group) in [&keys[..2], &keys[2..3], &keys[3..4], &keys[4..]]
-        .into_iter()
-        .enumerate()
-    {
-        insert(&store, group, index).await?;
+    let pairs = baseline(&keys)?;
+    let (same_scope, single_scopes) = keys.split_at_checked(2).ok_or("first scope missing")?;
+    let groups = std::iter::once(same_scope).chain(single_scopes.chunks(1));
+    for (index, group) in groups.enumerate() {
+        let sweep = SweepId::new(format!("collision-initial-{index}"))?;
+        insert(&store, sweep, group.iter().cloned().map(Ok)).await?;
     }
     initialize_tags(&database, &store, &keys, &pairs).await?;
     native::project(&store, graph).await?;
     assert_fixture(&database, &store, graph, &expected, &pairs).await?;
-    assert_eq!(
-        graph
-            .rows(inventory_graph::cypher::diagnostics::TAG_KEYS)
-            .await?
-            .len(),
-        5
-    );
+    assert_tag_count(graph, 5).await?;
     assert_eq!(
         graph
             .rows(inventory_graph::cypher::diagnostics::TAG_PROVENANCE)
@@ -63,8 +61,30 @@ pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &P
         6
     );
     let first = keys.first().ok_or("first collision key missing")?;
+    assert_tag_replacements(&database, &store, graph, &expected, pairs, first).await
+}
+
+async fn assert_tag_count(graph: &NativeGraph, expected: usize) -> TestResult {
+    assert_eq!(
+        graph
+            .rows(inventory_graph::cypher::diagnostics::TAG_KEYS)
+            .await?
+            .len(),
+        expected
+    );
+    Ok(())
+}
+
+async fn assert_tag_replacements(
+    database: &Path,
+    store: &BinaryStore,
+    graph: &NativeGraph,
+    expected: &Expected,
+    mut pairs: TagSets,
+    first: &ResourceKey,
+) -> TestResult {
     tags::tag_commit::replace(
-        &store,
+        store,
         first,
         vec![("owner", "bob")],
         "collision-replacement",
@@ -75,30 +95,18 @@ pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &P
         first.clone(),
         BTreeMap::from([("owner".into(), "bob".into())]),
     );
-    native::project(&store, graph).await?;
-    assert_fixture(&database, &store, graph, &expected, &pairs).await?;
-    assert_eq!(
-        graph
-            .rows(inventory_graph::cypher::diagnostics::TAG_KEYS)
-            .await?
-            .len(),
-        5
-    );
-    tags::tag_commit::replace(&store, first, Vec::new(), "collision-empty", 300).await?;
+    native::project(store, graph).await?;
+    assert_fixture(database, store, graph, expected, &pairs).await?;
+    assert_tag_count(graph, 5).await?;
+    tags::tag_commit::replace(store, first, Vec::new(), "collision-empty", 300).await?;
     pairs.remove(first);
-    native::project(&store, graph).await?;
-    assert_fixture(&database, &store, graph, &expected, &pairs).await?;
-    assert_eq!(
-        graph
-            .rows(inventory_graph::cypher::diagnostics::TAG_KEYS)
-            .await?
-            .len(),
-        4
-    );
+    native::project(store, graph).await?;
+    assert_fixture(database, store, graph, expected, &pairs).await?;
+    assert_tag_count(graph, 4).await?;
     // Equal values with distinct keys must not merge; the newline value must
     // round-trip through actual Cypher escaping and both public readers.
     tags::tag_commit::replace(
-        &store,
+        store,
         first,
         vec![
             ("owner", "alice"),
@@ -117,8 +125,8 @@ pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &P
             ("quoted-'\\".into(), "line-one\nline-two".into()),
         ]),
     );
-    native::project(&store, graph).await?;
-    assert_fixture(&database, &store, graph, &expected, &pairs).await
+    native::project(store, graph).await?;
+    assert_fixture(database, store, graph, expected, &pairs).await
 }
 
 fn keys() -> TestResult<Vec<ResourceKey>> {
@@ -181,8 +189,13 @@ fn baseline(keys: &[ResourceKey]) -> TestResult<TagSets> {
     ]))
 }
 
-async fn insert(store: &BinaryStore, keys: &[ResourceKey], index: usize) -> TestResult {
-    let first = keys.first().ok_or("empty collision scope")?;
+pub(super) async fn insert(
+    store: &BinaryStore,
+    sweep: SweepId,
+    keys: impl IntoIterator<Item = TestResult<ResourceKey>>,
+) -> TestResult {
+    let mut keys = keys.into_iter();
+    let first = keys.next().ok_or("empty resource scope")??;
     let (service, operation) = if first.region == Region::Global {
         ("s3", "ListBuckets")
     } else {
@@ -195,7 +208,6 @@ async fn insert(store: &BinaryStore, keys: &[ResourceKey], index: usize) -> Test
         OperationId::parse(operation)?,
         None,
     )?;
-    let sweep = SweepId::new(format!("collision-initial-{index}"))?;
     let record = Record::encode(&Value::Map(BTreeMap::new()))?;
     store
         .seed_work(WorkSpec::new(
@@ -208,18 +220,20 @@ async fn insert(store: &BinaryStore, keys: &[ResourceKey], index: usize) -> Test
     let lease = store
         .claim(&sweep, 100, 10_000)
         .await?
-        .ok_or("collision scope unclaimable")?;
-    let observations = keys
-        .iter()
+        .ok_or("fixture scope unclaimable")?;
+    let observations = std::iter::once(Ok(first))
+        .chain(keys)
         .map(|key| {
-            Observation::new(
-                key.clone(),
+            let key = key?;
+            let arn = key.id.as_str().into();
+            Ok(Observation::new(
+                key,
                 record.clone(),
                 &Exclusions::none(),
-                Some(key.id.as_str().into()),
-            )
+                Some(arn),
+            )?)
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<TestResult<Vec<_>>>()?;
     store
         .commit_page(PageCommit {
             lease,

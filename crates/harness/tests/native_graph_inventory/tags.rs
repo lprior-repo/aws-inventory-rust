@@ -218,7 +218,11 @@ async fn assert_total_topology(
         .await?;
     assert_eq!(
         nodes.len(),
-        expected.resources.len() + vertices,
+        expected
+            .resources
+            .len()
+            .checked_add(vertices)
+            .ok_or("native node count overflow")?,
         "no unexpected native node labels"
     );
     assert!(
@@ -231,7 +235,11 @@ async fn assert_total_topology(
         .await?;
     assert_eq!(
         relationships.len(),
-        expected.edges.len() + associations,
+        expected
+            .edges
+            .len()
+            .checked_add(associations)
+            .ok_or("native relationship count overflow")?,
         "no quadratic tag clique or extra graph relationship"
     );
     Ok(())
@@ -252,10 +260,7 @@ async fn assert_view_tags(
             .await?
             .ok_or("UI tag detail missing")?;
         assert!(!detail.tags_truncated, "fixture tags must fit UI page");
-        let expected = tags
-            .get(resource)
-            .cloned()
-            .map_or_else(BTreeMap::new, |tags| tags);
+        let expected = tags.get(resource).cloned().unwrap_or_default();
         assert_eq!(
             detail.tags.len(),
             expected.len(),

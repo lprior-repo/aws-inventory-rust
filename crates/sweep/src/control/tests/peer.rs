@@ -7,6 +7,7 @@ use std::{
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,
+    sync::Mutex,
     task::JoinSet,
 };
 use tokio_rustls::{TlsAcceptor, rustls};
@@ -26,14 +27,33 @@ pub(super) struct Rejections {
     pub release: tokio::sync::Notify,
 }
 
+#[derive(Default)]
+pub(super) struct ContinuationPause {
+    pub requested: tokio::sync::Notify,
+    pub release: CancellationToken,
+    item_queries: Mutex<Vec<Option<String>>>,
+}
+
+impl ContinuationPause {
+    pub(super) async fn take_item_queries(&self) -> Vec<Option<String>> {
+        std::mem::take(&mut *self.item_queries.lock().await)
+    }
+}
+
+pub(super) enum Mode {
+    Normal,
+    Reject(Arc<Rejections>),
+    PauseFirstContinuation(Arc<ContinuationPause>),
+}
+
 impl Peer {
-    pub async fn start(root: &Path, failures: Option<Arc<Rejections>>) -> TestResult<Self> {
+    pub async fn start(root: &Path, mode: Mode) -> TestResult<Self> {
         let (acceptor, ca) = certificates(root)?;
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let endpoint = format!("https://localhost:{}", listener.local_addr()?.port());
         let stop = CancellationToken::new();
         let mut tasks = JoinSet::new();
-        tasks.spawn(serve(listener, acceptor, stop.clone(), failures));
+        tasks.spawn(serve(listener, acceptor, stop.clone(), mode));
         Ok(Self {
             endpoint,
             ca,
@@ -76,7 +96,7 @@ async fn serve(
     listener: TcpListener,
     acceptor: TlsAcceptor,
     stop: CancellationToken,
-    failures: Option<Arc<Rejections>>,
+    mode: Mode,
 ) -> TestResult {
     for _ in 0..32 {
         let (socket, _) = tokio::select! {
@@ -85,20 +105,17 @@ async fn serve(
         };
         tokio::select! {
             () = stop.cancelled() => return Ok(()),
-            result = tokio::time::timeout(Duration::from_secs(10), handle(socket, &acceptor, failures.as_deref())) => result??,
+            result = tokio::time::timeout(Duration::from_secs(10), handle(socket, &acceptor, &mode)) => result??,
         }
     }
     Err("control peer exhausted its fixed request budget".into())
 }
 
-async fn handle(
-    socket: tokio::net::TcpStream,
-    acceptor: &TlsAcceptor,
-    failures: Option<&Rejections>,
-) -> TestResult {
+async fn handle(socket: tokio::net::TcpStream, acceptor: &TlsAcceptor, mode: &Mode) -> TestResult {
     let mut socket = acceptor.accept(socket).await?;
-    let request = request(&mut socket).await?;
-    let (status, body) = response(&request, failures).await?;
+    let Some((status, body)) = response(&request(&mut socket).await?, mode).await? else {
+        return Ok(());
+    };
     write(&mut socket, status, body).await
 }
 
@@ -118,10 +135,7 @@ async fn request(socket: &mut (impl AsyncReadExt + Unpin)) -> TestResult<Vec<u8>
     Err("control peer request exceeds fixed header budget".into())
 }
 
-async fn response(
-    bytes: &[u8],
-    failures: Option<&Rejections>,
-) -> TestResult<(&'static str, &'static str)> {
+async fn response(bytes: &[u8], mode: &Mode) -> TestResult<Option<(&'static str, &'static str)>> {
     let request = std::str::from_utf8(bytes)?;
     let line = request.lines().next().ok_or("request line absent")?;
     if !line.starts_with("GET ") || !line.ends_with(" HTTP/1.1") {
@@ -138,7 +152,10 @@ async fn response(
         .nth(1)
         .ok_or("target absent")?
         .parse()?;
-    if let Some(failures) = failures {
+    if record_and_pause_continuation(&target, mode).await {
+        return Ok(None);
+    }
+    if let Mode::Reject(failures) = mode {
         match target.path() {
             "/regions"
                 if failures
@@ -146,18 +163,18 @@ async fn response(
                     .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
                     == 0 =>
             {
-                return Ok((
+                return Ok(Some((
                     "500 Internal Server Error",
                     r#"{"__type":"InternalFailure","message":"retry this request"}"#,
-                ));
+                )));
             }
             "/items" => {
                 failures.requested.notify_one();
                 failures.release.notified().await;
-                return Ok((
+                return Ok(Some((
                     "403 Forbidden",
                     r#"{"__type":"AccessDenied","message":"not authorized"}"#,
-                ));
+                )));
             }
             _ => {}
         }
@@ -172,7 +189,28 @@ async fn response(
             Ok(r#"{"Items":[{"Arn":"item/two","SubscriptionArn":"Deleted"}]}"#)
         }
         _ => Err(format!("unexpected control request: {target}").into()),
-    }.map(|body| ("200 OK", body))
+    }.map(|body| Some(("200 OK", body)))
+}
+
+async fn record_and_pause_continuation(target: &http::Uri, mode: &Mode) -> bool {
+    let Mode::PauseFirstContinuation(pause) = mode else {
+        return false;
+    };
+    if target.path() != "/items" {
+        return false;
+    }
+    let query = target.query();
+    pause
+        .item_queries
+        .lock()
+        .await
+        .push(query.map(str::to_owned));
+    if query != Some("marker=next") || pause.release.is_cancelled() {
+        return false;
+    }
+    pause.requested.notify_one();
+    pause.release.cancelled().await;
+    true
 }
 
 async fn write(socket: &mut (impl AsyncWriteExt + Unpin), status: &str, body: &str) -> TestResult {

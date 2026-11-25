@@ -111,7 +111,7 @@ impl NativeGraph {
         if !(1..=150).contains(&attempts) {
             return Err("native readiness attempt budget must be within 1..=150".into());
         }
-        for attempt in (0..150).take(attempts) {
+        for remaining in (0..attempts).rev() {
             if let Some(status) = self.child.try_wait()? {
                 return Err(format!("owned FalkorDB exited before readiness: {status}").into());
             }
@@ -125,7 +125,7 @@ impl NativeGraph {
                 assert_eq!(pong, "PONG");
                 return Ok(());
             }
-            if attempt + 1 < attempts {
+            if remaining != 0 {
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
         }

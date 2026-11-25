@@ -175,7 +175,10 @@ async fn read_frame(stream: &mut BufReader<UnixStream>) -> TestResult<Option<Vec
         if length > 4096 {
             return Err("Redis test bulk exceeds budget".into());
         }
-        let mut bytes = vec![0; length + 2];
+        let wire_length = length
+            .checked_add(2)
+            .ok_or("Redis test bulk length overflow")?;
+        let mut bytes = vec![0; wire_length];
         stream.read_exact(&mut bytes).await?;
         if bytes.get(length..) != Some(b"\r\n") {
             return Err("Redis bulk terminator missing".into());

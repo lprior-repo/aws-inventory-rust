@@ -2,6 +2,16 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- When the mutation harness cannot launch its child program, it writes a final
+  `supervisor_error` receipt with exit code 124 and the log digest. The receipt
+  used to stay at `running`.
+- Native seed and tag graph tests identify the missing emulator binary or
+  FalkorDB endpoint. The native rebuild boundary test uses the harness's own
+  inventory fixture, with SQLite coverage for the retained resource IDs.
+- Native graph tests use checked frame lengths and explicit row shapes, and
+  share a single tag commit fixture.
+- The sweep cancellation test pauses the second response until cancellation
+  settles and verifies that resume requests only the committed continuation.
 - Inventory requests use compatible page limits for EC2 Image Builder lists,
   MediaPackage origin endpoints, and Chime SDK Voice phone numbers. Pagination
   still follows each operation's continuation token.

@@ -221,20 +221,7 @@ async fn read_frame<R: tokio::io::AsyncBufRead + Unpin>(reader: &mut R) -> io::R
                             .filter(|count| *count <= 100_000)
                             .ok_or_else(|| io::Error::other("RESP array exceeds bound"))?;
                     } else {
-                        let bytes = size
-                            .checked_add(2)
-                            .filter(|bytes| {
-                                output
-                                    .len()
-                                    .saturating_add(line.len())
-                                    .saturating_add(*bytes)
-                                    <= MAX_FRAME
-                            })
-                            .ok_or_else(|| io::Error::other("RESP bulk exceeds bound"))?;
-                        output.extend_from_slice(&line);
-                        let start = output.len();
-                        output.resize(start + bytes, 0);
-                        reader.read_exact(&mut output[start..]).await?;
+                        append_bulk(reader, &mut output, &line, size).await?;
                         if pending == 0 {
                             return Ok(output);
                         }
@@ -251,4 +238,28 @@ async fn read_frame<R: tokio::io::AsyncBufRead + Unpin>(reader: &mut R) -> io::R
         }
     }
     Err(io::Error::other("native RESP item budget exhausted"))
+}
+
+async fn append_bulk<R: tokio::io::AsyncBufRead + Unpin>(
+    reader: &mut R,
+    output: &mut Vec<u8>,
+    line: &[u8],
+    size: usize,
+) -> io::Result<()> {
+    let start = output
+        .len()
+        .checked_add(line.len())
+        .ok_or_else(|| io::Error::other("RESP line length overflow"))?;
+    let end = start
+        .checked_add(size)
+        .and_then(|end| end.checked_add(2))
+        .filter(|end| *end <= MAX_FRAME)
+        .ok_or_else(|| io::Error::other("RESP bulk exceeds bound"))?;
+    output.extend_from_slice(line);
+    output.resize(end, 0);
+    let body = output
+        .get_mut(start..end)
+        .ok_or_else(|| io::Error::other("RESP bulk range missing"))?;
+    reader.read_exact(body).await?;
+    Ok(())
 }

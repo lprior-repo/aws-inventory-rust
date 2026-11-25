@@ -30,7 +30,18 @@ impl NativeRuntime {
     pub(super) fn start() -> TestResult<Self> {
         let binary = match std::env::var_os("INVENTORY_EMULATOR_BINARY") {
             Some(path) => PathBuf::from(path),
-            None => workspace().join(".local/runtime/unpacked/opt/aws-emulator/bin/aws-emulator"),
+            None => {
+                let path =
+                    workspace().join(".local/runtime/unpacked/opt/aws-emulator/bin/aws-emulator");
+                if !path.try_exists()? {
+                    return Err(format!(
+                        "native seed requires INVENTORY_EMULATOR_BINARY or an installed emulator at {}",
+                        path.display()
+                    )
+                    .into());
+                }
+                path
+            }
         };
         let work = tempfile::tempdir()?;
         let emulator = Emulator::start(&binary, work.path(), 300)?;

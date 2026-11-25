@@ -166,7 +166,9 @@ async fn check_membership(graph: &GraphConnection, db: &Database) -> TestResult 
 async fn given_real_native_tags_when_reading_then_affiliations_are_scoped_bounded_and_not_aws_dependencies()
 -> TestResult {
     // Given: real FalkorDB, required explicitly; missing endpoint fails this lane.
-    let endpoint = std::env::var("CMDB_VIEW_FALKOR_ENDPOINT")?;
+    const ENDPOINT_ENV: &str = "CMDB_VIEW_FALKOR_ENDPOINT";
+    let endpoint = std::env::var(ENDPOINT_ENV)
+        .map_err(|error| format!("native tag graph test requires {ENDPOINT_ENV}: {error}"))?;
     let suffix = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
         .as_nanos();

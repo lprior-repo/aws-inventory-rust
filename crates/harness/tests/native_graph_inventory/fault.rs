@@ -3,6 +3,7 @@ use inventory_harness::proxy::{Config, Proxy};
 use std::{
     io,
     net::SocketAddr,
+    ops::Range,
     path::{Path, PathBuf},
     sync::{
         Arc,
@@ -160,7 +161,9 @@ async fn forward(
                 .ok_or_else(|| io::Error::other("invalid request size"))?,
         );
         if let Some(index) = request.windows(4).position(|bytes| bytes == b"\r\n\r\n") {
-            break index + 4;
+            break index
+                .checked_add(4)
+                .ok_or_else(|| io::Error::other("owned route header length overflow"))?;
         }
         if request.len() > 32_768 {
             return Err(io::Error::other("owned route header bound exceeded"));
@@ -193,7 +196,29 @@ async fn forward(
         .collect::<Vec<_>>()
         .join("\r\n");
     rewritten.push_str("\r\nConnection: close\r\n\r\n");
-    while request.len() < header_end + length {
+    let end = header_end
+        .checked_add(length)
+        .ok_or_else(|| io::Error::other("owned route request length overflow"))?;
+    forward_body(
+        &mut tls,
+        upstream,
+        &denied,
+        rewritten,
+        request,
+        header_end..end,
+    )
+    .await
+}
+
+async fn forward_body(
+    tls: &mut tokio_rustls::server::TlsStream<TcpStream>,
+    upstream: SocketAddr,
+    denied: &AtomicUsize,
+    rewritten: String,
+    mut request: Vec<u8>,
+    body_range: Range<usize>,
+) -> io::Result<()> {
+    while request.len() < body_range.end {
         let mut chunk = [0_u8; 4096];
         let size = tls.read(&mut chunk).await?;
         if size == 0 {
@@ -206,7 +231,7 @@ async fn forward(
         );
     }
     let body = request
-        .get(header_end..header_end + length)
+        .get(body_range)
         .ok_or_else(|| io::Error::other("collector body missing"))?;
     if body
         .split(|byte| *byte == b'&')

@@ -20,7 +20,7 @@ pub async fn run(reader: &ReaderUrl, sql: &str, bounds: Bounds) -> Result<SqlRes
     let (mut connection, pid) = reader.connect().await?;
     let server_millis = bounds.millis;
     #[cfg(test)]
-    let server_millis = reader.server_millis.map_or(server_millis, |millis| millis);
+    let server_millis = reader.server_millis.unwrap_or(server_millis);
     let result = execute(&mut connection, sql, bounds, server_millis).await;
     if matches!(result, Err(SqlError::Timeout)) {
         reader.terminate(pid).await?;

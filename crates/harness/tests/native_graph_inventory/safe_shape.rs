@@ -52,6 +52,7 @@ fn visit(value: &Value, path: &str, tree: &[(&str, Shape)], depth: usize) -> Tes
     if depth > 32 {
         return Err("fixture safe tree nesting bound exceeded".into());
     }
+    let next_depth = depth.saturating_add(1);
     let shape = tree
         .iter()
         .find(|(candidate, _)| *candidate == path)
@@ -63,21 +64,7 @@ fn visit(value: &Value, path: &str, tree: &[(&str, Shape)], depth: usize) -> Tes
                 let Key::Name(name) = key else {
                     return Err("safe tree requires named members".into());
                 };
-                if matches!(
-                    name.as_str(),
-                    "SecretAccessKey"
-                        | "SecretString"
-                        | "SecretBinary"
-                        | "Password"
-                        | "PrivateKey"
-                        | "AccessToken"
-                        | "RefreshToken"
-                        | "ClientSecret"
-                        | "SessionToken"
-                        | "UnsafeSentinel"
-                ) {
-                    return Err(format!("forbidden safe member {name}").into());
-                }
+                assert_safe_name(name)?;
                 let named = if path.is_empty() {
                     name.clone()
                 } else {
@@ -88,12 +75,12 @@ fn visit(value: &Value, path: &str, tree: &[(&str, Shape)], depth: usize) -> Tes
                 } else {
                     format!("{path}.*")
                 };
-                visit(child, &child_path, tree, depth + 1)?;
+                visit(child, &child_path, tree, next_depth)?;
             }
         }
         (Shape::List, Value::List(list)) => {
             for child in list {
-                visit(child, &format!("{path}.*"), tree, depth + 1)?;
+                visit(child, &format!("{path}.*"), tree, next_depth)?;
             }
         }
         (Shape::Text, Value::Text(_))
@@ -109,6 +96,25 @@ fn visit(value: &Value, path: &str, tree: &[(&str, Shape)], depth: usize) -> Tes
             )
             .into());
         }
+    }
+    Ok(())
+}
+
+fn assert_safe_name(name: &str) -> TestResult {
+    if matches!(
+        name,
+        "SecretAccessKey"
+            | "SecretString"
+            | "SecretBinary"
+            | "Password"
+            | "PrivateKey"
+            | "AccessToken"
+            | "RefreshToken"
+            | "ClientSecret"
+            | "SessionToken"
+            | "UnsafeSentinel"
+    ) {
+        return Err(format!("forbidden safe member {name}").into());
     }
     Ok(())
 }
