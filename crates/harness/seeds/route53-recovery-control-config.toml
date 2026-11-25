@@ -9,3 +9,35 @@ identity = "Cluster.ClusterArn"
 scope = "account"
 [step.input]
 "ClusterName" = "inventory-thin-route53-recovery-control-config"
+
+[[step]]
+id = "control_panel"
+operation = "CreateControlPanel"
+kind = ""
+[step.input]
+ControlPanelName = "inventory-seed-panel"
+ClusterArn = { from = "resource", path = "Cluster.ClusterArn" }
+
+[[step]]
+id = "routing_control"
+operation = "CreateRoutingControl"
+kind = "AWS::Route53RecoveryControl::RoutingControl"
+identity = "RoutingControl.RoutingControlArn"
+scope = "account"
+[step.input]
+RoutingControlName = "inventory-seed-routing-control"
+ClusterArn = { from = "resource", path = "Cluster.ClusterArn" }
+ControlPanelArn = { from = "control_panel", path = "ControlPanel.ControlPanelArn" }
+
+[[step]]
+id = "safety_rule"
+operation = "CreateSafetyRule"
+kind = "AWS::Route53RecoveryControl::SafetyRule"
+identity = "AssertionRule.SafetyRuleArn"
+scope = "account"
+[step.input.AssertionRule]
+Name = "inventory-seed-safety-rule"
+ControlPanelArn = { from = "control_panel", path = "ControlPanel.ControlPanelArn" }
+AssertedControls = [{ from = "routing_control", path = "RoutingControl.RoutingControlArn" }]
+WaitPeriodMs = 5000
+RuleConfig = { Type = "ATLEAST", Threshold = 1, Inverted = false }

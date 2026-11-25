@@ -8,3 +8,65 @@ kind = "AWS::IVS::Channel"
 identity = "channel.arn"
 [step.input]
 name = "inventory-thin-ivs"
+
+[[step]]
+id = "stream_key"
+operation = "GetStreamKey"
+kind = "AWS::IVS::StreamKey"
+identity = "streamKey.arn"
+[step.input]
+arn = { from = "resource", path = "streamKey.arn" }
+
+[[step]]
+id = "recording_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-ivs-recording"
+
+[[step]]
+id = "recording_configuration"
+operation = "CreateRecordingConfiguration"
+kind = "AWS::IVS::RecordingConfiguration"
+identity = "recordingConfiguration.arn"
+[step.input]
+name = "inventory-seed-recording"
+destinationConfiguration = { s3 = { bucketName = "inventory-seed-ivs-recording" } }
+
+[[step]]
+id = "playback_key_pair"
+operation = "ImportPlaybackKeyPair"
+kind = "AWS::IVS::PlaybackKeyPair"
+identity = "keyPair.arn"
+[step.input]
+name = "inventory-seed-playback"
+publicKeyMaterial = '''
+-----BEGIN PUBLIC KEY-----
+MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEST0vtXMlmmE16BooGQF0hQlcwQpVnLUT
+a/uV88UEozD9WmPMFSEMuWzpYBAfh5E7xoVv3QgCM7fLONF8h7Pm1KFiTLBfSgC8
+tZM/PPxpeYvK7oo5dwXXBQccpLwvmtVP
+-----END PUBLIC KEY-----
+'''
+
+[[step]]
+id = "playback_configuration"
+service = "mediatailor"
+operation = "PutPlaybackConfiguration"
+kind = "AWS::MediaTailor::PlaybackConfiguration"
+identity = "PlaybackConfigurationArn"
+[step.input]
+Name = "inventory-seed-ivs"
+AdDecisionServerUrl = "https://ads.example/vast"
+VideoContentSourceUrl = "https://video.example/"
+
+[[step]]
+id = "ad_configuration"
+operation = "CreateAdConfiguration"
+kind = "AWS::IVS::AdConfiguration"
+identity = "adConfiguration.arn"
+[step.input]
+name = "inventory-seed-ads"
+mediaTailorPlaybackConfigurations = [{ playbackConfigurationArn = { from = "playback_configuration", path = "PlaybackConfigurationArn" } }]

@@ -8,3 +8,13 @@ kind = "AWS::Outposts::Site"
 identity = "Site.SiteArn"
 [step.input]
 "Name" = "inventory-thin-outposts"
+
+[[step]]
+id = "outpost"
+operation = "CreateOutpost"
+kind = "AWS::Outposts::Outpost"
+identity = "Outpost.OutpostArn"
+[step.input]
+Name = "inventory-thin-outpost"
+SiteId = { from = "resource", path = "Site.SiteId" }
+AvailabilityZone = "us-east-1a"

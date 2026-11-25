@@ -62,3 +62,25 @@ name = "inventory-thin-eks"
 roleArn = { from = "role", path = "Role.Arn" }
 resourcesVpcConfig = { subnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }, { from = "subnet2", path = "Subnet.SubnetId" }] }
 clientRequestToken = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "pod_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-eks-pod"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"pods.eks.amazonaws.com"},"Action":["sts:AssumeRole","sts:TagSession"]}]}'
+
+[[step]]
+id = "pod_identity"
+operation = "CreatePodIdentityAssociation"
+kind = "AWS::EKS::PodIdentityAssociation"
+identity = "association.associationArn"
+[step.input]
+clusterName = { from = "cluster", path = "cluster.name" }
+namespace = "default"
+serviceAccount = "inventory-seed"
+roleArn = { from = "pod_role", path = "Role.Arn" }

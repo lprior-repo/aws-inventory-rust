@@ -23,3 +23,75 @@ CallerReference = "inv-createhealthcheck-{n}"
 [step.input.HealthCheckConfig]
 Type = "CALCULATED"
 
+[[step]]
+id = "hosted_zone"
+operation = "CreateHostedZone"
+kind = "AWS::Route53::HostedZone"
+identity = "HostedZone.Id"
+scope = "account"
+[step.input]
+Name = "inventory-route53.example.com"
+CallerReference = "inventory-thin-hosted-zone"
+
+[[step]]
+id = "cidr_collection"
+operation = "CreateCidrCollection"
+kind = "AWS::Route53::CidrCollection"
+identity = "Collection.Arn"
+scope = "account"
+[step.input]
+Name = "inventory-thin-cidr"
+CallerReference = "inventory-thin-cidr"
+
+[[step]]
+id = "traffic_policy"
+operation = "CreateTrafficPolicy"
+kind = "AWS::Route53::TrafficPolicy"
+identity = "TrafficPolicy.Id"
+scope = "account"
+[step.input]
+Name = "inventory-thin-traffic"
+Document = '{"AWSPolicyFormatVersion":"2015-10-01","RecordType":"A","StartEndpoint":"fixture","Endpoints":{"fixture":{"Type":"value","Value":"192.0.2.10"}}}'
+
+[[step]]
+id = "traffic_instance"
+operation = "CreateTrafficPolicyInstance"
+kind = "AWS::Route53::TrafficPolicyInstance"
+identity = "TrafficPolicyInstance.Id"
+scope = "account"
+[step.input]
+HostedZoneId = { from = "hosted_zone", path = "HostedZone.Id" }
+Name = "traffic.inventory-route53.example.com"
+TTL = 60
+TrafficPolicyId = { from = "traffic_policy", path = "TrafficPolicy.Id" }
+TrafficPolicyVersion = { from = "traffic_policy", path = "TrafficPolicy.Version" }
+
+[[step]]
+id = "dnssec_key"
+service = "kms"
+operation = "CreateKey"
+kind = ""
+[step.input]
+KeySpec = "ECC_NIST_P256"
+KeyUsage = "SIGN_VERIFY"
+Description = "Inventory seed DNSSEC key"
+
+[[step]]
+id = "key_signing_key"
+operation = "CreateKeySigningKey"
+kind = ""
+[step.input]
+CallerReference = "inventory-thin-dnssec"
+HostedZoneId = { from = "hosted_zone", path = "HostedZone.Id" }
+KeyManagementServiceArn = { from = "dnssec_key", path = "KeyMetadata.Arn" }
+Name = "inventory_seed"
+Status = "ACTIVE"
+
+[[step]]
+id = "dnssec"
+operation = "EnableHostedZoneDNSSEC"
+kind = "AWS::Route53::DNSSEC"
+identity = { input = "HostedZoneId" }
+scope = "account"
+[step.input]
+HostedZoneId = { from = "hosted_zone", path = "HostedZone.Id" }

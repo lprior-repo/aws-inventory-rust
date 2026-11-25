@@ -8,3 +8,13 @@ kind = "AWS::NetworkFlowMonitor::Scope"
 identity = "scopeArn"
 [step.input]
 "targets" = [{ "targetIdentifier" = { "targetId" = { "accountId" = "000000000000" }, "targetType" = "ACCOUNT" }, "region" = "us-east-1" }]
+
+[[step]]
+id = "monitor"
+operation = "CreateMonitor"
+kind = "AWS::NetworkFlowMonitor::Monitor"
+identity = "monitorArn"
+[step.input]
+monitorName = "inventory-thin-monitor"
+scopeArn = { from = "resource", path = "scopeArn" }
+localResources = [{ type = "AWS::Region", identifier = "us-east-1" }]

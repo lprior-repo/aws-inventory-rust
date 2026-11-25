@@ -8,3 +8,55 @@ kind = "AWS::IVS::Stage"
 identity = "stage.arn"
 [step.input]
 name = "inventory-thin-ivs-realtime"
+
+[[step]]
+id = "recording_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-ivs-recordings"
+
+[[step]]
+id = "storage"
+operation = "CreateStorageConfiguration"
+kind = "AWS::IVS::StorageConfiguration"
+identity = "storageConfiguration.arn"
+[step.input]
+name = "inventory-thin-ivs-storage"
+s3 = { bucketName = "inventory-thin-ivs-recordings" }
+
+[[step]]
+id = "encoder"
+operation = "CreateEncoderConfiguration"
+kind = "AWS::IVS::EncoderConfiguration"
+identity = "encoderConfiguration.arn"
+[step.input]
+name = "inventory-thin-ivs-encoder"
+
+[[step]]
+id = "ingest"
+operation = "CreateIngestConfiguration"
+kind = "AWS::IVS::IngestConfiguration"
+identity = "ingestConfiguration.arn"
+[step.input]
+name = "inventory-thin-ivs-ingest"
+stageArn = { from = "resource", path = "stage.arn" }
+ingestProtocol = "RTMPS"
+
+[[step]]
+id = "public_key"
+operation = "ImportPublicKey"
+kind = "AWS::IVS::PublicKey"
+identity = "publicKey.arn"
+[step.input]
+name = "inventory-thin-ivs-key"
+publicKeyMaterial = '''
+-----BEGIN PUBLIC KEY-----
+MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEASnrMzQhA2RV2ANQLYty4/uqBmbaVXeN
+C2K2F0xtUcUH7cPgg6fh3LQPGaIhNORmRILG262pdzCBDra/rQytaUUGdo66skhQ
+8eRLwe6xJCEZoZKCsYEepxLnZezLP0jy
+-----END PUBLIC KEY-----
+'''

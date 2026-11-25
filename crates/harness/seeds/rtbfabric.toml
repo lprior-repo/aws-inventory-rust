@@ -1,0 +1,51 @@
+format = 1
+service = "rtbfabric"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.87.0.0/16"
+
+[[step]]
+id = "subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.87.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.87.2.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-seed-rtbfabric"
+Description = "Local inventory fixture"
+
+[[step]]
+id = "requester_gateway"
+operation = "CreateRequesterGateway"
+kind = "AWS::RTBFabric::RequesterGateway"
+identity = "gatewayId"
+[step.input]
+vpcId = { from = "vpc", path = "Vpc.VpcId" }
+subnetIds = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }]
+securityGroupIds = [{ from = "security_group", path = "GroupId" }]
+clientToken = "inventory-seed-requester-gateway"

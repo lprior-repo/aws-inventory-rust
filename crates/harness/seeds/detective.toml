@@ -7,3 +7,12 @@ operation = "CreateGraph"
 kind = "AWS::Detective::Graph"
 identity = "GraphArn"
 [step.input]
+
+[[step]]
+id = "member"
+operation = "CreateMembers"
+kind = ""
+[step.input]
+GraphArn = { from = "resource", path = "GraphArn" }
+Accounts = [{ AccountId = "111111111111", EmailAddress = "detective-fixture@example.com" }]
+DisableEmailNotification = true

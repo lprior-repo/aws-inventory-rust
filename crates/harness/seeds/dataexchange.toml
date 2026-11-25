@@ -10,3 +10,23 @@ identity = "Arn"
 "AssetType" = "S3_SNAPSHOT"
 "Description" = "Inventory emulator seed"
 "Name" = "inventory-thin-dataexchange"
+
+[[step]]
+id = "revision"
+operation = "CreateRevision"
+kind = "AWS::ApiOnly::DataExchangeRevision"
+identity = "Arn"
+[step.input]
+DataSetId = { from = "resource", path = "Id" }
+Comment = "Inventory emulator seed revision"
+
+[[step]]
+id = "data_grant"
+operation = "CreateDataGrant"
+kind = "AWS::ApiOnly::DataExchangeDataGrant"
+identity = "Arn"
+[step.input]
+Name = "inventory-seed-data-grant"
+GrantDistributionScope = "NONE"
+ReceiverPrincipal = "111111111111"
+SourceDataSetId = { from = "resource", path = "Id" }

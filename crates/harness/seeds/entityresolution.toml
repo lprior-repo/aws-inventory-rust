@@ -9,3 +9,85 @@ identity = "schemaArn"
 [step.input]
 schemaName = "inventory-thin-entityresolution"
 mappedInputFields = [{ fieldName = "id", type = "UNIQUE_ID" }, { fieldName = "name", type = "NAME" }]
+
+[[step]]
+id = "workflow_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-entityresolution"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"entityresolution.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "workflow_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-entityresolution"
+
+[[step]]
+id = "workflow_data"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-entityresolution"
+Key = "input/records.csv"
+Body = "aWQsbmFtZQoxLEludmVudG9yeQo="
+
+[[step]]
+id = "workflow_database"
+service = "glue"
+operation = "CreateDatabase"
+kind = "AWS::Glue::Database"
+identity = { input = "DatabaseInput.Name", template = "arn:{partition}:glue:{region}:{account}:database/{value}" }
+[step.input]
+DatabaseInput = { Name = "inventory_seed_entityresolution" }
+
+[[step]]
+id = "workflow_table"
+service = "glue"
+operation = "CreateTable"
+kind = "AWS::Glue::Table"
+identity = { input = "TableInput.Name", template = "arn:{partition}:glue:{region}:{account}:table/inventory_seed_entityresolution/{value}" }
+[step.input]
+DatabaseName = "inventory_seed_entityresolution"
+TableInput = { Name = "records", TableType = "EXTERNAL_TABLE", StorageDescriptor = { Columns = [{ Name = "id", Type = "string" }, { Name = "name", Type = "string" }], Location = "s3://inventory-seed-entityresolution/input/", InputFormat = "org.apache.hadoop.mapred.TextInputFormat", OutputFormat = "org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat", SerdeInfo = { SerializationLibrary = "org.apache.hadoop.hive.serde2.OpenCSVSerde" } }, Parameters = { "skip.header.line.count" = "1" } }
+
+[[step]]
+id = "matching_workflow"
+operation = "CreateMatchingWorkflow"
+kind = "AWS::EntityResolution::MatchingWorkflow"
+identity = "workflowArn"
+[step.input]
+workflowName = "inventory-seed-matching"
+inputSourceConfig = [{ inputSourceARN = "arn:aws:glue:us-east-1:000000000000:table/inventory_seed_entityresolution/records", schemaName = { from = "schema", path = "schemaName" } }]
+outputSourceConfig = [{ outputS3Path = "s3://inventory-seed-entityresolution/matches/", output = [{ name = "name" }] }]
+resolutionTechniques = { resolutionType = "RULE_MATCHING", ruleBasedProperties = { attributeMatchingModel = "ONE_TO_ONE", rules = [{ ruleName = "by-name", matchingKeys = ["name"] }] } }
+roleArn = { from = "workflow_role", path = "Role.Arn" }
+
+[[step]]
+id = "id_mapping_workflow"
+operation = "CreateIdMappingWorkflow"
+kind = "AWS::EntityResolution::IdMappingWorkflow"
+identity = "workflowArn"
+[step.input]
+workflowName = "inventory-seed-mapping"
+inputSourceConfig = [{ inputSourceARN = "arn:aws:glue:us-east-1:000000000000:table/inventory_seed_entityresolution/records", schemaName = { from = "schema", path = "schemaName" }, type = "SOURCE" }, { inputSourceARN = { from = "matching_workflow", path = "workflowArn" }, type = "TARGET" }]
+outputSourceConfig = [{ outputS3Path = "s3://inventory-seed-entityresolution/mapped/" }]
+idMappingTechniques = { idMappingType = "RULE_BASED", ruleBasedProperties = { ruleDefinitionType = "SOURCE", attributeMatchingModel = "ONE_TO_ONE", recordMatchingModel = "MANY_SOURCE_TO_ONE_TARGET", rules = [{ ruleName = "by-name", matchingKeys = ["name"] }] } }
+roleArn = { from = "workflow_role", path = "Role.Arn" }
+
+[[step]]
+id = "matching_job"
+operation = "StartMatchingJob"
+kind = "AWS::ApiOnly::EntityResolutionMatchingJob"
+identity = "jobId"
+[step.input]
+workflowName = { from = "matching_workflow", path = "workflowName" }

@@ -8,3 +8,14 @@ kind = "AWS::QBusiness::Application"
 identity = "applicationId"
 [step.input]
 "displayName" = "inventory-thin-qbusiness"
+
+[[step]]
+id = "index"
+operation = "CreateIndex"
+kind = "AWS::QBusiness::Index"
+identity = "indexArn"
+[step.input]
+applicationId = { from = "resource", path = "applicationId" }
+displayName = "inventory-thin-index"
+type = "STARTER"
+

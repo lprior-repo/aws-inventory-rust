@@ -9,3 +9,17 @@ identity = "Arn"
 [step.input]
 "EngineType" = "ACTIVEMQ"
 "Name" = "inventory-thin-mq"
+
+[[step]]
+id = "broker"
+operation = "CreateBroker"
+kind = "AWS::AmazonMQ::Broker"
+identity = "BrokerArn"
+[step.input]
+BrokerName = "inventory-thin-broker"
+EngineType = "ACTIVEMQ"
+EngineVersion = "5.18"
+DeploymentMode = "SINGLE_INSTANCE"
+HostInstanceType = "mq.t3.micro"
+PubliclyAccessible = false
+Users = [{ Username = "inventory", Password = "Inventory-only-Seed-49" }]

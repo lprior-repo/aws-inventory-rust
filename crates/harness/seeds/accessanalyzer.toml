@@ -9,3 +9,13 @@ identity = "arn"
 [step.input]
 "analyzerName" = "inventory-thin-accessanalyzer"
 "type" = "ACCOUNT"
+
+# Archive rule identity is correlated with the analyzer ARN.
+[[step]]
+id = "archive_rule"
+operation = "CreateArchiveRule"
+kind = ""
+[step.input]
+analyzerName = "inventory-thin-accessanalyzer"
+ruleName = "inventory-seed-archive"
+filter = { isPublic = { eq = ["false"] } }

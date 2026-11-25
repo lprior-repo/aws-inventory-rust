@@ -9,3 +9,102 @@ identity = "farmId"
 [step.input]
 displayName = "inventory-thin-deadline"
 clientToken = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "fleet_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-deadline-fleet"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"deadline.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "queue"
+operation = "CreateQueue"
+kind = "AWS::Deadline::Queue"
+identity = "queueId"
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+displayName = "inventory-seed-queue"
+
+[[step]]
+id = "fleet"
+operation = "CreateFleet"
+kind = "AWS::Deadline::Fleet"
+identity = "fleetId"
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+displayName = "inventory-seed-fleet"
+roleArn = { from = "fleet_role", path = "Role.Arn" }
+maxWorkerCount = 1
+configuration = { customerManaged = { mode = "NO_SCALING", workerCapabilities = { vCpuCount = { min = 1 }, memoryMiB = { min = 1024 }, osFamily = "LINUX", cpuArchitectureType = "x86_64" } } }
+
+[[step]]
+id = "limit"
+operation = "CreateLimit"
+kind = "AWS::Deadline::Limit"
+identity = "limitId"
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+displayName = "inventory-seed-limit"
+amountRequirementName = "amount.fixture"
+maxCount = 1
+
+[[step]]
+id = "queue_fleet_association"
+operation = "CreateQueueFleetAssociation"
+kind = "AWS::Deadline::QueueFleetAssociation"
+identity = { input = "fleetId" }
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+queueId = { from = "queue", path = "queueId" }
+fleetId = { from = "fleet", path = "fleetId" }
+
+[[step]]
+id = "queue_limit_association"
+operation = "CreateQueueLimitAssociation"
+kind = "AWS::Deadline::QueueLimitAssociation"
+identity = { input = "limitId" }
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+queueId = { from = "queue", path = "queueId" }
+limitId = { from = "limit", path = "limitId" }
+
+[[step]]
+id = "storage_profile"
+operation = "CreateStorageProfile"
+kind = ""
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+displayName = "inventory-seed-storage"
+osFamily = "LINUX"
+
+[[step]]
+id = "farm_timing"
+operation = "GetFarm"
+kind = ""
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+
+[[step]]
+id = "queue_timing"
+operation = "GetQueue"
+kind = ""
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+queueId = { from = "queue", path = "queueId" }
+
+[[step]]
+id = "budget"
+operation = "CreateBudget"
+kind = ""
+[step.input]
+farmId = { from = "farm", path = "farmId" }
+displayName = "inventory-seed-budget"
+usageTrackingResource = { queueId = { from = "queue", path = "queueId" } }
+approximateDollarLimit = 10.0
+actions = [{ type = "STOP_SCHEDULING_AND_COMPLETE_TASKS", thresholdPercentage = 100.0 }]
+schedule = { fixed = { startTime = { from = "farm_timing", path = "createdAt" }, endTime = { from = "queue_timing", path = "createdAt" } } }

@@ -1,0 +1,13 @@
+format = 1
+service = "service-quotas"
+
+[[step]]
+id = "quota_request"
+operation = "RequestServiceQuotaIncrease"
+kind = "AWS::ApiOnly::ServiceQuotaChangeRequest"
+identity = "RequestedQuota.Id"
+[step.input]
+ServiceCode = "ec2"
+QuotaCode = "L-1216C47A"
+DesiredValue = 16.0
+SupportCaseAllowed = false

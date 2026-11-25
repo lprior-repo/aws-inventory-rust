@@ -9,3 +9,12 @@ identity = "Key.KeyArn"
 [step.input]
 "KeyAttributes" = { "KeyUsage" = "TR31_B0_BASE_DERIVATION_KEY", "KeyClass" = "SYMMETRIC_KEY", "KeyAlgorithm" = "TDES_2KEY", "KeyModesOfUse" = {  } }
 "Exportable" = false
+
+[[step]]
+id = "alias"
+operation = "CreateAlias"
+kind = "AWS::PaymentCryptography::Alias"
+identity = "Alias.AliasName"
+[step.input]
+AliasName = "alias/inventory-thin-payment"
+KeyArn = { from = "resource", path = "Key.KeyArn" }

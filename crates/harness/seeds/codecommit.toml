@@ -8,3 +8,12 @@ kind = "AWS::CodeCommit::Repository"
 identity = "repositoryMetadata.repositoryId"
 [step.input]
 "repositoryName" = "inventory-thin-codecommit"
+
+[[step]]
+id = "approval_rule_template"
+operation = "CreateApprovalRuleTemplate"
+kind = "AWS::ApiOnly::CodeCommitApprovalRuleTemplate"
+identity = "approvalRuleTemplate.approvalRuleTemplateId"
+[step.input]
+approvalRuleTemplateName = "inventory-seed-approval"
+approvalRuleTemplateContent = '{"Version":"2018-11-08","Statements":[{"Type":"Approvers","NumberOfApprovalsNeeded":1}]}'

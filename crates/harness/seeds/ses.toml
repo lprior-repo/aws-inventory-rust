@@ -20,3 +20,22 @@ input = "ConfigurationSet.Name"
 
 [step.input.ConfigurationSet]
 Name = "inv-createconfigurationset-{n}"
+
+[[step]]
+id = "template"
+operation = "CreateTemplate"
+kind = "AWS::SES::Template"
+identity = { input = "Template.TemplateName", template = "arn:{partition}:ses:{region}:{account}:template/{value}" }
+[step.input.Template]
+TemplateName = "inventory-seed-ses-template"
+SubjectPart = "Inventory fixture"
+TextPart = "Local emulator inventory fixture."
+
+[[step]]
+id = "receipt_filter"
+operation = "CreateReceiptFilter"
+kind = "AWS::SES::ReceiptFilter"
+identity = { input = "Filter.Name" }
+[step.input.Filter]
+Name = "inventory-seed-receipt-filter"
+IpFilter = { Cidr = "192.0.2.0/24", Policy = "Block" }

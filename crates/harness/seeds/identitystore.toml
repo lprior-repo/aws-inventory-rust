@@ -1,0 +1,17 @@
+format = 1
+service = "identitystore"
+
+[[step]]
+id = "sso_instances"
+service = "sso-admin"
+operation = "ListInstances"
+kind = ""
+
+[[step]]
+id = "group"
+operation = "CreateGroup"
+kind = "AWS::IdentityStore::Group"
+identity = "GroupArn"
+[step.input]
+IdentityStoreId = { from = "sso_instances", path = "Instances.0.IdentityStoreId" }
+DisplayName = "inventory-seed-group"

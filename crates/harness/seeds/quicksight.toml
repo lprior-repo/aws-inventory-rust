@@ -1,0 +1,53 @@
+format = 1
+service = "quicksight"
+
+[[step]]
+id = "caller"
+service = "sts"
+operation = "GetCallerIdentity"
+kind = ""
+[step.input]
+
+[[step]]
+id = "data_source"
+operation = "CreateDataSource"
+kind = "AWS::QuickSight::DataSource"
+identity = "Arn"
+[step.input]
+AwsAccountId = { from = "caller", path = "Account" }
+DataSourceId = "inventory-thin-athena"
+Name = "Inventory seed Athena source"
+Type = "ATHENA"
+DataSourceParameters = { AthenaParameters = { WorkGroup = "primary" } }
+
+[[step]]
+id = "dataset"
+operation = "CreateDataSet"
+kind = "AWS::QuickSight::DataSet"
+identity = "Arn"
+[step.input]
+AwsAccountId = { from = "caller", path = "Account" }
+DataSetId = "inventory-thin-dataset"
+Name = "Inventory seed dataset"
+ImportMode = "SPICE"
+PhysicalTableMap = { seed = { CustomSql = { DataSourceArn = { from = "data_source", path = "Arn" }, Name = "Inventory seed", SqlQuery = "SELECT 1 AS inventory_id", Columns = [{ Name = "inventory_id", Type = "INTEGER" }] } } }
+
+[[step]]
+id = "refresh_schedule"
+operation = "CreateRefreshSchedule"
+kind = "AWS::QuickSight::RefreshSchedule"
+identity = { input = "Schedule.ScheduleId", template = "22:inventory-thin-dataset|22:{value}" }
+[step.input]
+AwsAccountId = { from = "caller", path = "Account" }
+DataSetId = { from = "dataset", path = "DataSetId" }
+Schedule = { ScheduleId = "inventory-thin-refresh", RefreshType = "FULL_REFRESH", ScheduleFrequency = { Interval = "DAILY", Timezone = "UTC", TimeOfTheDay = "03:00" } }
+
+[[step]]
+id = "group"
+operation = "CreateGroup"
+kind = "AWS::QuickSight::Group"
+identity = "Group.Arn"
+[step.input]
+AwsAccountId = { from = "caller", path = "Account" }
+Namespace = "default"
+GroupName = "inventory-thin-group"

@@ -1,0 +1,12 @@
+format = 1
+service = "partnercentral-revenue-measurement"
+
+[[step]]
+id = "revenue_share"
+operation = "CreateMarketplaceRevenueShare"
+kind = "AWS::ApiOnly::PartnerMarketplaceRevenueShare"
+identity = "Arn"
+scope = "account"
+[step.input]
+Catalog = "AWS"
+ProductId = "prod-inventoryseed"

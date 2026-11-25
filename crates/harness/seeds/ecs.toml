@@ -18,3 +18,127 @@ scope = "region"
 [step.input]
 family = "inventory-seed-task"
 containerDefinitions = [{ name = "container", image = "public.ecr.aws/docker/library/busybox:latest", essential = true, memory = 32 }]
+
+[[step]]
+id = "daemon_task_definition"
+operation = "RegisterDaemonTaskDefinition"
+kind = "AWS::ECS::DaemonTaskDefinition"
+identity = "daemonTaskDefinitionArn"
+[step.input]
+family = "inventory-seed-daemon"
+containerDefinitions = [{ name = "daemon", image = "public.ecr.aws/docker/library/busybox:latest", essential = true, memory = 32 }]
+
+[[step]]
+id = "service"
+operation = "CreateService"
+kind = "AWS::ECS::Service"
+identity = "service.serviceArn"
+[step.input]
+cluster = { from = "resource", path = "cluster.clusterArn" }
+serviceName = "inventory-seed-service"
+taskDefinition = { from = "task_definition", path = "taskDefinition.taskDefinitionArn" }
+desiredCount = 0
+launchType = "EC2"
+
+[[step]]
+id = "managed_instances_vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.47.0.0/16"
+
+[[step]]
+id = "managed_instances_subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "managed_instances_vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.47.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "managed_instances_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-ecs-infrastructure"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ecs.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "managed_instances_policy"
+service = "iam"
+operation = "AttachRolePolicy"
+kind = ""
+scope = "account"
+[step.input]
+RoleName = { from = "managed_instances_role", path = "Role.RoleName" }
+PolicyArn = "arn:aws:iam::aws:policy/AmazonECSInfrastructureRolePolicyForManagedInstances"
+
+[[step]]
+id = "container_instance_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-ecs-instance"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "container_instance_policy"
+service = "iam"
+operation = "AttachRolePolicy"
+kind = ""
+scope = "account"
+[step.input]
+RoleName = { from = "container_instance_role", path = "Role.RoleName" }
+PolicyArn = "arn:aws:iam::aws:policy/AmazonECSInstanceRolePolicyForManagedInstances"
+
+[[step]]
+id = "container_instance_profile"
+service = "iam"
+operation = "CreateInstanceProfile"
+kind = "AWS::IAM::InstanceProfile"
+identity = "InstanceProfile.Arn"
+scope = "account"
+[step.input]
+InstanceProfileName = "inventory-seed-ecs-instance"
+
+[[step]]
+id = "container_instance_profile_role"
+service = "iam"
+operation = "AddRoleToInstanceProfile"
+kind = ""
+scope = "account"
+[step.input]
+InstanceProfileName = { from = "container_instance_profile", path = "InstanceProfile.InstanceProfileName" }
+RoleName = { from = "container_instance_role", path = "Role.RoleName" }
+
+[[step]]
+id = "managed_instances_provider"
+operation = "CreateCapacityProvider"
+kind = "AWS::ECS::CapacityProvider"
+identity = "capacityProvider.capacityProviderArn"
+[step.input]
+name = "inventory-seed-managed"
+cluster = { from = "resource", path = "cluster.clusterArn" }
+managedInstancesProvider = { infrastructureRoleArn = { from = "managed_instances_role", path = "Role.Arn" }, instanceLaunchTemplate = { ec2InstanceProfileArn = { from = "container_instance_profile", path = "InstanceProfile.Arn" }, networkConfiguration = { subnets = [{ from = "managed_instances_subnet", path = "Subnet.SubnetId" }] } } }
+
+[[step]]
+id = "daemon"
+operation = "CreateDaemon"
+kind = "AWS::ECS::Daemon"
+identity = "daemonArn"
+[step.input]
+daemonName = "inventory-seed-daemon"
+clusterArn = { from = "resource", path = "cluster.clusterArn" }
+daemonTaskDefinitionArn = { from = "daemon_task_definition", path = "daemonTaskDefinitionArn" }
+capacityProviderArns = [{ from = "managed_instances_provider", path = "capacityProvider.capacityProviderArn" }]

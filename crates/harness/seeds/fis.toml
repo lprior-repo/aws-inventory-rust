@@ -24,3 +24,13 @@ stopConditions = [{ source = "none" }]
 targets = { instances = { resourceType = "aws:ec2:instance", resourceTags = { inventory = "seed" }, selectionMode = "ALL" } }
 actions = { stop = { actionId = "aws:ec2:stop-instances", parameters = { startInstancesAfterDuration = "PT1M" }, targets = { Instances = "instances" } } }
 roleArn = { from = "role", path = "Role.Arn" }
+
+[[step]]
+id = "experiment"
+operation = "StartExperiment"
+kind = "AWS::ApiOnly::FISExperiment"
+identity = "experiment.arn"
+[step.input]
+clientToken = "inventory-seed-fis-preview"
+experimentTemplateId = { from = "template", path = "experimentTemplate.id" }
+experimentOptions = { actionsMode = "skip-all" }

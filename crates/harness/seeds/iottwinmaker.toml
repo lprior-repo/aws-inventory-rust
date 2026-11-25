@@ -8,3 +8,84 @@ kind = "AWS::IoTTwinMaker::Workspace"
 identity = "arn"
 [step.input]
 workspaceId = "inventory-thin-iottwinmaker"
+
+[[step]]
+id = "entity"
+operation = "CreateEntity"
+kind = "AWS::IoTTwinMaker::Entity"
+identity = "arn"
+[step.input]
+workspaceId = "inventory-thin-iottwinmaker"
+entityName = "inventory-seed-pump"
+
+[[step]]
+id = "workspace_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-twinmaker"
+
+[[step]]
+id = "scene_document"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-twinmaker"
+Key = "scene.json"
+Body = "eyJzcGVjVmVyc2lvbiI6IjEuMCIsIm5vZGVzIjpbXSwicm9vdE5vZGVJbmRleGVzIjpbXX0="
+ContentType = "application/json"
+
+[[step]]
+id = "workspace_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-twinmaker"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"iottwinmaker.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "workspace_policy"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+scope = "account"
+[step.input]
+RoleName = { from = "workspace_role", path = "Role.RoleName" }
+PolicyName = "inventory-seed-twinmaker"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:GetObject","Resource":"arn:aws:s3:::inventory-seed-twinmaker/scene.json"},{"Effect":"Allow","Action":["iotsitewise:ListAssets","iotsitewise:ListAssetModels","iotsitewise:DescribeAsset","iotsitewise:DescribeAssetModel"],"Resource":"*"}]}'
+
+[[step]]
+id = "workspace_storage"
+operation = "UpdateWorkspace"
+kind = ""
+[step.input]
+workspaceId = "inventory-thin-iottwinmaker"
+s3Location = "arn:aws:s3:::inventory-seed-twinmaker"
+role = { from = "workspace_role", path = "Role.Arn" }
+
+[[step]]
+id = "scene"
+operation = "CreateScene"
+kind = "AWS::IoTTwinMaker::Scene"
+identity = "arn"
+[step.input]
+workspaceId = "inventory-thin-iottwinmaker"
+sceneId = "inventory-seed-scene"
+contentLocation = "s3://inventory-seed-twinmaker/scene.json"
+
+[[step]]
+id = "sync_job"
+operation = "CreateSyncJob"
+kind = "AWS::IoTTwinMaker::SyncJob"
+identity = "arn"
+[step.input]
+workspaceId = "inventory-thin-iottwinmaker"
+syncSource = "SITEWISE"
+syncRole = { from = "workspace_role", path = "Role.Arn" }

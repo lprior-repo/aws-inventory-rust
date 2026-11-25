@@ -8,3 +8,188 @@ kind = "AWS::IoTSiteWise::AssetModel"
 identity = "assetModelArn"
 [step.input]
 assetModelName = "inventory-thin-iotsitewise"
+
+[[step]]
+id = "workspace"
+operation = "CreateWorkspace"
+kind = "AWS::IoTSiteWise::Workspace"
+identity = "workspaceArn"
+[step.input]
+workspaceName = "inventory-seed-workspace"
+encryptionConfiguration = { encryptionType = "SITEWISE_DEFAULT_ENCRYPTION" }
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::IoTSiteWise::Application"
+identity = "arn"
+[step.input]
+name = "inventory-seed-application"
+workspaceName = { from = "workspace", path = "workspaceName" }
+idcInstanceArn = "arn:aws:sso:::instance/ssoins-0123456789abcdef"
+
+[[step]]
+id = "asset"
+operation = "CreateAsset"
+kind = "AWS::IoTSiteWise::Asset"
+identity = "assetArn"
+[step.input]
+assetName = "inventory-seed-asset"
+assetModelId = { from = "resource", path = "assetModelId" }
+
+[[step]]
+id = "computation_asset_model"
+operation = "CreateAssetModel"
+kind = "AWS::IoTSiteWise::AssetModel"
+identity = "assetModelArn"
+[step.input]
+assetModelName = "inventory-seed-computation"
+assetModelProperties = [
+  { id = "4047e84e-933a-4569-bf26-0424f2bca20a", name = "temperature", dataType = "DOUBLE", type = { measurement = {} } },
+  { id = "f8d759d3-8ccc-4414-9d24-83904bc76894", name = "result", dataType = "DOUBLE", type = { measurement = {} } },
+]
+
+[[step]]
+id = "computation_model"
+operation = "CreateComputationModel"
+kind = "AWS::IoTSiteWise::ComputationModel"
+identity = "computationModelArn"
+[step.input]
+computationModelName = "inventory-seed-anomaly"
+computationModelConfiguration = { anomalyDetection = { inputProperties = "${temperature}", resultProperty = "${result}" } }
+computationModelDataBinding = { temperature = { assetModelProperty = { assetModelId = { from = "computation_asset_model", path = "assetModelId" }, propertyId = "4047e84e-933a-4569-bf26-0424f2bca20a" } }, result = { assetModelProperty = { assetModelId = { from = "computation_asset_model", path = "assetModelId" }, propertyId = "f8d759d3-8ccc-4414-9d24-83904bc76894" } } }
+
+[[step]]
+id = "dataset"
+operation = "CreateDataset"
+kind = "AWS::IoTSiteWise::Dataset"
+identity = "datasetArn"
+[step.input]
+datasetName = "inventory-seed-dataset"
+datasetType = "EXTERNAL"
+datasetSource = { sourceType = "KENDRA", sourceFormat = "KNOWLEDGE_BASE" }
+
+[[step]]
+id = "gateway"
+operation = "CreateGateway"
+kind = "AWS::IoTSiteWise::Gateway"
+identity = "gatewayArn"
+[step.input]
+gatewayName = "inventory-seed-gateway"
+gatewayPlatform = { greengrassV2 = { coreDeviceThingName = "inventory-seed-sitewise-core" } }
+
+[[step]]
+id = "sitewise_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-sitewise"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"iotsitewise.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "portal"
+operation = "CreatePortal"
+kind = "AWS::IoTSiteWise::Portal"
+identity = "portalArn"
+[step.input]
+portalName = "inventory-seed-portal"
+portalContactEmail = "inventory-seed@example.com"
+portalAuthMode = "IAM"
+roleArn = { from = "sitewise_role", path = "Role.Arn" }
+
+[[step]]
+id = "project"
+operation = "CreateProject"
+kind = "AWS::IoTSiteWise::Project"
+identity = "projectArn"
+[step.input]
+portalId = { from = "portal", path = "portalId" }
+projectName = "inventory-seed-project"
+
+[[step]]
+id = "dashboard"
+operation = "CreateDashboard"
+kind = "AWS::IoTSiteWise::Dashboard"
+identity = "dashboardArn"
+[step.input]
+projectId = { from = "project", path = "projectId" }
+dashboardName = "inventory-seed-dashboard"
+dashboardDefinition = '{"widgets":[]}'
+
+[[step]]
+id = "access_policy"
+operation = "CreateAccessPolicy"
+kind = "AWS::IoTSiteWise::AccessPolicy"
+identity = "accessPolicyArn"
+[step.input]
+accessPolicyIdentity = { iamRole = { arn = { from = "sitewise_role", path = "Role.Arn" } } }
+accessPolicyResource = { portal = { id = { from = "portal", path = "portalId" } } }
+accessPolicyPermission = "VIEWER"
+
+[[step]]
+id = "task"
+operation = "CreateTask"
+kind = "AWS::IoTSiteWise::Task"
+identity = "taskArn"
+[step.input]
+workspaceName = { from = "workspace", path = "workspaceName" }
+taskName = "inventory-seed-task"
+taskConfiguration = { containerTaskConfiguration = { ecrUri = "public.ecr.aws/docker/library/busybox:latest", taskExecutionRole = { from = "sitewise_role", path = "Role.Arn" }, processingType = "GENERIC_COMPUTE_PROCESSING", processingUnit = "UNITS_2" } }
+
+[[step]]
+id = "pipeline"
+operation = "CreatePipeline"
+kind = "AWS::IoTSiteWise::Pipeline"
+identity = "pipelineArn"
+[step.input]
+workspaceName = { from = "workspace", path = "workspaceName" }
+pipelineName = "inventory-seed-pipeline"
+computations = [{ computeNodeName = "compute", taskName = { from = "task", path = "taskName" } }]
+
+# SiteWise only ingests recent samples. IoT Jobs exposes its queue time as epoch seconds.
+[[step]]
+id = "sample_clock_thing"
+service = "iot"
+operation = "CreateThing"
+kind = ""
+[step.input]
+thingName = "inventory-seed-sitewise-clock"
+
+[[step]]
+id = "sample_clock_job"
+service = "iot"
+operation = "CreateJob"
+kind = ""
+[step.input]
+jobId = "inventory-seed-sitewise-clock"
+targets = [{ from = "sample_clock_thing", path = "thingArn" }]
+document = '{"purpose":"record seed sample time"}'
+targetSelection = "SNAPSHOT"
+
+[[step]]
+id = "sample_clock"
+service = "iot-jobs-data-plane"
+operation = "StartNextPendingJobExecution"
+kind = ""
+[step.input]
+statusDetails = { purpose = "inventory-seed-clock" }
+stepTimeoutInMinutes = 5
+thingName = { from = "sample_clock_thing", path = "thingName" }
+
+[[step]]
+id = "time_series_sample"
+operation = "BatchPutAssetPropertyValue"
+kind = ""
+[step.input]
+entries = [{ entryId = "sample", propertyAlias = "/inventory/seed/temperature", propertyValues = [{ value = { doubleValue = 21.0 }, timestamp = { timeInSeconds = { from = "sample_clock", path = "execution.queuedAt" } } }] }]
+
+[[step]]
+id = "time_series"
+operation = "DescribeTimeSeries"
+kind = "AWS::ApiOnly::IoTSiteWiseTimeSeries"
+identity = "timeSeriesArn"
+[step.input]
+alias = "/inventory/seed/temperature"

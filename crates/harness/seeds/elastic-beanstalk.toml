@@ -18,3 +18,20 @@ scope = "region"
 [step.input]
 ApplicationName = "inventory-thin-elastic-beanstalk"
 VersionLabel = "inventory-thin-version"
+
+[[step]]
+id = "solution_stacks"
+operation = "ListAvailableSolutionStacks"
+kind = ""
+
+[[step]]
+id = "environment"
+operation = "CreateEnvironment"
+kind = "AWS::ElasticBeanstalk::Environment"
+identity = "EnvironmentArn"
+[step.input]
+ApplicationName = { from = "resource", path = "Application.ApplicationName" }
+VersionLabel = { from = "createapplicationversion", path = "ApplicationVersion.VersionLabel" }
+EnvironmentName = "inventory-seed-environment"
+SolutionStackName = { from = "solution_stacks", path = "SolutionStacks.0" }
+OptionSettings = [{ Namespace = "aws:elasticbeanstalk:environment", OptionName = "EnvironmentType", Value = "SingleInstance" }]

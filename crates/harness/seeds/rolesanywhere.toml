@@ -9,3 +9,40 @@ identity = "profile.profileArn"
 [step.input]
 "name" = "inventory-thin-rolesanywhere"
 "roleArns" = ["arn:aws:iam::000000000000:role/inventory-thin"]
+
+[[step]]
+id = "trust_anchor"
+operation = "CreateTrustAnchor"
+kind = "AWS::RolesAnywhere::TrustAnchor"
+identity = "trustAnchor.trustAnchorArn"
+[step.input]
+name = "inventory-seed-anchor"
+enabled = false
+[step.input.source]
+sourceType = "CERTIFICATE_BUNDLE"
+[step.input.source.sourceData]
+x509CertificateData = """
+-----BEGIN CERTIFICATE-----
+MIIBsDCCAVWgAwIBAgIUJKmUThS0XU207JHs7eJceLROpNgwCgYIKoZIzj0EAwIw
+JTEjMCEGA1UEAwwaSW52ZW50b3J5IEVtdWxhdG9yIFNlZWQgQ0EwHhcNMjYxMTI1
+MDQ1MTI1WhcNMzYxMTIyMDQ1MTI1WjAlMSMwIQYDVQQDDBpJbnZlbnRvcnkgRW11
+bGF0b3IgU2VlZCBDQTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKodfKI2blDr
+/7MngfqToR6WVIWKzdNLt3iiVMb9iJ/DPuqMWiwX9T2KSbIoSo/eh/IxRMl3UJ8v
+CXAnFxdaxd2jYzBhMB0GA1UdDgQWBBSqNnT4PcNTYa+yXE+FbmRI/0jCrTAfBgNV
+HSMEGDAWgBSqNnT4PcNTYa+yXE+FbmRI/0jCrTAPBgNVHRMBAf8EBTADAQH/MA4G
+A1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNJADBGAiEApIsv608lEv3EPN3tjWa+
+AMks5fRtcvMCdsJynkViM+0CIQDZHyPhKgwxqP/S5hzwxx9da3clr3zdF164dCa4
+cODe5w==
+-----END CERTIFICATE-----
+"""
+
+[[step]]
+id = "crl"
+operation = "ImportCrl"
+kind = "AWS::RolesAnywhere::CRL"
+identity = "crl.crlArn"
+[step.input]
+name = "inventory-seed-crl"
+enabled = false
+trustAnchorArn = { from = "trust_anchor", path = "trustAnchor.trustAnchorArn" }
+crlData = "MIG8MGUCAQEwCgYIKoZIzj0EAwIwJTEjMCEGA1UEAwwaSW52ZW50b3J5IEVtdWxhdG9yIFNlZWQgQ0EXDTI2MTEyNTA0NTEyNVoXDTM2MTEyMjA0NTEyNVqgDzANMAsGA1UdFAQEAgIQADAKBggqhkjOPQQDAgNHADBEAiAEkuFndgj/NKefe7R55956ZC5oqVjOO2u5jbNMtrj3nAIgR0W/B3sGj6GyusZZ9Yd5eJiGErOPj1dXBi0ZFSwUyIs="

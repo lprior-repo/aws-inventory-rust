@@ -8,3 +8,13 @@ kind = "AWS::Athena::WorkGroup"
 identity = { input = "Name" }
 [step.input]
 "Name" = "inventory-thin-athena"
+
+# Prepared statement identity is correlated with its workgroup.
+[[step]]
+id = "prepared_statement"
+operation = "CreatePreparedStatement"
+kind = ""
+[step.input]
+StatementName = "inventory_seed_statement"
+WorkGroup = "inventory-thin-athena"
+QueryStatement = "SELECT 1"

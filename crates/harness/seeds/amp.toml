@@ -7,3 +7,63 @@ operation = "CreateWorkspace"
 kind = "AWS::APS::Workspace"
 identity = "arn"
 [step.input]
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.96.0.0/16"
+
+[[step]]
+id = "subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.96.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.96.1.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = ""
+[step.input]
+GroupName = "inventory-seed-amp"
+Description = "Inventory seed scraper security group"
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+
+[[step]]
+id = "scraper"
+operation = "CreateScraper"
+kind = "AWS::APS::Scraper"
+identity = "arn"
+[step.input]
+alias = "inventory-seed-scraper"
+# The Prometheus configuration has no scrape targets.
+scrapeConfiguration = { configurationBlob = "Z2xvYmFsOgogIHNjcmFwZV9pbnRlcnZhbDogNjBzCnNjcmFwZV9jb25maWdzOgogIC0gam9iX25hbWU6IGludmVudG9yeS1maXh0dXJlCiAgICBzdGF0aWNfY29uZmlnczoKICAgICAgLSB0YXJnZXRzOiBbXQo=" }
+source = { vpcConfiguration = { securityGroupIds = [{ from = "security_group", path = "GroupId" }], subnetIds = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }] } }
+destination = { ampConfiguration = { workspaceArn = { from = "resource", path = "arn" } } }
+
+[[step]]
+id = "anomaly_detector"
+operation = "CreateAnomalyDetector"
+kind = "AWS::APS::AnomalyDetector"
+identity = "arn"
+[step.input]
+workspaceId = { from = "resource", path = "workspaceId" }
+alias = "inventory-seed-detector"
+configuration = { randomCutForest = { query = "sum(up)" } }

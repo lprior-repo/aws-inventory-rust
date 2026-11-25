@@ -8,3 +8,21 @@ kind = "AWS::IVSChat::Room"
 identity = "arn"
 [step.input]
 name = "inventory-thin-ivschat"
+
+[[step]]
+id = "log_group"
+service = "cloudwatch-logs"
+operation = "CreateLogGroup"
+kind = "AWS::Logs::LogGroup"
+identity = { input = "logGroupName", template = "arn:{partition}:logs:{region}:{account}:log-group:{value}" }
+[step.input]
+logGroupName = "inventory-thin-ivschat"
+
+[[step]]
+id = "logging"
+operation = "CreateLoggingConfiguration"
+kind = "AWS::IVSChat::LoggingConfiguration"
+identity = "arn"
+[step.input]
+name = "inventory-thin-chat-logging"
+destinationConfiguration = { cloudWatchLogs = { logGroupName = "inventory-thin-ivschat" } }

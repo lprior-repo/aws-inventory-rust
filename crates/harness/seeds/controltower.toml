@@ -9,3 +9,46 @@ identity = "arn"
 [step.input]
 version = "3.3"
 manifest = { governedRegions = ["us-east-1"], organizationStructure = { security = { name = "Security" }, sandbox = { name = "Sandbox" } }, centralizedLogging = { accountId = "111122223333", configurations = { loggingBucket = { retentionDays = 365 }, accessLoggingBucket = { retentionDays = 365 } }, enabled = true }, securityRoles = { accountId = "444455556666" }, accessManagement = { enabled = false } }
+
+[[step]]
+id = "organization_roots"
+service = "organizations"
+operation = "ListRoots"
+kind = ""
+[step.input]
+
+[[step]]
+id = "organizational_unit"
+service = "organizations"
+operation = "CreateOrganizationalUnit"
+kind = "AWS::Organizations::OrganizationalUnit"
+identity = "OrganizationalUnit.Arn"
+scope = "account"
+[step.input]
+ParentId = { from = "organization_roots", path = "Roots.0.Id" }
+Name = "InventorySeedControls"
+
+[[step]]
+id = "enabled_control"
+operation = "EnableControl"
+kind = "AWS::ControlTower::EnabledControl"
+identity = "arn"
+[step.input]
+controlIdentifier = "arn:aws:controltower:us-east-1::control/AWS-GR_S3_BUCKET_PUBLIC_READ_PROHIBITED"
+targetIdentifier = { from = "organizational_unit", path = "OrganizationalUnit.Arn" }
+
+[[step]]
+id = "baselines"
+operation = "ListBaselines"
+kind = ""
+[step.input]
+
+[[step]]
+id = "enabled_baseline"
+operation = "EnableBaseline"
+kind = "AWS::ControlTower::EnabledBaseline"
+identity = "arn"
+[step.input]
+baselineIdentifier = { from = "baselines", path = "baselines.0.arn" }
+baselineVersion = "1.0"
+targetIdentifier = { from = "organizational_unit", path = "OrganizationalUnit.Arn" }

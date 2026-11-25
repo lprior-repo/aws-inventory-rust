@@ -1,0 +1,27 @@
+format = 1
+service = "savingsplans"
+
+[[step]]
+id = "offerings"
+operation = "DescribeSavingsPlansOfferings"
+kind = ""
+[step.input]
+planTypes = ["Compute"]
+paymentOptions = ["No Upfront"]
+
+[[step]]
+id = "plan"
+operation = "CreateSavingsPlan"
+kind = ""
+[step.input]
+savingsPlanOfferingId = { from = "offerings", path = "searchResults.0.offeringId" }
+commitment = "0.01"
+clientToken = "inventory-seed-savings-plan"
+
+[[step]]
+id = "plan_metadata"
+operation = "DescribeSavingsPlans"
+kind = "AWS::ApiOnly::SavingsPlan"
+identity = "savingsPlans.0.savingsPlanArn"
+[step.input]
+savingsPlanIds = [{ from = "plan", path = "savingsPlanId" }]

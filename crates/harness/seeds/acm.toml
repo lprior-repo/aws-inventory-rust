@@ -8,3 +8,40 @@ kind = "AWS::CertificateManager::Certificate"
 identity = "CertificateArn"
 [step.input]
 "DomainName" = "inventory-thin-acm"
+
+[[step]]
+id = "acme_endpoint"
+operation = "CreateAcmeEndpoint"
+kind = "AWS::ApiOnly::ACMAcmeEndpoint"
+identity = "AcmeEndpointArn"
+[step.input]
+AuthorizationBehavior = "PRE_APPROVED"
+CertificateAuthority = { PublicCertificateAuthority = { AllowedKeyAlgorithms = ["RSA_2048"] } }
+
+[[step]]
+id = "acme_domain"
+operation = "CreateAcmeDomainValidation"
+kind = "AWS::ApiOnly::ACMAcmeDomainValidation"
+identity = "AcmeDomainValidationArn"
+[step.input]
+AcmeEndpointArn = { from = "acme_endpoint", path = "AcmeEndpointArn" }
+DomainName = "inventory-acme.example.com"
+PrevalidationOptions = { DnsPrevalidation = { DomainScope = { ExactDomain = "ENABLED" } } }
+
+[[step]]
+id = "acme_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-acme"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"acm-acme.amazonaws.com"},"Action":["sts:AssumeRole","sts:SetSourceIdentity","sts:TagSession"]}]}'
+
+[[step]]
+id = "acme_account_binding"
+operation = "CreateAcmeExternalAccountBinding"
+kind = "AWS::ApiOnly::ACMAcmeExternalAccountBinding"
+identity = "ExternalAccountBinding.AcmeExternalAccountBindingArn"
+[step.input]
+AcmeEndpointArn = { from = "acme_endpoint", path = "AcmeEndpointArn" }
+RoleArn = { from = "acme_role", path = "Role.Arn" }

@@ -8,3 +8,11 @@ kind = "AWS::ApiOnly::ConnectHealthDomain"
 identity = "arn"
 [step.input]
 name = "inventory-thin-connecthealth"
+
+[[step]]
+id = "subscription"
+operation = "CreateSubscription"
+kind = "AWS::ApiOnly::ConnectHealthSubscription"
+identity = "arn"
+[step.input]
+domainId = { from = "resource", path = "domainId" }

@@ -9,3 +9,48 @@ identity = "RuleArn"
 [step.input]
 "RuleName" = "inventory-thin-observabilityadmin"
 "Rule" = { "Source" = { "Regions" = ["us-east-1"] }, "Destination" = { "Region" = "us-east-1" } }
+
+[[step]]
+id = "s3_integration_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-s3-table-integration"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"observabilityadmin.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "s3_table_integration"
+operation = "CreateS3TableIntegration"
+kind = "AWS::ObservabilityAdmin::S3TableIntegration"
+identity = "Arn"
+[step.input]
+Encryption = { SseAlgorithm = "AES256" }
+RoleArn = { from = "s3_integration_role", path = "Role.Arn" }
+
+[[step]]
+id = "telemetry_pipeline"
+operation = "CreateTelemetryPipeline"
+kind = "AWS::ObservabilityAdmin::TelemetryPipelines"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-pipeline"
+Configuration = { Body = """version: "2"
+inventory-seed:
+  source:
+    http:
+      path: /logs
+  sink:
+    - cloudwatch_logs:
+        log_group: /inventory/seed/pipeline
+        log_stream: inventory
+""" }
+
+[[step]]
+id = "telemetry_rule"
+operation = "CreateTelemetryRule"
+kind = "AWS::ObservabilityAdmin::TelemetryRule"
+identity = "RuleArn"
+[step.input]
+RuleName = "inventory-thin-vpc-flow-logs"
+Rule = { ResourceType = "AWS::EC2::VPC", TelemetryType = "Logs", TelemetrySourceTypes = ["VPC_FLOW_LOGS"], DestinationConfiguration = { DestinationPattern = "/inventory/seed/vpc" }, SelectionCriteria = "Tags.InventorySeed = 'true'" }

@@ -9,3 +9,171 @@ identity = "FirewallDomainList.Arn"
 [step.input]
 "CreatorRequestId" = "inventory-thin-route53resolver"
 "Name" = "inventory-thin-route53resolver"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.85.0.0/16"
+
+[[step]]
+id = "subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.85.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.85.1.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = ""
+[step.input]
+GroupName = "inventory-thin-resolver"
+Description = "Inventory seed resolver endpoint"
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+
+[[step]]
+id = "resolver_endpoint"
+operation = "CreateResolverEndpoint"
+kind = "AWS::Route53Resolver::ResolverEndpoint"
+identity = "ResolverEndpoint.Arn"
+[step.input]
+CreatorRequestId = "inventory-thin-resolver-endpoint"
+Name = "inventory-thin-endpoint"
+Direction = "OUTBOUND"
+SecurityGroupIds = [{ from = "security_group", path = "GroupId" }]
+IpAddresses = [{ SubnetId = { from = "subnet_a", path = "Subnet.SubnetId" } }, { SubnetId = { from = "subnet_b", path = "Subnet.SubnetId" } }]
+
+[[step]]
+id = "resolver_rule"
+operation = "CreateResolverRule"
+kind = "AWS::Route53Resolver::ResolverRule"
+identity = "ResolverRule.Arn"
+[step.input]
+CreatorRequestId = "inventory-thin-resolver-rule"
+Name = "inventory-thin-forward"
+DomainName = "inventory.example.com"
+RuleType = "FORWARD"
+ResolverEndpointId = { from = "resolver_endpoint", path = "ResolverEndpoint.Id" }
+TargetIps = [{ Ip = "192.0.2.53", Port = 53 }]
+
+[[step]]
+id = "rule_association"
+operation = "AssociateResolverRule"
+kind = "AWS::Route53Resolver::ResolverRuleAssociation"
+identity = "ResolverRuleAssociation.Id"
+[step.input]
+Name = "inventory-thin-rule-association"
+ResolverRuleId = { from = "resolver_rule", path = "ResolverRule.Id" }
+VPCId = { from = "vpc", path = "Vpc.VpcId" }
+
+[[step]]
+id = "firewall_group"
+operation = "CreateFirewallRuleGroup"
+kind = "AWS::Route53Resolver::FirewallRuleGroup"
+identity = "FirewallRuleGroup.Arn"
+[step.input]
+CreatorRequestId = "inventory-thin-firewall-group"
+Name = "inventory-thin-firewall"
+
+[[step]]
+id = "firewall_association"
+operation = "AssociateFirewallRuleGroup"
+kind = "AWS::Route53Resolver::FirewallRuleGroupAssociation"
+identity = "FirewallRuleGroupAssociation.Arn"
+[step.input]
+CreatorRequestId = "inventory-thin-firewall-association"
+Name = "inventory-thin-firewall-association"
+FirewallRuleGroupId = { from = "firewall_group", path = "FirewallRuleGroup.Id" }
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+Priority = 110
+
+[[step]]
+id = "dnssec"
+operation = "UpdateResolverDnssecConfig"
+kind = "AWS::Route53Resolver::ResolverDNSSECConfig"
+identity = "ResolverDNSSECConfig.Id"
+[step.input]
+ResourceId = { from = "vpc", path = "Vpc.VpcId" }
+Validation = "ENABLE"
+
+[[step]]
+id = "query_log_group"
+service = "cloudwatch-logs"
+operation = "CreateLogGroup"
+kind = ""
+[step.input]
+logGroupName = "/aws/route53resolver/inventory-seed"
+
+[[step]]
+id = "query_log_metadata"
+service = "cloudwatch-logs"
+operation = "DescribeLogGroups"
+kind = ""
+[step.input]
+logGroupNamePrefix = "/aws/route53resolver/inventory-seed"
+
+[[step]]
+id = "query_log"
+operation = "CreateResolverQueryLogConfig"
+kind = "AWS::Route53Resolver::ResolverQueryLoggingConfig"
+identity = "ResolverQueryLogConfig.Arn"
+[step.input]
+CreatorRequestId = "inventory-thin-query-log"
+Name = "inventory-thin-query-log"
+DestinationArn = { from = "query_log_metadata", path = "logGroups.0.logGroupArn" }
+
+[[step]]
+id = "query_log_association"
+operation = "AssociateResolverQueryLogConfig"
+kind = "AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation"
+identity = "ResolverQueryLogConfigAssociation.Id"
+[step.input]
+ResolverQueryLogConfigId = { from = "query_log", path = "ResolverQueryLogConfig.Id" }
+ResourceId = { from = "vpc", path = "Vpc.VpcId" }
+
+[[step]]
+id = "site"
+service = "outposts"
+operation = "CreateSite"
+kind = ""
+[step.input]
+Name = "inventory-thin-resolver-site"
+
+[[step]]
+id = "outpost"
+service = "outposts"
+operation = "CreateOutpost"
+kind = ""
+[step.input]
+Name = "inventory-thin-resolver-outpost"
+SiteId = { from = "site", path = "Site.SiteId" }
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "outpost_resolver"
+operation = "CreateOutpostResolver"
+kind = "AWS::ApiOnly::Route53OutpostResolver"
+identity = "OutpostResolver.Arn"
+[step.input]
+CreatorRequestId = "inventory-thin-outpost-resolver"
+Name = "inventory-thin-outpost"
+InstanceCount = 4
+PreferredInstanceType = "m5.large"
+OutpostArn = { from = "outpost", path = "Outpost.OutpostArn" }

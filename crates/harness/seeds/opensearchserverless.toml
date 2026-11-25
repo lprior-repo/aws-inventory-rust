@@ -9,3 +9,81 @@ identity = "createCollectionGroupDetail.arn"
 [step.input]
 "name" = "inventory-thin-opensearchserverl"
 "standbyReplicas" = "ENABLED"
+
+[[step]]
+id = "collection"
+operation = "CreateCollection"
+kind = "AWS::OpenSearchServerless::Collection"
+identity = "createCollectionDetail.arn"
+[step.input]
+name = "inventory-thin-collection"
+type = "SEARCH"
+encryptionConfig = { aWSOwnedKey = true }
+
+[[step]]
+id = "access_policy"
+operation = "CreateAccessPolicy"
+kind = "AWS::OpenSearchServerless::AccessPolicy"
+identity = { input = "name", template = "4:data|21:{value}" }
+[step.input]
+type = "data"
+name = "inventory-thin-access"
+policy = '[{"Rules":[{"ResourceType":"collection","Resource":["collection/inventory-thin-collection"],"Permission":["aoss:DescribeCollectionItems"]}],"Principal":["arn:aws:iam::000000000000:root"]}]'
+
+[[step]]
+id = "lifecycle_policy"
+operation = "CreateLifecyclePolicy"
+kind = "AWS::OpenSearchServerless::LifecyclePolicy"
+identity = { input = "name", template = "9:retention|24:{value}" }
+[step.input]
+type = "retention"
+name = "inventory-thin-retention"
+policy = '{"Rules":[{"ResourceType":"index","Resource":["index/inventory-thin-collection/*"],"MinIndexRetention":"1d"}]}'
+
+[[step]]
+id = "security_policy"
+operation = "CreateSecurityPolicy"
+kind = "AWS::OpenSearchServerless::SecurityPolicy"
+identity = { input = "name", template = "10:encryption|25:{value}" }
+[step.input]
+type = "encryption"
+name = "inventory-thin-encryption"
+policy = '{"Rules":[{"ResourceType":"collection","Resource":["collection/inventory-thin-encrypted"]}],"AWSOwnedKey":true}'
+
+[[step]]
+id = "security_config"
+operation = "CreateSecurityConfig"
+kind = "AWS::OpenSearchServerless::SecurityConfig"
+identity = "securityConfigDetail.id"
+[step.input]
+type = "saml"
+name = "inventory-thin-saml"
+samlOptions = { metadata = '<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://inventory.example.com/idp"><IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"><SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://inventory.example.com/sso"/></IDPSSODescriptor></EntityDescriptor>' }
+
+[[step]]
+id = "endpoint_vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.77.0.0/16"
+
+[[step]]
+id = "endpoint_subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "endpoint_vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.77.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "endpoint"
+operation = "CreateVpcEndpoint"
+kind = "AWS::OpenSearchServerless::VpcEndpoint"
+identity = "createVpcEndpointDetail.id"
+[step.input]
+name = "inventory-thin-endpoint"
+vpcId = { from = "endpoint_vpc", path = "Vpc.VpcId" }
+subnetIds = [{ from = "endpoint_subnet", path = "Subnet.SubnetId" }]

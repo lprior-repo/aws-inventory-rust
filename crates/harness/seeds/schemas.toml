@@ -8,3 +8,30 @@ kind = "AWS::EventSchemas::Registry"
 identity = "RegistryArn"
 [step.input]
 "RegistryName" = "inventory-thin-schemas"
+
+[[step]]
+id = "event_bus"
+service = "eventbridge"
+operation = "CreateEventBus"
+kind = ""
+[step.input]
+Name = "inventory-seed-schema-discovery"
+
+[[step]]
+id = "discoverer"
+operation = "CreateDiscoverer"
+kind = "AWS::EventSchemas::Discoverer"
+identity = "DiscovererArn"
+[step.input]
+SourceArn = { from = "event_bus", path = "EventBusArn" }
+
+[[step]]
+id = "schema"
+operation = "CreateSchema"
+kind = "AWS::EventSchemas::Schema"
+identity = "SchemaArn"
+[step.input]
+RegistryName = "inventory-thin-schemas"
+SchemaName = "InventoryFixture"
+Type = "JSONSchemaDraft4"
+Content = '{"$schema":"http://json-schema.org/draft-04/schema#","type":"object","properties":{"inventoryId":{"type":"string"}},"required":["inventoryId"]}'

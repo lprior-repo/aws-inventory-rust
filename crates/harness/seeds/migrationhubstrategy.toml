@@ -1,0 +1,35 @@
+format = 1
+service = "migrationhubstrategy"
+
+[[step]]
+id = "import_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "migrationhub-strategy-inventory-thin"
+
+[[step]]
+id = "import_object"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "migrationhub-strategy-inventory-thin"
+Key = "inventory.json"
+ContentType = "application/json"
+# Import template version 1, with one Ubuntu server and one PostgreSQL process.
+Body = "eyJJbXBvcnRGb3JtYXRWZXJzaW9uIjoxLCJSZXNvdXJjZXMiOlt7IlJlc291cmNlVHlwZSI6IlNFUlZFUiIsIlJlc291cmNlTmFtZSI6ImludmVudG9yeS1zZXJ2ZXIiLCJSZXNvdXJjZUlkIjoiaW52ZW50b3J5LXNlcnZlciIsIk9TVHlwZSI6IkxpbnV4IiwiT1NEaXN0cmlidXRpb24iOiJVYnVudHUiLCJPU1ZlcnNpb24iOiJVYnVudHUgMjAuMDQiLCJIb3N0TmFtZSI6ImludmVudG9yeS5leGFtcGxlLmNvbSIsIkNQVUFyY2hpdGVjdHVyZSI6IjY0Yml0In0seyJSZXNvdXJjZVR5cGUiOiJQUk9DRVNTIiwiUmVzb3VyY2VOYW1lIjoiaW52ZW50b3J5LWRiIiwiUmVzb3VyY2VJZCI6ImludmVudG9yeS1kYiIsIkFwcGxpY2F0aW9uVHlwZSI6IlBvc3RncmVTUUxTZXJ2ZXIiLCJBc3NvY2lhdGVkU2VydmVySWRzIjpbImludmVudG9yeS1zZXJ2ZXIiXSwiRGF0YWJhc2VWZXJzaW9uIjoiUG9zdGdyZVNRTCBTZXJ2ZXIgMTMifV19"
+
+[[step]]
+id = "import_task"
+operation = "StartImportFileTask"
+kind = "AWS::ApiOnly::MigrationStrategyImportFileTask"
+identity = "id"
+[step.input]
+name = "inventory-thin-import"
+S3Bucket = "migrationhub-strategy-inventory-thin"
+s3key = "inventory.json"
+dataSourceType = "Import"

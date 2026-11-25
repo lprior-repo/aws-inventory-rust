@@ -8,3 +8,56 @@ kind = "AWS::Cognito::UserPool"
 identity = "UserPool.Id"
 [step.input]
 PoolName = "inventory-thin-cognito-identity-provider"
+
+[[step]]
+id = "group"
+operation = "CreateGroup"
+kind = "AWS::Cognito::UserPoolGroup"
+identity = "Group.GroupName"
+[step.input]
+UserPoolId = { from = "pool", path = "UserPool.Id" }
+GroupName = "inventory-seed-users"
+
+[[step]]
+id = "resource_server"
+operation = "CreateResourceServer"
+kind = "AWS::Cognito::UserPoolResourceServer"
+identity = "ResourceServer.Identifier"
+[step.input]
+UserPoolId = { from = "pool", path = "UserPool.Id" }
+Identifier = "https://inventory.example/resource"
+Name = "Inventory Seed Resource"
+Scopes = [{ ScopeName = "read", ScopeDescription = "Read fixture data" }]
+
+[[step]]
+id = "pool_client"
+operation = "CreateUserPoolClient"
+kind = "AWS::Cognito::UserPoolClient"
+identity = "UserPoolClient.ClientId"
+[step.input]
+UserPoolId = { from = "pool", path = "UserPool.Id" }
+ClientName = "inventory-seed-client"
+
+[[step]]
+id = "terms"
+operation = "CreateTerms"
+kind = ""
+[step.input]
+UserPoolId = { from = "pool", path = "UserPool.Id" }
+ClientId = { from = "pool_client", path = "UserPoolClient.ClientId" }
+TermsName = "terms-of-use"
+TermsSource = "LINK"
+Enforcement = "NONE"
+Links = { "cognito:default" = "https://inventory.example/terms" }
+
+[[step]]
+id = "identity_provider"
+operation = "CreateIdentityProvider"
+kind = "AWS::Cognito::UserPoolIdentityProvider"
+identity = "IdentityProvider.ProviderName"
+[step.input]
+UserPoolId = { from = "pool", path = "UserPool.Id" }
+ProviderName = "Google"
+ProviderType = "Google"
+ProviderDetails = { client_id = "inventory-seed.apps.googleusercontent.com", client_secret = "emulator-fixture", authorize_scopes = "openid email profile" }
+AttributeMapping = { email = "email" }

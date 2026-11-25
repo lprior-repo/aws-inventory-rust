@@ -8,3 +8,91 @@ kind = "AWS::ApiOnly::IoTManagedIntegrationsCredentialLocker"
 identity = "Arn"
 [step.input]
 Name = "inventory-thin-iot-managed-integrations"
+
+[[step]]
+id = "event_log_configuration"
+operation = "CreateEventLogConfiguration"
+kind = "AWS::ApiOnly::IoTManagedIntegrationsEventLogConfiguration"
+identity = "Id"
+[step.input]
+ResourceType = "credential-locker"
+ResourceId = { from = "resource", path = "Id" }
+EventLogLevel = "INFO"
+
+[[step]]
+id = "managed_thing"
+operation = "CreateManagedThing"
+kind = "AWS::ApiOnly::IoTManagedIntegrationsManagedThing"
+identity = "Arn"
+[step.input]
+Role = "DEVICE"
+Name = "inventory-seed-managed-thing"
+AuthenticationMaterial = "inventory-seed-device-material"
+AuthenticationMaterialType = "DISCOVERED_DEVICE"
+CredentialLockerId = { from = "resource", path = "Id" }
+
+[[step]]
+id = "connector_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-iot-connector"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "connector_function"
+service = "lambda"
+operation = "CreateFunction"
+kind = "AWS::Lambda::Function"
+identity = "FunctionArn"
+[step.input]
+FunctionName = "inventory-seed-iot-connector"
+Runtime = "nodejs22.x"
+Handler = "index.handler"
+Role = { from = "connector_role", path = "Role.Arn" }
+Code = { ZipFile = "UEsDBBQAAAAAAAAAAACYBrlFQQAAAEEAAAAIAAAAaW5kZXguanNleHBvcnRzLmhhbmRsZXIgPSBhc3luYyAoKSA9PiAoeyBzdGF0dXNDb2RlOiAyMDAsIGJvZHk6ICJvayIgfSk7ClBLAQIUABQAAAAAAAAAAACYBrlFQQAAAEEAAAAIAAAAAAAAAAAAAAAAAAAAAABpbmRleC5qc1BLBQYAAAAAAQABADYAAABnAAAAAAA=" }
+
+[[step]]
+id = "cloud_connector"
+operation = "CreateCloudConnector"
+kind = "AWS::ApiOnly::IoTManagedIntegrationsCloudConnector"
+identity = "Id"
+[step.input]
+Name = "inventory-seed-connector"
+EndpointType = "LAMBDA"
+EndpointConfig = { lambda = { arn = { from = "connector_function", path = "FunctionArn" } } }
+
+[[step]]
+id = "connector_secret"
+service = "secrets-manager"
+operation = "CreateSecret"
+kind = "AWS::SecretsManager::Secret"
+identity = "ARN"
+[step.input]
+Name = "inventory-seed/iot-connector"
+SecretString = '{"clientId":"inventory-seed","clientSecret":"emulator-only"}'
+ClientRequestToken = "d9659168-89af-4caf-8777-dc822c5a4381"
+
+[[step]]
+id = "connector_destination"
+operation = "CreateConnectorDestination"
+kind = "AWS::ApiOnly::IoTManagedIntegrationsConnectorDestination"
+identity = "Id"
+[step.input]
+Name = "inventory-seed-destination"
+CloudConnectorId = { from = "cloud_connector", path = "Id" }
+AuthType = "OAUTH"
+AuthConfig = { oAuth = { authUrl = "https://auth.example/authorize", tokenUrl = "https://auth.example/token", tokenEndpointAuthenticationScheme = "HTTP_BASIC" } }
+SecretsManager = { arn = { from = "connector_secret", path = "ARN" }, versionId = { from = "connector_secret", path = "VersionId" } }
+
+[[step]]
+id = "account_association"
+operation = "CreateAccountAssociation"
+kind = "AWS::ApiOnly::IoTManagedIntegrationsAccountAssociation"
+identity = "Arn"
+[step.input]
+Name = "inventory-seed-association"
+ConnectorDestinationId = { from = "connector_destination", path = "Id" }

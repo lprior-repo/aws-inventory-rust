@@ -1,0 +1,89 @@
+format = 1
+service = "s3-control"
+
+[[step]]
+id = "caller"
+service = "sts"
+operation = "GetCallerIdentity"
+kind = ""
+[step.input]
+
+[[step]]
+id = "bucket_east"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-s3-control-east"
+
+[[step]]
+id = "batch_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-s3-batch"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"batchoperations.s3.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "storage_lens"
+operation = "PutStorageLensConfiguration"
+kind = "AWS::S3::StorageLens"
+identity = { input = "ConfigId", template = "arn:{partition}:s3:{region}:{account}:storage-lens/{value}" }
+[step.input]
+AccountId = { from = "caller", path = "Account" }
+ConfigId = "inventory-seed-lens"
+StorageLensConfiguration = { Id = "inventory-seed-lens", IsEnabled = true, AccountLevel = { BucketLevel = {} } }
+
+[[step]]
+id = "batch_job"
+operation = "CreateJob"
+kind = "AWS::ApiOnly::S3BatchJob"
+identity = "JobId"
+[step.input]
+AccountId = { from = "caller", path = "Account" }
+ClientRequestToken = "inventory-seed-checksum"
+ConfirmationRequired = true
+Priority = 1
+RoleArn = { from = "batch_role", path = "Role.Arn" }
+Operation = { S3ComputeObjectChecksum = { ChecksumAlgorithm = "SHA256", ChecksumType = "FULL_OBJECT" } }
+Report = { Enabled = false }
+ManifestGenerator = { S3JobManifestGenerator = { SourceBucket = "arn:aws:s3:::inventory-seed-s3-control-east", EnableManifestOutput = false } }
+
+[[step]]
+id = "access_grants_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-s3-access-grants"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"access-grants.s3.amazonaws.com"},"Action":["sts:AssumeRole","sts:SetSourceIdentity","sts:TagSession"]}]}'
+
+[[step]]
+id = "access_grants_instance"
+operation = "CreateAccessGrantsInstance"
+kind = "AWS::S3::AccessGrantsInstance"
+identity = "AccessGrantsInstanceArn"
+[step.input]
+AccountId = { from = "caller", path = "Account" }
+
+[[step]]
+id = "access_grants_location"
+operation = "CreateAccessGrantsLocation"
+kind = "AWS::S3::AccessGrantsLocation"
+identity = "AccessGrantsLocationArn"
+[step.input]
+AccountId = { from = "caller", path = "Account" }
+LocationScope = "s3://inventory-seed-s3-control-east"
+IAMRoleArn = { from = "access_grants_role", path = "Role.Arn" }
+
+[[step]]
+id = "access_grant"
+operation = "CreateAccessGrant"
+kind = "AWS::S3::AccessGrant"
+identity = "AccessGrantArn"
+[step.input]
+AccountId = { from = "caller", path = "Account" }
+AccessGrantsLocationId = { from = "access_grants_location", path = "AccessGrantsLocationId" }
+Grantee = { GranteeType = "IAM", GranteeIdentifier = { from = "access_grants_role", path = "Role.Arn" } }
+Permission = "READ"

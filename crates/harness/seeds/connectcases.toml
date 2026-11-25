@@ -8,3 +8,25 @@ kind = "AWS::Cases::Domain"
 identity = "domainArn"
 [step.input]
 name = "inventory-thin-connectcases"
+
+[[step]]
+id = "layout"
+operation = "CreateLayout"
+kind = "AWS::Cases::Layout"
+identity = "layoutArn"
+[step.input]
+domainId = { from = "resource", path = "domainId" }
+name = "Inventory layout"
+content = { basic = { topPanel = { sections = [{ fieldGroup = { fields = [{ id = "summary" }] } }] } } }
+
+[[step]]
+id = "template"
+operation = "CreateTemplate"
+kind = "AWS::Cases::Template"
+identity = "templateArn"
+[step.input]
+domainId = { from = "resource", path = "domainId" }
+name = "Inventory template"
+layoutConfiguration = { defaultLayout = { from = "layout", path = "layoutId" } }
+requiredFields = [{ fieldId = "summary" }]
+status = "Active"

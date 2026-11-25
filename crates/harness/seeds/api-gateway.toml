@@ -24,3 +24,135 @@ kind = "AWS::ApiGateway::UsagePlan"
 identity = "id"
 [step.input]
 name = "inventory-seed-usage-plan"
+
+[[step]]
+id = "client_certificate"
+operation = "GenerateClientCertificate"
+kind = "AWS::ApiGateway::ClientCertificate"
+identity = "clientCertificateId"
+[step.input]
+description = "Inventory seed certificate"
+
+[[step]]
+id = "domain_certificate"
+service = "acm"
+operation = "RequestCertificate"
+kind = ""
+[step.input]
+DomainName = "inventory-rest.example.com"
+ValidationMethod = "DNS"
+
+[[step]]
+id = "domain"
+operation = "CreateDomainName"
+kind = "AWS::ApiGateway::DomainName"
+identity = "domainNameArn"
+[step.input]
+domainName = "inventory-rest.example.com"
+certificateArn = { from = "domain_certificate", path = "CertificateArn" }
+endpointConfiguration = { types = ["PRIVATE"] }
+securityPolicy = "TLS_1_2"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.93.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.93.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "load_balancer"
+service = "elastic-load-balancing-v2"
+operation = "CreateLoadBalancer"
+kind = ""
+[step.input]
+Name = "inventory-seed-rest"
+Type = "network"
+Scheme = "internal"
+Subnets = [{ from = "subnet", path = "Subnet.SubnetId" }]
+
+[[step]]
+id = "vpc_link"
+operation = "CreateVpcLink"
+kind = "AWS::ApiGateway::VpcLink"
+identity = "id"
+[step.input]
+name = "inventory-seed-rest"
+targetArns = [{ from = "load_balancer", path = "LoadBalancers.0.LoadBalancerArn" }]
+
+[[step]]
+id = "vpc_endpoint"
+service = "ec2"
+operation = "CreateVpcEndpoint"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+VpcEndpointType = "Interface"
+ServiceName = "com.amazonaws.us-east-1.execute-api"
+SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+
+[[step]]
+id = "domain_access"
+operation = "CreateDomainNameAccessAssociation"
+kind = "AWS::ApiGateway::DomainNameAccessAssociation"
+identity = "domainNameAccessAssociationArn"
+[step.input]
+domainNameArn = { from = "domain", path = "domainNameArn" }
+accessAssociationSourceType = "VPCE"
+accessAssociationSource = { from = "vpc_endpoint", path = "VpcEndpoint.VpcEndpointId" }
+
+# REST API child identities are correlated with the generated REST API ID.
+[[step]]
+id = "rest_root"
+operation = "GetResources"
+kind = ""
+[step.input]
+restApiId = { from = "rest_api", path = "id" }
+
+[[step]]
+id = "rest_resource"
+operation = "CreateResource"
+kind = ""
+[step.input]
+restApiId = { from = "rest_api", path = "id" }
+parentId = { from = "rest_root", path = "items.0.id" }
+pathPart = "inventory"
+
+[[step]]
+id = "request_validator"
+operation = "CreateRequestValidator"
+kind = ""
+[step.input]
+restApiId = { from = "rest_api", path = "id" }
+name = "inventory-seed-validator"
+validateRequestParameters = true
+
+[[step]]
+id = "user_pool"
+service = "cognito-identity-provider"
+operation = "CreateUserPool"
+kind = ""
+[step.input]
+PoolName = "inventory-seed-rest-authorizer"
+
+[[step]]
+id = "authorizer"
+operation = "CreateAuthorizer"
+kind = ""
+[step.input]
+restApiId = { from = "rest_api", path = "id" }
+name = "inventory-seed-authorizer"
+type = "COGNITO_USER_POOLS"
+providerARNs = [{ from = "user_pool", path = "UserPool.Arn" }]
+identitySource = "method.request.header.Authorization"

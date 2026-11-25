@@ -1,0 +1,36 @@
+format = 1
+service = "compute-optimizer"
+
+[[step]]
+id = "enrollment"
+operation = "UpdateEnrollmentStatus"
+kind = ""
+[step.input]
+status = "Active"
+
+[[step]]
+id = "export_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-compute-optimizer"
+
+[[step]]
+id = "export_bucket_policy"
+service = "s3"
+operation = "PutBucketPolicy"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-compute-optimizer"
+Policy = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"compute-optimizer.amazonaws.com"},"Action":["s3:GetBucketAcl","s3:GetBucketPolicyStatus"],"Resource":"arn:aws:s3:::inventory-seed-compute-optimizer","Condition":{"StringEquals":{"aws:SourceAccount":"000000000000"}}},{"Effect":"Allow","Principal":{"Service":"compute-optimizer.amazonaws.com"},"Action":"s3:PutObject","Resource":"arn:aws:s3:::inventory-seed-compute-optimizer/exports/*","Condition":{"StringEquals":{"aws:SourceAccount":"000000000000","s3:x-amz-acl":"bucket-owner-full-control"}}}]}'
+
+[[step]]
+id = "export_job"
+operation = "ExportEC2InstanceRecommendations"
+kind = "AWS::ApiOnly::ComputeOptimizerRecommendationExportJob"
+identity = "jobId"
+[step.input]
+s3DestinationConfig = { bucket = "inventory-seed-compute-optimizer", keyPrefix = "exports" }

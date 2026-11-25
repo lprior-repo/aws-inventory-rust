@@ -1,0 +1,29 @@
+format = 1
+service = "sso-admin"
+
+[[step]]
+id = "instance"
+operation = "ListInstances"
+kind = ""
+
+[[step]]
+id = "trusted_token_issuer"
+operation = "CreateTrustedTokenIssuer"
+kind = "AWS::ApiOnly::SSOTrustedTokenIssuer"
+identity = "TrustedTokenIssuerArn"
+[step.input]
+InstanceArn = { from = "instance", path = "Instances.0.InstanceArn" }
+Name = "InventorySeedIssuer"
+TrustedTokenIssuerType = "OIDC_JWT"
+TrustedTokenIssuerConfiguration = { OidcJwtConfiguration = { IssuerUrl = "https://inventory.example.invalid", ClaimAttributePath = "sub", IdentityStoreAttributePath = "userName", JwksRetrievalOption = "OPEN_ID_DISCOVERY" } }
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::SSO::Application"
+identity = "ApplicationArn"
+[step.input]
+InstanceArn = { from = "instance", path = "Instances.0.InstanceArn" }
+ApplicationProviderArn = "arn:aws:sso::aws:applicationProvider/custom"
+Name = "InventorySeedApplication"
+Status = "DISABLED"

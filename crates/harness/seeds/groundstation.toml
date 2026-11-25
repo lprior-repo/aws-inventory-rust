@@ -9,3 +9,96 @@ identity = "configArn"
 [step.input]
 name = "inventory-thin-groundstation"
 configData = { trackingConfig = { autotrack = "PREFERRED" } }
+
+[[step]]
+id = "endpoint_vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.45.0.0/16"
+
+[[step]]
+id = "endpoint_subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "endpoint_vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.45.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "endpoint_security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "endpoint_vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-seed-groundstation"
+Description = "Inventory seed dataflow endpoint"
+
+[[step]]
+id = "dataflow_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-groundstation"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"groundstation.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "create_endpoint_group"
+operation = "CreateDataflowEndpointGroup"
+kind = ""
+[step.input]
+endpointDetails = [{ endpoint = { name = "inventory-seed-endpoint", address = { name = "10.45.1.10", port = 5000 }, mtu = 1500 }, securityDetails = { subnetIds = [{ from = "endpoint_subnet", path = "Subnet.SubnetId" }], securityGroupIds = [{ from = "endpoint_security_group", path = "GroupId" }], roleArn = { from = "dataflow_role", path = "Role.Arn" } } }]
+
+[[step]]
+id = "endpoint_group"
+operation = "GetDataflowEndpointGroup"
+kind = "AWS::GroundStation::DataflowEndpointGroup"
+identity = "dataflowEndpointGroupArn"
+[step.input]
+dataflowEndpointGroupId = { from = "create_endpoint_group", path = "dataflowEndpointGroupId" }
+
+[[step]]
+id = "downlink"
+operation = "CreateConfig"
+kind = "AWS::GroundStation::Config"
+identity = "configArn"
+[step.input]
+name = "inventory-seed-downlink"
+configData = { antennaDownlinkConfig = { spectrumConfig = { centerFrequency = { value = 8200.0, units = "MHz" }, bandwidth = { value = 10.0, units = "MHz" }, polarization = "RIGHT_HAND" } } }
+
+[[step]]
+id = "endpoint_config"
+operation = "CreateConfig"
+kind = "AWS::GroundStation::Config"
+identity = "configArn"
+[step.input]
+name = "inventory-seed-dataflow"
+configData = { dataflowEndpointConfig = { dataflowEndpointName = "inventory-seed-endpoint" } }
+
+[[step]]
+id = "create_mission_profile"
+operation = "CreateMissionProfile"
+kind = ""
+[step.input]
+name = "inventory-seed-mission"
+minimumViableContactDurationSeconds = 60
+trackingConfigArn = { from = "config", path = "configArn" }
+dataflowEdges = [[{ from = "downlink", path = "configArn" }, { from = "endpoint_config", path = "configArn" }]]
+
+[[step]]
+id = "mission_profile"
+operation = "GetMissionProfile"
+kind = "AWS::GroundStation::MissionProfile"
+identity = "missionProfileArn"
+[step.input]
+missionProfileId = { from = "create_mission_profile", path = "missionProfileId" }

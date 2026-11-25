@@ -10,3 +10,26 @@ scope = "account"
 [step.input]
 "Name" = "inventory-thin-global-accelerator"
 "IdempotencyToken" = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "listener"
+operation = "CreateListener"
+kind = "AWS::GlobalAccelerator::Listener"
+identity = "Listener.ListenerArn"
+scope = "account"
+[step.input]
+AcceleratorArn = { from = "resource", path = "Accelerator.AcceleratorArn" }
+PortRanges = [{ FromPort = 443, ToPort = 443 }]
+Protocol = "TCP"
+IdempotencyToken = "eb5a83c6-c02d-46dd-8721-db75e6b96f7f"
+
+[[step]]
+id = "endpoint_group"
+operation = "CreateEndpointGroup"
+kind = "AWS::GlobalAccelerator::EndpointGroup"
+identity = "EndpointGroup.EndpointGroupArn"
+scope = "account"
+[step.input]
+ListenerArn = { from = "listener", path = "Listener.ListenerArn" }
+EndpointGroupRegion = "us-east-1"
+IdempotencyToken = "2bbaa79e-154d-4c67-abf1-69d89a08d85d"

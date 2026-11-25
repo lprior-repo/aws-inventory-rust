@@ -32,3 +32,43 @@ StorageCapacity = 1200
 SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
 LustreConfiguration = { DeploymentType = "SCRATCH_2" }
 ClientRequestToken = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "openzfs"
+operation = "CreateFileSystem"
+kind = "AWS::FSx::FileSystem"
+identity = "FileSystem.ResourceARN"
+[step.input]
+FileSystemType = "OPENZFS"
+StorageCapacity = 64
+SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+OpenZFSConfiguration = { DeploymentType = "SINGLE_AZ_1", ThroughputCapacity = 64 }
+ClientRequestToken = "7a697803-a2b0-4ca9-8ddd-9c336495f253"
+
+[[step]]
+id = "backup"
+operation = "CreateBackup"
+kind = "AWS::ApiOnly::FSxBackup"
+identity = "Backup.ResourceARN"
+[step.input]
+FileSystemId = { from = "openzfs", path = "FileSystem.FileSystemId" }
+
+[[step]]
+id = "repository_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-fsx-repository"
+
+[[step]]
+id = "repository_association"
+operation = "CreateDataRepositoryAssociation"
+kind = "AWS::FSx::DataRepositoryAssociation"
+identity = "Association.ResourceARN"
+[step.input]
+FileSystemId = { from = "filesystem", path = "FileSystem.FileSystemId" }
+FileSystemPath = "/repository"
+DataRepositoryPath = "s3://inventory-seed-fsx-repository/data/"

@@ -12,3 +12,85 @@ name = "inventory-thin-cleanrooms"
 creatorMemberAbilities = ["CAN_QUERY", "CAN_RECEIVE_RESULTS"]
 creatorDisplayName = "Inventory Seed"
 queryLogStatus = "DISABLED"
+
+[[step]]
+id = "membership"
+operation = "CreateMembership"
+kind = "AWS::CleanRooms::Membership"
+identity = "membership.arn"
+[step.input]
+collaborationIdentifier = { from = "collaboration", path = "collaboration.id" }
+queryLogStatus = "DISABLED"
+
+[[step]]
+id = "table_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-cleanrooms-table"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"cleanrooms.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "glue_database"
+service = "glue"
+operation = "CreateDatabase"
+kind = "AWS::Glue::Database"
+identity = { input = "DatabaseInput.Name" }
+[step.input]
+DatabaseInput = { Name = "inventory_seed_cleanrooms" }
+
+[[step]]
+id = "glue_table"
+service = "glue"
+operation = "CreateTable"
+kind = "AWS::Glue::Table"
+identity = { input = "TableInput.Name" }
+[step.input]
+DatabaseName = "inventory_seed_cleanrooms"
+TableInput = { Name = "interactions", StorageDescriptor = { Columns = [{ Name = "user_id", Type = "string" }] } }
+
+[[step]]
+id = "configured_table"
+operation = "CreateConfiguredTable"
+kind = "AWS::CleanRooms::ConfiguredTable"
+identity = "configuredTable.arn"
+[step.input]
+name = "inventory-seed-interactions"
+tableReference = { glue = { databaseName = "inventory_seed_cleanrooms", tableName = "interactions" } }
+allowedColumns = ["user_id"]
+analysisMethod = "DIRECT_QUERY"
+
+[[step]]
+id = "configured_table_association"
+operation = "CreateConfiguredTableAssociation"
+kind = "AWS::CleanRooms::ConfiguredTableAssociation"
+identity = "configuredTableAssociation.arn"
+[step.input]
+membershipIdentifier = { from = "membership", path = "membership.id" }
+configuredTableIdentifier = { from = "configured_table", path = "configuredTable.id" }
+roleArn = { from = "table_role", path = "Role.Arn" }
+name = "interactions"
+
+[[step]]
+id = "analysis_template"
+operation = "CreateAnalysisTemplate"
+kind = "AWS::CleanRooms::AnalysisTemplate"
+identity = "analysisTemplate.arn"
+[step.input]
+membershipIdentifier = { from = "membership", path = "membership.id" }
+name = "inventory_seed_template"
+format = "SQL"
+source = { text = "SELECT user_id FROM interactions" }
+
+[[step]]
+id = "privacy_budget_template"
+operation = "CreatePrivacyBudgetTemplate"
+kind = "AWS::CleanRooms::PrivacyBudgetTemplate"
+identity = "privacyBudgetTemplate.arn"
+[step.input]
+membershipIdentifier = { from = "membership", path = "membership.id" }
+privacyBudgetType = "DIFFERENTIAL_PRIVACY"
+parameters = { differentialPrivacy = { epsilon = 1, usersNoisePerQuery = 10 } }

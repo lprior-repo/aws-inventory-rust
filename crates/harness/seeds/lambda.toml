@@ -20,3 +20,136 @@ identity = "CodeSigningConfig.CodeSigningConfigArn"
 repeat = 2
 [step.input]
 "AllowedPublishers.SigningProfileVersionArns" = [{ from = "profile", path = "profileVersionArn" }]
+
+[[step]]
+id = "execution_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-lambda"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "capacity_vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.52.0.0/16"
+
+[[step]]
+id = "capacity_subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "capacity_vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.52.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "capacity_security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "capacity_vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-thin-lambda-capacity"
+Description = "Seed Lambda capacity provider security group"
+
+[[step]]
+id = "capacity_provider"
+operation = "CreateCapacityProvider"
+kind = "AWS::Lambda::CapacityProvider"
+identity = "CapacityProvider.CapacityProviderArn"
+[step.input]
+CapacityProviderName = "inventory-thin-capacity"
+VpcConfig = { SubnetIds = [{ from = "capacity_subnet", path = "Subnet.SubnetId" }], SecurityGroupIds = [{ from = "capacity_security_group", path = "GroupId" }] }
+PermissionsConfig = { CapacityProviderOperatorRoleArn = { from = "execution_role", path = "Role.Arn" } }
+
+[[step]]
+id = "function"
+operation = "CreateFunction"
+kind = "AWS::Lambda::Function"
+identity = "FunctionArn"
+[step.input]
+FunctionName = "inventory-thin-function"
+Role = { from = "execution_role", path = "Role.Arn" }
+Runtime = "nodejs22.x"
+Handler = "index.handler"
+CodeSigningConfigArn = { from = "config", path = "CodeSigningConfig.CodeSigningConfigArn" }
+CapacityProviderConfig = { LambdaManagedInstancesCapacityProviderConfig = { CapacityProviderArn = { from = "capacity_provider", path = "CapacityProvider.CapacityProviderArn" }, PerExecutionEnvironmentMaxConcurrency = 1, ExecutionEnvironmentMemoryGiBPerVCpu = 2.0 } }
+# ZIP containing index.mjs with a no-op HTTP success handler.
+"Code.ZipFile" = "UEsDBBQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAaW5kZXgubWpzZXhwb3J0IGNvbnN0IGhhbmRsZXIgPSBhc3luYyAoKSA9PiAoeyBzdGF0dXNDb2RlOiAyMDAgfSk7ClBLAQIUABQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAAAAAAAAAAAAAAAAAAABpbmRleC5tanNQSwUGAAAAAAEAAQA3AAAAYQAAAAAA"
+
+[[step]]
+id = "function_version"
+operation = "PublishVersion"
+kind = "AWS::Lambda::Version"
+identity = "FunctionArn"
+[step.input]
+FunctionName = { from = "function", path = "FunctionName" }
+
+[[step]]
+id = "alias"
+operation = "CreateAlias"
+kind = "AWS::Lambda::Alias"
+identity = "AliasArn"
+[step.input]
+FunctionName = { from = "function", path = "FunctionName" }
+FunctionVersion = { from = "function_version", path = "Version" }
+Name = "inventory"
+
+[[step]]
+id = "layer"
+operation = "PublishLayerVersion"
+kind = "AWS::Lambda::LayerVersion"
+identity = "LayerVersionArn"
+[step.input]
+LayerName = "inventory-thin-layer"
+# ZIP containing the sample index.mjs module.
+"Content.ZipFile" = "UEsDBBQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAaW5kZXgubWpzZXhwb3J0IGNvbnN0IGhhbmRsZXIgPSBhc3luYyAoKSA9PiAoeyBzdGF0dXNDb2RlOiAyMDAgfSk7ClBLAQIUABQAAAAAAAAAIQBwRQaeOgAAADoAAAAJAAAAAAAAAAAAAAAAAAAAAABpbmRleC5tanNQSwUGAAAAAAEAAQA3AAAAYQAAAAAA"
+CompatibleRuntimes = ["nodejs22.x"]
+
+[[step]]
+id = "event_source_queue"
+service = "sqs"
+operation = "CreateQueue"
+kind = ""
+[step.input]
+QueueName = "inventory-thin-lambda-events"
+
+[[step]]
+id = "event_source_queue_identity"
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = "AWS::SQS::Queue"
+identity = "Attributes.QueueArn"
+[step.input]
+QueueUrl = { from = "event_source_queue", path = "QueueUrl" }
+AttributeNames = ["QueueArn"]
+
+[[step]]
+id = "event_source_permissions"
+service = "iam"
+operation = "AttachRolePolicy"
+kind = ""
+[step.input]
+RoleName = { from = "execution_role", path = "Role.RoleName" }
+PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole"
+
+[[step]]
+id = "event_source_mapping"
+operation = "CreateEventSourceMapping"
+kind = "AWS::Lambda::EventSourceMapping"
+identity = "UUID"
+[step.input]
+EventSourceArn = { from = "event_source_queue_identity", path = "Attributes.QueueArn" }
+FunctionName = { from = "function", path = "FunctionName" }
+Enabled = false

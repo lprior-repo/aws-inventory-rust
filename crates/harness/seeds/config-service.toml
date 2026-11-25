@@ -36,3 +36,97 @@ scope = "region"
 [step.input]
 RetentionPeriodInDays = 30
 
+[[step]]
+id = "aggregation_authorization"
+operation = "PutAggregationAuthorization"
+kind = "AWS::Config::AggregationAuthorization"
+identity = "AggregationAuthorization.AggregationAuthorizationArn"
+[step.input]
+AuthorizedAccountId = "111122223333"
+AuthorizedAwsRegion = "us-east-1"
+
+[[step]]
+id = "aggregator"
+operation = "PutConfigurationAggregator"
+kind = "AWS::Config::ConfigurationAggregator"
+identity = "ConfigurationAggregator.ConfigurationAggregatorArn"
+[step.input]
+ConfigurationAggregatorName = "inventory-seed-aggregator"
+AccountAggregationSources = [{ AccountIds = ["000000000000"], AwsRegions = ["us-east-1"] }]
+
+[[step]]
+id = "delivery_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-config-delivery"
+
+[[step]]
+id = "delivery_bucket_policy"
+service = "s3"
+operation = "PutBucketPolicy"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-config-delivery"
+Policy = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"config.amazonaws.com"},"Action":["s3:GetBucketAcl","s3:ListBucket"],"Resource":"arn:aws:s3:::inventory-seed-config-delivery"},{"Effect":"Allow","Principal":{"Service":"config.amazonaws.com"},"Action":"s3:PutObject","Resource":"arn:aws:s3:::inventory-seed-config-delivery/AWSLogs/000000000000/Config/*","Condition":{"StringEquals":{"s3:x-amz-acl":"bucket-owner-full-control"}}}]}'
+
+[[step]]
+id = "delivery_channel"
+operation = "PutDeliveryChannel"
+kind = "AWS::Config::DeliveryChannel"
+identity = { input = "DeliveryChannel.name" }
+[step.input]
+DeliveryChannel = { name = "inventory-seed-config-channel", s3BucketName = "inventory-seed-config-delivery" }
+
+[[step]]
+id = "config_rule"
+operation = "PutConfigRule"
+kind = "AWS::Config::ConfigRule"
+identity = { input = "ConfigRule.ConfigRuleName" }
+[step.input]
+ConfigRule = { ConfigRuleName = "inventory-seed-bucket-versioning", Source = { Owner = "AWS", SourceIdentifier = "S3_BUCKET_VERSIONING_ENABLED" } }
+
+[[step]]
+id = "rule_evaluation"
+operation = "StartConfigRulesEvaluation"
+kind = ""
+[step.input]
+ConfigRuleNames = ["inventory-seed-bucket-versioning"]
+
+[[step]]
+id = "conformance_pack"
+operation = "PutConformancePack"
+kind = "AWS::Config::ConformancePack"
+identity = "ConformancePackArn"
+[step.input]
+ConformancePackName = "inventory-seed-conformance"
+TemplateBody = '''
+Resources:
+  InventoryBucketVersioning:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      Source:
+        Owner: AWS
+        SourceIdentifier: S3_BUCKET_VERSIONING_ENABLED
+'''
+
+[[step]]
+id = "stored_query"
+operation = "PutStoredQuery"
+kind = "AWS::Config::StoredQuery"
+identity = "QueryArn"
+[step.input]
+StoredQuery = { QueryName = "inventory-seed-query", Expression = "SELECT resourceId WHERE resourceType = 'AWS::S3::Bucket'" }
+
+[[step]]
+id = "resource_evaluation"
+operation = "StartResourceEvaluation"
+kind = "AWS::ApiOnly::ConfigResourceEvaluation"
+identity = "ResourceEvaluationId"
+[step.input]
+EvaluationMode = "PROACTIVE"
+ResourceDetails = { ResourceId = "inventory-seed-config-delivery", ResourceType = "AWS::S3::Bucket", ResourceConfiguration = '{"BucketName":"inventory-seed-config-delivery"}', ResourceConfigurationSchemaType = "CFN_RESOURCE_SCHEMA" }
+

@@ -8,3 +8,42 @@ kind = "AWS::Scheduler::ScheduleGroup"
 identity = "ScheduleGroupArn"
 [step.input]
 "Name" = "inventory-thin-scheduler"
+
+[[step]]
+id = "queue"
+service = "sqs"
+operation = "CreateQueue"
+kind = ""
+[step.input]
+QueueName = "inventory-seed-scheduler"
+
+[[step]]
+id = "queue_metadata"
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = ""
+[step.input]
+QueueUrl = { from = "queue", path = "QueueUrl" }
+AttributeNames = ["QueueArn"]
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-scheduler"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"scheduler.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "schedule"
+operation = "CreateSchedule"
+kind = "AWS::Scheduler::Schedule"
+identity = "ScheduleArn"
+[step.input]
+Name = "inventory-seed-schedule"
+GroupName = "inventory-thin-scheduler"
+ScheduleExpression = "rate(1 day)"
+State = "DISABLED"
+FlexibleTimeWindow = { Mode = "OFF" }
+Target = { Arn = { from = "queue_metadata", path = "Attributes.QueueArn" }, RoleArn = { from = "role", path = "Role.Arn" } }

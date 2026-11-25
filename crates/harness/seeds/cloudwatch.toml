@@ -28,3 +28,86 @@ scope = "region"
 Namespace = "AWS/EC2"
 MetricName = "CPUUtilization"
 Stat = "Average"
+
+[[step]]
+id = "insight_rule"
+operation = "PutInsightRule"
+kind = "AWS::CloudWatch::InsightRule"
+identity = { input = "RuleName" }
+[step.input]
+RuleName = "inventory-seed-insight-rule"
+RuleState = "ENABLED"
+RuleDefinition = '{"Schema":{"Name":"CloudWatchLogRule","Version":1},"LogGroupNames":["inventory-thin-cloudwatch-logs"],"LogFormat":"JSON","Contribution":{"Keys":["$.source"]},"AggregateOn":"Count"}'
+
+[[step]]
+id = "dashboard"
+operation = "PutDashboard"
+kind = "AWS::CloudWatch::Dashboard"
+identity = { input = "DashboardName", template = "arn:{partition}:cloudwatch::{account}:dashboard/{value}" }
+scope = "account"
+[step.input]
+DashboardName = "inventory-seed-dashboard"
+DashboardBody = '{"widgets":[]}'
+
+[[step]]
+id = "metric_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-metric-stream"
+
+[[step]]
+id = "metric_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-metric-stream"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":["firehose.amazonaws.com","streams.metrics.cloudwatch.amazonaws.com"]},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "metric_role_permissions"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-metric-stream"
+PolicyName = "inventory-seed-metric-delivery"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetBucketLocation","s3:ListBucket"],"Resource":"arn:aws:s3:::inventory-seed-metric-stream"},{"Effect":"Allow","Action":["s3:PutObject","s3:AbortMultipartUpload"],"Resource":"arn:aws:s3:::inventory-seed-metric-stream/*"},{"Effect":"Allow","Action":["firehose:PutRecord","firehose:PutRecordBatch"],"Resource":"arn:aws:firehose:us-east-1:000000000000:deliverystream/inventory-seed-metric-stream"}]}'
+
+[[step]]
+id = "metric_firehose"
+service = "firehose"
+operation = "CreateDeliveryStream"
+kind = "AWS::KinesisFirehose::DeliveryStream"
+identity = "DeliveryStreamARN"
+[step.input]
+DeliveryStreamName = "inventory-seed-metric-stream"
+DeliveryStreamType = "DirectPut"
+S3DestinationConfiguration = { RoleARN = { from = "metric_role", path = "Role.Arn" }, BucketARN = "arn:aws:s3:::inventory-seed-metric-stream" }
+
+[[step]]
+id = "metric_stream"
+operation = "PutMetricStream"
+kind = "AWS::CloudWatch::MetricStream"
+identity = "Arn"
+[step.input]
+Name = "inventory-seed-metric-stream"
+FirehoseArn = { from = "metric_firehose", path = "DeliveryStreamARN" }
+RoleArn = { from = "metric_role", path = "Role.Arn" }
+OutputFormat = "json"
+
+[[step]]
+id = "mute_rule"
+operation = "PutAlarmMuteRule"
+kind = "AWS::CloudWatch::AlarmMuteRule"
+identity = { input = "Name", template = "arn:{partition}:cloudwatch:{region}:{account}:alarm-mute-rule:{value}" }
+[step.input]
+Name = "inventory-seed-mute-rule"
+Rule = { Schedule = { Expression = "cron(0 2 * * *)", Duration = "PT1H" } }
+MuteTargets = { AlarmNames = ["inventory-thin-alarm-1"] }

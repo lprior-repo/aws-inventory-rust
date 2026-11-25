@@ -9,3 +9,47 @@ identity = "arn"
 [step.input]
 "name" = "inventory-thin-omics"
 "requestId" = "inventory-thin-omics"
+
+[[step]]
+id = "workflow"
+operation = "CreateWorkflow"
+kind = "AWS::Omics::Workflow"
+identity = "arn"
+[step.input]
+name = "inventory-thin-workflow"
+requestId = "inventory-thin-workflow"
+engine = "WDL"
+main = "main.wdl"
+# ZIP with main.wdl, a no-task workflow that returns a constant string.
+definitionZip = "UEsDBBQAAAAAAAAAIQAR6Y6nWgAAAFoAAAAIAAAAbWFpbi53ZGx2ZXJzaW9uIDEuMAoKd29ya2Zsb3cgaW52ZW50b3J5X3NlZWQgewogIG91dHB1dCB7CiAgICBTdHJpbmcgZ3JlZXRpbmcgPSAiaW52ZW50b3J5IgogIH0KfQpQSwECFAAUAAAAAAAAACEAEemOp1oAAABaAAAACAAAAAAAAAAAAAAAAAAAAAAAbWFpbi53ZGxQSwUGAAAAAAEAAQA2AAAAgAAAAAAA"
+
+[[step]]
+id = "workflow_version"
+operation = "CreateWorkflowVersion"
+kind = "AWS::Omics::WorkflowVersion"
+identity = "arn"
+[step.input]
+workflowId = { from = "workflow", path = "id" }
+versionName = "v1"
+requestId = "inventory-thin-workflow-v1"
+engine = "WDL"
+main = "main.wdl"
+definitionZip = "UEsDBBQAAAAAAAAAIQAR6Y6nWgAAAFoAAAAIAAAAbWFpbi53ZGx2ZXJzaW9uIDEuMAoKd29ya2Zsb3cgaW52ZW50b3J5X3NlZWQgewogIG91dHB1dCB7CiAgICBTdHJpbmcgZ3JlZXRpbmcgPSAiaW52ZW50b3J5IgogIH0KfQpQSwECFAAUAAAAAAAAACEAEemOp1oAAABaAAAACAAAAAAAAAAAAAAAAAAAAAAAbWFpbi53ZGxQSwUGAAAAAAEAAQA2AAAAgAAAAAAA"
+
+[[step]]
+id = "cache_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-omics-cache"
+
+[[step]]
+id = "run_cache"
+operation = "CreateRunCache"
+kind = "AWS::Omics::RunCache"
+identity = "arn"
+[step.input]
+name = "inventory-thin-cache"
+requestId = "inventory-thin-omics-cache"
+cacheS3Location = "s3://inventory-thin-omics-cache/cache"

@@ -73,3 +73,14 @@ identity = "arn"
 name = "inventory-thin-emr-containers"
 clientToken = "12345678-1234-4234-8234-123456789abc"
 containerProvider = { id = { from = "cluster", path = "cluster.name" }, type = "EKS", info = { eksInfo = { namespace = "default" } } }
+
+[[step]]
+id = "security_configuration"
+operation = "CreateSecurityConfiguration"
+kind = "AWS::ApiOnly::EMRContainersSecurityConfiguration"
+identity = "arn"
+[step.input]
+clientToken = "inventory-seed-emr-security"
+name = "inventory-seed-emr-security"
+containerProvider = { id = { from = "cluster", path = "cluster.name" }, type = "EKS", info = { eksInfo = { namespace = "default" } } }
+securityConfigurationData = {}

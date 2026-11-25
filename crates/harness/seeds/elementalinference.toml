@@ -9,3 +9,14 @@ identity = "arn"
 [step.input]
 "name" = "inventory-thin-elementalinference"
 "outputs" = [{ "name" = "inventory-thin-elementalinference", "outputConfig" = { "cropping" = {  } }, "status" = "ENABLED" }]
+
+[[step]]
+id = "dictionary"
+operation = "CreateDictionary"
+kind = "AWS::ApiOnly::ElementalInferenceDictionary"
+identity = "arn"
+[step.input]
+name = "inventory-seed-dictionary"
+language = "eng"
+entries = "Inventory"
+

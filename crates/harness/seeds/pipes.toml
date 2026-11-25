@@ -1,0 +1,57 @@
+format = 1
+service = "pipes"
+
+[[step]]
+id = "source_queue"
+service = "sqs"
+operation = "CreateQueue"
+kind = ""
+[step.input]
+QueueName = "inventory-thin-pipe-source"
+
+[[step]]
+id = "source_queue_metadata"
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = ""
+[step.input]
+QueueUrl = { from = "source_queue", path = "QueueUrl" }
+AttributeNames = ["QueueArn"]
+
+[[step]]
+id = "target_queue"
+service = "sqs"
+operation = "CreateQueue"
+kind = ""
+[step.input]
+QueueName = "inventory-thin-pipe-target"
+
+[[step]]
+id = "target_queue_metadata"
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = ""
+[step.input]
+QueueUrl = { from = "target_queue", path = "QueueUrl" }
+AttributeNames = ["QueueArn"]
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-pipe"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"pipes.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "pipe"
+operation = "CreatePipe"
+kind = "AWS::Pipes::Pipe"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-pipe"
+DesiredState = "STOPPED"
+Source = { from = "source_queue_metadata", path = "Attributes.QueueArn" }
+Target = { from = "target_queue_metadata", path = "Attributes.QueueArn" }
+RoleArn = { from = "role", path = "Role.Arn" }

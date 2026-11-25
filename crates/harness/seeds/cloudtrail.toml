@@ -17,3 +17,71 @@ identity = "EventDataStoreArn"
 scope = "region"
 [step.input]
 Name = "inventory-seed-event-store"
+
+[[step]]
+id = "trail_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-cloudtrail"
+
+[[step]]
+id = "trail_bucket_policy"
+service = "s3"
+operation = "PutBucketPolicy"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-cloudtrail"
+Policy = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"s3:GetBucketAcl","Resource":"arn:aws:s3:::inventory-seed-cloudtrail"},{"Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"s3:PutObject","Resource":"arn:aws:s3:::inventory-seed-cloudtrail/AWSLogs/000000000000/*","Condition":{"StringEquals":{"s3:x-amz-acl":"bucket-owner-full-control"}}}]}'
+
+[[step]]
+id = "trail"
+operation = "CreateTrail"
+kind = "AWS::CloudTrail::Trail"
+identity = "TrailARN"
+[step.input]
+Name = "inventory-seed-trail"
+S3BucketName = "inventory-seed-cloudtrail"
+
+[[step]]
+id = "channel"
+operation = "CreateChannel"
+kind = "AWS::CloudTrail::Channel"
+identity = "ChannelArn"
+[step.input]
+Name = "inventory-seed-channel"
+Source = "Custom"
+Destinations = [{ Type = "EVENT_DATA_STORE", Location = { from = "event_data_store", path = "EventDataStoreArn" } }]
+
+[[step]]
+id = "import_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-cloudtrail-import"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"cloudtrail.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "import_role_permissions"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-cloudtrail-import"
+PolicyName = "inventory-seed-import-source"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"s3:ListBucket","Resource":"arn:aws:s3:::inventory-seed-cloudtrail"},{"Effect":"Allow","Action":"s3:GetObject","Resource":"arn:aws:s3:::inventory-seed-cloudtrail/*"}]}'
+
+[[step]]
+id = "import"
+operation = "StartImport"
+kind = "AWS::ApiOnly::CloudTrailImport"
+identity = "ImportId"
+[step.input]
+Destinations = [{ from = "event_data_store", path = "EventDataStoreArn" }]
+ImportSource = { S3 = { S3LocationUri = "s3://inventory-seed-cloudtrail/AWSLogs/000000000000/CloudTrail/", S3BucketRegion = "us-east-1", S3BucketAccessRoleArn = { from = "import_role", path = "Role.Arn" } } }

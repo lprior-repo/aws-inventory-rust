@@ -1,0 +1,21 @@
+format = 1
+service = "compute-optimizer-automation"
+
+[[step]]
+id = "enrollment"
+operation = "UpdateEnrollmentConfiguration"
+kind = ""
+[step.input]
+status = "Active"
+
+[[step]]
+id = "automation_rule"
+operation = "CreateAutomationRule"
+kind = "AWS::ApiOnly::ComputeOptimizerAutomationAutomationRule"
+identity = "ruleArn"
+[step.input]
+name = "inventory-seed-rule"
+ruleType = "AccountRule"
+recommendedActionTypes = ["UpgradeEbsVolumeType"]
+schedule = { scheduleExpression = "cron(0 12 * * ? *)", scheduleExpressionTimezone = "UTC", executionWindowInMinutes = 60 }
+status = "Inactive"

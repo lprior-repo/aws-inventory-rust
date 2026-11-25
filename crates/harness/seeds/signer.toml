@@ -9,3 +9,41 @@ identity = "arn"
 [step.input]
 "profileName" = "InventoryThinSigner"
 "platformId" = "AWSLambda-SHA384-ECDSA"
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-signing"
+
+[[step]]
+id = "versioning"
+service = "s3"
+operation = "PutBucketVersioning"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-signing"
+VersioningConfiguration = { Status = "Enabled" }
+
+[[step]]
+id = "artifact"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-signing"
+Key = "input/inventory.zip"
+Body = "UEsFBgAAAAAAAAAAAAAAAAAAAAAAAA=="
+
+[[step]]
+id = "signing_job"
+operation = "StartSigningJob"
+kind = "AWS::ApiOnly::SignerSigningJob"
+identity = "jobId"
+[step.input]
+source = { s3 = { bucketName = "inventory-seed-signing", key = "input/inventory.zip", version = { from = "artifact", path = "VersionId" } } }
+destination = { s3 = { bucketName = "inventory-seed-signing", prefix = "output/" } }
+profileName = "InventoryThinSigner"
+clientRequestToken = "inventory-seed-signing"

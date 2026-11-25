@@ -9,3 +9,45 @@ identity = "repository.repositoryArn"
 scope = "account"
 [step.input]
 repositoryName = "inventory-thin-ecr-public"
+
+[[step]]
+id = "image_upload"
+operation = "InitiateLayerUpload"
+kind = ""
+scope = "account"
+[step.input]
+repositoryName = { from = "repository", path = "repository.repositoryName" }
+
+[[step]]
+id = "image_config"
+operation = "UploadLayerPart"
+kind = ""
+scope = "account"
+[step.input]
+repositoryName = { from = "repository", path = "repository.repositoryName" }
+uploadId = { from = "image_upload", path = "uploadId" }
+partFirstByte = 0
+partLastByte = 89
+layerPartBlob = "eyJhcmNoaXRlY3R1cmUiOiJhbWQ2NCIsIm9zIjoibGludXgiLCJjb25maWciOnt9LCJyb290ZnMiOnsidHlwZSI6ImxheWVycyIsImRpZmZfaWRzIjpbXX19"
+
+[[step]]
+id = "image_config_complete"
+operation = "CompleteLayerUpload"
+kind = ""
+scope = "account"
+[step.input]
+repositoryName = { from = "repository", path = "repository.repositoryName" }
+uploadId = { from = "image_upload", path = "uploadId" }
+layerDigests = ["sha256:dc570f145a7f2862c9ef3c30b8d6ae2feaceb0d364e4b2e08e67ae18815427d9"]
+
+[[step]]
+id = "image"
+operation = "PutImage"
+kind = "AWS::ApiOnly::ECRPublicImage"
+identity = "image.imageId.imageDigest"
+scope = "account"
+[step.input]
+repositoryName = { from = "repository", path = "repository.repositoryName" }
+imageTag = "seed"
+imageManifestMediaType = "application/vnd.oci.image.manifest.v1+json"
+imageManifest = '{"schemaVersion":2,"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{"mediaType":"application/vnd.oci.image.config.v1+json","size":90,"digest":"sha256:dc570f145a7f2862c9ef3c30b8d6ae2feaceb0d364e4b2e08e67ae18815427d9"},"layers":[]}'

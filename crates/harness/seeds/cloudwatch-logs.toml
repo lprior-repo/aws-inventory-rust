@@ -8,3 +8,200 @@ kind = "AWS::Logs::LogGroup"
 identity = { input = "logGroupName", template = "arn:{partition}:logs:{region}:{account}:log-group:{value}" }
 [step.input]
 "logGroupName" = "inventory-thin-cloudwatch-logs"
+
+[[step]]
+id = "log_stream"
+operation = "CreateLogStream"
+kind = "AWS::Logs::LogStream"
+identity = { input = "logStreamName", template = "arn:{partition}:logs:{region}:{account}:log-group:inventory-thin-cloudwatch-logs:log-stream:{value}" }
+[step.input]
+logGroupName = "inventory-thin-cloudwatch-logs"
+logStreamName = "inventory-seed-log-stream"
+
+[[step]]
+id = "metric_filter"
+operation = "PutMetricFilter"
+kind = "AWS::Logs::MetricFilter"
+identity = { input = "filterName" }
+[step.input]
+logGroupName = "inventory-thin-cloudwatch-logs"
+filterName = "inventory-seed-error-count"
+filterPattern = "ERROR"
+metricTransformations = [{ metricName = "Errors", metricNamespace = "InventorySeed", metricValue = "1" }]
+
+[[step]]
+id = "resource_policy"
+operation = "PutResourcePolicy"
+kind = "AWS::Logs::ResourcePolicy"
+identity = "resourcePolicy.policyName"
+[step.input]
+policyName = "inventory-seed-log-policy"
+policyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"route53.amazonaws.com"},"Action":["logs:CreateLogStream","logs:PutLogEvents"],"Resource":"arn:aws:logs:us-east-1:000000000000:log-group:inventory-thin-cloudwatch-logs:*"}]}'
+
+[[step]]
+id = "lookup_table"
+operation = "CreateLookupTable"
+kind = "AWS::ApiOnly::LogsLookupTable"
+identity = "lookupTableArn"
+[step.input]
+lookupTableName = "inventory_seed_lookup"
+tableBody = "code,label\n200,ok\n"
+
+[[step]]
+id = "export_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-logs-export"
+
+[[step]]
+id = "export_policy"
+service = "s3"
+operation = "PutBucketPolicy"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-logs-export"
+Policy = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"logs.us-east-1.amazonaws.com"},"Action":"s3:GetBucketAcl","Resource":"arn:aws:s3:::inventory-seed-logs-export"},{"Effect":"Allow","Principal":{"Service":"logs.us-east-1.amazonaws.com"},"Action":"s3:PutObject","Resource":"arn:aws:s3:::inventory-seed-logs-export/*"}]}'
+
+[[step]]
+id = "export_task"
+operation = "CreateExportTask"
+kind = "AWS::ApiOnly::LogsExportTask"
+identity = "taskId"
+[step.input]
+taskName = "inventory-seed-export"
+logGroupName = "inventory-thin-cloudwatch-logs"
+from = 1700000000000
+to = 1700003600000
+destination = "inventory-seed-logs-export"
+
+[[step]]
+id = "logs_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-logs-delivery"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"logs.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "delivery_stream"
+service = "kinesis"
+operation = "CreateStream"
+kind = "AWS::Kinesis::Stream"
+identity = { input = "StreamName", template = "arn:{partition}:kinesis:{region}:{account}:stream/{value}" }
+[step.input]
+StreamName = "inventory-seed-logs-delivery"
+ShardCount = 1
+
+[[step]]
+id = "delivery_stream_identity"
+service = "kinesis"
+operation = "DescribeStreamSummary"
+kind = ""
+[step.input]
+StreamName = "inventory-seed-logs-delivery"
+
+[[step]]
+id = "destination"
+operation = "PutDestination"
+kind = "AWS::Logs::Destination"
+identity = "destination.arn"
+[step.input]
+destinationName = "inventory-seed-logs-destination"
+targetArn = { from = "delivery_stream_identity", path = "StreamDescriptionSummary.StreamARN" }
+roleArn = { from = "logs_role", path = "Role.Arn" }
+
+[[step]]
+id = "delivery_bus"
+service = "cloudwatch-events"
+operation = "CreateEventBus"
+kind = "AWS::Events::EventBus"
+identity = "EventBusArn"
+[step.input]
+Name = "inventory-seed-logs-delivery"
+
+[[step]]
+id = "delivery_source"
+operation = "PutDeliverySource"
+kind = "AWS::Logs::DeliverySource"
+identity = "deliverySource.arn"
+[step.input]
+name = "inventory-seed-source"
+resourceArn = { from = "delivery_bus", path = "EventBusArn" }
+logType = "INFO_LOGS"
+
+[[step]]
+id = "delivery_destination"
+operation = "PutDeliveryDestination"
+kind = "AWS::Logs::DeliveryDestination"
+identity = "deliveryDestination.arn"
+[step.input]
+name = "inventory-seed-destination"
+outputFormat = "json"
+deliveryDestinationType = "S3"
+deliveryDestinationConfiguration = { destinationResourceArn = "arn:aws:s3:::inventory-seed-logs-export" }
+
+[[step]]
+id = "delivery"
+operation = "CreateDelivery"
+kind = "AWS::Logs::Delivery"
+identity = "delivery.arn"
+[step.input]
+deliverySourceName = "inventory-seed-source"
+deliveryDestinationArn = { from = "delivery_destination", path = "deliveryDestination.arn" }
+
+[[step]]
+id = "import_store"
+service = "cloudtrail"
+operation = "CreateEventDataStore"
+kind = "AWS::CloudTrail::EventDataStore"
+identity = "EventDataStoreArn"
+[step.input]
+Name = "inventory-seed-logs-import"
+
+[[step]]
+id = "import_task"
+operation = "CreateImportTask"
+kind = "AWS::ApiOnly::LogsImportTask"
+identity = "importId"
+[step.input]
+importSourceArn = { from = "import_store", path = "EventDataStoreArn" }
+importRoleArn = { from = "logs_role", path = "Role.Arn" }
+
+[[step]]
+id = "opensearch_integration"
+operation = "PutIntegration"
+kind = "AWS::Logs::Integration"
+identity = "integrationName"
+[step.input]
+integrationName = "inventory-seed-integration"
+integrationType = "OPENSEARCH"
+resourceConfig = { openSearchResourceConfig = { dataSourceRoleArn = { from = "logs_role", path = "Role.Arn" }, dashboardViewerPrincipals = [{ from = "logs_role", path = "Role.Arn" }], retentionDays = 7 } }
+
+[[step]]
+id = "anomaly_detector"
+operation = "CreateLogAnomalyDetector"
+kind = "AWS::Logs::LogAnomalyDetector"
+identity = "anomalyDetectorArn"
+[step.input]
+detectorName = "inventory-seed-log-anomaly"
+logGroupArnList = ["arn:aws:logs:us-east-1:000000000000:log-group:inventory-thin-cloudwatch-logs"]
+
+[[step]]
+id = "scheduled_query"
+operation = "CreateScheduledQuery"
+kind = "AWS::Logs::ScheduledQuery"
+identity = "scheduledQueryArn"
+[step.input]
+name = "inventory-seed-scheduled-query"
+queryLanguage = "CWLI"
+queryString = "fields @timestamp, @message | limit 10"
+logGroupIdentifiers = ["inventory-thin-cloudwatch-logs"]
+scheduleExpression = "rate(1 hour)"
+executionRoleArn = { from = "logs_role", path = "Role.Arn" }

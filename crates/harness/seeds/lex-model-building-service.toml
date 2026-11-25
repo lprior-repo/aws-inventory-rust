@@ -1,0 +1,13 @@
+format = 1
+service = "lex-model-building-service"
+
+[[step]]
+id = "bot"
+operation = "PutBot"
+kind = "AWS::ApiOnly::LexV1Bot"
+identity = "name"
+[step.input]
+name = "InventoryLegacyBot"
+locale = "en-US"
+childDirected = false
+processBehavior = "SAVE"

@@ -8,3 +8,60 @@ kind = "AWS::Backup::BackupVault"
 identity = "BackupVaultArn"
 [step.input]
 "BackupVaultName" = "inventory-thin-backup"
+
+[[step]]
+id = "framework"
+operation = "CreateFramework"
+kind = "AWS::Backup::Framework"
+identity = "FrameworkArn"
+[step.input]
+FrameworkName = "inventory_seed_framework"
+FrameworkControls = [{ ControlName = "BACKUP_RESOURCES_PROTECTED_BY_BACKUP_PLAN" }]
+
+[[step]]
+id = "legal_hold"
+operation = "CreateLegalHold"
+kind = "AWS::ApiOnly::BackupLegalHold"
+identity = "LegalHoldArn"
+[step.input]
+Title = "Inventory seed legal hold"
+Description = "Inventory fixture for the seed vault"
+RecoveryPointSelection = { VaultNames = ["inventory-thin-backup"] }
+
+[[step]]
+id = "tiering"
+operation = "CreateTieringConfiguration"
+kind = "AWS::Backup::TieringConfiguration"
+identity = "TieringConfigurationArn"
+[step.input]
+TieringConfiguration = { TieringConfigurationName = "inventory_seed_tiering", BackupVaultName = "inventory-thin-backup", ResourceSelection = [{ ResourceType = "S3", Resources = ["*"], TieringDownSettingsInDays = 60 }] }
+
+[[step]]
+id = "backup_table"
+service = "dynamodb"
+operation = "CreateTable"
+kind = ""
+[step.input]
+TableName = "inventory-seed-backup"
+AttributeDefinitions = [{ AttributeName = "partition_key", AttributeType = "S" }]
+KeySchema = [{ AttributeName = "partition_key", KeyType = "HASH" }]
+BillingMode = "PAY_PER_REQUEST"
+
+[[step]]
+id = "backup_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-backup"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"backup.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "backup_job"
+operation = "StartBackupJob"
+kind = "AWS::ApiOnly::BackupBackupJob"
+identity = "BackupJobId"
+[step.input]
+BackupVaultName = "inventory-thin-backup"
+ResourceArn = { from = "backup_table", path = "TableDescription.TableArn" }
+IamRoleArn = { from = "backup_role", path = "Role.Arn" }

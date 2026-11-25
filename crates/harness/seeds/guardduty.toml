@@ -8,3 +8,71 @@ kind = "AWS::GuardDuty::Detector"
 identity = "DetectorId"
 [step.input]
 Enable = false
+
+[[step]]
+id = "malware_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-guardduty-malware"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"malware-protection-plan.guardduty.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-guardduty"
+
+[[step]]
+id = "malware_policy"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+scope = "account"
+[step.input]
+RoleName = { from = "malware_role", path = "Role.RoleName" }
+PolicyName = "inventory-seed-guardduty-scan"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket","s3:GetBucketLocation","s3:GetBucketNotification","s3:PutBucketNotification"],"Resource":"arn:aws:s3:::inventory-seed-guardduty"},{"Effect":"Allow","Action":["s3:GetObject","s3:GetObjectVersion","s3:GetObjectTagging","s3:PutObjectTagging"],"Resource":"arn:aws:s3:::inventory-seed-guardduty/*"}]}'
+
+[[step]]
+id = "malware_protection_plan"
+operation = "CreateMalwareProtectionPlan"
+kind = "AWS::GuardDuty::MalwareProtectionPlan"
+identity = "MalwareProtectionPlanId"
+[step.input]
+Role = { from = "malware_role", path = "Role.Arn" }
+ProtectedResource = { S3Bucket = { BucketName = "inventory-seed-guardduty" } }
+
+[[step]]
+id = "filter"
+operation = "CreateFilter"
+kind = "AWS::GuardDuty::Filter"
+identity = "Name"
+[step.input]
+DetectorId = { from = "resource", path = "DetectorId" }
+Name = "inventory-seed-severity"
+Action = "NOOP"
+FindingCriteria = { Criterion = { severity = { Gte = 4 } } }
+
+[[step]]
+id = "publishing_key"
+service = "kms"
+operation = "CreateKey"
+kind = "AWS::KMS::Key"
+identity = "KeyMetadata.Arn"
+
+[[step]]
+id = "publishing_destination"
+operation = "CreatePublishingDestination"
+kind = ""
+[step.input]
+DetectorId = { from = "resource", path = "DetectorId" }
+DestinationType = "S3"
+DestinationProperties = { DestinationArn = "arn:aws:s3:::inventory-seed-guardduty", KmsKeyArn = { from = "publishing_key", path = "KeyMetadata.Arn" } }

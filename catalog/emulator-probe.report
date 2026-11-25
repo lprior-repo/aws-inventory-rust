@@ -8,9 +8,9 @@ account ListRegions restJson1 items 32
 account-access ListApplications restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 acm DescribeCertificate awsJson1_1 skipped child
 acm ListAcmeDomainValidations awsJson1_1 skipped child
-acm ListAcmeEndpoints awsJson1_1 empty
+acm ListAcmeEndpoints awsJson1_1 items 1
 acm ListAcmeExternalAccountBindings awsJson1_1 skipped child
-acm ListCertificates awsJson1_1 items 1
+acm ListCertificates awsJson1_1 items 5
 acm ListTagsForCertificate awsJson1_1 skipped child
 acm-pca DescribeCertificateAuthority rpcv2Cbor skipped child
 acm-pca ListCertificateAuthorities rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
@@ -20,16 +20,16 @@ aiops ListInvestigationGroups restJson1 items 1
 amp DescribeWorkspace restJson1 skipped child
 amp ListAnomalyDetectors restJson1 skipped child
 amp ListRuleGroupsNamespaces restJson1 skipped child
-amp ListScrapers restJson1 empty
+amp ListScrapers restJson1 items 1
 amp ListWorkspaces restJson1 items 1
-amplifybackend ListS3Buckets restJson1 items 11
+amplifybackend ListS3Buckets restJson1 items 45
 api-gateway GetAccount restJson1 items 1
 api-gateway GetApiKeys restJson1 items 1
 api-gateway GetAuthorizers restJson1 skipped child
-api-gateway GetClientCertificates restJson1 empty
+api-gateway GetClientCertificates restJson1 items 1
 api-gateway GetDomainName restJson1 skipped child
-api-gateway GetDomainNameAccessAssociations restJson1 empty
-api-gateway GetDomainNames restJson1 empty
+api-gateway GetDomainNameAccessAssociations restJson1 items 1
+api-gateway GetDomainNames restJson1 items 1
 api-gateway GetRequestValidators restJson1 skipped child
 api-gateway GetResources restJson1 skipped child
 api-gateway GetRestApi restJson1 skipped child
@@ -37,17 +37,17 @@ api-gateway GetRestApis restJson1 items 1
 api-gateway GetUsagePlan restJson1 skipped child
 api-gateway GetUsagePlans restJson1 items 1
 api-gateway GetVpcLink restJson1 skipped child
-api-gateway GetVpcLinks restJson1 empty
+api-gateway GetVpcLinks restJson1 items 1
 apigatewayv2 GetApi restJson1 skipped child
 apigatewayv2 GetApis restJson1 items 1
 apigatewayv2 GetAuthorizers restJson1 skipped child
 apigatewayv2 GetDomainName restJson1 skipped child
-apigatewayv2 GetDomainNames restJson1 empty
+apigatewayv2 GetDomainNames restJson1 items 1
 apigatewayv2 GetRoutes restJson1 skipped child
 apigatewayv2 GetVpcLink restJson1 skipped child
-apigatewayv2 GetVpcLinks restJson1 empty
-apigatewayv2 ListPortalProducts restJson1 empty
-apigatewayv2 ListPortals restJson1 empty
+apigatewayv2 GetVpcLinks restJson1 items 1
+apigatewayv2 ListPortalProducts restJson1 items 1
+apigatewayv2 ListPortals restJson1 items 1
 app-mesh DescribeMesh restJson1 skipped child
 app-mesh DescribeVirtualRouter restJson1 skipped child
 app-mesh DescribeVirtualService restJson1 skipped child
@@ -65,8 +65,8 @@ appconfig ListApplications restJson1 items 1
 appconfig ListConfigurationProfiles restJson1 skipped child
 appconfig ListDeploymentStrategies restJson1 items 4
 appconfig ListEnvironments restJson1 skipped child
-appconfig ListExperimentDefinitions restJson1 empty
-appconfig ListExtensionAssociations restJson1 empty
+appconfig ListExperimentDefinitions restJson1 items 1
+appconfig ListExtensionAssociations restJson1 items 2
 appfabric GetAppBundle restJson1 skipped child
 appfabric ListAppAuthorizations restJson1 skipped child
 appfabric ListAppBundles restJson1 items 1
@@ -83,7 +83,7 @@ appintegrations ListApplications restJson1 unsupported API executor error: provi
 appintegrations ListDataIntegrationAssociations restJson1 skipped child
 appintegrations ListDataIntegrations restJson1 items 1
 appintegrations ListEventIntegrationAssociations restJson1 skipped child
-appintegrations ListEventIntegrations restJson1 empty
+appintegrations ListEventIntegrations restJson1 items 1
 application-discovery-service DescribeAgents awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 application-discovery-service DescribeContinuousExports awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 application-insights DescribeApplication rpcv2Cbor skipped child
@@ -102,11 +102,11 @@ apprunner ListObservabilityConfigurations awsJson1_0 unsupported API executor er
 apprunner ListServices awsJson1_0 items 1
 apprunner ListVpcConnectors awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 apprunner ListVpcIngressConnections awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-appstream DescribeAppBlockBuilders rpcv2Cbor empty
-appstream DescribeAppBlocks rpcv2Cbor empty
-appstream DescribeApplications rpcv2Cbor empty
+appstream DescribeAppBlockBuilders rpcv2Cbor items 1
+appstream DescribeAppBlocks rpcv2Cbor items 1
+appstream DescribeApplications rpcv2Cbor items 1
 appstream DescribeEntitlements rpcv2Cbor skipped child
-appstream DescribeFleets rpcv2Cbor empty
+appstream DescribeFleets rpcv2Cbor items 1
 appstream DescribeImageBuilders rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 appstream DescribeImages rpcv2Cbor empty
 appstream DescribeStacks rpcv2Cbor items 1
@@ -117,7 +117,7 @@ appsync GetDomainName restJson1 skipped child
 appsync GetGraphqlApi restJson1 skipped child
 appsync ListApis restJson1 items 1
 appsync ListChannelNamespaces restJson1 skipped child
-appsync ListDomainNames restJson1 empty
+appsync ListDomainNames restJson1 items 1
 appsync ListGraphqlApis restJson1 items 1
 arc-region-switch ListPlans rpcv2Cbor items 1
 arc-region-switch ListPlansInRegion rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -130,29 +130,29 @@ athena ListPreparedStatements awsJson1_1 skipped child
 athena ListWorkGroups awsJson1_1 items 2
 auditmanager ListAssessmentFrameworks restJson1 empty
 auditmanager ListAssessmentReports restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-auditmanager ListAssessments restJson1 empty
+auditmanager ListAssessments restJson1 items 1
 auditmanager ListControls restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 auto-scaling DescribeAutoScalingGroups awsQuery items 1
-auto-scaling DescribePolicies awsQuery empty
+auto-scaling DescribePolicies awsQuery items 1
 auto-scaling DescribeScheduledActions awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 auto-scaling-plans DescribeScalingPlans awsJson1_1 items 1
 b2bi GetPartnership awsJson1_0 skipped child
 b2bi GetProfile awsJson1_0 skipped child
-b2bi ListCapabilities awsJson1_0 empty
-b2bi ListPartnerships awsJson1_0 empty
+b2bi ListCapabilities awsJson1_0 items 1
+b2bi ListPartnerships awsJson1_0 items 1
 b2bi ListProfiles awsJson1_0 items 1
 backup DescribeBackupVault restJson1 skipped child
 backup DescribeFramework restJson1 skipped child
 backup DescribeReportPlan restJson1 skipped child
 backup ListBackupAccessPoints restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-backup ListBackupJobs restJson1 empty
+backup ListBackupJobs restJson1 items 1
 backup ListBackupPlans restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 backup ListBackupSelections restJson1 skipped child
 backup ListBackupVaults restJson1 items 1
 backup ListCopyJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-backup ListFrameworks restJson1 empty
+backup ListFrameworks restJson1 items 1
 backup ListIndexedRecoveryPoints restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-backup ListLegalHolds restJson1 empty
+backup ListLegalHolds restJson1 items 1
 backup ListProtectedResources restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 backup ListRecoveryPointsByBackupVault restJson1 skipped child
 backup ListReportJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -161,7 +161,7 @@ backup ListRestoreJobs restJson1 empty
 backup ListRestoreTestingPlans restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 backup ListRestoreTestingSelections restJson1 skipped child
 backup ListScanJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-backup ListTieringConfigurations restJson1 empty
+backup ListTieringConfigurations restJson1 items 1
 backup-gateway GetGateway rpcv2Cbor skipped child
 backup-gateway GetHypervisor rpcv2Cbor skipped child
 backup-gateway GetVirtualMachine rpcv2Cbor skipped child
@@ -169,16 +169,16 @@ backup-gateway ListGateways rpcv2Cbor empty
 backup-gateway ListHypervisors rpcv2Cbor items 1
 backup-gateway ListVirtualMachines rpcv2Cbor empty
 backupsearch ListSearchJobs restJson1 items 1
-batch DescribeComputeEnvironments restJson1 empty
-batch DescribeJobQueues restJson1 empty
-batch DescribeServiceEnvironments restJson1 empty
+batch DescribeComputeEnvironments restJson1 items 1
+batch DescribeJobQueues restJson1 items 2
+batch DescribeServiceEnvironments restJson1 items 1
 batch ListConsumableResources restJson1 items 1
 batch ListJobs restJson1 skipped child
 batch ListQuotaShares restJson1 skipped child
-batch ListSchedulingPolicies restJson1 items 1
+batch ListSchedulingPolicies restJson1 items 2
 batch ListServiceJobs restJson1 skipped child
 bcm-dashboards ListDashboards awsJson1_0 items 6
-bcm-dashboards ListScheduledReports awsJson1_0 empty
+bcm-dashboards ListScheduledReports awsJson1_0 items 1
 bcm-data-exports ListExports awsJson1_1 items 1
 bcm-pricing-calculator ListBillEstimates awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 bcm-pricing-calculator ListBillScenarios awsJson1_0 failed api API executor error: permanent API failure: AWS service failure: Fatal (ValidationException)
@@ -233,7 +233,7 @@ billingconductor ListBillingGroups restJson1 failed denied API executor error: a
 billingconductor ListCustomLineItems restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
 billingconductor ListPricingPlans restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
 billingconductor ListPricingRules restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-budgets DescribeBudgets awsJson1_1 empty
+budgets DescribeBudgets awsJson1_1 items 1
 chatbot DescribeChimeWebhookConfigurations restJson1 empty
 chatbot DescribeSlackChannelConfigurations restJson1 empty
 chatbot ListCustomActions restJson1 items 1
@@ -247,7 +247,7 @@ chime-sdk-voice GetSipMediaApplication restJson1 skipped child
 chime-sdk-voice GetSipRule restJson1 skipped child
 chime-sdk-voice GetVoiceConnector restJson1 skipped child
 chime-sdk-voice GetVoiceConnectorGroup restJson1 skipped child
-chime-sdk-voice ListPhoneNumbers restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (BadRequestException)
+chime-sdk-voice ListPhoneNumbers restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 chime-sdk-voice ListSipMediaApplications restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 chime-sdk-voice ListSipRules restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 chime-sdk-voice ListVoiceConnectorGroups restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -264,7 +264,7 @@ cleanrooms ListConfiguredTables restJson1 unsupported API executor error: provid
 cleanrooms ListIdMappingTables restJson1 skipped child
 cleanrooms ListIdNamespaceAssociations restJson1 skipped child
 cleanrooms ListIntermediateTables restJson1 skipped child
-cleanrooms ListMemberships restJson1 empty
+cleanrooms ListMemberships restJson1 items 1
 cleanrooms ListPrivacyBudgetTemplates restJson1 skipped child
 cleanroomsml GetAudienceModel restJson1 skipped child
 cleanroomsml GetConfiguredModelAlgorithm restJson1 skipped child
@@ -278,11 +278,11 @@ clouddirectory ListDevelopmentSchemaArns restJson1 unsupported API executor erro
 clouddirectory ListDirectories restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 clouddirectory ListPublishedSchemaArns restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 cloudformation ListGeneratedTemplates awsQuery items 1
-cloudformation ListResourceScans awsQuery empty
+cloudformation ListResourceScans awsQuery items 1
 cloudformation ListStackSets awsQuery items 1
 cloudformation ListStacks awsQuery items 1
 cloudformation ListTypeVersions awsQuery skipped child
-cloudformation ListTypes awsQuery empty
+cloudformation ListTypes awsQuery items 1
 cloudfront GetAnycastIpList restXml skipped child
 cloudfront GetConnectionGroup restXml skipped child
 cloudfront GetStreamingDistribution restXml skipped child
@@ -313,54 +313,54 @@ cloudhsm ListHsms awsJson1_1 empty
 cloudhsm ListLunaClients awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 cloudhsm-v2 DescribeBackups rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 cloudsearch DescribeDomains awsQuery items 1
-cloudtrail DescribeTrails awsJson1_1 empty
+cloudtrail DescribeTrails awsJson1_1 items 1
 cloudtrail GetChannel awsJson1_1 skipped child
 cloudtrail GetEventDataStore awsJson1_1 skipped child
 cloudtrail GetTrail awsJson1_1 skipped child
-cloudtrail ListChannels awsJson1_1 empty
+cloudtrail ListChannels awsJson1_1 items 1
 cloudtrail ListDashboards awsJson1_1 items 1
-cloudtrail ListEventDataStores awsJson1_1 items 1
-cloudtrail ListImports awsJson1_1 empty
+cloudtrail ListEventDataStores awsJson1_1 items 2
+cloudtrail ListImports awsJson1_1 items 1
 cloudwatch DescribeAnomalyDetectors rpcv2Cbor items 1
-cloudwatch DescribeInsightRules rpcv2Cbor empty
+cloudwatch DescribeInsightRules rpcv2Cbor items 1
 cloudwatch GetDashboard rpcv2Cbor skipped child
 cloudwatch GetDataset rpcv2Cbor items 1
 cloudwatch GetMetricStream rpcv2Cbor skipped child
 cloudwatch GetOTelEnrichment rpcv2Cbor items 1
-cloudwatch ListAlarmMuteRules rpcv2Cbor empty
-cloudwatch ListDashboards rpcv2Cbor empty
+cloudwatch ListAlarmMuteRules rpcv2Cbor items 1
+cloudwatch ListDashboards rpcv2Cbor items 1
 cloudwatch ListMetricDataQueryDefinitions rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (UnknownOperationError)
-cloudwatch ListMetricStreams rpcv2Cbor empty
+cloudwatch ListMetricStreams rpcv2Cbor items 1
 cloudwatch-events DescribeApiDestination awsJson1_1 skipped child
 cloudwatch-events DescribeArchive awsJson1_1 skipped child
 cloudwatch-events DescribeEventBus awsJson1_1 skipped child
-cloudwatch-events ListApiDestinations awsJson1_1 empty
-cloudwatch-events ListArchives awsJson1_1 empty
-cloudwatch-events ListConnections awsJson1_1 empty
-cloudwatch-events ListEventBuses awsJson1_1 items 3
+cloudwatch-events ListApiDestinations awsJson1_1 items 1
+cloudwatch-events ListArchives awsJson1_1 items 1
+cloudwatch-events ListConnections awsJson1_1 items 1
+cloudwatch-events ListEventBuses awsJson1_1 items 6
 cloudwatch-events ListEventSources awsJson1_1 empty
-cloudwatch-events ListReplays awsJson1_1 empty
+cloudwatch-events ListReplays awsJson1_1 items 1
 cloudwatch-events ListRules awsJson1_1 skipped child
-cloudwatch-logs DescribeDeliveries awsJson1_1 empty
-cloudwatch-logs DescribeDeliveryDestinations awsJson1_1 empty
-cloudwatch-logs DescribeDeliverySources awsJson1_1 empty
-cloudwatch-logs DescribeDestinations awsJson1_1 empty
-cloudwatch-logs DescribeExportTasks awsJson1_1 empty
-cloudwatch-logs DescribeImportTasks awsJson1_1 empty
-cloudwatch-logs DescribeLogGroups awsJson1_1 items 1
+cloudwatch-logs DescribeDeliveries awsJson1_1 items 1
+cloudwatch-logs DescribeDeliveryDestinations awsJson1_1 items 1
+cloudwatch-logs DescribeDeliverySources awsJson1_1 items 1
+cloudwatch-logs DescribeDestinations awsJson1_1 items 1
+cloudwatch-logs DescribeExportTasks awsJson1_1 items 1
+cloudwatch-logs DescribeImportTasks awsJson1_1 items 1
+cloudwatch-logs DescribeLogGroups awsJson1_1 items 4
 cloudwatch-logs DescribeLogStreams awsJson1_1 skipped child
-cloudwatch-logs DescribeLookupTables awsJson1_1 empty
-cloudwatch-logs DescribeMetricFilters awsJson1_1 empty
-cloudwatch-logs DescribeResourcePolicies awsJson1_1 empty
-cloudwatch-logs ListIntegrations awsJson1_1 empty
-cloudwatch-logs ListLogAnomalyDetectors awsJson1_1 empty
-cloudwatch-logs ListLogGroups awsJson1_1 items 1
-cloudwatch-logs ListScheduledQueries awsJson1_1 empty
+cloudwatch-logs DescribeLookupTables awsJson1_1 items 1
+cloudwatch-logs DescribeMetricFilters awsJson1_1 items 1
+cloudwatch-logs DescribeResourcePolicies awsJson1_1 items 1
+cloudwatch-logs ListIntegrations awsJson1_1 items 1
+cloudwatch-logs ListLogAnomalyDetectors awsJson1_1 items 1
+cloudwatch-logs ListLogGroups awsJson1_1 items 4
+cloudwatch-logs ListScheduledQueries awsJson1_1 items 1
 cloudwatchomni GetIntelligenceConfiguration rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 cloudwatchomni ListAccessGrants rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 cloudwatchomni ListDomains rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 cloudwatchomni ListIntegrations rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-cloudwatchomni ListSpaces rpcv2Cbor empty
+cloudwatchomni ListSpaces rpcv2Cbor items 1
 cloudwatchomni ListViews rpcv2Cbor items 1
 codeartifact DescribeDomain restJson1 skipped child
 codeartifact DescribeRepository restJson1 skipped child
@@ -376,13 +376,13 @@ codebuild ListReports rpcv2Cbor failed api API executor error: permanent API fai
 codebuild ListSandboxes rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 codebuild ListSourceCredentials rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 codecommit GetRepository awsJson1_1 skipped child
-codecommit ListApprovalRuleTemplates awsJson1_1 empty
+codecommit ListApprovalRuleTemplates awsJson1_1 items 1
 codecommit ListRepositories awsJson1_1 items 3
 codeconnections GetConnection rpcv2Cbor skipped child
 codeconnections GetRepositoryLink rpcv2Cbor skipped child
 codeconnections ListConnections rpcv2Cbor items 1
-codeconnections ListHosts rpcv2Cbor empty
-codeconnections ListRepositoryLinks rpcv2Cbor empty
+codeconnections ListHosts rpcv2Cbor items 1
+codeconnections ListRepositoryLinks rpcv2Cbor items 1
 codedeploy GetApplication rpcv2Cbor skipped child
 codedeploy GetDeploymentConfig rpcv2Cbor skipped child
 codedeploy ListApplications rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
@@ -399,9 +399,9 @@ codepipeline ListPipelines rpcv2Cbor failed api API executor error: permanent AP
 codepipeline ListWebhooks rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 codestar-connections GetConnection awsJson1_0 skipped child
 codestar-connections GetRepositoryLink awsJson1_0 skipped child
-codestar-connections ListConnections awsJson1_0 empty
+codestar-connections ListConnections awsJson1_0 items 1
 codestar-connections ListHosts awsJson1_0 items 1
-codestar-connections ListRepositoryLinks awsJson1_0 empty
+codestar-connections ListRepositoryLinks awsJson1_0 items 1
 codestar-notifications DescribeNotificationRule restJson1 skipped child
 codestar-notifications ListNotificationRules restJson1 items 1
 cognito-identity DescribeIdentityPool awsJson1_1 skipped child
@@ -411,7 +411,7 @@ cognito-identity-provider ListIdentityProviders awsJson1_1 skipped child
 cognito-identity-provider ListResourceServers awsJson1_1 skipped child
 cognito-identity-provider ListTerms awsJson1_1 skipped child
 cognito-identity-provider ListUserPoolClients awsJson1_1 skipped child
-cognito-identity-provider ListUserPools awsJson1_1 items 1
+cognito-identity-provider ListUserPools awsJson1_1 items 2
 cognito-sync ListIdentityPoolUsage restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 comprehend DescribeDataset rpcv2Cbor skipped child
 comprehend DescribeEndpoint rpcv2Cbor skipped child
@@ -432,28 +432,28 @@ comprehend ListTargetedSentimentDetectionJobs rpcv2Cbor failed api API executor 
 comprehend ListTopicsDetectionJobs rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 comprehendmedical ListEntitiesDetectionV2Jobs rpcv2Cbor items 1
 comprehendmedical ListICD10CMInferenceJobs rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-comprehendmedical ListPHIDetectionJobs rpcv2Cbor empty
+comprehendmedical ListPHIDetectionJobs rpcv2Cbor items 1
 comprehendmedical ListRxNormInferenceJobs rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 comprehendmedical ListSNOMEDCTInferenceJobs rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-compute-optimizer DescribeRecommendationExportJobs rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (OptInRequiredException)
-compute-optimizer-automation ListAutomationEvents rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (OptInRequiredException)
-compute-optimizer-automation ListAutomationRules rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (OptInRequiredException)
-config-service DescribeAggregationAuthorizations awsJson1_1 empty
-config-service DescribeConfigRuleEvaluationStatus awsJson1_1 empty
-config-service DescribeConfigRules awsJson1_1 empty
-config-service DescribeConfigurationAggregators awsJson1_1 empty
+compute-optimizer DescribeRecommendationExportJobs rpcv2Cbor items 1
+compute-optimizer-automation ListAutomationEvents rpcv2Cbor empty
+compute-optimizer-automation ListAutomationRules rpcv2Cbor items 1
+config-service DescribeAggregationAuthorizations awsJson1_1 items 1
+config-service DescribeConfigRuleEvaluationStatus awsJson1_1 items 2
+config-service DescribeConfigRules awsJson1_1 items 2
+config-service DescribeConfigurationAggregators awsJson1_1 items 1
 config-service DescribeConfigurationRecorderStatus awsJson1_1 items 1
 config-service DescribeConfigurationRecorders awsJson1_1 items 1
-config-service DescribeConformancePackStatus awsJson1_1 empty
-config-service DescribeConformancePacks awsJson1_1 empty
-config-service DescribeDeliveryChannels awsJson1_1 empty
+config-service DescribeConformancePackStatus awsJson1_1 items 1
+config-service DescribeConformancePacks awsJson1_1 items 1
+config-service DescribeDeliveryChannels awsJson1_1 items 1
 config-service DescribeOrganizationConfigRules awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 config-service DescribeOrganizationConformancePacks awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 config-service DescribeRetentionConfigurations awsJson1_1 items 1
 config-service ListConfigurationRecorders awsJson1_1 items 1
 config-service ListConnectors awsJson1_1 empty
-config-service ListResourceEvaluations awsJson1_1 empty
-config-service ListStoredQueries awsJson1_1 empty
+config-service ListResourceEvaluations awsJson1_1 items 1
+config-service ListStoredQueries awsJson1_1 items 1
 connect DescribeInstance restJson1 skipped child
 connect ListAgentStatuses restJson1 skipped child
 connect ListContactFlowModules restJson1 skipped child
@@ -483,9 +483,9 @@ connecthealth ListSubscriptions restJson1 skipped child
 continuum ListCollectors restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 continuum ListEnvironments restJson1 items 1
 continuum ListIntegrations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-controltower ListControlOperations restJson1 empty
-controltower ListEnabledBaselines restJson1 empty
-controltower ListEnabledControls restJson1 empty
+controltower ListControlOperations restJson1 failed decode shape=ListControlOperationsOutput AWS wire response error: invalid response: invalid timestamp
+controltower ListEnabledBaselines restJson1 items 1
+controltower ListEnabledControls restJson1 items 1
 controltower ListLandingZoneOperations restJson1 items 1
 cost-and-usage-report-service DescribeReportDefinitions awsJson1_1 items 1
 customer-profiles GetDomain restJson1 skipped child
@@ -508,7 +508,7 @@ databrew ListJobs restJson1 unsupported API executor error: provider does not su
 databrew ListProjects restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 databrew ListRulesets restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 databrew ListSchedules restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-dataexchange ListDataGrants restJson1 empty
+dataexchange ListDataGrants restJson1 items 1
 dataexchange ListDataSetRevisions restJson1 skipped child
 dataexchange ListDataSets restJson1 items 1
 dataexchange ListEventActions restJson1 empty
@@ -567,11 +567,11 @@ directory-service DescribeTrusts rpcv2Cbor failed api API executor error: perman
 directory-service ListADAssessments rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 directory-service ListLogSubscriptions rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 dlm GetLifecyclePolicies restJson1 items 1
-docdb DescribeDBClusterParameterGroups awsQuery empty
+docdb DescribeDBClusterParameterGroups awsQuery items 3
 docdb DescribeDBClusterSnapshots awsQuery empty
-docdb DescribeDBClusters awsQuery empty
+docdb DescribeDBClusters awsQuery items 1
 docdb DescribeDBSubnetGroups awsQuery items 1
-docdb DescribeEventSubscriptions awsQuery empty
+docdb DescribeEventSubscriptions awsQuery items 3
 docdb DescribeGlobalClusters awsQuery items 3
 docdb-elastic ListClusterSnapshots restJson1 skipped child
 docdb-elastic ListClusters restJson1 items 1
@@ -601,7 +601,7 @@ dynamodb ListBulkOperations awsJson1_0 unsupported API executor error: provider 
 dynamodb ListExports awsJson1_0 empty
 dynamodb ListGlobalTables awsJson1_0 empty
 dynamodb ListImports awsJson1_0 empty
-dynamodb ListTables awsJson1_0 items 4
+dynamodb ListTables awsJson1_0 items 5
 dynamodb-streams ListStreams awsJson1_0 items 1
 ec2 DescribeAccountAttributes ec2Query items 6
 ec2 DescribeAddressTransfers ec2Query empty
@@ -661,7 +661,7 @@ ec2 DescribeIpamResourceDiscoveryAssociations ec2Query empty
 ec2 DescribeIpamScopes ec2Query empty
 ec2 DescribeIpams ec2Query empty
 ec2 DescribeIpv6Pools ec2Query empty
-ec2 DescribeKeyPairs ec2Query items 1
+ec2 DescribeKeyPairs ec2Query items 2
 ec2 DescribeLaunchTemplates ec2Query items 1
 ec2 DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociations ec2Query empty
 ec2 DescribeLocalGatewayRouteTableVpcAssociations ec2Query empty
@@ -676,13 +676,13 @@ ec2 DescribeManagedPrefixLists ec2Query items 15
 ec2 DescribeMetricCategories ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (InvalidAction)
 ec2 DescribeMovingAddresses ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ec2 DescribeNatGateways ec2Query empty
-ec2 DescribeNetworkAcls ec2Query items 13
+ec2 DescribeNetworkAcls ec2Query items 37
 ec2 DescribeNetworkInsightsAccessScopeAnalyses ec2Query empty
 ec2 DescribeNetworkInsightsAccessScopes ec2Query empty
 ec2 DescribeNetworkInsightsAnalyses ec2Query skipped child
 ec2 DescribeNetworkInsightsPaths ec2Query empty
 ec2 DescribeNetworkInterfacePermissions ec2Query empty
-ec2 DescribeNetworkInterfaces ec2Query items 1
+ec2 DescribeNetworkInterfaces ec2Query items 7
 ec2 DescribeNetworkingFlexCostAllocationPolicies ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (InvalidAction)
 ec2 DescribeNetworkingFlexCostAllocationPolicyAssociations ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (InvalidAction)
 ec2 DescribeOutpostLags ec2Query empty
@@ -697,20 +697,20 @@ ec2 DescribeReservedInstancesModifications ec2Query unsupported API executor err
 ec2 DescribeRouteServerEndpoints ec2Query empty
 ec2 DescribeRouteServerPeers ec2Query empty
 ec2 DescribeRouteServers ec2Query empty
-ec2 DescribeRouteTables ec2Query items 13
+ec2 DescribeRouteTables ec2Query items 37
 ec2 DescribeScheduledInstances ec2Query empty
 ec2 DescribeSecondaryInterfaces ec2Query empty
 ec2 DescribeSecondaryNetworks ec2Query empty
 ec2 DescribeSecondarySubnets ec2Query empty
-ec2 DescribeSecurityGroupRules ec2Query items 29
+ec2 DescribeSecurityGroupRules ec2Query items 90
 ec2 DescribeSecurityGroupVpcAssociations ec2Query empty
-ec2 DescribeSecurityGroups ec2Query items 16
+ec2 DescribeSecurityGroups ec2Query items 53
 ec2 DescribeServiceLinkVirtualInterfaces ec2Query empty
 ec2 DescribeSnapshotTierStatus ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ec2 DescribeSnapshots ec2Query empty
 ec2 DescribeSpotDatafeedSubscription ec2Query empty inventory feature or singleton absent: AWS service failure: Fatal (InvalidSpotDatafeed.NotFound)
 ec2 DescribeStaleSecurityGroups ec2Query skipped child
-ec2 DescribeSubnets ec2Query items 17
+ec2 DescribeSubnets ec2Query items 47
 ec2 DescribeTags ec2Query items 6
 ec2 DescribeTrafficMirrorFilterRules ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ec2 DescribeTrafficMirrorFilters ec2Query empty
@@ -724,9 +724,9 @@ ec2 DescribeTransitGatewayMulticastDomains ec2Query empty
 ec2 DescribeTransitGatewayPeeringAttachments ec2Query empty
 ec2 DescribeTransitGatewayPolicyTables ec2Query empty
 ec2 DescribeTransitGatewayRouteTableAnnouncements ec2Query empty
-ec2 DescribeTransitGatewayRouteTables ec2Query empty
+ec2 DescribeTransitGatewayRouteTables ec2Query items 1
 ec2 DescribeTransitGatewayVpcAttachments ec2Query empty
-ec2 DescribeTransitGateways ec2Query empty
+ec2 DescribeTransitGateways ec2Query items 1
 ec2 DescribeTrunkInterfaceAssociations ec2Query failed api API executor error: permanent API failure: AWS service failure: Fatal (OperationNotPermitted)
 ec2 DescribeVerifiedAccessEndpoints ec2Query empty
 ec2 DescribeVerifiedAccessGroups ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -737,17 +737,17 @@ ec2 DescribeVolumes ec2Query items 1
 ec2 DescribeVolumesModifications ec2Query empty
 ec2 DescribeVpcBlockPublicAccessExclusions ec2Query empty
 ec2 DescribeVpcBlockPublicAccessOptions ec2Query items 1
-ec2 DescribeVpcClassicLink ec2Query items 13
-ec2 DescribeVpcClassicLinkDnsSupport ec2Query items 13
+ec2 DescribeVpcClassicLink ec2Query items 37
+ec2 DescribeVpcClassicLinkDnsSupport ec2Query items 37
 ec2 DescribeVpcEncryptionControls ec2Query empty
 ec2 DescribeVpcEndpointAssociations ec2Query empty
 ec2 DescribeVpcEndpointConnectionNotifications ec2Query empty
 ec2 DescribeVpcEndpointConnections ec2Query empty
 ec2 DescribeVpcEndpointServiceConfigurations ec2Query empty
 ec2 DescribeVpcEndpointServicePermissions ec2Query skipped child
-ec2 DescribeVpcEndpoints ec2Query empty
+ec2 DescribeVpcEndpoints ec2Query items 1
 ec2 DescribeVpcPeeringConnections ec2Query empty
-ec2 DescribeVpcs ec2Query items 13
+ec2 DescribeVpcs ec2Query items 37
 ec2 DescribeVpnConcentrators ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ec2 DescribeVpnGateways ec2Query empty
 ec2 GetClientVpnEndpointAuthorizationPolicy ec2Query skipped child
@@ -769,9 +769,9 @@ ec2 ListImagesInRecycleBin ec2Query unsupported API executor error: provider doe
 ec2 ListSnapshotsInRecycleBin ec2Query unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ec2 ListVolumesInRecycleBin ec2Query empty
 ecr DescribeImages awsJson1_1 skipped child
-ecr DescribePullThroughCacheRules awsJson1_1 empty
+ecr DescribePullThroughCacheRules awsJson1_1 items 1
 ecr DescribeRepositories awsJson1_1 items 1
-ecr DescribeRepositoryCreationTemplates awsJson1_1 empty
+ecr DescribeRepositoryCreationTemplates awsJson1_1 items 1
 ecr ListReplicationBackfills awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ecr-public DescribeImages awsJson1_1 skipped child
 ecr-public DescribeRegistries awsJson1_1 items 1
@@ -784,7 +784,7 @@ ecs ListAttributes awsJson1_1 skipped child
 ecs ListClusters awsJson1_1 items 1
 ecs ListContainerInstances awsJson1_1 skipped child
 ecs ListDaemonDeployments awsJson1_1 skipped child
-ecs ListDaemonTaskDefinitions awsJson1_1 empty
+ecs ListDaemonTaskDefinitions awsJson1_1 items 1
 ecs ListDaemons awsJson1_1 skipped child
 ecs ListGatewayClusterAssociations awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ecs ListGatewayRoutes awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -801,38 +801,38 @@ eks ListClusters restJson1 items 2
 eks ListPodIdentityAssociations restJson1 skipped child
 elastic-beanstalk DescribeApplicationVersions awsQuery items 1
 elastic-beanstalk DescribeApplications awsQuery items 1
-elastic-beanstalk DescribeEnvironments awsQuery empty
+elastic-beanstalk DescribeEnvironments awsQuery items 1
 elastic-load-balancing DescribeLoadBalancers awsQuery items 1
 elastic-load-balancing-v2 DescribeAccountLimits awsQuery items 33
-elastic-load-balancing-v2 DescribeLoadBalancers awsQuery empty
+elastic-load-balancing-v2 DescribeLoadBalancers awsQuery items 2
 elastic-load-balancing-v2 DescribeTargetGroups awsQuery items 1
-elastic-load-balancing-v2 DescribeTrustStores awsQuery empty
+elastic-load-balancing-v2 DescribeTrustStores awsQuery items 1
 elasticache DescribeCacheClusters awsQuery items 1
 elasticache DescribeCacheParameterGroups awsQuery items 21
 elasticache DescribeCacheSecurityGroups awsQuery failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValue)
-elasticache DescribeCacheSubnetGroups awsQuery empty
+elasticache DescribeCacheSubnetGroups awsQuery items 1
 elasticache DescribeGlobalReplicationGroups awsQuery empty
 elasticache DescribeReplicationGroups awsQuery items 1
-elasticache DescribeReservedCacheNodes awsQuery empty
+elasticache DescribeReservedCacheNodes awsQuery items 1
 elasticache DescribeServerlessCacheSnapshots awsQuery empty
-elasticache DescribeServerlessCaches awsQuery empty
+elasticache DescribeServerlessCaches awsQuery items 1
 elasticache DescribeSnapshots awsQuery empty
-elasticache DescribeUserGroups awsQuery empty
+elasticache DescribeUserGroups awsQuery items 1
 elasticache DescribeUsers awsQuery items 1
 elasticsearch-service DescribeInboundCrossClusterSearchConnections restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-elasticsearch-service DescribeOutboundCrossClusterSearchConnections restJson1 empty
+elasticsearch-service DescribeOutboundCrossClusterSearchConnections restJson1 items 1
 elasticsearch-service DescribePackages restJson1 items 13
 elasticsearch-service DescribeReservedElasticsearchInstances restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-elasticsearch-service ListDomainNames restJson1 items 1
+elasticsearch-service ListDomainNames restJson1 items 2
 elasticsearch-service ListVpcEndpoints restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-elementalinference ListDictionaries restJson1 empty
+elementalinference ListDictionaries restJson1 items 1
 elementalinference ListFeeds restJson1 items 1
-emr ListClusters awsJson1_1 empty
-emr ListNotebookExecutions awsJson1_1 empty
+emr ListClusters awsJson1_1 items 1
+emr ListNotebookExecutions awsJson1_1 items 1
 emr ListSecurityConfigurations awsJson1_1 items 1
 emr ListStudioSessionMappings awsJson1_1 skipped child
-emr ListStudios awsJson1_1 empty
-emr-containers ListSecurityConfigurations restJson1 empty
+emr ListStudios awsJson1_1 items 2
+emr-containers ListSecurityConfigurations restJson1 items 1
 emr-containers ListVirtualClusters restJson1 items 1
 emr-serverless ListApplications restJson1 items 1
 emr-serverless ListJobRuns restJson1 skipped child
@@ -840,22 +840,22 @@ emr-serverless ListSessions restJson1 skipped child
 endusermessaging ListBrandProfiles restJson1 items 1
 endusermessaging ListJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 entityresolution ListIdMappingJobs restJson1 skipped child
-entityresolution ListIdMappingWorkflows restJson1 empty
+entityresolution ListIdMappingWorkflows restJson1 items 1
 entityresolution ListIdNamespaces restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 entityresolution ListMatchingJobs restJson1 skipped child
-entityresolution ListMatchingWorkflows restJson1 empty
+entityresolution ListMatchingWorkflows restJson1 items 1
 entityresolution ListSchemaMappings restJson1 items 1
 eventbridge DescribeEndpoint awsJson1_1 skipped child
 eventbridge DescribeEventBus awsJson1_1 skipped child
 eventbridge DescribeEventSource awsJson1_1 skipped child
 eventbridge DescribeRule awsJson1_1 skipped child
-eventbridge ListApiDestinations awsJson1_1 empty
-eventbridge ListArchives awsJson1_1 empty
-eventbridge ListConnections awsJson1_1 empty
+eventbridge ListApiDestinations awsJson1_1 items 1
+eventbridge ListArchives awsJson1_1 items 1
+eventbridge ListConnections awsJson1_1 items 1
 eventbridge ListEndpoints awsJson1_1 empty
-eventbridge ListEventBuses awsJson1_1 items 3
+eventbridge ListEventBuses awsJson1_1 items 6
 eventbridge ListEventSources awsJson1_1 empty
-eventbridge ListReplays awsJson1_1 empty
+eventbridge ListReplays awsJson1_1 items 1
 eventbridge ListRules awsJson1_1 skipped child
 eventbridgev2 DescribeEventBus rpcv2Cbor skipped child
 eventbridgev2 DescribeEventSource rpcv2Cbor skipped child
@@ -866,10 +866,10 @@ evs ListEnvironmentConnectors awsJson1_0 skipped child
 evs ListEnvironmentHosts awsJson1_0 skipped child
 evs ListEnvironmentVlans awsJson1_0 skipped child
 evs ListEnvironments awsJson1_0 empty
-firehose ListDeliveryStreams awsJson1_1 items 1
+firehose ListDeliveryStreams awsJson1_1 items 2
 fis ListExperimentTargetAccountConfigurations restJson1 skipped child
 fis ListExperimentTemplates restJson1 items 1
-fis ListExperiments restJson1 empty
+fis ListExperiments restJson1 items 1
 fis ListTargetAccountConfigurations restJson1 skipped child
 fms GetNotificationChannel rpcv2Cbor failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
 fms ListAppsLists rpcv2Cbor failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
@@ -882,7 +882,7 @@ forecast DescribeForecast awsJson1_1 skipped child
 forecast DescribeWhatIfForecastExport awsJson1_1 skipped child
 forecast ListDatasetGroups awsJson1_1 items 1
 forecast ListDatasetImportJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-forecast ListDatasets awsJson1_1 empty
+forecast ListDatasets awsJson1_1 items 1
 forecast ListExplainabilities awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 forecast ListExplainabilityExports awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 forecast ListForecastExportJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -903,26 +903,26 @@ frauddetector GetLabels awsJson1_1 unsupported API executor error: provider does
 frauddetector GetListsMetadata awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 frauddetector GetModels awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 frauddetector GetOutcomes awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-fsx DescribeBackups awsJson1_1 empty
-fsx DescribeDataRepositoryAssociations awsJson1_1 empty
+fsx DescribeBackups awsJson1_1 items 1
+fsx DescribeDataRepositoryAssociations awsJson1_1 items 1
 fsx DescribeDataRepositoryTasks awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 fsx DescribeFileCaches awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-fsx DescribeFileSystems awsJson1_1 items 1
+fsx DescribeFileSystems awsJson1_1 items 2
 fsx DescribeS3AccessPointAttachments awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 fsx DescribeSnapshots awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 fsx DescribeStorageVirtualMachines awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-fsx DescribeVolumes awsJson1_1 empty
+fsx DescribeVolumes awsJson1_1 items 1
 gamelift DescribeAlias rpcv2Cbor skipped child
 gamelift DescribeBuild rpcv2Cbor skipped child
-gamelift DescribeFleetAttributes rpcv2Cbor empty
-gamelift DescribeMatchmakingRuleSets rpcv2Cbor empty
+gamelift DescribeFleetAttributes rpcv2Cbor items 1
+gamelift DescribeMatchmakingRuleSets rpcv2Cbor items 1
 gamelift ListAliases rpcv2Cbor items 1
 gamelift ListBuilds rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 gamelift ListContainerFleets rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 gamelift ListGameServerGroups rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-gamelift ListLocations rpcv2Cbor empty
+gamelift ListLocations rpcv2Cbor items 1
 gamelift ListScripts rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-gameliftstreams ListApplications restJson1 empty
+gameliftstreams ListApplications restJson1 items 1
 gameliftstreams ListStreamGroups restJson1 items 1
 glacier ListProvisionedCapacity restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 glacier ListVaults restJson1 items 1
@@ -937,7 +937,7 @@ global-accelerator ListEndpointGroups awsJson1_1 skipped child
 global-accelerator ListListeners awsJson1_1 skipped child
 global-accelerator ListTagsForResource awsJson1_1 skipped child
 glue DescribeIntegrations awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-glue GetDatabases awsJson1_1 items 2
+glue GetDatabases awsJson1_1 items 4
 glue GetSecurityConfigurations awsJson1_1 empty
 glue ListBlueprints awsJson1_1 empty
 glue ListCrawlers awsJson1_1 empty
@@ -971,19 +971,19 @@ greengrassv2 DescribeComponent restJson1 skipped child
 greengrassv2 ListComponentVersions restJson1 skipped child
 greengrassv2 ListComponents restJson1 items 1
 greengrassv2 ListCoreDevices restJson1 empty
-greengrassv2 ListDeployments restJson1 empty
+greengrassv2 ListDeployments restJson1 items 1
 groundstation GetMissionProfile restJson1 skipped child
-groundstation ListConfigs restJson1 items 1
-groundstation ListDataflowEndpointGroups restJson1 empty
-groundstation ListMissionProfiles restJson1 empty
+groundstation ListConfigs restJson1 items 3
+groundstation ListDataflowEndpointGroups restJson1 items 1
+groundstation ListMissionProfiles restJson1 items 1
 groundstation ListSatellites restJson1 empty
 guardduty ListDetectors restJson1 items 1
 guardduty ListFilters restJson1 skipped child
-guardduty ListMalwareProtectionPlans restJson1 empty
+guardduty ListMalwareProtectionPlans restJson1 items 1
 guardduty ListPublishingDestinations restJson1 skipped child
 healthlake DescribeFHIRDatastore awsJson1_0 skipped child
 healthlake ListDataTransformationProfileVersions awsJson1_0 skipped child
-healthlake ListDataTransformationProfiles awsJson1_0 empty
+healthlake ListDataTransformationProfiles awsJson1_0 items 1
 healthlake ListFHIRDatastores awsJson1_0 items 1
 iam GetInstanceProfile awsQuery skipped child
 iam GetLoginProfile awsQuery skipped child
@@ -991,41 +991,41 @@ iam GetPolicy awsQuery skipped child
 iam GetRole awsQuery skipped child
 iam GetUser awsQuery skipped child
 iam ListAccessKeys awsQuery skipped child
-iam ListAccountAliases awsQuery empty
+iam ListAccountAliases awsQuery items 1
 iam ListGroupPolicies awsQuery skipped child
-iam ListGroups awsQuery empty
-iam ListInstanceProfiles awsQuery items 1
+iam ListGroups awsQuery items 1
+iam ListInstanceProfiles awsQuery items 4
 iam ListInstanceProfilesForRole awsQuery skipped child
 iam ListMFADevices awsQuery skipped child
-iam ListOpenIDConnectProviders awsQuery empty
-iam ListPolicies awsQuery items 2
+iam ListOpenIDConnectProviders awsQuery items 1
+iam ListPolicies awsQuery items 3
 iam ListPolicyVersions awsQuery skipped child
 iam ListRolePolicies awsQuery skipped child
 iam ListRoleTags awsQuery skipped child
-iam ListRoles awsQuery items 16
-iam ListSAMLProviders awsQuery empty
+iam ListRoles awsQuery items 63
+iam ListSAMLProviders awsQuery items 1
 iam ListSSHPublicKeys awsQuery skipped child
-iam ListServerCertificates awsQuery empty
-iam ListServiceSpecificCredentials awsQuery empty
+iam ListServerCertificates awsQuery items 1
+iam ListServiceSpecificCredentials awsQuery items 1
 iam ListUserPolicies awsQuery skipped child
-iam ListUsers awsQuery items 1
+iam ListUsers awsQuery items 2
 identitystore DescribeIdentityStore awsJson1_1 skipped child
 identitystore ListGroups awsJson1_1 skipped child
 identitystore ListIdentityStores awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-imagebuilder ListComponentBuildVersions restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListComponents restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListContainerRecipes restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListDistributionConfigurations restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListImagePipelines restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListImageRecipes restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListImages restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListInfrastructureConfigurations restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListLifecyclePolicies restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListWorkflowBuildVersions restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListWorkflows restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
+imagebuilder ListComponentBuildVersions restJson1 items 1
+imagebuilder ListComponents restJson1 items 1
+imagebuilder ListContainerRecipes restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListDistributionConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListImagePipelines restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListImageRecipes restJson1 items 1
+imagebuilder ListImages restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListInfrastructureConfigurations restJson1 items 1
+imagebuilder ListLifecyclePolicies restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListWorkflowBuildVersions restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListWorkflows restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 inspector ListAssessmentTargets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 inspector ListAssessmentTemplates awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-inspector2 ListCisScanConfigurations restJson1 empty
+inspector2 ListCisScanConfigurations restJson1 items 1
 inspector2 ListCodeSecurityIntegrations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 inspector2 ListCodeSecurityScanConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 inspector2 ListConnectorScanConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1034,7 +1034,7 @@ inspector2 ListFilters restJson1 items 1
 interconnect ListConnections rpcv2Cbor empty
 internetmonitor GetMonitor restJson1 skipped child
 internetmonitor ListMonitors restJson1 items 1
-invoicing ListInvoiceUnits awsJson1_0 empty
+invoicing ListInvoiceUnits awsJson1_0 items 1
 invoicing ListProcurementPortalPreferences awsJson1_0 items 1
 iot ListAuditSuppressions restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot ListAuthorizers restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1063,14 +1063,14 @@ iot ListSecurityProfiles restJson1 unsupported API executor error: provider does
 iot ListStreams restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot ListThingGroups restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot ListThingTypes restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-iot ListTopicRules restJson1 empty
-iot-managed-integrations ListAccountAssociations restJson1 empty
+iot ListTopicRules restJson1 items 1
+iot-managed-integrations ListAccountAssociations restJson1 items 1
 iot-managed-integrations ListCloudConnectors restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot-managed-integrations ListConnectorDestinations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot-managed-integrations ListCredentialLockers restJson1 items 1
 iot-managed-integrations ListDestinations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-iot-managed-integrations ListEventLogConfigurations restJson1 empty
-iot-managed-integrations ListManagedThings restJson1 empty
+iot-managed-integrations ListEventLogConfigurations restJson1 items 1
+iot-managed-integrations ListManagedThings restJson1 items 1
 iot-managed-integrations ListNotificationConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot-managed-integrations ListOtaTaskConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot-managed-integrations ListOtaTasks restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1082,7 +1082,7 @@ iot-wireless ListMulticastGroups restJson1 unsupported API executor error: provi
 iot-wireless ListNetworkAnalyzerConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot-wireless ListServiceProfiles restJson1 items 1
 iot-wireless ListWirelessDeviceImportTasks restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-iot-wireless ListWirelessDevices restJson1 empty
+iot-wireless ListWirelessDevices restJson1 items 1
 iot-wireless ListWirelessGatewayTaskDefinitions restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iot-wireless ListWirelessGateways restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iotdeviceadvisor ListSuiteDefinitions restJson1 items 1
@@ -1095,19 +1095,19 @@ iotfleetwise ListStateTemplates awsJson1_0 unsupported API executor error: provi
 iotfleetwise ListVehicles awsJson1_0 empty
 iotsecuretunneling ListTunnels awsJson1_1 items 1
 iotsitewise ListAccessPolicies restJson1 skipped child
-iotsitewise ListApplications restJson1 empty
-iotsitewise ListAssetModels restJson1 items 1
+iotsitewise ListApplications restJson1 items 1
+iotsitewise ListAssetModels restJson1 items 2
 iotsitewise ListAssets restJson1 skipped child
-iotsitewise ListComputationModels restJson1 empty
+iotsitewise ListComputationModels restJson1 items 1
 iotsitewise ListDashboards restJson1 skipped child
-iotsitewise ListDatasets restJson1 empty
-iotsitewise ListGateways restJson1 empty
+iotsitewise ListDatasets restJson1 items 1
+iotsitewise ListGateways restJson1 items 1
 iotsitewise ListPipelines restJson1 skipped child
-iotsitewise ListPortals restJson1 empty
+iotsitewise ListPortals restJson1 items 1
 iotsitewise ListProjects restJson1 skipped child
 iotsitewise ListTasks restJson1 skipped child
-iotsitewise ListTimeSeries restJson1 empty
-iotsitewise ListWorkspaces restJson1 empty
+iotsitewise ListTimeSeries restJson1 items 1
+iotsitewise ListWorkspaces restJson1 items 1
 iotthingsgraph SearchFlowTemplates awsJson1_1 items 1
 iotthingsgraph SearchSystemInstances awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 iotthingsgraph SearchSystemTemplates awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1116,32 +1116,32 @@ iottwinmaker ListEntities restJson1 skipped child
 iottwinmaker ListScenes restJson1 skipped child
 iottwinmaker ListSyncJobs restJson1 skipped child
 iottwinmaker ListWorkspaces restJson1 items 1
-ivs ListAdConfigurations restJson1 empty
+ivs ListAdConfigurations restJson1 items 1
 ivs ListChannels restJson1 items 1
 ivs ListFailoverSlateConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (UnknownService)
-ivs ListPlaybackKeyPairs restJson1 empty
+ivs ListPlaybackKeyPairs restJson1 items 1
 ivs ListPlaybackRestrictionPolicies restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-ivs ListRecordingConfigurations restJson1 empty
+ivs ListRecordingConfigurations restJson1 items 1
 ivs ListStreamKeys restJson1 skipped child
 ivs-realtime ListCompositions restJson1 empty
-ivs-realtime ListEncoderConfigurations restJson1 empty
-ivs-realtime ListIngestConfigurations restJson1 empty
-ivs-realtime ListPublicKeys restJson1 empty
+ivs-realtime ListEncoderConfigurations restJson1 items 1
+ivs-realtime ListIngestConfigurations restJson1 items 1
+ivs-realtime ListPublicKeys restJson1 items 1
 ivs-realtime ListStages restJson1 items 1
-ivs-realtime ListStorageConfigurations restJson1 empty
-ivschat ListLoggingConfigurations restJson1 empty
+ivs-realtime ListStorageConfigurations restJson1 items 1
+ivschat ListLoggingConfigurations restJson1 items 1
 ivschat ListRooms restJson1 items 1
 kafka ListChannels restJson1 skipped child
-kafka ListClustersV2 restJson1 empty
+kafka ListClustersV2 restJson1 items 2
 kafka ListConfigurationRevisions restJson1 skipped child
 kafka ListConfigurations restJson1 items 1
-kafka ListReplicators restJson1 empty
+kafka ListReplicators restJson1 items 1
 kafka ListTopics restJson1 skipped child
 kafka ListVpcConnections restJson1 empty
 kafkaconnect DescribeCustomPlugin restJson1 skipped child
 kafkaconnect ListConnectorOperations restJson1 skipped child
 kafkaconnect ListConnectors restJson1 empty
-kafkaconnect ListCustomPlugins restJson1 empty
+kafkaconnect ListCustomPlugins restJson1 items 1
 kafkaconnect ListWorkerConfigurations restJson1 items 1
 kendra ListAccessControlConfigurations awsJson1_1 skipped child
 kendra ListDataSources awsJson1_1 skipped child
@@ -1156,11 +1156,11 @@ keyspaces GetTable rpcv2Cbor skipped child
 keyspaces ListKeyspaces rpcv2Cbor items 5
 keyspaces ListTables rpcv2Cbor skipped child
 keyspaces ListTypes rpcv2Cbor skipped child
-keyspacesstreams ListStreams awsJson1_0 empty
+keyspacesstreams ListStreams awsJson1_0 items 1
 kinesis DescribeStreamSummary awsJson1_1 skipped child
 kinesis ListChannels awsJson1_1 empty
 kinesis ListStreamConsumers awsJson1_1 skipped child
-kinesis ListStreams awsJson1_1 items 2
+kinesis ListStreams awsJson1_1 items 3
 kinesis-analytics-v2 ListApplications awsJson1_1 items 1
 kinesis-analytics-v2 ListSnapshots awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 kinesis-video DescribeMappedResourceConfiguration restJson1 skipped child
@@ -1180,20 +1180,20 @@ lambda GetCodeSigningConfig restJson1 skipped child
 lambda GetEventSourceMapping restJson1 skipped child
 lambda GetFunctionConfiguration restJson1 skipped child
 lambda ListAliases restJson1 skipped child
-lambda ListCapacityProviders restJson1 empty
+lambda ListCapacityProviders restJson1 items 1
 lambda ListCodeSigningConfigs restJson1 items 2
-lambda ListEventSourceMappings restJson1 empty
+lambda ListEventSourceMappings restJson1 items 1
 lambda ListFunctionVersionsByCapacityProvider restJson1 skipped child
-lambda ListFunctions restJson1 empty
+lambda ListFunctions restJson1 items 2
 lambda ListFunctionsByCodeSigningConfig restJson1 skipped child
 lambda ListLayerVersions restJson1 skipped child
-lambda ListLayers restJson1 empty
-lambda-core ListNetworkConnectors restJson1 empty
+lambda ListLayers restJson1 items 1
+lambda-core ListNetworkConnectors restJson1 items 1
 lambda-microvms ListMicrovmImages restJson1 items 1
 lambda-microvms ListMicrovms restJson1 empty
 lambda-web ListWebFunctions restJson1 empty
-launch-wizard ListDeployments restJson1 empty
-lex-model-building-service GetBots restJson1 empty
+launch-wizard ListDeployments restJson1 items 1
+lex-model-building-service GetBots restJson1 items 1
 lex-models-v2 ListBotAliases restJson1 skipped child
 lex-models-v2 ListBotVersions restJson1 skipped child
 lex-models-v2 ListBots restJson1 items 1
@@ -1209,34 +1209,34 @@ license-manager ListTagsForResource awsJson1_1 skipped child
 license-manager-linux-subscriptions ListLinuxSubscriptionInstances restJson1 empty
 license-manager-linux-subscriptions ListLinuxSubscriptions restJson1 empty
 license-manager-linux-subscriptions ListRegisteredSubscriptionProviders restJson1 empty
-license-manager-user-subscriptions ListIdentityProviders restJson1 empty
+license-manager-user-subscriptions ListIdentityProviders restJson1 items 1
 license-manager-user-subscriptions ListInstances restJson1 empty
-license-manager-user-subscriptions ListLicenseServerEndpoints restJson1 empty
-lightsail GetAlarms awsJson1_1 empty
-lightsail GetBuckets awsJson1_1 empty
+license-manager-user-subscriptions ListLicenseServerEndpoints restJson1 items 1
+lightsail GetAlarms awsJson1_1 items 1
+lightsail GetBuckets awsJson1_1 items 1
 lightsail GetCertificates awsJson1_1 items 1
 lightsail GetDisk awsJson1_1 skipped child
 lightsail GetDiskSnapshot awsJson1_1 skipped child
-lightsail GetDiskSnapshots awsJson1_1 empty
-lightsail GetDisks awsJson1_1 empty
-lightsail GetDistributions awsJson1_1 empty
+lightsail GetDiskSnapshots awsJson1_1 items 1
+lightsail GetDisks awsJson1_1 items 1
+lightsail GetDistributions awsJson1_1 items 1
 lightsail GetDomain awsJson1_1 skipped child
 lightsail GetDomains awsJson1_1 items 2
 lightsail GetInstance awsJson1_1 skipped child
 lightsail GetInstanceSnapshot awsJson1_1 skipped child
-lightsail GetInstanceSnapshots awsJson1_1 empty
-lightsail GetInstances awsJson1_1 empty
+lightsail GetInstanceSnapshots awsJson1_1 items 1
+lightsail GetInstances awsJson1_1 items 1
 lightsail GetLoadBalancer awsJson1_1 skipped child
-lightsail GetLoadBalancers awsJson1_1 empty
+lightsail GetLoadBalancers awsJson1_1 items 1
 lightsail GetRelationalDatabaseSnapshot awsJson1_1 skipped child
-lightsail GetRelationalDatabaseSnapshots awsJson1_1 empty
+lightsail GetRelationalDatabaseSnapshots awsJson1_1 items 1
 lightsail GetStaticIp awsJson1_1 skipped child
-lightsail GetStaticIps awsJson1_1 empty
+lightsail GetStaticIps awsJson1_1 items 1
 location ListGeofenceCollections restJson1 items 1
 location ListMaps restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 location ListPlaceIndexes restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 location ListRouteCalculators restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-location ListTrackers restJson1 empty
+location ListTrackers restJson1 items 1
 lookoutequipment ListDatasets awsJson1_0 items 1
 lookoutequipment ListInferenceSchedulers awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 lookoutequipment ListLabelGroups awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1247,7 +1247,7 @@ m2 ListApplications restJson1 items 1
 m2 ListEnvironments restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 machine-learning DescribeBatchPredictions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 machine-learning DescribeEvaluations awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-machine-learning DescribeMLModels awsJson1_1 empty
+machine-learning DescribeMLModels awsJson1_1 items 1
 macie2 ListAllowLists restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 macie2 ListClassificationJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 macie2 ListClassificationScopes restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1266,7 +1266,7 @@ mailmanager ListRuleSets rpcv2Cbor unsupported API executor error: provider does
 mailmanager ListTrafficPolicies rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 managedblockchain ListAccessors restJson1 items 1
 managedblockchain ListMembers restJson1 skipped child
-managedblockchain ListNetworks restJson1 empty
+managedblockchain ListNetworks restJson1 items 1
 marketplace-agreement SearchAgreements rpcv2Cbor empty
 mediaconnect DescribeBridge restJson1 skipped child
 mediaconnect DescribeGateway restJson1 skipped child
@@ -1276,9 +1276,9 @@ mediaconnect GetRouterInput restJson1 skipped child
 mediaconnect GetRouterNetworkInterface restJson1 skipped child
 mediaconnect GetRouterOutput restJson1 skipped child
 mediaconnect GetSourceEndpoint restJson1 skipped child
-mediaconnect ListBridges restJson1 empty
+mediaconnect ListBridges restJson1 items 1
 mediaconnect ListDestinationEndpoints restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-mediaconnect ListFlows restJson1 empty
+mediaconnect ListFlows restJson1 items 1
 mediaconnect ListGatewayInstances restJson1 empty
 mediaconnect ListGateways restJson1 items 1
 mediaconnect ListRouterInputs restJson1 empty
@@ -1288,23 +1288,23 @@ mediaconnect ListSourceEndpoints restJson1 unsupported API executor error: provi
 mediaconvert GetQueue restJson1 skipped child
 mediaconvert ListQueues restJson1 items 2
 medialive ListChannelPlacementGroups restJson1 skipped child
-medialive ListChannels restJson1 empty
+medialive ListChannels restJson1 items 1
 medialive ListCloudWatchAlarmTemplateGroups restJson1 items 10
 medialive ListCloudWatchAlarmTemplates restJson1 items 29
 medialive ListClusters restJson1 items 1
 medialive ListEventBridgeRuleTemplateGroups restJson1 items 1
-medialive ListEventBridgeRuleTemplates restJson1 empty
-medialive ListInputDevices restJson1 empty
-medialive ListInputSecurityGroups restJson1 empty
-medialive ListInputs restJson1 empty
-medialive ListMultiplexes restJson1 empty
-medialive ListNetworks restJson1 empty
+medialive ListEventBridgeRuleTemplates restJson1 items 1
+medialive ListInputDevices restJson1 items 1
+medialive ListInputSecurityGroups restJson1 items 1
+medialive ListInputs restJson1 items 1
+medialive ListMultiplexes restJson1 items 1
+medialive ListNetworks restJson1 items 1
 medialive ListNodes restJson1 skipped child
-medialive ListSdiSources restJson1 empty
-medialive ListSignalMaps restJson1 empty
-mediapackage ListOriginEndpoints restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (UnprocessableEntityException)
-mediapackage-vod ListAssets restJson1 empty
-mediapackage-vod ListPackagingConfigurations restJson1 empty
+medialive ListSdiSources restJson1 items 1
+medialive ListSignalMaps restJson1 items 1
+mediapackage ListOriginEndpoints restJson1 items 1
+mediapackage-vod ListAssets restJson1 items 1
+mediapackage-vod ListPackagingConfigurations restJson1 items 1
 mediapackage-vod ListPackagingGroups restJson1 items 1
 mediapackagev2 GetChannelGroup restJson1 skipped child
 mediapackagev2 ListChannelGroups restJson1 items 1
@@ -1325,12 +1325,12 @@ memorydb DescribeSnapshots rpcv2Cbor failed api API executor error: permanent AP
 memorydb DescribeSubnetGroups rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 memorydb DescribeUsers rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 mgn DescribeLaunchConfigurationTemplates restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-mgn DescribeReplicationConfigurationTemplates restJson1 empty inventory feature or singleton absent: AWS service failure: Fatal (UninitializedAccountException)
-mgn DescribeSourceServers restJson1 empty inventory feature or singleton absent: AWS service failure: Fatal (UninitializedAccountException)
+mgn DescribeReplicationConfigurationTemplates restJson1 empty
+mgn DescribeSourceServers restJson1 empty
 mgn DescribeVcenterClients restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-mgn ListApplications restJson1 empty inventory feature or singleton absent: AWS service failure: Fatal (UninitializedAccountException)
-mgn ListConnectors restJson1 empty inventory feature or singleton absent: AWS service failure: Fatal (UninitializedAccountException)
-mgn ListWaves restJson1 empty inventory feature or singleton absent: AWS service failure: Fatal (UninitializedAccountException)
+mgn ListApplications restJson1 items 1
+mgn ListConnectors restJson1 items 1
+mgn ListWaves restJson1 items 1
 migration-hub ListApplicationStates awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 migration-hub ListProgressUpdateStreams awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 migration-hub-refactor-spaces ListApplications restJson1 skipped child
@@ -1339,24 +1339,24 @@ migration-hub-refactor-spaces ListServices restJson1 skipped child
 migrationhub-config DescribeHomeRegionControls awsJson1_1 items 1
 migrationhuborchestrator ListWorkflows restJson1 items 1
 migrationhubstrategy ListAnalyzableServers restJson1 empty
-migrationhubstrategy ListApplicationComponents restJson1 empty
+migrationhubstrategy ListApplicationComponents restJson1 items 1
 migrationhubstrategy ListCollectors restJson1 empty
-migrationhubstrategy ListImportFileTask restJson1 empty
-migrationhubstrategy ListServers restJson1 empty
+migrationhubstrategy ListImportFileTask restJson1 items 1
+migrationhubstrategy ListServers restJson1 items 1
 mpa ListApprovalTeams restJson1 empty
 mpa ListIdentitySources restJson1 empty
 mq DescribeBroker restJson1 skipped child
-mq ListBrokers restJson1 empty
-mq ListConfigurations restJson1 items 1
-mwaa ListEnvironments restJson1 empty
+mq ListBrokers restJson1 items 1
+mq ListConfigurations restJson1 items 2
+mwaa ListEnvironments restJson1 items 1
 mwaa-serverless ListWorkflows awsJson1_0 empty
 neptune DescribeDBClusterEndpoints awsQuery skipped child
-neptune DescribeDBClusterParameterGroups awsQuery empty
+neptune DescribeDBClusterParameterGroups awsQuery items 3
 neptune DescribeDBClusterSnapshots awsQuery empty
 neptune DescribeDBClusters awsQuery items 1
 neptune DescribeDBParameterGroups awsQuery items 67
 neptune DescribeDBSubnetGroups awsQuery items 1
-neptune DescribeEventSubscriptions awsQuery empty
+neptune DescribeEventSubscriptions awsQuery items 3
 neptune DescribeGlobalClusters awsQuery items 3
 neptune-graph ListGraphSnapshots restJson1 empty
 neptune-graph ListGraphs restJson1 items 1
@@ -1371,21 +1371,21 @@ network-security-manager ListDeployments restJson1 unsupported API executor erro
 network-security-manager ListPolicies restJson1 empty
 network-security-manager ListRules restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 network-security-manager ListScopes restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-networkflowmonitor ListMonitors restJson1 empty
+networkflowmonitor ListMonitors restJson1 items 1
 networkflowmonitor ListScopes restJson1 items 1
 networkmanager DescribeGlobalNetworks restJson1 items 1
 networkmanager GetConnections restJson1 skipped child
 networkmanager GetDevices restJson1 skipped child
 networkmanager GetLinks restJson1 skipped child
 networkmanager GetSites restJson1 skipped child
-networkmanager ListAttachments restJson1 empty
-networkmanager ListConnectPeers restJson1 empty
-networkmanager ListPeerings restJson1 empty
+networkmanager ListAttachments restJson1 items 2
+networkmanager ListConnectPeers restJson1 items 1
+networkmanager ListPeerings restJson1 items 1
 networkmonitor GetMonitor restJson1 skipped child
 networkmonitor ListMonitors restJson1 items 1
 notifications ListEventRules restJson1 skipped child
 notifications ListManagedNotificationConfigurations restJson1 items 17
-notifications ListNotificationConfigurations restJson1 empty
+notifications ListNotificationConfigurations restJson1 failed decode shape=ListNotificationConfigurationsResponse AWS wire response error: invalid response: invalid timestamp
 notifications ListNotificationHubs restJson1 empty
 notificationscontacts GetEmailContact restJson1 skipped child
 notificationscontacts ListEmailContacts restJson1 items 1
@@ -1394,9 +1394,9 @@ oam ListLinks restJson1 empty
 oam ListSinks restJson1 items 1
 observabilityadmin ListCentralizationRulesForOrganization restJson1 items 1
 observabilityadmin ListDatasetIntegrations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-observabilityadmin ListS3TableIntegrations restJson1 empty
-observabilityadmin ListTelemetryPipelines restJson1 empty
-observabilityadmin ListTelemetryRules restJson1 empty
+observabilityadmin ListS3TableIntegrations restJson1 items 1
+observabilityadmin ListTelemetryPipelines restJson1 items 1
+observabilityadmin ListTelemetryRules restJson1 items 1
 observabilityadmin ListTelemetryRulesForOrganization restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 odb ListAutonomousDatabases awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 odb ListCloudAutonomousVmClusters awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1419,18 +1419,18 @@ omics ListRunGroups restJson1 items 1
 omics ListSequenceStores restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 omics ListVariantStores restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 omics ListWorkflowVersions restJson1 skipped child
-omics ListWorkflows restJson1 empty
+omics ListWorkflows restJson1 items 1
 opensearch ListApplications restJson1 items 1
-opensearch ListDirectQueryDataSources restJson1 empty
-opensearch ListDomainNames restJson1 empty
-opensearch ListVpcEndpoints restJson1 empty
-opensearchserverless ListAccessPolicies awsJson1_0 empty
+opensearch ListDirectQueryDataSources restJson1 items 1
+opensearch ListDomainNames restJson1 items 1
+opensearch ListVpcEndpoints restJson1 items 1
+opensearchserverless ListAccessPolicies awsJson1_0 items 1
 opensearchserverless ListCollectionGroups awsJson1_0 items 1
-opensearchserverless ListCollections awsJson1_0 empty
-opensearchserverless ListLifecyclePolicies awsJson1_0 empty
-opensearchserverless ListSecurityConfigs awsJson1_0 empty
-opensearchserverless ListSecurityPolicies awsJson1_0 empty
-opensearchserverless ListVpcEndpoints awsJson1_0 empty
+opensearchserverless ListCollections awsJson1_0 items 1
+opensearchserverless ListLifecyclePolicies awsJson1_0 items 1
+opensearchserverless ListSecurityConfigs awsJson1_0 items 1
+opensearchserverless ListSecurityPolicies awsJson1_0 items 1
+opensearchserverless ListVpcEndpoints awsJson1_0 items 1
 organizations DescribeAccount awsJson1_1 skipped child
 organizations DescribeCreateAccountStatus awsJson1_1 skipped child
 organizations DescribeOrganization awsJson1_1 items 1
@@ -1447,22 +1447,22 @@ osis ListPipelineEndpoints restJson1 unsupported API executor error: provider do
 osis ListPipelines restJson1 items 1
 outposts GetOutpost restJson1 skipped child
 outposts GetSite restJson1 skipped child
-outposts ListOutposts restJson1 empty
-outposts ListSites restJson1 items 1
-partnercentral-revenue-measurement ListMarketplaceRevenueShares rpcv2Cbor empty
+outposts ListOutposts restJson1 items 2
+outposts ListSites restJson1 items 2
+partnercentral-revenue-measurement ListMarketplaceRevenueShares rpcv2Cbor items 1
 partnercentral-revenue-measurement ListRevenueAttributions rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 partnercentral-selling ListEngagements awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 partnercentral-selling ListSolutions awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 payment-cryptography GetAlias awsJson1_0 skipped child
-payment-cryptography ListAliases awsJson1_0 empty
+payment-cryptography ListAliases awsJson1_0 items 1
 payment-cryptography ListKeys awsJson1_0 items 1
-pca-connector-ad ListConnectors restJson1 empty
+pca-connector-ad ListConnectors restJson1 items 1
 pca-connector-ad ListDirectoryRegistrations restJson1 items 1
 pca-connector-ad ListServicePrincipalNames restJson1 skipped child
 pca-connector-ad ListTemplateGroupAccessControlEntries restJson1 skipped child
 pca-connector-ad ListTemplates restJson1 skipped child
 pca-connector-scep ListChallengeMetadata restJson1 skipped child
-pca-connector-scep ListConnectors restJson1 empty
+pca-connector-scep ListConnectors restJson1 items 1
 pcs ListClusters awsJson1_0 empty
 pcs ListComputeNodeGroups awsJson1_0 skipped child
 pcs ListQueues awsJson1_0 skipped child
@@ -1473,7 +1473,7 @@ personalize ListEventTrackers awsJson1_1 skipped child
 personalize ListFilters awsJson1_1 skipped child
 personalize ListMetricAttributions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 personalize ListRecommenders awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-personalize ListSchemas awsJson1_1 empty
+personalize ListSchemas awsJson1_1 items 1
 personalize ListSolutionVersions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 personalize ListSolutions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 pinpoint GetApp restJson1 skipped child
@@ -1483,7 +1483,7 @@ pinpoint GetRecommenderConfigurations restJson1 unsupported API executor error: 
 pinpoint-email GetConfigurationSet restJson1 skipped child
 pinpoint-email ListConfigurationSets restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 pinpoint-email ListDedicatedIpPools restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-pinpoint-email ListEmailIdentities restJson1 items 3
+pinpoint-email ListEmailIdentities restJson1 items 4
 pinpoint-sms-voice ListConfigurationSets restJson1 empty
 pinpoint-sms-voice-v2 DescribeConfigurationSets awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 pinpoint-sms-voice-v2 DescribeNotifyConfigurations awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1495,7 +1495,7 @@ pinpoint-sms-voice-v2 DescribeRcsAgents awsJson1_0 unsupported API executor erro
 pinpoint-sms-voice-v2 DescribeRegistrations awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 pinpoint-sms-voice-v2 DescribeSenderIds awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 pinpoint-sms-voice-v2 DescribeVerifiedDestinationNumbers awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-pipes ListPipes restJson1 empty
+pipes ListPipes restJson1 items 1
 polly ListLexicons restJson1 items 1
 pricing-plan-manager ListSubscriptions restJson1 empty
 proton ListComponents awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1519,7 +1519,7 @@ qconnect ListAIPromptVersions restJson1 skipped child
 qconnect ListAIPrompts restJson1 skipped child
 qconnect ListAssistantAssociations restJson1 skipped child
 qconnect ListAssistants restJson1 items 2
-qconnect ListKnowledgeBases restJson1 empty
+qconnect ListKnowledgeBases restJson1 items 3
 qconnect ListTagsForResource restJson1 skipped child
 quicksight ListActionConnectors restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 quicksight ListAgents restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1529,8 +1529,8 @@ quicksight ListApps restJson1 unsupported API executor error: provider does not 
 quicksight ListBrands restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 quicksight ListCustomPermissions restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 quicksight ListDashboards restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-quicksight ListDataSets restJson1 empty
-quicksight ListDataSources restJson1 empty
+quicksight ListDataSets restJson1 items 1
+quicksight ListDataSources restJson1 items 1
 quicksight ListDlpSettings restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 quicksight ListFlows restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 quicksight ListFolders restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1546,32 +1546,32 @@ quicksight ListThemes restJson1 unsupported API executor error: provider does no
 quicksight ListTopics restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 quicksight ListTopicsV2 restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 quicksight ListVPCConnections restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-ram GetResourceShareInvitations restJson1 empty
-ram GetResourceShares restJson1 items 1
+ram GetResourceShareInvitations restJson1 items 1
+ram GetResourceShares restJson1 items 2
 ram ListPermissionAssociations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ram ListPermissions restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ram ListReplacePermissionAssociationsWork restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ram ListSourceAssociations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-rbin ListRules restJson1 empty
+rbin ListRules restJson1 items 1
 rds DescribeAccountAttributes awsQuery items 19
 rds DescribeBlueGreenDeployments awsQuery empty
 rds DescribeDBCapacityReservations awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-rds DescribeDBClusterAutomatedBackups awsQuery items 1
+rds DescribeDBClusterAutomatedBackups awsQuery items 4
 rds DescribeDBClusterEndpoints awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-rds DescribeDBClusterParameterGroups awsQuery empty
+rds DescribeDBClusterParameterGroups awsQuery items 3
 rds DescribeDBClusterSnapshots awsQuery empty
 rds DescribeDBInstanceAutomatedBackups awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 rds DescribeDBParameterGroups awsQuery items 67
-rds DescribeDBProxies awsQuery empty
+rds DescribeDBProxies awsQuery items 1
 rds DescribeDBProxyEndpoints awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-rds DescribeDBSecurityGroups awsQuery empty
-rds DescribeDBShardGroups awsQuery empty
+rds DescribeDBSecurityGroups awsQuery items 1
+rds DescribeDBShardGroups awsQuery items 1
 rds DescribeDBSnapshots awsQuery empty
 rds DescribeDBSubnetGroups awsQuery items 1
-rds DescribeEventSubscriptions awsQuery empty
+rds DescribeEventSubscriptions awsQuery items 3
 rds DescribeExportTasks awsQuery empty
 rds DescribeGlobalClusters awsQuery items 3
-rds DescribeIntegrations awsQuery empty
+rds DescribeIntegrations awsQuery items 1
 rds DescribePendingMaintenanceActions awsQuery empty
 rds DescribeReservedDBInstances awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 redshift DescribeClusterDbRevisions awsQuery empty
@@ -1600,7 +1600,7 @@ redshift ListRecommendations awsQuery empty
 redshift-serverless ListCustomDomainAssociations awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 redshift-serverless ListEndpointAccess awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 redshift-serverless ListManagedWorkgroups awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-redshift-serverless ListNamespaces awsJson1_1 items 1
+redshift-serverless ListNamespaces awsJson1_1 items 2
 redshift-serverless ListRecoveryPoints awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 redshift-serverless ListReservations awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 redshift-serverless ListScheduledActions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1617,7 +1617,7 @@ rekognition ListMediaAnalysisJobs awsJson1_1 unsupported API executor error: pro
 rekognition ListStreamProcessors awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 repostspace ListSpaces restJson1 empty
 repostspace ListTagsForResource restJson1 skipped child
-resiliencehub ListAppAssessments restJson1 empty
+resiliencehub ListAppAssessments restJson1 items 1
 resiliencehub ListApps restJson1 items 1
 resiliencehub ListRecommendationTemplates restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 resiliencehub ListResiliencyPolicies restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1632,33 +1632,33 @@ resource-explorer-2 ListStreamingAccessForServices restJson1 unsupported API exe
 resource-explorer-2 ListTagsForResource restJson1 skipped child
 resource-explorer-2 ListViews restJson1 items 1
 resource-groups GetTags restJson1 skipped child
-resource-groups ListGroups restJson1 items 2
-resource-groups ListTagSyncTasks restJson1 empty
-rolesanywhere ListCrls restJson1 empty
+resource-groups ListGroups restJson1 items 3
+resource-groups ListTagSyncTasks restJson1 items 1
+rolesanywhere ListCrls restJson1 items 1
 rolesanywhere ListProfiles restJson1 items 1
 rolesanywhere ListSubjects restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 rolesanywhere ListTagsForResource restJson1 skipped child
-rolesanywhere ListTrustAnchors restJson1 empty
+rolesanywhere ListTrustAnchors restJson1 items 1
 route-53 GetDNSSEC restXml skipped child
 route-53 GetHealthCheck restXml skipped child
 route-53 GetHostedZone restXml skipped child
 route-53 GetQueryLoggingConfig restXml skipped child
 route-53 GetReusableDelegationSet restXml skipped child
 route-53 GetTrafficPolicyInstance restXml skipped child
-route-53 ListCidrCollections restXml empty
+route-53 ListCidrCollections restXml items 1
 route-53 ListHealthChecks restXml items 1
-route-53 ListHostedZones restXml empty
-route-53 ListHostedZonesByName restXml empty
+route-53 ListHostedZones restXml items 1
+route-53 ListHostedZonesByName restXml items 1
 route-53 ListQueryLoggingConfigs restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 route-53 ListReusableDelegationSets restXml items 1
-route-53 ListTrafficPolicies restXml empty
-route-53 ListTrafficPolicyInstances restXml empty
+route-53 ListTrafficPolicies restXml items 1
+route-53 ListTrafficPolicyInstances restXml items 1
 route-53 ListTrafficPolicyInstancesByHostedZone restXml skipped child
 route-53 ListTrafficPolicyInstancesByPolicy restXml skipped child
 route-53-domains ListDomains rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 route-53-domains ListTagsForDomain rpcv2Cbor skipped child
 route53-recovery-control-config ListClusters restJson1 items 1
-route53-recovery-control-config ListControlPanels restJson1 items 1
+route53-recovery-control-config ListControlPanels restJson1 items 2
 route53-recovery-control-config ListRoutingControls restJson1 skipped child
 route53-recovery-control-config ListSafetyRules restJson1 skipped child
 route53-recovery-control-config ListTagsForResource restJson1 skipped child
@@ -1677,47 +1677,47 @@ route53globalresolver ListFirewallDomainLists restJson1 unsupported API executor
 route53globalresolver ListFirewallRules restJson1 skipped child
 route53globalresolver ListGlobalResolvers restJson1 empty
 route53globalresolver ListHostedZoneAssociations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-route53profiles ListProfileAssociations restJson1 empty
+route53profiles ListProfileAssociations restJson1 items 1
 route53profiles ListProfileResourceAssociations restJson1 skipped child
 route53profiles ListProfiles restJson1 items 1
 route53profiles ListTagsForResource restJson1 skipped child
 route53resolver ListFirewallConfigs awsJson1_1 items 10
 route53resolver ListFirewallDomainLists awsJson1_1 items 5
-route53resolver ListFirewallRuleGroupAssociations awsJson1_1 empty
-route53resolver ListFirewallRuleGroups awsJson1_1 empty
-route53resolver ListOutpostResolvers awsJson1_1 empty
-route53resolver ListResolverConfigs awsJson1_1 items 13
-route53resolver ListResolverDnssecConfigs awsJson1_1 empty
-route53resolver ListResolverEndpoints awsJson1_1 empty
-route53resolver ListResolverQueryLogConfigAssociations awsJson1_1 empty
-route53resolver ListResolverQueryLogConfigs awsJson1_1 empty
-route53resolver ListResolverRuleAssociations awsJson1_1 empty
-route53resolver ListResolverRules awsJson1_1 empty
+route53resolver ListFirewallRuleGroupAssociations awsJson1_1 items 1
+route53resolver ListFirewallRuleGroups awsJson1_1 items 2
+route53resolver ListOutpostResolvers awsJson1_1 items 1
+route53resolver ListResolverConfigs awsJson1_1 items 37
+route53resolver ListResolverDnssecConfigs awsJson1_1 items 1
+route53resolver ListResolverEndpoints awsJson1_1 items 1
+route53resolver ListResolverQueryLogConfigAssociations awsJson1_1 items 1
+route53resolver ListResolverQueryLogConfigs awsJson1_1 items 1
+route53resolver ListResolverRuleAssociations awsJson1_1 items 1
+route53resolver ListResolverRules awsJson1_1 items 1
 route53resolver ListTagsForResource awsJson1_1 skipped child
-rtbfabric ListRequesterGateways restJson1 empty
+rtbfabric ListRequesterGateways restJson1 items 1
 rtbfabric ListResponderGateways restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 rum GetAppMonitor restJson1 skipped child
 rum ListAppMonitors restJson1 items 1
-s3 ListBuckets restXml items 11
-s3 ListDirectoryBuckets restXml empty
+s3 ListBuckets restXml items 44
+s3 ListDirectoryBuckets restXml items 1
 s3-control GetAccessGrant restXml skipped child
-s3-control GetAccessGrantsInstance restXml failed api API executor error: permanent API failure: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
+s3-control GetAccessGrantsInstance restXml items 1
 s3-control GetAccessGrantsLocation restXml skipped child
 s3-control GetStorageLensGroup restXml skipped child
-s3-control ListAccessGrants restXml failed api API executor error: permanent API failure: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
+s3-control ListAccessGrants restXml items 1
 s3-control ListAccessGrantsInstances restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-s3-control ListAccessGrantsLocations restXml failed api API executor error: permanent API failure: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
+s3-control ListAccessGrantsLocations restXml items 1
 s3-control ListAccessPoints restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 s3-control ListAccessPointsForDirectoryBuckets restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (UnknownService)
 s3-control ListAccessPointsForObjectLambda restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-s3-control ListJobs restXml empty
+s3-control ListJobs restXml items 1
 s3-control ListMultiRegionAccessPoints restXml empty
 s3-control ListRegionalBuckets restXml skipped child
-s3-control ListStorageLensConfigurations restXml empty
+s3-control ListStorageLensConfigurations restXml items 1
 s3-control ListStorageLensGroups restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 s3-control ListTagsForResource restXml skipped child
 s3files ListAccessPoints restJson1 skipped child
-s3files ListFileSystems restJson1 empty
+s3files ListFileSystems restJson1 items 1
 s3files ListMountTargets restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 s3outposts ListEndpoints restJson1 empty
 s3outposts ListOutpostsWithS3 restJson1 empty
@@ -1737,26 +1737,26 @@ sagemaker ListActions awsJson1_1 unsupported API executor error: provider does n
 sagemaker ListAlgorithms awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListAliases awsJson1_1 skipped child
 sagemaker ListApps awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListArtifacts awsJson1_1 empty
-sagemaker ListAssociations awsJson1_1 empty
+sagemaker ListArtifacts awsJson1_1 items 1
+sagemaker ListAssociations awsJson1_1 items 1
 sagemaker ListAutoMLJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListCandidatesForAutoMLJob awsJson1_1 skipped child
 sagemaker ListClusterEvents awsJson1_1 skipped child
 sagemaker ListClusterExtensions awsJson1_1 skipped child
-sagemaker ListClusterSchedulerConfigs awsJson1_1 empty
+sagemaker ListClusterSchedulerConfigs awsJson1_1 items 1
 sagemaker ListClusters awsJson1_1 items 1
-sagemaker ListCodeRepositories awsJson1_1 empty
+sagemaker ListCodeRepositories awsJson1_1 items 1
 sagemaker ListCompilationJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListComputeQuotas awsJson1_1 empty
+sagemaker ListComputeQuotas awsJson1_1 items 1
 sagemaker ListContexts awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListDataQualityJobDefinitions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListDeviceFleets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListDevices awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListDomains awsJson1_1 empty
+sagemaker ListDomains awsJson1_1 items 1
 sagemaker ListEdgeDeploymentPlans awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListEdgePackagingJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListEndpointConfigs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListEndpoints awsJson1_1 empty
+sagemaker ListEndpoints awsJson1_1 items 1
 sagemaker ListExperiments awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListFeatureGroups awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListFlowDefinitions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1764,26 +1764,26 @@ sagemaker ListHubs awsJson1_1 unsupported API executor error: provider does not 
 sagemaker ListHumanTaskUis awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListHyperParameterTuningJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListImageVersions awsJson1_1 skipped child
-sagemaker ListImages awsJson1_1 empty
+sagemaker ListImages awsJson1_1 items 1
 sagemaker ListInferenceComponents awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListInferenceExperiments awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListInferenceRecommendationsJobs awsJson1_1 empty
+sagemaker ListInferenceRecommendationsJobs awsJson1_1 items 1
 sagemaker ListLabelingJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListMlflowApps awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListMlflowTrackingServers awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListModelBiasJobDefinitions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListModelCards awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListModelExplainabilityJobDefinitions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListModelPackageGroups awsJson1_1 empty
+sagemaker ListModelPackageGroups awsJson1_1 items 1
 sagemaker ListModelPackages awsJson1_1 items 1
 sagemaker ListModelQualityJobDefinitions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListModels awsJson1_1 empty
+sagemaker ListModels awsJson1_1 items 1
 sagemaker ListMonitoringSchedules awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListNotebookInstanceLifecycleConfigs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListNotebookInstances awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListOptimizationJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListPartnerApps awsJson1_1 empty
-sagemaker ListPipelines awsJson1_1 empty
+sagemaker ListPipelines awsJson1_1 items 1
 sagemaker ListProcessingJobs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListProjects awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListResourceCatalogs awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1793,8 +1793,8 @@ sagemaker ListTags awsJson1_1 skipped child
 sagemaker ListTrainingJobs awsJson1_1 empty
 sagemaker ListTrainingPlans awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListTrainingSessions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sagemaker ListTransformJobs awsJson1_1 empty
-sagemaker ListTrialComponents awsJson1_1 empty
+sagemaker ListTransformJobs awsJson1_1 items 1
+sagemaker ListTrialComponents awsJson1_1 items 1
 sagemaker ListTrials awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListUserProfiles awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sagemaker ListWorkforces awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1802,16 +1802,16 @@ sagemaker ListWorkteams awsJson1_1 unsupported API executor error: provider does
 sagemaker-geospatial ListEarthObservationJobs restJson1 empty
 sagemaker-geospatial ListTagsForResource restJson1 skipped child
 sagemaker-geospatial ListVectorEnrichmentJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-savingsplans DescribeSavingsPlans restJson1 empty
+savingsplans DescribeSavingsPlans restJson1 items 1
 savingsplans ListTagsForResource restJson1 skipped child
 scheduler ListScheduleGroups restJson1 items 2
-scheduler ListSchedules restJson1 empty
+scheduler ListSchedules restJson1 items 1
 scheduler ListTagsForResource restJson1 skipped child
-schemas ListDiscoverers restJson1 empty
+schemas ListDiscoverers restJson1 items 1
 schemas ListRegistries restJson1 items 1
 schemas ListSchemas restJson1 skipped child
 schemas ListTagsForResource restJson1 skipped child
-secrets-manager ListSecrets awsJson1_1 items 1
+secrets-manager ListSecrets awsJson1_1 items 4
 security-ir ListMemberships restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 security-ir ListTagsForResource restJson1 skipped child
 securityagent ListAgentSpaces restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1851,32 +1851,32 @@ service-catalog ListTagOptions rpcv2Cbor failed api API executor error: permanen
 service-catalog-appregistry ListApplications restJson1 empty
 service-catalog-appregistry ListAttributeGroups restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 service-catalog-appregistry ListTagsForResource restJson1 skipped child
-service-quotas ListRequestedServiceQuotaChangeHistory awsJson1_1 empty
+service-quotas ListRequestedServiceQuotaChangeHistory awsJson1_1 items 1
 servicediscovery ListOperations rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 servicediscovery ListServices rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 servicediscovery ListTagsForResource rpcv2Cbor skipped child
-ses ListConfigurationSets awsQuery items 3
+ses ListConfigurationSets awsQuery items 4
 ses ListCustomVerificationEmailTemplates awsQuery empty
-ses ListIdentities awsQuery items 3
-ses ListReceiptFilters awsQuery empty
+ses ListIdentities awsQuery items 4
+ses ListReceiptFilters awsQuery items 1
 ses ListReceiptRuleSets awsQuery items 1
-ses ListTemplates awsQuery empty
+ses ListTemplates awsQuery items 2
 sesv2 GetDedicatedIps restJson1 empty
-sesv2 ListConfigurationSets restJson1 items 3
+sesv2 ListConfigurationSets restJson1 items 4
 sesv2 ListContactLists restJson1 items 1
 sesv2 ListCustomVerificationEmailTemplates restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 sesv2 ListDedicatedIpPools restJson1 items 1
 sesv2 ListDeliverabilityTestReports restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sesv2 ListEmailIdentities restJson1 items 3
+sesv2 ListEmailIdentities restJson1 items 4
 sesv2 ListEmailIdentityCertificates restJson1 skipped child
-sesv2 ListEmailTemplates restJson1 empty
-sesv2 ListExportJobs restJson1 empty
+sesv2 ListEmailTemplates restJson1 items 2
+sesv2 ListExportJobs restJson1 items 1
 sesv2 ListImportJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-sesv2 ListMultiRegionEndpoints restJson1 empty
-sesv2 ListRecommendations restJson1 items 2
-sesv2 ListReputationEntities restJson1 empty
+sesv2 ListMultiRegionEndpoints restJson1 items 1
+sesv2 ListRecommendations restJson1 items 4
+sesv2 ListReputationEntities restJson1 items 1
 sesv2 ListTagsForResource restJson1 skipped child
-sesv2 ListTenants restJson1 empty
+sesv2 ListTenants restJson1 items 1
 sfn DescribeActivity awsJson1_0 skipped child
 sfn DescribeStateMachineAlias awsJson1_0 skipped child
 sfn ListActivities awsJson1_0 items 1
@@ -1887,13 +1887,13 @@ shield ListAttacks rpcv2Cbor failed api API executor error: permanent API failur
 shield ListProtectionGroups rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 shield ListProtections rpcv2Cbor failed api API executor error: permanent API failure: AWS service failure: Fatal (SerializationException)
 shield ListTagsForResource rpcv2Cbor skipped child
-signer ListSigningJobs restJson1 empty
+signer ListSigningJobs restJson1 items 1
 signer ListSigningProfiles restJson1 items 3
 signer ListTagsForResource restJson1 skipped child
 snow-device-management ListDevices restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
 snow-device-management ListTagsForResource restJson1 skipped child
 snow-device-management ListTasks restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-snowball ListClusters rpcv2Cbor empty
+snowball ListClusters rpcv2Cbor items 1
 snowball ListLongTermPricing rpcv2Cbor items 1
 sns GetDataProtectionPolicy awsQuery skipped child
 sns GetSubscriptionAttributes awsQuery skipped child
@@ -1903,12 +1903,12 @@ sns ListPlatformApplications awsQuery empty
 sns ListSubscriptions awsQuery items 2
 sns ListSubscriptionsByTopic awsQuery skipped child
 sns ListTagsForResource awsQuery skipped child
-sns ListTopics awsQuery items 4
+sns ListTopics awsQuery items 8
 socialmessaging ListLinkedWhatsAppBusinessAccounts restJson1 empty
 socialmessaging ListTagsForResource restJson1 skipped child
 sqs GetQueueAttributes awsJson1_0 skipped child
 sqs ListQueueTags awsJson1_0 skipped child
-sqs ListQueues awsJson1_0 items 3
+sqs ListQueues awsJson1_0 items 8
 ssm DescribeActivations awsJson1_1 items 1
 ssm DescribeInstanceInformation awsJson1_1 empty
 ssm DescribeInventoryDeletions awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1938,9 +1938,9 @@ ssm-incidents ListIncidentRecords restJson1 items 1
 ssm-incidents ListReplicationSets restJson1 empty
 ssm-incidents ListResponsePlans restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 ssm-incidents ListTagsForResource restJson1 skipped child
-ssm-sap ListApplications restJson1 empty
+ssm-sap ListApplications restJson1 items 1
 ssm-sap ListComponents restJson1 empty
-ssm-sap ListDatabases restJson1 empty
+ssm-sap ListDatabases restJson1 items 1
 ssm-sap ListTagsForResource restJson1 skipped child
 sso-admin ListApplications awsJson1_1 skipped child
 sso-admin ListInstances awsJson1_1 items 1
@@ -1949,9 +1949,9 @@ sso-admin ListTrustedTokenIssuers awsJson1_1 skipped child
 storage-gateway DescribeTapeArchives awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 storage-gateway ListAutomaticTapeCreationPolicies awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 storage-gateway ListCacheReports awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-storage-gateway ListFileShares awsJson1_1 empty
+storage-gateway ListFileShares awsJson1_1 items 1
 storage-gateway ListFileSystemAssociations awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-storage-gateway ListGateways awsJson1_1 empty
+storage-gateway ListGateways awsJson1_1 items 1
 storage-gateway ListTagsForResource awsJson1_1 skipped child
 storage-gateway ListTapePools awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 storage-gateway ListTapes awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1978,7 +1978,7 @@ timestream-influxdb GetDbInstance awsJson1_0 skipped child
 timestream-influxdb GetDbParameterGroup awsJson1_0 skipped child
 timestream-influxdb ListDbBackups awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 timestream-influxdb ListDbClusters awsJson1_0 empty
-timestream-influxdb ListDbInstances awsJson1_0 empty
+timestream-influxdb ListDbInstances awsJson1_0 items 1
 timestream-influxdb ListDbInstancesForCluster awsJson1_0 skipped child
 timestream-influxdb ListDbParameterGroups awsJson1_0 items 22
 timestream-influxdb ListTagsForResource awsJson1_0 skipped child
@@ -2035,7 +2035,7 @@ verifiedpermissions GetPolicyStore awsJson1_0 skipped child
 verifiedpermissions GetPolicyStoreAlias awsJson1_0 skipped child
 verifiedpermissions ListIdentitySources awsJson1_0 skipped child
 verifiedpermissions ListPolicies awsJson1_0 skipped child
-verifiedpermissions ListPolicyStoreAliases awsJson1_0 empty
+verifiedpermissions ListPolicyStoreAliases awsJson1_0 items 1
 verifiedpermissions ListPolicyStores awsJson1_0 items 1
 verifiedpermissions ListPolicyTemplates awsJson1_0 skipped child
 verifiedpermissions ListTagsForResource awsJson1_0 skipped child
@@ -2113,16 +2113,16 @@ waf-regional ListByteMatchSets awsJson1_1 unsupported API executor error: provid
 waf-regional ListGeoMatchSets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 waf-regional ListIPSets awsJson1_1 items 1
 waf-regional ListLoggingConfigurations awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-waf-regional ListRateBasedRules awsJson1_1 empty
+waf-regional ListRateBasedRules awsJson1_1 items 1
 waf-regional ListRegexMatchSets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 waf-regional ListRegexPatternSets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 waf-regional ListResourcesForWebACL awsJson1_1 skipped child
 waf-regional ListRuleGroups awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-waf-regional ListRules awsJson1_1 empty
+waf-regional ListRules awsJson1_1 items 1
 waf-regional ListSizeConstraintSets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 waf-regional ListSqlInjectionMatchSets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 waf-regional ListWebACLs awsJson1_1 empty
-waf-regional ListXssMatchSets awsJson1_1 empty
+waf-regional ListXssMatchSets awsJson1_1 items 1
 wafv2 GetIPSet awsJson1_1 skipped child
 wafv2 GetLoggingConfiguration awsJson1_1 skipped child
 wafv2 GetManagedRuleSet awsJson1_1 skipped child
@@ -2138,9 +2138,9 @@ wafv2 ListTagsForResource awsJson1_1 skipped child
 wafv2 ListWebACLs awsJson1_1 empty
 wellarchitected ListAgentGoals restJson1 skipped child
 wellarchitected ListAgentProfiles restJson1 empty
-wellarchitected ListLenses restJson1 empty
-wellarchitected ListProfiles restJson1 empty
-wellarchitected ListReviewTemplates restJson1 empty
+wellarchitected ListLenses restJson1 items 1
+wellarchitected ListProfiles restJson1 items 1
+wellarchitected ListReviewTemplates restJson1 items 1
 wellarchitected ListTagsForResource restJson1 skipped child
 wellarchitected ListWorkloads restJson1 items 1
 wickr GetNetwork restJson1 skipped child
@@ -2153,7 +2153,7 @@ wisdom ListAssistantAssociations restJson1 skipped child
 wisdom ListAssistants restJson1 items 2
 wisdom ListContents restJson1 skipped child
 wisdom ListImportJobs restJson1 skipped child
-wisdom ListKnowledgeBases restJson1 empty
+wisdom ListKnowledgeBases restJson1 items 3
 wisdom ListQuickResponses restJson1 skipped child
 wisdom ListTagsForResource restJson1 skipped child
 workmail DescribeOrganization awsJson1_1 skipped child
@@ -2223,15 +2223,15 @@ xray GetIndexingRules restJson1 items 1
 xray GetSamplingRules restJson1 items 1
 xray ListResourcePolicies restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 xray ListTagsForResource restJson1 skipped child
-total items 335
-total empty 573
-total unsupported 521
-total failed 122
+total items 639
+total empty 275
+total unsupported 529
+total failed 108
 total skipped-child 674
-protocol awsJson1_0 items 22 empty 28 unsupported 45 failed 3 skipped-child 60
-protocol awsJson1_1 items 65 empty 128 unsupported 175 failed 1 skipped-child 166
-protocol awsQuery items 38 empty 58 unsupported 8 failed 2 skipped-child 22
-protocol ec2Query items 22 empty 100 unsupported 22 failed 1 skipped-child 20
-protocol restJson1 items 158 empty 217 unsupported 227 failed 30 skipped-child 336
-protocol restXml items 11 empty 17 unsupported 8 failed 3 skipped-child 18
-protocol rpcv2Cbor items 19 empty 25 unsupported 36 failed 82 skipped-child 52
+protocol awsJson1_0 items 39 empty 11 unsupported 45 failed 3 skipped-child 60
+protocol awsJson1_1 items 151 empty 42 unsupported 175 failed 1 skipped-child 166
+protocol awsQuery items 67 empty 29 unsupported 8 failed 2 skipped-child 22
+protocol ec2Query items 25 empty 97 unsupported 22 failed 1 skipped-child 20
+protocol restJson1 items 297 empty 81 unsupported 235 failed 19 skipped-child 336
+protocol restXml items 22 empty 9 unsupported 8 failed 0 skipped-child 18
+protocol rpcv2Cbor items 38 empty 6 unsupported 36 failed 82 skipped-child 52

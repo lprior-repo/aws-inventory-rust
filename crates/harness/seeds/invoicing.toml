@@ -16,3 +16,21 @@ SupplierIdentifier = "AN01000000001"
 EinvoiceDeliveryEnabled = false
 PurchaseOrderRetrievalEnabled = false
 Contacts = [{ Name = "Inventory", Email = "inventory@example.com" }]
+
+[[step]]
+id = "caller"
+service = "sts"
+operation = "GetCallerIdentity"
+kind = ""
+scope = "account"
+
+[[step]]
+id = "invoice_unit"
+operation = "CreateInvoiceUnit"
+kind = "AWS::Invoicing::InvoiceUnit"
+identity = "InvoiceUnitArn"
+scope = "account"
+[step.input]
+Name = "inventory-seed-invoice"
+InvoiceReceiver = { from = "caller", path = "Account" }
+Rule = { LinkedAccounts = [{ from = "caller", path = "Account" }] }

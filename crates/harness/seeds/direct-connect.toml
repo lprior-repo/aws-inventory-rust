@@ -1,0 +1,36 @@
+format = 1
+service = "direct-connect"
+
+[[step]]
+id = "direct_connect_gateway"
+operation = "CreateDirectConnectGateway"
+kind = "AWS::DirectConnect::DirectConnectGateway"
+identity = "directConnectGateway.directConnectGatewayId"
+scope = "account"
+[step.input]
+directConnectGatewayName = "inventory-seed-gateway"
+amazonSideAsn = 64512
+
+[[step]]
+id = "locations"
+operation = "DescribeLocations"
+kind = ""
+[step.input]
+
+[[step]]
+id = "connection"
+operation = "CreateConnection"
+kind = "AWS::DirectConnect::Connection"
+identity = "connectionId"
+[step.input]
+location = { from = "locations", path = "locations.0.locationCode" }
+bandwidth = { from = "locations", path = "locations.0.availablePortSpeeds.0" }
+connectionName = "inventory-seed-connection"
+
+[[step]]
+id = "gateway_attachment"
+operation = "CreatePrivateVirtualInterface"
+kind = ""
+[step.input]
+connectionId = { from = "connection", path = "connectionId" }
+newPrivateVirtualInterface = { virtualInterfaceName = "inventory-seed-interface", vlan = 101, asn = 65001, addressFamily = "ipv4", directConnectGatewayId = { from = "direct_connect_gateway", path = "directConnectGateway.directConnectGatewayId" } }

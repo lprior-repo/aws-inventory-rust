@@ -11,3 +11,31 @@ identity = "botId"
 "roleArn" = "arn:aws:iam::000000000000:role/inventory-thin"
 "dataPrivacy" = { "childDirected" = false }
 "idleSessionTTLInSeconds" = 60
+
+[[step]]
+id = "locale"
+operation = "CreateBotLocale"
+kind = ""
+[step.input]
+botId = { from = "resource", path = "botId" }
+botVersion = "DRAFT"
+localeId = "en_US"
+nluIntentConfidenceThreshold = 0.4
+
+[[step]]
+id = "locale_build"
+operation = "BuildBotLocale"
+kind = ""
+[step.input]
+botId = { from = "resource", path = "botId" }
+botVersion = "DRAFT"
+localeId = "en_US"
+
+[[step]]
+id = "bot_version"
+operation = "CreateBotVersion"
+kind = "AWS::Lex::BotVersion"
+identity = "botVersion"
+[step.input]
+botId = { from = "resource", path = "botId" }
+botVersionLocaleSpecification = { en_US = { sourceBotVersion = "DRAFT" } }

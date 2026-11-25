@@ -9,3 +9,23 @@ identity = "Arn"
 [step.input]
 "Name" = "inventory-thin-migration-hub-refactor-spaces"
 "NetworkFabricType" = "TRANSIT_GATEWAY"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.62.0.0/16"
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::RefactorSpaces::Application"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-application"
+EnvironmentIdentifier = { from = "resource", path = "EnvironmentId" }
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+ProxyType = "API_GATEWAY"

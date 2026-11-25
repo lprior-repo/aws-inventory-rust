@@ -1,0 +1,12 @@
+format = 1
+service = "budgets"
+
+[[step]]
+id = "budget"
+operation = "CreateBudget"
+kind = "AWS::Budgets::Budget"
+identity = { input = "Budget.BudgetName" }
+scope = "account"
+[step.input]
+AccountId = "000000000000"
+Budget = { BudgetName = "inventory-seed-budget", BudgetLimit = { Amount = "100", Unit = "USD" }, TimeUnit = "MONTHLY", BudgetType = "COST" }

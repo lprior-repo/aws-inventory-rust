@@ -9,3 +9,23 @@ identity = "arn"
 [step.input]
 inlineRecipe = "eyJSZWNpcGVGb3JtYXRWZXJzaW9uIjoiMjAyMC0wMS0yNSIsIkNvbXBvbmVudE5hbWUiOiJjb20uaW52ZW50b3J5LnNlZWQiLCJDb21wb25lbnRWZXJzaW9uIjoiMS4wLjAiLCJDb21wb25lbnREZXNjcmlwdGlvbiI6IkludmVudG9yeSBzZWVkIiwiQ29tcG9uZW50UHVibGlzaGVyIjoiSW52ZW50b3J5IiwiTWFuaWZlc3RzIjpbeyJQbGF0Zm9ybSI6eyJvcyI6ImxpbnV4In0sIkxpZmVjeWNsZSI6eyJSdW4iOiJlY2hvIGludmVudG9yeSJ9fV19"
 clientToken = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "deployment_target"
+service = "iot"
+operation = "CreateThing"
+kind = "AWS::IoT::Thing"
+identity = "thingArn"
+[step.input]
+thingName = "inventory-seed-greengrass"
+
+[[step]]
+id = "deployment"
+operation = "CreateDeployment"
+kind = "AWS::GreengrassV2::Deployment"
+identity = "deploymentId"
+[step.input]
+targetArn = { from = "deployment_target", path = "thingArn" }
+deploymentName = "inventory-seed-deployment"
+components = { "com.inventory.seed" = { componentVersion = "1.0.0" } }
+clientToken = "inventory-seed-greengrass-deployment"

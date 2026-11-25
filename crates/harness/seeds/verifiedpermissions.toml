@@ -8,3 +8,38 @@ kind = "AWS::VerifiedPermissions::PolicyStore"
 identity = "arn"
 [step.input]
 "validationSettings" = { "mode" = "OFF" }
+
+[[step]]
+id = "policy_store_alias"
+operation = "CreatePolicyStoreAlias"
+kind = "AWS::VerifiedPermissions::PolicyStoreAlias"
+identity = "aliasArn"
+[step.input]
+policyStoreId = { from = "resource", path = "policyStoreId" }
+aliasName = "policy-store-alias/inventory-seed-policy-store"
+
+# The inventory keys combine the policy store and generated child IDs.
+[[step]]
+id = "policy"
+operation = "CreatePolicy"
+kind = ""
+[step.input]
+policyStoreId = { from = "resource", path = "policyStoreId" }
+definition = { static = { statement = 'permit(principal == Inventory::User::"fixture", action == Inventory::Action::"read", resource == Inventory::Document::"demo");' } }
+
+[[step]]
+id = "policy_template"
+operation = "CreatePolicyTemplate"
+kind = ""
+[step.input]
+policyStoreId = { from = "resource", path = "policyStoreId" }
+statement = 'permit(principal == ?principal, action == Inventory::Action::"read", resource == ?resource);'
+
+[[step]]
+id = "identity_source"
+operation = "CreateIdentitySource"
+kind = ""
+[step.input]
+policyStoreId = { from = "resource", path = "policyStoreId" }
+principalEntityType = "Inventory::User"
+configuration = { openIdConnectConfiguration = { issuer = "https://inventory.example.invalid", tokenSelection = { identityTokenOnly = { principalIdClaim = "sub", clientIds = ["inventory-fixture"] } } } }

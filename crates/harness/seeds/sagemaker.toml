@@ -17,3 +17,207 @@ scope = "region"
 
 [step.input]
 "ModelPackageName" = "inventory-thin-package"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-sagemaker"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"sagemaker.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-sagemaker"
+
+[[step]]
+id = "training_data"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-sagemaker"
+Key = "input/training.csv"
+Body = "MCwxLDIKMSwyLDMK"
+ContentType = "text/csv"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.86.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.86.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "domain"
+operation = "CreateDomain"
+kind = "AWS::SageMaker::Domain"
+identity = "DomainArn"
+[step.input]
+DomainName = "inventory-seed-studio"
+AuthMode = "IAM"
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+DefaultUserSettings = { ExecutionRole = { from = "role", path = "Role.Arn" } }
+
+[[step]]
+id = "model"
+operation = "CreateModel"
+kind = "AWS::SageMaker::Model"
+identity = "ModelArn"
+[step.input]
+ModelName = "inventory-seed-model"
+ExecutionRoleArn = { from = "role", path = "Role.Arn" }
+PrimaryContainer = { Image = "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.7-1" }
+
+[[step]]
+id = "endpoint_config"
+operation = "CreateEndpointConfig"
+kind = ""
+[step.input]
+EndpointConfigName = "inventory-seed-endpoint-config"
+ProductionVariants = [{ VariantName = "AllTraffic", ModelName = "inventory-seed-model", InitialInstanceCount = 1, InstanceType = "ml.m5.large", InitialVariantWeight = 1.0 }]
+
+[[step]]
+id = "endpoint"
+operation = "CreateEndpoint"
+kind = "AWS::SageMaker::Endpoint"
+identity = "EndpointArn"
+[step.input]
+EndpointName = "inventory-seed-endpoint"
+EndpointConfigName = "inventory-seed-endpoint-config"
+
+[[step]]
+id = "image"
+operation = "CreateImage"
+kind = "AWS::SageMaker::Image"
+identity = "ImageArn"
+[step.input]
+ImageName = "inventory-seed-image"
+RoleArn = { from = "role", path = "Role.Arn" }
+
+[[step]]
+id = "image_version"
+operation = "CreateImageVersion"
+kind = "AWS::SageMaker::ImageVersion"
+identity = "ImageVersionArn"
+[step.input]
+ImageName = "inventory-seed-image"
+BaseImage = "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.7-1"
+ClientToken = "inventory-seed-image-version"
+Aliases = ["inventory-seed"]
+
+[[step]]
+id = "pipeline"
+operation = "CreatePipeline"
+kind = "AWS::SageMaker::Pipeline"
+identity = "PipelineArn"
+[step.input]
+PipelineName = "inventory-seed-pipeline"
+ClientRequestToken = "72cbf5df-3cb2-44eb-84e0-fef03f805c70"
+RoleArn = { from = "role", path = "Role.Arn" }
+PipelineDefinition = '{"Version":"2020-12-01","Parameters":[],"Steps":[{"Name":"CheckInventoryInput","Type":"Fail","Arguments":{"ErrorMessage":"Inventory-only pipeline; do not execute"}}]}'
+
+[[step]]
+id = "transform_job"
+operation = "CreateTransformJob"
+kind = "AWS::ApiOnly::SageMakerTransformJob"
+identity = "TransformJobArn"
+[step.input]
+TransformJobName = "inventory-seed-transform"
+ModelName = "inventory-seed-model"
+TransformInput = { DataSource = { S3DataSource = { S3DataType = "S3Prefix", S3Uri = "s3://inventory-seed-sagemaker/input/" } }, ContentType = "text/csv" }
+TransformOutput = { S3OutputPath = "s3://inventory-seed-sagemaker/transform-output/" }
+TransformResources = { InstanceType = "ml.m5.large", InstanceCount = 1 }
+
+[[step]]
+id = "artifact"
+operation = "CreateArtifact"
+kind = "AWS::ApiOnly::SageMakerLineageArtifact"
+identity = "ArtifactArn"
+[step.input]
+ArtifactName = "inventory-seed-artifact"
+ArtifactType = "Dataset"
+Source = { SourceUri = "s3://inventory-seed-sagemaker/input/training.csv" }
+
+[[step]]
+id = "trial_component"
+operation = "CreateTrialComponent"
+kind = "AWS::ApiOnly::SageMakerTrialComponent"
+identity = "TrialComponentArn"
+[step.input]
+TrialComponentName = "inventory-seed-component"
+
+[[step]]
+id = "lineage_association"
+operation = "AddAssociation"
+kind = ""
+[step.input]
+SourceArn = { from = "artifact", path = "ArtifactArn" }
+DestinationArn = { from = "trial_component", path = "TrialComponentArn" }
+AssociationType = "ContributedTo"
+
+[[step]]
+id = "scheduler_config"
+operation = "CreateClusterSchedulerConfig"
+kind = "AWS::SageMaker::ClusterSchedulerConfig"
+identity = "ClusterSchedulerConfigArn"
+[step.input]
+Name = "inventory-seed-scheduler"
+ClusterArn = { from = "resource", path = "ClusterArn" }
+SchedulerConfig = { PriorityClasses = [{ Name = "normal", Weight = 10 }], FairShare = "Enabled", IdleResourceSharing = "Disabled" }
+
+[[step]]
+id = "compute_quota"
+operation = "CreateComputeQuota"
+kind = "AWS::SageMaker::ComputeQuota"
+identity = "ComputeQuotaArn"
+[step.input]
+Name = "inventory-seed-quota"
+ClusterArn = { from = "resource", path = "ClusterArn" }
+ComputeQuotaConfig = { ComputeQuotaResources = [{ InstanceType = "ml.c5.large", Count = 1 }] }
+ComputeQuotaTarget = { TeamName = "inventory", FairShareWeight = 10 }
+
+[[step]]
+id = "model_package_group"
+operation = "CreateModelPackageGroup"
+kind = "AWS::SageMaker::ModelPackageGroup"
+identity = "ModelPackageGroupArn"
+[step.input]
+ModelPackageGroupName = "inventory-seed-package-group"
+
+[[step]]
+id = "recommendation_job"
+operation = "CreateInferenceRecommendationsJob"
+kind = "AWS::ApiOnly::SageMakerInferenceRecommendationJob"
+identity = "JobArn"
+[step.input]
+JobName = "inventory-seed-inference"
+JobType = "Default"
+RoleArn = { from = "role", path = "Role.Arn" }
+InputConfig = { ModelName = "inventory-seed-model" }
+
+[[step]]
+id = "repository"
+operation = "CreateCodeRepository"
+kind = "AWS::SageMaker::CodeRepository"
+identity = "CodeRepositoryArn"
+[step.input]
+CodeRepositoryName = "inventory-seed-repository"
+GitConfig = { RepositoryUrl = "https://example.com/inventory.git", Branch = "main" }

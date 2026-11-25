@@ -10,3 +10,23 @@ identity = "Gateway.GatewayArn"
 "EgressCidrBlocks" = ["10.88.0.0/16"]
 "Name" = "inventory-thin-mediaconnect"
 "Networks" = [{ "CidrBlock" = "10.88.0.0/16", "Name" = "inventory-thin-mediaconnect" }]
+
+[[step]]
+id = "flow"
+operation = "CreateFlow"
+kind = "AWS::MediaConnect::Flow"
+identity = "Flow.FlowArn"
+[step.input]
+Name = "inventory-thin-flow"
+Source = { Name = "inventory-source", Protocol = "srt-listener", IngestPort = 5000, WhitelistCidr = "192.0.2.0/24" }
+
+[[step]]
+id = "bridge"
+operation = "CreateBridge"
+kind = "AWS::ApiOnly::MediaConnectBridge"
+identity = "Bridge.BridgeArn"
+[step.input]
+Name = "inventory-thin-bridge"
+PlacementArn = { from = "resource", path = "Gateway.GatewayArn" }
+IngressGatewayBridge = { MaxBitrate = 20000000, MaxOutputs = 2 }
+Sources = [{ NetworkSource = { MulticastIp = "239.0.0.1", Name = "inventory-source", NetworkName = "inventory-thin-mediaconnect", Port = 5000, Protocol = "udp" } }]

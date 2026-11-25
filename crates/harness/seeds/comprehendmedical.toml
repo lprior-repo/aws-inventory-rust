@@ -54,3 +54,16 @@ DataAccessRoleArn = { from = "role", path = "Role.Arn" }
 LanguageCode = "en"
 JobName = "inventory-thin-comprehendmedical"
 ClientRequestToken = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "phi_detection_job"
+operation = "StartPHIDetectionJob"
+kind = "AWS::ApiOnly::ComprehendMedicalPHIDetectionJob"
+identity = "JobId"
+[step.input]
+InputDataConfig = { S3Bucket = "inventory-thin-comprehendmedical-input" }
+OutputDataConfig = { S3Bucket = "inventory-thin-comprehendmedical-output" }
+DataAccessRoleArn = { from = "role", path = "Role.Arn" }
+LanguageCode = "en"
+JobName = "inventory-seed-phi"
+ClientRequestToken = "12345678-1234-4234-8234-123456789abd"

@@ -1,0 +1,63 @@
+format = 1
+service = "lambda-core"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.58.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.58.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-thin-lambda-network"
+Description = "Seed Lambda Core network connector security group"
+
+[[step]]
+id = "operator_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-lambda-network"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "vpc_access"
+service = "iam"
+operation = "AttachRolePolicy"
+kind = ""
+[step.input]
+RoleName = { from = "operator_role", path = "Role.RoleName" }
+PolicyArn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+
+[[step]]
+id = "network_connector"
+operation = "CreateNetworkConnector"
+kind = "AWS::Lambda::NetworkConnector"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-network"
+Configuration = { VpcEgressConfiguration = { SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }], SecurityGroupIds = [{ from = "security_group", path = "GroupId" }], NetworkProtocol = "IPv4" } }
+OperatorRole = { from = "operator_role", path = "Role.Arn" }

@@ -9,3 +9,86 @@ identity = "ApiId"
 [step.input]
 Name = "inventory-thin-apigatewayv2"
 ProtocolType = "HTTP"
+
+[[step]]
+id = "domain_certificate"
+service = "acm"
+operation = "RequestCertificate"
+kind = ""
+[step.input]
+DomainName = "inventory-http.example.com"
+ValidationMethod = "DNS"
+
+[[step]]
+id = "domain"
+operation = "CreateDomainName"
+kind = "AWS::ApiGatewayV2::DomainName"
+identity = "DomainNameArn"
+[step.input]
+DomainName = "inventory-http.example.com"
+DomainNameConfigurations = [{ CertificateArn = { from = "domain_certificate", path = "CertificateArn" }, EndpointType = "REGIONAL", SecurityPolicy = "TLS_1_2" }]
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.94.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.94.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "vpc_link"
+operation = "CreateVpcLink"
+kind = "AWS::ApiGatewayV2::VpcLink"
+identity = "VpcLinkId"
+[step.input]
+Name = "inventory-seed-http"
+SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+
+[[step]]
+id = "portal_product"
+operation = "CreatePortalProduct"
+kind = "AWS::ApiOnly::ApiGatewayV2PortalProduct"
+identity = "PortalProductArn"
+[step.input]
+DisplayName = "Inventory seed product"
+
+[[step]]
+id = "portal"
+operation = "CreatePortal"
+kind = "AWS::ApiOnly::ApiGatewayV2Portal"
+identity = "PortalArn"
+[step.input]
+Authorization = { None = {} }
+EndpointConfiguration = { None = {} }
+PortalContent = { DisplayName = "Inventory seed portal", Theme = { CustomColors = { AccentColor = "#2463A6", BackgroundColor = "#FFFFFF", ErrorValidationColor = "#B00020", HeaderColor = "#142539", NavigationColor = "#314860", TextColor = "#142539" } } }
+
+# Both child identities are correlated with the generated HTTP API ID.
+[[step]]
+id = "route"
+operation = "CreateRoute"
+kind = ""
+[step.input]
+ApiId = { from = "api", path = "ApiId" }
+RouteKey = "GET /inventory"
+
+[[step]]
+id = "authorizer"
+operation = "CreateAuthorizer"
+kind = ""
+[step.input]
+ApiId = { from = "api", path = "ApiId" }
+Name = "inventory-seed-authorizer"
+AuthorizerType = "JWT"
+IdentitySource = ['$request.header.Authorization']
+JwtConfiguration = { Audience = ["inventory-seed"], Issuer = "https://issuer.example.invalid" }

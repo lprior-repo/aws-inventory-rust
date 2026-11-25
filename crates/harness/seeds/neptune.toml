@@ -19,3 +19,31 @@ scope = "region"
 [step.input]
 DBClusterIdentifier = "inv-createdbcluster-{n}"
 Engine = "neptune"
+
+[[step]]
+id = "cluster_parameter_group"
+operation = "CreateDBClusterParameterGroup"
+kind = "AWS::Neptune::DBClusterParameterGroup"
+identity = "DBClusterParameterGroup.DBClusterParameterGroupArn"
+[step.input]
+DBClusterParameterGroupName = "inventory-thin-neptune"
+DBParameterGroupFamily = "neptune1.3"
+Description = "Inventory seed cluster parameter group"
+
+[[step]]
+id = "event_topic"
+service = "sns"
+operation = "CreateTopic"
+kind = ""
+[step.input]
+Name = "inventory-thin-neptune-events"
+
+[[step]]
+id = "event_subscription"
+operation = "CreateEventSubscription"
+kind = "AWS::Neptune::EventSubscription"
+identity = "EventSubscription.EventSubscriptionArn"
+[step.input]
+SubscriptionName = "inventory-thin-neptune"
+SnsTopicArn = { from = "event_topic", path = "TopicArn" }
+
