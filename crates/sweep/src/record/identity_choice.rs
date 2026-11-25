@@ -2,19 +2,22 @@ mod fields;
 #[path = "typed_operand.rs"]
 mod typed_operand;
 use super::identity_validation::{IdentityTextOperandValidation, IdentityTextValidation};
-use super::trusted_arn::{validate_arn, validate_resource_arn};
+use super::trusted_arn::{validate_arn, validate_owned_arn, validate_resource_arn};
 use super::{
     IdentityContext, SweepError, key_text, path_value, required_text, template_text, value_text,
 };
 use inventory_core::{
     catalog::runtime::{
-        IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPart, IdentityPlan,
-        IdentityPredicatePlan,
+        ArnResourceKind, IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPart,
+        IdentityPlan, IdentityPredicatePlan,
     },
     inventory::{DiscoveryContext, ResourceId},
     record::{FieldId, Record, ValueRef},
 };
 use std::{borrow::Cow, fmt::Write};
+
+/// `GetSubscriptionAttributes` reports the subscription owner under this key.
+const SUBSCRIPTION_OWNER_KEY: &str = "Owner";
 
 pub(crate) fn is_identity_member(
     row: &Record,
@@ -50,7 +53,7 @@ pub(crate) fn is_identity_member(
 
 fn leaf_member(leaf: &IdentityLeafPlan) -> Option<&[FieldId]> {
     match leaf {
-        IdentityLeafPlan::Arn(path) => Some(path),
+        IdentityLeafPlan::Arn(path) | IdentityLeafPlan::OwnedArn { path, .. } => Some(path),
         IdentityLeafPlan::Template(parts) => template_member(parts),
         IdentityLeafPlan::Key(paths) => key_member(paths),
         IdentityLeafPlan::Fields(fields) => selected_member(fields),
@@ -165,6 +168,15 @@ fn leaf<'a>(
         IdentityLeafPlan::Arn(path) => {
             let text = required_text(row, path)?;
             validate_arn(&text, trusted)?;
+            Ok(text)
+        }
+        IdentityLeafPlan::OwnedArn {
+            path,
+            owner,
+            resource_kind,
+        } => {
+            let text = required_text(row, path)?;
+            validate_owned_arn(&text, resource_kind, &required_text(row, owner)?, trusted)?;
             Ok(text)
         }
         IdentityLeafPlan::Template(parts) => Ok(Cow::Owned(template_text(row, parts, trusted)?)),
@@ -291,6 +303,14 @@ fn map_identity<'a>(
         ));
     };
     let text = map_text(row, path, key)?;
+    if matches!(resource_kind, ArnResourceKind::SnsSubscription) {
+        let owner = map_text(row, path, SUBSCRIPTION_OWNER_KEY)?;
+        let trusted = trusted.ok_or(SweepError::Operation(
+            "map ARN identity requires trusted request scope",
+        ))?;
+        validate_owned_arn(&text, resource_kind, &owner, Some(trusted))?;
+        return Ok(text);
+    }
     let request_url = request_url_text(request, request_url.as_deref())?;
     validate_map(&text, resource_kind, trusted, request_url.as_deref())?;
     Ok(text)

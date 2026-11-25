@@ -257,6 +257,7 @@ fn template_paths(parts: &[IdentityPart]) -> Vec<&[FieldId]> {
 fn leaf_paths(identity: &IdentityLeafPlan) -> Vec<&[FieldId]> {
     match identity {
         IdentityLeafPlan::Arn(path) => vec![path],
+        IdentityLeafPlan::OwnedArn { path, owner, .. } => vec![path, owner],
         IdentityLeafPlan::Key(paths) => paths.iter().map(AsRef::as_ref).collect(),
         IdentityLeafPlan::Template(parts) => template_paths(parts),
         IdentityLeafPlan::Fields(fields) => field_paths(fields),

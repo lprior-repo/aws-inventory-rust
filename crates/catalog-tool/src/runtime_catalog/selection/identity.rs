@@ -68,6 +68,10 @@ fn leaf(
 ) -> Result<(), RuntimeCatalogCompileError> {
     match identity {
         IdentityLeaf::Arn(path) => text(service, target(service, item, path.as_str())?),
+        IdentityLeaf::OwnedArn { path, owner, .. } => {
+            text(service, target(service, item, path.as_str())?)?;
+            text(service, target(service, item, owner.as_str())?)
+        }
         IdentityLeaf::Template(template) => super::super::plans::identity::fields(template)
             .try_for_each(|path| scalar(service, target(service, item, path)?)),
         IdentityLeaf::Key(paths) => paths

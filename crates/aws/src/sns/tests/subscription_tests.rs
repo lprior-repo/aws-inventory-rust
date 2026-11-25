@@ -92,7 +92,7 @@ fn edge_requires_an_identifiable_in_scope_topic() -> TestResult {
     for (topic, expected_edge) in [
         (Some(TOPIC_ARN), true),
         (Some("arn:aws:sns:us-west-2:111111111111:orders"), false),
-        (Some("arn:aws:sns:us-east-1:222222222222:orders"), false),
+        (Some("arn:aws:sns:us-east-1:222222222222:orders"), true),
         (Some("arn:aws-cn:sns:us-east-1:111111111111:orders"), false),
         (
             Some("arn:aws:sns:us-east-1:111111111111:orders:extra"),
@@ -192,6 +192,12 @@ fn malformed_subscription_arns_and_endpoints_are_explicit_errors() -> TestResult
         .topic_arn(TOPIC_ARN)
         .build();
     assert!(map_subscription(&ctx, &missing).is_err());
+    let no_owner = Subscription::builder()
+        .subscription_arn(SUBSCRIPTION_ARN)
+        .protocol("sqs")
+        .topic_arn(TOPIC_ARN)
+        .build();
+    assert!(map_subscription(&ctx, &no_owner).is_err());
     let pending_without_topic = subscription(
         "PendingConfirmation",
         "email",
@@ -206,5 +212,62 @@ fn malformed_subscription_arns_and_endpoints_are_explicit_errors() -> TestResult
         Some("arn:aws:sns:us-west-2:111111111111:orders"),
     );
     assert!(map_subscription(&ctx, &foreign_pending)?.is_none());
+    Ok(())
+}
+
+const CROSS_ACCOUNT_ARN: &str =
+    "arn:aws:sns:us-east-1:222222222222:orders:2bcfbf39-05c3-41de-beaa-fcfcc21c8f55";
+const CROSS_ACCOUNT_TOPIC: &str = "arn:aws:sns:us-east-1:222222222222:orders";
+
+fn owned_by(owner: &str, arn: &str, topic: &str) -> Subscription {
+    Subscription::builder()
+        .subscription_arn(arn)
+        .owner(owner)
+        .protocol("sqs")
+        .endpoint(SQS_ENDPOINT)
+        .topic_arn(topic)
+        .build()
+}
+
+#[test]
+fn subscription_to_another_accounts_topic_is_owned_by_the_scanned_account() -> TestResult {
+    let (ctx, _receiver) = context("us-east-1")?;
+    let item = owned_by("111111111111", CROSS_ACCOUNT_ARN, CROSS_ACCOUNT_TOPIC);
+    let observation = map_subscription(&ctx, &item)?.ok_or("cross-account subscription omitted")?;
+    assert_eq!(observation.resource.id, CROSS_ACCOUNT_ARN);
+    assert_eq!(observation.resource.account_id, "111111111111");
+    let edge = observation.edge.ok_or("missing cross-account topic edge")?;
+    assert_eq!(edge.from_id, CROSS_ACCOUNT_ARN);
+    assert_eq!(edge.to_id, CROSS_ACCOUNT_TOPIC);
+    Ok(())
+}
+
+#[test]
+fn pending_subscription_to_another_accounts_topic_is_owned_by_the_scanned_account() -> TestResult {
+    let (ctx, _receiver) = context("us-east-1")?;
+    let item = owned_by("111111111111", "PendingConfirmation", CROSS_ACCOUNT_TOPIC);
+    let observation = map_subscription(&ctx, &item)?.ok_or("cross-account pending omitted")?;
+    assert!(observation.resource.id.starts_with(CROSS_ACCOUNT_TOPIC));
+    assert!(observation.edge.is_some());
+    Ok(())
+}
+
+#[test]
+fn subscription_owned_by_another_account_or_region_is_not_mapped() -> TestResult {
+    let (ctx, _receiver) = context("us-east-1")?;
+    let foreign_owner = owned_by("222222222222", SUBSCRIPTION_ARN, TOPIC_ARN);
+    assert!(map_subscription(&ctx, &foreign_owner)?.is_none());
+    let foreign_region = owned_by(
+        "111111111111",
+        "arn:aws:sns:us-west-2:222222222222:orders:2bcfbf39-05c3-41de-beaa-fcfcc21c8f55",
+        "arn:aws:sns:us-west-2:222222222222:orders",
+    );
+    assert!(map_subscription(&ctx, &foreign_region)?.is_none());
+    let foreign_partition = owned_by(
+        "111111111111",
+        "arn:aws-cn:sns:us-east-1:222222222222:orders:2bcfbf39-05c3-41de-beaa-fcfcc21c8f55",
+        "arn:aws-cn:sns:us-east-1:222222222222:orders",
+    );
+    assert!(map_subscription(&ctx, &foreign_partition)?.is_none());
     Ok(())
 }

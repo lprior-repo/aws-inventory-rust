@@ -84,9 +84,30 @@ fn validate_scope(
     trusted: &IdentityContext<'_>,
     exact: bool,
 ) -> Result<(), SweepError> {
+    let account_matches =
+        !((exact || !arn.account.is_empty()) && arn.account != trusted.account.as_str());
+    validate_scope_with(arn, trusted, exact, account_matches)
+}
+
+/// Scope for resources whose ARN account segment names a different account
+/// than the owner (an SNS subscription carries its topic's account). Partition
+/// and region stay bound to the trusted request; the account must be present.
+fn validate_delegated_scope(
+    arn: &Arn<'_>,
+    trusted: &IdentityContext<'_>,
+) -> Result<(), SweepError> {
+    validate_scope_with(arn, trusted, true, !arn.account.is_empty())
+}
+
+fn validate_scope_with(
+    arn: &Arn<'_>,
+    trusted: &IdentityContext<'_>,
+    exact: bool,
+    account_matches: bool,
+) -> Result<(), SweepError> {
     let scope_partition = partition(trusted.region.as_str()).map(|(name, _, _)| name);
     if scope_partition != Some(arn.partition)
-        || ((exact || !arn.account.is_empty()) && arn.account != trusted.account.as_str())
+        || !account_matches
         || ((exact || (!arn.region.is_empty() && !global_domain(arn)))
             && arn.region != trusted.region.as_str())
     {
@@ -118,7 +139,12 @@ pub(crate) fn validate_resource_arn(
         return Err(invalid());
     }
     let arn = parse(value)?;
-    validate_scope(&arn, trusted, true)?;
+    match kind {
+        ArnResourceKind::SnsSubscription => validate_delegated_scope(&arn, trusted)?,
+        ArnResourceKind::SnsTopic | ArnResourceKind::SqsQueue => {
+            validate_scope(&arn, trusted, true)?;
+        }
+    }
     if arn.service != resource_service(kind) {
         return Err(invalid());
     }
@@ -127,6 +153,27 @@ pub(crate) fn validate_resource_arn(
         ArnResourceKind::SnsTopic => validate_name(arn.resource, 256),
         ArnResourceKind::SqsQueue => validate_queue(arn.resource, trusted, request_url),
     }
+}
+
+/// Validates an ARN whose resource is owned by the account named in `owner`
+/// rather than the ARN's account segment. The owner is checked against the
+/// trusted request account; partition, region, service and resource syntax
+/// are still validated against the request and the resource kind.
+pub(crate) fn validate_owned_arn(
+    value: &str,
+    kind: &ArnResourceKind,
+    owner: &str,
+    trusted: Option<&IdentityContext<'_>>,
+) -> Result<(), SweepError> {
+    let Some(trusted) = trusted else {
+        return validate_arn(value, None);
+    };
+    if owner != trusted.account.as_str() {
+        return Err(SweepError::Operation(
+            "modeled resource owner does not match trusted request scope",
+        ));
+    }
+    validate_resource_arn(value, kind, trusted, None)
 }
 
 fn validate_name(value: &str, max: usize) -> Result<(), SweepError> {

@@ -79,6 +79,13 @@ pub(super) fn is_in_scope(parts: &ArnRef<'_>, ctx: &Context) -> bool {
     parts.partition == ctx.partition && parts.region == ctx.region && parts.account == ctx.account
 }
 
+/// Partition and region match the scan; the ARN's account segment is not
+/// compared. An SNS subscription ARN carries its *topic's* account, so a
+/// subscription owned by the scanned account may name another account.
+pub(super) fn is_in_request_region(parts: &ArnRef<'_>, ctx: &Context) -> bool {
+    parts.partition == ctx.partition && parts.region == ctx.region
+}
+
 pub(super) fn endpoint(value: Option<&str>) -> Result<Option<&str>, String> {
     match value {
         Some(value) if value.len() > MAX_ENDPOINT_BYTES || value.contains('\0') => {

@@ -61,6 +61,14 @@ pub enum IdentityField {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IdentityLeaf {
     Arn(MemberPath),
+    /// An ARN whose account segment need not be the scanning account. The
+    /// scanning account owns the resource only when the owner member of the
+    /// same row names it.
+    OwnedArn {
+        path: MemberPath,
+        owner: MemberPath,
+        resource_kind: ArnResourceKind,
+    },
     Template(String),
     Key(Vec<MemberPath>),
     Fields(Vec<IdentityField>),
@@ -131,6 +139,11 @@ impl IdentityChoice {
 pub(super) fn validate_leaf(leaf: &IdentityLeaf) -> Result<(), NameError> {
     match leaf {
         IdentityLeaf::Arn(_) => Ok(()),
+        IdentityLeaf::OwnedArn { resource_kind, .. }
+            if !matches!(resource_kind, ArnResourceKind::SqsQueue) =>
+        {
+            Ok(())
+        }
         IdentityLeaf::Template(template) => valid_text(template, 4096),
         IdentityLeaf::Key(fields) if !fields.is_empty() && fields.len() <= 8 => Ok(()),
         IdentityLeaf::Fields(fields) => validate_fields(fields),

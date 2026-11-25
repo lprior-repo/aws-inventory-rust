@@ -145,7 +145,11 @@ fn subscriptions(parent: Option<&str>) -> Result<OperationOverlay, NameError> {
         )?,
         IdentityBranch::new(
             IdentityPredicate::Present(path("SubscriptionArn")?),
-            IdentityLeaf::Arn(path("SubscriptionArn")?),
+            IdentityLeaf::OwnedArn {
+                path: path("SubscriptionArn")?,
+                owner: path("Owner")?,
+                resource_kind: ArnResourceKind::SnsSubscription,
+            },
         )?,
     ]));
     let mut operation = OperationOverlay {

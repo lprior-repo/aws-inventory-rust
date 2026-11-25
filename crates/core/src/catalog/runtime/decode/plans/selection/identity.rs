@@ -77,6 +77,21 @@ fn leaf(fields: MapRef<'_>) -> Result<IdentityLeafPlan, RuntimeCatalogError> {
             metadata::only_fields(fields, &[1, 2])?;
             Ok(IdentityLeafPlan::Fields(fields_list(fields)?))
         }
+        7 => {
+            metadata::only_fields(fields, &[1, 2, 3, 4])?;
+            let resource_kind = super::arn_kind(metadata::integer(fields, 4)?)?;
+            if matches!(
+                resource_kind,
+                crate::catalog::runtime::ArnResourceKind::SqsQueue
+            ) {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            Ok(IdentityLeafPlan::OwnedArn {
+                path: metadata::selected_path(metadata::list(fields, 2)?)?,
+                owner: metadata::selected_path(metadata::list(fields, 3)?)?,
+                resource_kind,
+            })
+        }
         _ => Err(RuntimeCatalogError::Capability),
     }
 }

@@ -6,7 +6,8 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 
 use super::arn::{
-    endpoint, is_in_scope, split_sns_arn, split_subscription_arn, validate_topic_name,
+    ArnRef, endpoint, is_in_request_region, split_sns_arn, split_subscription_arn,
+    validate_topic_name,
 };
 use super::topic::invalid;
 use crate::{AwsScanError, common::Context};
@@ -27,16 +28,20 @@ pub(super) fn map_subscription(
         .filter(|value| !value.is_empty())
         .ok_or_else(|| invalid("ListSubscriptions lacks SubscriptionArn"))?;
     let endpoint = endpoint(subscription.endpoint()).map_err(invalid)?;
+    let owner = subscription
+        .owner()
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| invalid("ListSubscriptions lacks Owner"))?;
     let topic_arn = subscription.topic_arn().filter(|value| !value.is_empty());
     let pending = raw_arn == PENDING_CONFIRMATION;
     let identity = if pending {
         let topic_arn =
             topic_arn.ok_or_else(|| invalid("pending SNS subscription lacks TopicArn"))?;
         let parts = split_sns_arn(topic_arn).map_err(invalid)?;
-        if !is_in_scope(&parts, ctx) {
+        validate_topic_name(parts.resource).map_err(invalid)?;
+        if !owns_in_request_region(&parts, owner, ctx) {
             return Ok(None);
         }
-        validate_topic_name(parts.resource).map_err(invalid)?;
         pending_identity(
             topic_arn,
             subscription.protocol().unwrap_or_default(),
@@ -44,14 +49,14 @@ pub(super) fn map_subscription(
         )
     } else {
         let (parts, _, _) = split_subscription_arn(raw_arn).map_err(invalid)?;
-        if !is_in_scope(&parts, ctx) {
+        if !owns_in_request_region(&parts, owner, ctx) {
             return Ok(None);
         }
         raw_arn.to_owned()
     };
     let target = topic_arn.and_then(|arn| {
         let parts = split_sns_arn(arn).ok()?;
-        if !is_in_scope(&parts, ctx) || validate_topic_name(parts.resource).is_err() {
+        if !is_in_request_region(&parts, ctx) || validate_topic_name(parts.resource).is_err() {
             return None;
         }
         Some(arn)
@@ -77,6 +82,13 @@ pub(super) fn map_subscription(
         edge
     });
     Ok(Some(SubscriptionObservation { resource, edge }))
+}
+
+/// A subscription belongs to the scan when the request's partition and region
+/// match its ARN and its `Owner` is the scanned account. The ARN's account
+/// segment is the topic owner's and may legitimately differ.
+fn owns_in_request_region(parts: &ArnRef<'_>, owner: &str, ctx: &Context) -> bool {
+    is_in_request_region(parts, ctx) && owner == ctx.account
 }
 
 fn pending_identity(topic_arn: &str, protocol: &str, endpoint: &str) -> String {
