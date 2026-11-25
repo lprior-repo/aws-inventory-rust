@@ -1,14 +1,14 @@
 mod emission;
 mod validation;
 mod validation_context;
-use super::RuntimeCatalogCompileError;
 pub(super) use emission::active_kind;
+pub(super) use validation::validate_reviewed_paths;
+pub(super) use validation_context::ValidationContext;
 use inventory_core::{
     catalog::{Service, Shape, Target},
     record::FieldId,
 };
-pub(super) use validation::validate_reviewed_paths;
-pub(super) use validation_context::ValidationContext;
+use super::RuntimeCatalogCompileError;
 
 pub(super) fn resolve(
     service: Service<'_>,
@@ -32,9 +32,7 @@ pub(super) fn resolve(
     match result {
         Ok(()) => Ok((fields, target)),
         Err(RuntimeCatalogCompileError::Path { path: _ }) => {
-            Err(RuntimeCatalogCompileError::Path {
-                path: path.to_owned(),
-            })
+            Err(RuntimeCatalogCompileError::Path { path: path.to_owned() })
         }
         Err(error) => Err(error),
     }
@@ -55,9 +53,7 @@ pub(super) fn terminal_member<'a>(
     match result {
         Ok(value) => Ok(value),
         Err(RuntimeCatalogCompileError::Path { path: _ }) => {
-            Err(RuntimeCatalogCompileError::Path {
-                path: path.to_owned(),
-            })
+            Err(RuntimeCatalogCompileError::Path { path: path.to_owned() })
         }
         Err(error) => Err(error),
     }
@@ -99,7 +95,7 @@ pub(super) fn optional_resolve(
             kind => {
                 return Err(RuntimeCatalogCompileError::Path {
                     path: format!("optional_resolve kind {kind}"),
-                });
+                })
             }
         }
         let shape = shape_for(service, target)?;
@@ -127,8 +123,8 @@ pub(super) fn list_element(
             path: "list_element kind".to_owned(),
         });
     }
-    list.element()?
-        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+    list.element()
+        ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
             path: "list_element element".to_owned(),
         })
 }
@@ -156,7 +152,7 @@ pub(super) fn string_target(
         _ => {
             return Err(RuntimeCatalogCompileError::Path {
                 path: "string_target target".to_owned(),
-            });
+            })
         }
     };
     if matches!(kind, "string" | "enum") {
@@ -173,13 +169,11 @@ fn shape_for<'a>(
     target: Target,
 ) -> Result<Shape<'a>, RuntimeCatalogCompileError> {
     match target {
-        Target::Shape(index) => {
-            service
-                .shape(index)?
-                .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                    path: "shape_for index".to_owned(),
-                })
-        }
+        Target::Shape(index) => service
+            .shape(index)?
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: "shape_for index".to_owned(),
+            }),
         _ => Err(RuntimeCatalogCompileError::Path {
             path: "shape_for target".to_owned(),
         }),

@@ -149,74 +149,47 @@ pub fn command_drain_budget() -> Result<i64, HarnessError> {
 }
 
 pub async fn execute_command(request: CommandRequest) -> Result<Receipt, HarnessError> {
-    let arguments = request.arguments;
-    let workspace = request.workspace;
-    let output = request.output;
-    let label = request.label;
-    validate_arguments(&arguments)?;
+    validate_command(&request.arguments)?;
 
     let budget = command_drain_budget()?;
     let child_budget = budget.saturating_sub(CHILD_DRAIN_RESERVE_SECONDS);
 
-    let mut receipt = Receipt::new(
-        arguments.clone(),
-        workspace.clone(),
-        request.deadline_seconds,
-        &output,
-        &label,
-    );
-    receipt.cleanup_budget_seconds = Some(budget);
-    receipt.child_cleanup_budget_seconds = Some(child_budget);
+    let mut receipt = build_initial_receipt(&request, budget, child_budget)?;
+    write_receipt(&receipt, &request.output, &request.label)?;
 
-    write_receipt(&receipt, &output, &label)?;
+    let start = Instant::now();
+    let log_file = open_log_file(&receipt.log)?;
 
-    let mut command = child_command(&arguments, &workspace, &receipt.log, child_budget)?;
-    let mut child = match command.spawn() {
-        Ok(c) => c,
+    let child = match spawn_command(&request, log_file, child_budget) {
+        Ok(child) => child,
         Err(e) => {
             receipt.status = String::from("supervisor_error");
             receipt.supervisor_error = Some(json!({
                 "phase": "spawn",
                 "type": std::any::type_name_of_val(&e),
             }));
+            finalize_receipt(&mut receipt, &request, start);
             return Ok(receipt);
         }
     };
 
-    receipt.pid = Some(child.id());
-    write_receipt(&receipt, &output, &label)?;
+    let pid = child.id();
+    receipt.pid = Some(pid);
+    write_receipt(&receipt, &request.output, &request.label)?;
 
-    let start = Instant::now();
-    let supervision = Supervision {
-        label: &label,
-        health_check: request.health_check.as_deref(),
-        start,
-        deadline: command_deadline(start, request.deadline_seconds)?,
-    };
-    let health_checks = supervise(&mut child, &supervision, &mut receipt).await?;
-    settle_receipt(&mut receipt, start, health_checks);
+    let result = wait_for_child(child, &request, &receipt).await;
+    receipt.status = result.status;
+    receipt.child_exit_code = result.exit_code;
+    receipt.supervisor_error = result.supervisor_error;
+    receipt.fixture_error_type = result.fixture_error_type;
+    receipt.fixture_error = result.fixture_error;
+    receipt.fixture_health_checks = result.health_checks;
 
-    write_receipt(&receipt, &output, &label)?;
-
-    report_settled(&label, &receipt);
-
+    finalize_receipt(&mut receipt, &request, start);
     Ok(receipt)
 }
 
-fn report_settled(label: &str, receipt: &Receipt) {
-    eprintln!(
-        "{}",
-        serde_json::to_string(&json!({
-            "phase": label,
-            "status": receipt.status,
-            "exit_code": receipt.exit_code,
-            "elapsed_seconds": receipt.elapsed_seconds,
-        }))
-        .unwrap_or_default()
-    );
-}
-
-fn validate_arguments(arguments: &[String]) -> Result<(), HarnessError> {
+fn validate_command(arguments: &[String]) -> Result<(), HarnessError> {
     if arguments.is_empty() || arguments.len() > MAX_COMMAND_ARGUMENTS {
         return Err(HarnessError::invalid(
             "command argument count is outside its bound",
@@ -230,26 +203,48 @@ fn validate_arguments(arguments: &[String]) -> Result<(), HarnessError> {
     Ok(())
 }
 
-/// Builds the child command with stdout and stderr appended to a freshly truncated log.
-fn child_command(
-    arguments: &[String],
-    workspace: &Path,
-    log: &Path,
+fn build_initial_receipt(
+    request: &CommandRequest,
+    budget: i64,
     child_budget: i64,
-) -> Result<Command, HarnessError> {
-    let log_file = std::fs::OpenOptions::new()
+) -> Result<Receipt, HarnessError> {
+    let mut receipt = Receipt::new(
+        request.arguments.clone(),
+        request.workspace.clone(),
+        request.deadline_seconds,
+        &request.output,
+        &request.label,
+    );
+    receipt.cleanup_budget_seconds = Some(budget);
+    receipt.child_cleanup_budget_seconds = Some(child_budget);
+    Ok(receipt)
+}
+
+fn open_log_file(path: &Path) -> Result<File, HarnessError> {
+    std::fs::OpenOptions::new()
         .write(true)
         .create(true)
         .truncate(true)
-        .open(log)?;
+        .open(path)
+        .map_err(HarnessError::from)
+}
 
-    let program = arguments
-        .first()
-        .ok_or_else(|| HarnessError::invalid("command has no program"))?;
+fn spawn_command(
+    request: &CommandRequest,
+    log_file: File,
+    child_budget: i64,
+) -> Result<std::process::Child, std::io::Error> {
+    let Some(program) = request.arguments.first() else {
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "command has no program",
+        ));
+    };
+
     let mut command = Command::new(program.as_str());
     command
-        .args(arguments.iter().skip(1))
-        .current_dir(workspace)
+        .args(request.arguments.iter().skip(1))
+        .current_dir(&request.workspace)
         .stdin(Stdio::null())
         .stdout(Stdio::from(log_file.try_clone()?))
         .stderr(Stdio::from(log_file.try_clone()?));
@@ -257,135 +252,251 @@ fn child_command(
     if child_budget > 0 {
         command.env(DRAIN_ENVIRONMENT, child_budget.to_string());
     }
-    Ok(command)
+
+    command.spawn()
 }
 
-fn command_deadline(start: Instant, deadline_seconds: i64) -> Result<Instant, HarnessError> {
-    let deadline_seconds = i64::max(1, i64::min(60, deadline_seconds));
-    let duration = Duration::from_secs(deadline_seconds.try_into().unwrap_or(60));
-    start
-        .checked_add(duration)
-        .ok_or(HarnessError::invalid("deadline overflow"))
+struct ChildWaitResult {
+    status: String,
+    exit_code: Option<i32>,
+    supervisor_error: Option<serde_json::Value>,
+    fixture_error_type: Option<String>,
+    fixture_error: Option<serde_json::Value>,
+    health_checks: usize,
 }
 
-/// Fixed inputs of one child supervision loop.
-struct Supervision<'a> {
-    label: &'a str,
-    health_check: Option<&'a (dyn Fn() -> Result<(), HarnessError> + Send + Sync)>,
-    start: Instant,
-    deadline: Instant,
-}
-
-/// Polls the child until it exits, the deadline passes, or a fixture health check fails,
-/// recording the outcome on the receipt. Returns the number of successful health checks.
-async fn supervise(
-    child: &mut std::process::Child,
-    supervision: &Supervision<'_>,
-    receipt: &mut Receipt,
-) -> Result<usize, HarnessError> {
+async fn wait_for_child(
+    mut child: std::process::Child,
+    request: &CommandRequest,
+    _receipt: &Receipt,
+) -> ChildWaitResult {
+    let start = Instant::now();
     let health_check_interval = Duration::from_secs(5);
-    let mut last_health_check = supervision.start;
+    let mut last_health_check = start;
     let mut health_checks: usize = 0;
+    let deadline = compute_deadline(start, request.deadline_seconds);
 
     loop {
-        if child_settled(child, receipt) {
-            break;
+        let outcome = wait_once(&mut child);
+        if let WaitOutcome::Completed(exit_code) = outcome {
+            return completed_result(exit_code, health_checks);
+        }
+        if let WaitOutcome::SupervisorError(e) = outcome {
+            return supervisor_error_result(e, health_checks);
         }
 
         let now = Instant::now();
-        if now >= supervision.deadline {
-            receipt.status = String::from("timeout");
-            let _ = child.kill();
-            break;
+        if handle_deadline(&mut child, now, deadline, health_checks) {
+            return ChildWaitResult {
+                status: String::from("timeout"),
+                exit_code: None,
+                supervisor_error: None,
+                fixture_error_type: None,
+                fixture_error: None,
+                health_checks,
+            };
         }
 
-        let next_check = last_health_check
-            .checked_add(health_check_interval)
-            .ok_or(HarnessError::invalid("health check interval overflow"))?;
-        if now >= next_check {
-            if let Some(health) = supervision.health_check {
-                match health() {
-                    Ok(()) => {
-                        health_checks = health_checks.saturating_add(1);
-                    }
-                    Err(e) => {
-                        receipt.status = String::from("fixture_unavailable");
-                        receipt.fixture_error_type = Some(String::from("fixture_health"));
-                        receipt.fixture_error = Some(json!({"error": e.to_string()}));
-                        let _ = child.kill();
-                        break;
-                    }
-                }
-            }
-            last_health_check = now;
-        }
-
-        report_progress(supervision, now, last_health_check);
-        tokio::time::sleep(Duration::from_millis(250)).await;
-    }
-    Ok(health_checks)
-}
-
-/// Records a finished child or a failed wait on the receipt. Returns whether supervision ends.
-fn child_settled(child: &mut std::process::Child, receipt: &mut Receipt) -> bool {
-    match child.try_wait() {
-        Ok(Some(status)) => {
-            receipt.status = String::from("completed");
-            receipt.child_exit_code = Some(status.code().unwrap_or(128));
-            true
-        }
-        Ok(None) => false,
-        Err(e) => {
-            receipt.status = String::from("supervisor_error");
-            receipt.supervisor_error = Some(json!({
-                "phase": "execute",
-                "type": std::any::type_name_of_val(&e),
-            }));
-            true
-        }
-    }
-}
-
-fn report_progress(supervision: &Supervision<'_>, now: Instant, last_health_check: Instant) {
-    let elapsed = now.saturating_duration_since(supervision.start);
-    if elapsed.as_secs() >= 30
-        && last_health_check
-            .checked_add(Duration::from_secs(30))
-            .is_some_and(|d| now >= d)
-    {
-        eprintln!(
-            "{}",
-            serde_json::to_string(&json!({
-                "phase": supervision.label,
-                "elapsed_seconds": elapsed.as_secs_f64(),
-            }))
-            .unwrap_or_default()
+        health_checks = perform_health_check(
+            &mut child,
+            request.health_check.as_ref().map(|b| b.as_ref()),
+            &now,
+            &last_health_check,
+            &health_check_interval,
+            health_checks,
         );
+        if health_checks == usize::MAX {
+            return fixture_unavailable_result();
+        }
+
+        log_elapsed(&now, start, last_health_check, &request.label);
+        tokio::time::sleep(Duration::from_millis(250)).await;
+        last_health_check = now;
     }
 }
 
-/// Fills in elapsed time, health-check count, the supervisor exit code and the log digest.
-fn settle_receipt(receipt: &mut Receipt, start: Instant, health_checks: usize) {
+fn completed_result(exit_code: i32, health_checks: usize) -> ChildWaitResult {
+    ChildWaitResult {
+        status: String::from("completed"),
+        exit_code: Some(exit_code),
+        supervisor_error: None,
+        fixture_error_type: None,
+        fixture_error: None,
+        health_checks,
+    }
+}
+
+fn supervisor_error_result(e: serde_json::Value, health_checks: usize) -> ChildWaitResult {
+    ChildWaitResult {
+        status: String::from("supervisor_error"),
+        exit_code: None,
+        supervisor_error: Some(e),
+        fixture_error_type: None,
+        fixture_error: None,
+        health_checks,
+    }
+}
+
+fn fixture_unavailable_result() -> ChildWaitResult {
+    ChildWaitResult {
+        status: String::from("fixture_unavailable"),
+        exit_code: None,
+        supervisor_error: None,
+        fixture_error_type: Some(String::from("fixture_health")),
+        fixture_error: None,
+        health_checks: 0,
+    }
+}
+
+fn handle_deadline(
+    child: &mut std::process::Child,
+    now: Instant,
+    deadline: Instant,
+    _health_checks: usize,
+) -> bool {
+    if now >= deadline {
+        let _ = child.kill();
+        true
+    } else {
+        false
+    }
+}
+
+fn compute_deadline(start: Instant, deadline_seconds: i64) -> Instant {
+    let clamped = i64::max(1, i64::min(60, deadline_seconds));
+    let duration = Duration::from_secs(clamped.try_into().unwrap_or(60));
+    match start.checked_add(duration) {
+        Some(deadline) => deadline,
+        None => start,
+    }
+}
+
+enum WaitOutcome {
+    Completed(i32),
+    SupervisorError(serde_json::Value),
+    StillRunning,
+}
+
+fn wait_once(
+    child: &mut std::process::Child,
+) -> WaitOutcome {
+    match child.try_wait() {
+        Ok(Some(status)) => WaitOutcome::Completed(status.code().unwrap_or(128)),
+        Ok(None) => WaitOutcome::StillRunning,
+        Err(e) => WaitOutcome::SupervisorError(json!({
+            "phase": "execute",
+            "type": std::any::type_name_of_val(&e),
+        })),
+    }
+}
+
+
+fn perform_health_check(
+    child: &mut std::process::Child,
+    health_check: Option<&(dyn Fn() -> Result<(), HarnessError> + Send + Sync)>,
+    now: &Instant,
+    last_health_check: &Instant,
+    interval: &Duration,
+    current_checks: usize,
+) -> usize {
+    if !should_check_health(now, last_health_check, interval) {
+        return current_checks;
+    }
+
+    match health_check {
+        Some(health) => match health() {
+            Ok(()) => current_checks.saturating_add(1),
+            Err(_) => {
+                let _ = child.kill();
+                usize::MAX
+            }
+        },
+        None => current_checks,
+    }
+}
+
+fn should_check_health(
+    now: &Instant,
+    last_health_check: &Instant,
+    interval: &Duration,
+) -> bool {
+    let Some(next_check) = last_health_check.checked_add(*interval) else {
+        return true;
+    };
+    *now >= next_check
+}
+
+fn log_elapsed(
+    now: &Instant,
+    start: Instant,
+    last_health_check: Instant,
+    label: &str,
+) {
+    let elapsed = now.saturating_duration_since(start);
+    if elapsed.as_secs() < 30 {
+        return;
+    }
+
+    let Some(next_log) = last_health_check.checked_add(Duration::from_secs(30)) else {
+        return;
+    };
+    if *now < next_log {
+        return;
+    }
+
+    let json = json!({
+        "phase": label,
+        "elapsed_seconds": elapsed.as_secs_f64(),
+    });
+    match serde_json::to_string(&json) {
+        Ok(s) => eprintln!("{s}"),
+        Err(_) => eprintln!("{{}}"),
+    }
+}
+
+fn finalize_receipt(receipt: &mut Receipt, request: &CommandRequest, start: Instant) {
     receipt.elapsed_seconds = Instant::now()
         .saturating_duration_since(start)
         .as_secs_f64();
-    receipt.fixture_health_checks = health_checks;
 
     if receipt.exit_code.is_none() {
-        if receipt.status.as_str() == "interrupted" {
-            let signal: i32 = receipt.interrupt_signal.unwrap_or(0);
-            receipt.exit_code = Some(128_i32.saturating_add(signal));
-        } else if receipt.status.as_str() != "completed" {
-            receipt.exit_code = Some(124_i32);
-        } else if let Some(code) = receipt.child_exit_code {
-            receipt.exit_code = Some(code);
-        }
+        receipt.exit_code = compute_exit_code(receipt);
     }
 
+    compute_log_hash(receipt);
+    write_receipt(receipt, &request.output, &request.label).ok();
+    log_receipt(receipt);
+}
+
+fn compute_exit_code(receipt: &Receipt) -> Option<i32> {
+    if receipt.status.as_str() == "interrupted" {
+        let signal: i32 = receipt.interrupt_signal.unwrap_or(0);
+        Some(128_i32.saturating_add(signal))
+    } else if receipt.status.as_str() != "completed" {
+        Some(124_i32)
+    } else {
+        receipt.child_exit_code
+    }
+}
+
+fn compute_log_hash(receipt: &mut Receipt) {
     if let Ok(log_content) = fs::read(&receipt.log) {
         let hash = sha2::Sha256::new_with_prefix(&log_content).finalize();
         receipt.log_sha256 = Some(hex::encode(hash));
     }
+}
+
+fn log_receipt(receipt: &Receipt) {
+    eprintln!(
+        "{}",
+        serde_json::to_string(&json!({
+            "phase": "execute",
+            "status": receipt.status,
+            "exit_code": receipt.exit_code,
+            "elapsed_seconds": receipt.elapsed_seconds,
+        }))
+        .unwrap_or_default()
+    );
 }
 
 /// Mutation testing arguments.
@@ -408,52 +519,17 @@ pub async fn run(args: &Args) -> Result<Value, HarnessError> {
 
     let _binary = args.binary.canonicalize()?;
 
-    let baseline_cmd = baseline_command();
+    let baseline_cmd = build_baseline_command();
+    let baseline_result = run_baselines(args, &baseline_cmd, &output).await?;
 
-    for i in 1..=2 {
-        let label = format!("oracle-baseline-{i}");
-        let result = execute_command(CommandRequest {
-            arguments: baseline_cmd.clone(),
-            workspace: args.workspace.clone(),
-            output: output.clone(),
-            label: label.clone(),
-            scan_id: None,
-            port: 0,
-            deadline_seconds: 600,
-            health_check: None,
-        })
-        .await?;
-
-        if result.exit_code != Some(0) {
-            return Ok(result.to_json());
-        }
+    if baseline_result.exit_code != Some(0) {
+        return Ok(baseline_result.to_json());
     }
 
-    if !args.command.is_empty() {
-        let result = execute_command(CommandRequest {
-            arguments: args.command.clone(),
-            workspace: args.workspace.clone(),
-            output: output.clone(),
-            label: "mutation-command".to_string(),
-            scan_id: None,
-            port: 0,
-            deadline_seconds: args.command_deadline,
-            health_check: None,
-        })
-        .await?;
-
-        Ok(result.to_json())
-    } else {
-        Ok(json!({
-            "phase": "mutate",
-            "status": "completed",
-            "oracle_baselines": 2,
-            "mutation_command": null,
-        }))
-    }
+    run_mutation_command(args, &output).await
 }
 
-fn baseline_command() -> Vec<String> {
+fn build_baseline_command() -> Vec<String> {
     vec![
         "cargo".to_string(),
         "test".to_string(),
@@ -470,4 +546,66 @@ fn baseline_command() -> Vec<String> {
         "--ignored".to_string(),
         "--test-threads=1".to_string(),
     ]
+}
+
+async fn run_baselines(
+    args: &Args,
+    baseline_cmd: &[String],
+    output: &Path,
+) -> Result<Receipt, HarnessError> {
+    let mut last_result = None;
+
+    for i in 1..=2 {
+        let label = format!("oracle-baseline-{i}");
+        let result = execute_command(CommandRequest {
+            arguments: baseline_cmd.to_vec(),
+            workspace: args.workspace.clone(),
+            output: output.to_path_buf(),
+            label,
+            scan_id: None,
+            port: 0,
+            deadline_seconds: 600,
+            health_check: None,
+        })
+        .await?;
+
+        if result.exit_code != Some(0) {
+            return Ok(result);
+        }
+
+        last_result = Some(result);
+    }
+
+    match last_result {
+        Some(r) => Ok(r),
+        None => Err(HarnessError::invalid("no baseline results")),
+    }
+}
+
+async fn run_mutation_command(
+    args: &Args,
+    output: &Path,
+) -> Result<Value, HarnessError> {
+    if args.command.is_empty() {
+        return Ok(json!({
+            "phase": "mutate",
+            "status": "completed",
+            "oracle_baselines": 2,
+            "mutation_command": null,
+        }));
+    }
+
+    let result = execute_command(CommandRequest {
+        arguments: args.command.clone(),
+        workspace: args.workspace.clone(),
+        output: output.to_path_buf(),
+        label: "mutation-command".to_string(),
+        scan_id: None,
+        port: 0,
+        deadline_seconds: args.command_deadline,
+        health_check: None,
+    })
+    .await?;
+
+    Ok(result.to_json())
 }

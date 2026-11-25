@@ -3,86 +3,139 @@ use crate::kind_map::embedded;
 use crate::runtime_catalog::ServiceIndex;
 use std::path::Path;
 
-type TestResult = Result<(), Box<dyn std::error::Error>>;
-
-fn with_context(
-    callable: bool,
-    check: impl FnOnce(&ValidationContext<'_, '_>) -> TestResult,
-) -> TestResult {
+#[test]
+fn happy_path_reviewed_paths_compile() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let kinds = embedded(&std::fs::read(
-        root.join("catalog/cloudcontrol-universal.json"),
-    )?)?;
-    let bytes = std::fs::read(root.join("catalog/aws-api.catalog"))?;
-    let catalog = inventory_core::catalog::Catalog::borrow(&bytes)?;
-    let services = ServiceIndex::build(catalog)?;
-    let source = root.join(".local/aws-models");
-    let checked = if callable {
-        crate::overlay::check(&root, &source)?
-    } else {
-        crate::overlay::check_policies(&source, &[], &crate::classes::DenyList::builtin())?
-    };
-    check(&ValidationContext {
+    let cfn = std::fs::read(root.join("catalog/cloudcontrol-universal.json"))
+        .expect("cfn source exists");
+    let kinds = embedded(&cfn).expect("kinds build");
+    let binding = std::fs::read(root.join("catalog/aws-api.catalog"))
+        .expect("catalog exists");
+    let catalog = inventory_core::catalog::Catalog::borrow(&binding)
+        .expect("catalog parses");
+    let services = ServiceIndex::build(catalog).expect("services build");
+    let checked = crate::overlay::check(&root, root.join(".local/aws-models").as_path())
+        .expect("overlay checks");
+    let context = ValidationContext {
         kinds: &kinds,
         checked: &checked,
         services: &services,
-    })
+    };
+    assert!(validate_reviewed_paths(&context).is_ok());
 }
 
 #[test]
-fn given_callable_emissions_when_reviewed_paths_validate_then_live_relations_pass() -> TestResult {
-    with_context(true, |context| {
-        validate_reviewed_paths(context)?;
-        validate_kind_path(context, "AWS::EC2::Subnet", "VpcId")?;
-        Ok(())
-    })
+fn vpc_relation_validates() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cfn = std::fs::read(root.join("catalog/cloudcontrol-universal.json"))
+        .expect("cfn source exists");
+    let kinds = embedded(&cfn).expect("kinds build");
+    let binding = std::fs::read(root.join("catalog/aws-api.catalog"))
+        .expect("catalog exists");
+    let catalog = inventory_core::catalog::Catalog::borrow(&binding)
+        .expect("catalog parses");
+    let services = ServiceIndex::build(catalog).expect("services build");
+    let checked = crate::overlay::check(&root, root.join(".local/aws-models").as_path())
+        .expect("overlay checks");
+    let context = ValidationContext {
+        kinds: &kinds,
+        checked: &checked,
+        services: &services,
+    };
+    let result = validate_kind_origin_path(
+        &context,
+        "AWS::EC2::Subnet",
+        "VpcId",
+        Origin::SelectedOutput,
+        Terminal::Text,
+    );
+    assert!(result.is_ok(), "VpcId relation should validate");
 }
 
 #[test]
-fn given_missing_kind_when_path_validates_then_kind_and_path_are_reported() -> TestResult {
-    with_context(false, |context| {
-        let result = validate_kind_path(context, "AWS::ApiOnly::Absent", "MacAddress");
-        assert!(
-            matches!(result, Err(RuntimeCatalogCompileError::KindContext { kind, path, reason })
-            if kind == "AWS::ApiOnly::Absent" && path == "MacAddress" && reason == "no operation row produces this kind")
-        );
-        Ok(())
-    })
+fn relation_source_kind_with_no_operation_row_names_kind() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cfn = std::fs::read(root.join("catalog/cloudcontrol-universal.json"))
+        .expect("cfn source exists");
+    let kinds = embedded(&cfn).expect("kinds build");
+    let binding = std::fs::read(root.join("catalog/aws-api.catalog"))
+        .expect("catalog exists");
+    let catalog = inventory_core::catalog::Catalog::borrow(&binding)
+        .expect("catalog parses");
+    let services = ServiceIndex::build(catalog).expect("services build");
+    let checked = crate::overlay::check(&root, root.join(".local/aws-models").as_path())
+        .expect("overlay checks");
+    let context = ValidationContext {
+        kinds: &kinds,
+        checked: &checked,
+        services: &services,
+    };
+    let result = validate_kind_path(&context, "AWS::EC2::NetworkInterface", "MacAddress");
+    assert!(matches!(result, Err(RuntimeCatalogCompileError::KindContext { kind, path, reason }) if kind == "AWS::EC2::NetworkInterface" && path == "MacAddress" && reason == "no operation row produces this kind"));
 }
 
 #[test]
-fn given_deferred_operation_when_path_validates_then_operation_and_path_are_reported() -> TestResult
-{
-    with_context(false, |context| {
-        let result = validate_kind_path(context, "AWS::EC2::SecurityGroup", "VpcId");
-        assert!(
-            matches!(result, Err(RuntimeCatalogCompileError::CapabilityContext { service, operation, path })
-            if service == "ec2" && operation == "DescribeSecurityGroups" && path == "VpcId")
-        );
-        Ok(())
-    })
+fn relation_source_kind_with_deferred_operation_names_operation() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cfn = std::fs::read(root.join("catalog/cloudcontrol-universal.json"))
+        .expect("cfn source exists");
+    let kinds = embedded(&cfn).expect("kinds build");
+    let binding = std::fs::read(root.join("catalog/aws-api.catalog"))
+        .expect("catalog exists");
+    let catalog = inventory_core::catalog::Catalog::borrow(&binding)
+        .expect("catalog parses");
+    let services = ServiceIndex::build(catalog).expect("services build");
+    let checked = crate::overlay::check(&root, root.join(".local/aws-models").as_path())
+        .expect("overlay checks");
+    let context = ValidationContext {
+        kinds: &kinds,
+        checked: &checked,
+        services: &services,
+    };
+    let result = validate_kind_path(&context, "AWS::EC2::SecurityGroup", "VpcId");
+    assert!(matches!(result, Err(RuntimeCatalogCompileError::CapabilityContext { service, operation, path }) if service == "ec2" && operation == "DescribeSecurityGroups" && path == "VpcId"));
 }
 
 #[test]
-fn given_typo_when_path_validates_then_operation_and_path_are_reported() -> TestResult {
-    with_context(true, |context| {
-        let result = validate_kind_path(context, "AWS::EC2::Subnet", "VpcID");
-        assert!(
-            matches!(result, Err(RuntimeCatalogCompileError::CapabilityContext { service, operation, path })
-            if service == "ec2" && operation == "DescribeSubnets" && path == "VpcID")
-        );
-        Ok(())
-    })
+fn relation_source_path_with_typo_names_path() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cfn = std::fs::read(root.join("catalog/cloudcontrol-universal.json"))
+        .expect("cfn source exists");
+    let kinds = embedded(&cfn).expect("kinds build");
+    let binding = std::fs::read(root.join("catalog/aws-api.catalog"))
+        .expect("catalog exists");
+    let catalog = inventory_core::catalog::Catalog::borrow(&binding)
+        .expect("catalog parses");
+    let services = ServiceIndex::build(catalog).expect("services build");
+    let checked = crate::overlay::check(&root, root.join(".local/aws-models").as_path())
+        .expect("overlay checks");
+    let context = ValidationContext {
+        kinds: &kinds,
+        checked: &checked,
+        services: &services,
+    };
+    let result = validate_kind_path(&context, "AWS::EC2::Subnet", "VpcID");
+    assert!(matches!(result, Err(RuntimeCatalogCompileError::CapabilityContext { service, operation, path }) if service == "ec2" && operation == "DescribeSubnets" && path == "VpcID"));
 }
 
 #[test]
-fn given_nontext_target_when_path_validates_then_kind_and_reason_are_reported() -> TestResult {
-    with_context(true, |context| {
-        let result = validate_kind_path(context, "AWS::EC2::VPC", "IsDefault");
-        assert!(
-            matches!(result, Err(RuntimeCatalogCompileError::KindContext { kind, path, reason })
-            if kind == "AWS::EC2::VPC" && path == "IsDefault" && reason == "path does not end in a string")
-        );
-        Ok(())
-    })
+fn relation_target_path_with_non_string_type_names_path() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let cfn = std::fs::read(root.join("catalog/cloudcontrol-universal.json"))
+        .expect("cfn source exists");
+    let kinds = embedded(&cfn).expect("kinds build");
+    let binding = std::fs::read(root.join("catalog/aws-api.catalog"))
+        .expect("catalog exists");
+    let catalog = inventory_core::catalog::Catalog::borrow(&binding)
+        .expect("catalog parses");
+    let services = ServiceIndex::build(catalog).expect("services build");
+    let checked = crate::overlay::check(&root, root.join(".local/aws-models").as_path())
+        .expect("overlay checks");
+    let context = ValidationContext {
+        kinds: &kinds,
+        checked: &checked,
+        services: &services,
+    };
+    let result = validate_kind_path(&context, "AWS::EC2::VPC", "IsDefault");
+    assert!(matches!(result, Err(RuntimeCatalogCompileError::KindContext { kind, path, reason }) if kind == "AWS::EC2::VPC" && path == "IsDefault" && reason == "path does not end in a string"));
 }

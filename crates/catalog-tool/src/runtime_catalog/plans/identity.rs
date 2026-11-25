@@ -25,12 +25,11 @@ pub(super) fn compile(
         vec![literal(first)?]
     };
     let parts = segments.try_fold(initial, |mut parts, segment| {
-        let (path, tail) =
-            segment
-                .split_once('}')
-                .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                    path: template.to_owned(),
-                })?;
+        let (path, tail) = segment
+            .split_once('}')
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: template.to_owned(),
+            })?;
         parts.push(placeholder(path, services)?);
         if !tail.is_empty() {
             parts.push(literal(tail)?);

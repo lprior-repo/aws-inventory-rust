@@ -1,7 +1,8 @@
-mod graph_failures;
+pub(crate) mod config_tests;
+pub(crate) mod graph_tests;
 pub(crate) mod isolation;
 pub(crate) mod no_socket;
-mod postgres;
+pub(crate) mod queue_tests;
 pub(crate) mod real;
 mod shutdown;
 pub(crate) mod support;
@@ -28,7 +29,6 @@ fn harness(
         revisions: Arc::new(Revisions::default()),
         shutdown,
         thread: None,
-        pending_test_events: std::cell::RefCell::default(),
     };
     (worker, receiver, events, cancellation)
 }
@@ -73,9 +73,17 @@ fn revision(command: Command) -> Result<u64, String> {
 
 #[test]
 fn given_new_filter_when_old_page_finishes_last_then_only_latest_page_is_delivered() -> TestResult {
-    let (worker, _commands, events, _cancellation) = harness(2);
-    let old = worker.revisions.refresh()?;
-    let new = worker.revisions.refresh()?;
+    let (worker, mut commands, events, _cancellation) = harness(2);
+    worker.refresh(Filter {
+        query: "old".to_owned(),
+        ..Filter::default()
+    })?;
+    let old = revision(commands.try_recv()?)?;
+    worker.refresh(Filter {
+        query: "new".to_owned(),
+        ..Filter::default()
+    })?;
+    let new = revision(commands.try_recv()?)?;
     events.send(page(new, 7))?;
     events.send(page(old, 99))?;
     let drained = worker.drain();
@@ -115,9 +123,11 @@ fn given_full_queue_when_new_filter_is_rejected_then_accepted_page_is_preserved(
 #[test]
 fn given_new_selection_when_old_expansion_finishes_then_only_new_graph_is_delivered() -> TestResult
 {
-    let (worker, _commands, events, _cancellation) = harness(2);
-    let old = worker.revisions.expand()?;
-    let new = worker.revisions.expand()?;
+    let (worker, mut commands, events, _cancellation) = harness(2);
+    worker.expand(node("vpc-old"))?;
+    let old = revision(commands.try_recv()?)?;
+    worker.expand(node("vpc-new"))?;
+    let new = revision(commands.try_recv()?)?;
     events.send(graph(new, "new selection"))?;
     events.send(graph(old, "old selection"))?;
     let drained = worker.drain();
@@ -130,9 +140,11 @@ fn given_new_selection_when_old_expansion_finishes_then_only_new_graph_is_delive
 
 #[test]
 fn given_filter_change_when_prior_expansion_finishes_then_graph_is_not_applied() -> TestResult {
-    let (worker, _commands, events, _cancellation) = harness(2);
-    let old = worker.revisions.expand()?;
-    let new = worker.revisions.refresh()?;
+    let (worker, mut commands, events, _cancellation) = harness(2);
+    worker.expand(node("vpc-old"))?;
+    let old = revision(commands.try_recv()?)?;
+    worker.refresh(Filter::default())?;
+    let new = revision(commands.try_recv()?)?;
     events.send(graph(old, "old selection"))?;
     events.send(page(new, 4))?;
     let drained = worker.drain();
@@ -146,9 +158,10 @@ fn given_filter_change_when_prior_expansion_finishes_then_graph_is_not_applied()
 
 #[test]
 fn given_pending_page_when_selection_changes_then_page_still_finishes_loading() -> TestResult {
-    let (worker, _commands, events, _cancellation) = harness(2);
-    let request = worker.revisions.refresh()?;
-    worker.revisions.expand()?;
+    let (worker, mut commands, events, _cancellation) = harness(2);
+    worker.refresh(Filter::default())?;
+    let request = revision(commands.try_recv()?)?;
+    worker.expand(node("vpc-new"))?;
     events.send(page(request, 5))?;
     assert!(matches!(
         worker.drain().first(),
@@ -194,520 +207,4 @@ fn given_startup_failure_after_filter_change_then_terminal_error_is_not_filtered
     Ok(())
 }
 
-#[test]
-fn given_closed_intake_when_command_is_submitted_then_stopped_error_is_explicit() {
-    let (worker, commands, _events, _cancellation) = harness(1);
-    drop(commands);
-    assert_eq!(
-        worker.refresh(Filter::default()),
-        Err("inventory worker stopped".to_owned())
-    );
-}
 
-#[tokio::test]
-async fn given_active_query_when_shutdown_requested_then_pending_io_is_cancelled() -> TestResult {
-    let (shutdown, mut cancellation) = shutdown_channel();
-    let (started, ready) = tokio::sync::oneshot::channel();
-    let operation = cancellation.run(async {
-        started
-            .send(())
-            .map_err(|()| "query handshake disconnected")?;
-        std::future::pending::<Result<(), String>>().await
-    });
-    let stop = async {
-        ready.await?;
-        shutdown.stop();
-        Ok::<_, Box<dyn Error>>(())
-    };
-    let (outcome, stopped) = tokio::join!(operation, stop);
-    stopped?;
-    assert!(outcome.is_none());
-    Ok(())
-}
-
-#[test]
-fn given_full_result_queue_when_worker_dropped_then_blocked_producer_is_released() -> TestResult {
-    let (mut worker, _commands, events, _cancellation) = harness(1);
-    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)).map_err(Box::new))?;
-    let (started, ready) = mpsc::sync_channel(1);
-    let (outcome, result) = mpsc::sync_channel(1);
-    worker.thread = Some(thread::spawn(move || {
-        if started.send(()).is_err() {
-            return;
-        }
-        assert!(outcome.send(events.send(page(0, 2)).is_err()).is_ok());
-    }));
-    ready.recv_timeout(Duration::from_secs(1))?;
-    let (finished, completion) = mpsc::sync_channel(1);
-    let dropper = thread::spawn(move || {
-        drop(worker);
-        assert!(finished.send(()).is_ok());
-    });
-    completion.recv_timeout(Duration::from_secs(1))?;
-    assert!(dropper.join().is_ok());
-    assert!(result.recv_timeout(Duration::from_secs(1))?);
-    Ok(())
-}
-
-#[test]
-fn given_full_results_when_ui_drains_then_critical_output_is_preserved() -> TestResult {
-    let (worker, _commands, events, _cancellation) = harness(1);
-    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)).map_err(Box::new))?;
-    let (started, ready) = mpsc::sync_channel(1);
-    let producer = thread::spawn(move || {
-        if started.send(()).is_err() {
-            return;
-        }
-        assert!(events.send(graph(0, "critical graph failure")).is_ok());
-    });
-    ready.recv_timeout(Duration::from_secs(1))?;
-    assert!(matches!(
-        worker.drain().last(),
-        Some(WorkerEvent::Snapshot { total: 1, .. })
-    ));
-    assert!(producer.join().is_ok());
-    assert!(
-        matches!(worker.drain().first(), Some(WorkerEvent::Graph { error: Some(error), .. }) if error == "critical graph failure")
-    );
-    Ok(())
-}
-
-#[test]
-fn given_saturated_queue_when_terminal_graph_failure_is_blocked_then_it_is_delivered_exactly_once()
--> TestResult {
-    let (worker, _commands, events, _cancellation) = harness(1);
-    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)).map_err(Box::new))?;
-    let (started, ready) = mpsc::sync_channel(1);
-    let producer = thread::spawn(move || {
-        if started.send(()).is_err() {
-            return;
-        }
-        assert!(events.send(graph(0, "terminal graph failure")).is_ok());
-    });
-    ready.recv_timeout(Duration::from_secs(1))?;
-    let first = worker.drain();
-    assert!(producer.join().is_ok());
-    let second = worker.drain();
-    let third = worker.drain();
-    let terminal = |events: &[WorkerEvent]| {
-        events
-            .iter()
-            .filter(|event| {
-                matches!(event, WorkerEvent::Graph { error: Some(error), .. } if error == "terminal graph failure")
-            })
-            .count()
-    };
-    assert_eq!(
-        terminal(&first) + terminal(&second) + terminal(&third),
-        1,
-        "terminal failure must survive saturation exactly once"
-    );
-    assert!(third.is_empty(), "delivered terminal state must not replay");
-    Ok(())
-}
-
-#[test]
-fn given_unconfigured_graph_when_retried_then_configuration_error_remains_visible() {
-    let mut access = GraphAccess::new(None, None, DEFAULT_GRAPH_LIMITS);
-    access.reconnect();
-    assert!(
-        matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error.contains("not configured"))
-    );
-}
-
-#[test]
-fn given_invalid_graph_name_when_refreshed_then_configuration_failure_is_classified() {
-    let mut access = GraphAccess::new(
-        Some("redis://127.0.0.1:6379".to_owned()),
-        Some(String::new()),
-        DEFAULT_GRAPH_LIMITS,
-    );
-    access.reconnect();
-    assert!(
-        matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error == "invalid graph configuration · graph name")
-    );
-}
-
-#[test]
-fn given_full_queue_when_new_selection_rejected_then_accepted_graph_is_preserved() -> TestResult {
-    let (worker, mut commands, events, _cancellation) = harness(1);
-    worker.expand(node("vpc-old"))?;
-    assert_eq!(
-        worker.expand(node("vpc-new")),
-        Err("inventory worker queue is full".to_owned())
-    );
-    events.send(graph(revision(commands.try_recv()?)?, "old selection"))?;
-    assert!(
-        matches!(worker.drain().first(), Some(WorkerEvent::Graph { error: Some(error), .. }) if error == "old selection")
-    );
-    Ok(())
-}
-
-#[tokio::test]
-async fn given_unconfigured_graph_when_user_refreshes_then_sqlite_counts_stay_usable() -> TestResult
-{
-    let (worker, mut commands, events, _cancellation) = harness(1);
-    let mut access = GraphAccess::new(None, None, DEFAULT_GRAPH_LIMITS);
-    worker.refresh(Filter::default())?;
-    let request = revision(commands.try_recv()?)?;
-    events.send(Output {
-        revision: Some(request),
-        event: access.refresh().await,
-    })?;
-    events.send(page(request, 12))?;
-    let mut data = crate::data::Data::default();
-    let mut pending_graph = None;
-    let mut harness_graphs = 0_u8;
-    worker.drain().into_iter().for_each(|event| match event {
-        WorkerEvent::Snapshot {
-            counts,
-            rows,
-            total,
-            ..
-        } => {
-            data.set_counts(counts);
-            data.replace_page(rows, total);
-        }
-        WorkerEvent::Graph { graph, error } => pending_graph = Some((graph, error)),
-        WorkerEvent::GraphStatus { error } => pending_graph = Some((Graph::default(), error)),
-        WorkerEvent::HarnessGraph { .. } => harness_graphs = harness_graphs.saturating_add(1),
-    });
-    assert_eq!(harness_graphs, 0);
-    if let Some((graph, error)) = pending_graph {
-        data.set_graph(graph, error);
-    }
-    assert_eq!(data.total_len(), 12);
-    assert!(data.graph_status().contains("not configured"));
-    Ok(())
-}
-
-fn graph_reply(with_edge: bool) -> String {
-    if !with_edge {
-        return "*3\r\n*0\r\n*0\r\n*0\r\n".to_owned();
-    }
-    let fields = [
-        "111111111111",
-        "us-east-1",
-        "AWS::EC2::VPC",
-        "vpc-root",
-        "111111111111",
-        "us-east-1",
-        "AWS::EC2::VPC",
-        "vpc-neighbor",
-        "contains",
-        "catalog",
-    ];
-    fields.iter().fold(
-        "*3\r\n*0\r\n*1\r\n*10\r\n".to_owned(),
-        |mut reply, field| {
-            reply.push_str(&format!("${}\r\n{field}\r\n", field.len()));
-            reply
-        },
-    ) + "*0\r\n"
-}
-
-fn resp_command(
-    reader: &mut std::io::BufReader<std::net::TcpStream>,
-) -> Result<Vec<String>, String> {
-    use std::io::{BufRead, Read};
-    let mut line = String::new();
-    reader
-        .read_line(&mut line)
-        .map_err(|error| error.to_string())?;
-    let count = line
-        .trim()
-        .strip_prefix('*')
-        .ok_or("expected RESP array")?
-        .parse::<usize>()
-        .map_err(|error| error.to_string())?;
-    if count > 16 {
-        return Err("too many command arguments".to_owned());
-    }
-    (0..count)
-        .map(|_| {
-            line.clear();
-            reader
-                .read_line(&mut line)
-                .map_err(|error| error.to_string())?;
-            let size = line
-                .trim()
-                .strip_prefix('$')
-                .ok_or("expected RESP bulk string")?
-                .parse::<usize>()
-                .map_err(|error| error.to_string())?;
-            if size > 1_000_000 {
-                return Err("oversized command".to_owned());
-            }
-            let mut bytes = vec![0; size.checked_add(2).ok_or("command length overflow")?];
-            reader
-                .read_exact(&mut bytes)
-                .map_err(|error| error.to_string())?;
-            bytes.truncate(size);
-            String::from_utf8(bytes).map_err(|error| error.to_string())
-        })
-        .collect()
-}
-
-fn serve_graph_connection(
-    socket: std::net::TcpStream,
-    fail: bool,
-    neighborhood: bool,
-) -> Result<(), String> {
-    use std::io::Write;
-    socket
-        .set_read_timeout(Some(Duration::from_secs(5)))
-        .map_err(|error| error.to_string())?;
-    socket
-        .set_write_timeout(Some(Duration::from_secs(5)))
-        .map_err(|error| error.to_string())?;
-    let mut reader = std::io::BufReader::new(socket);
-    let mut queries = 0_u32;
-    for _ in 0..8 {
-        let command = resp_command(&mut reader)?;
-        let response = match command.first().map(String::as_str) {
-            Some("CLIENT" | "SELECT") => "+OK\r\n".to_owned(),
-            Some("GRAPH.RO_QUERY") if fail => "-ERR temporarily unavailable\r\n".to_owned(),
-            Some("GRAPH.RO_QUERY") => {
-                queries = queries.saturating_add(1);
-                graph_reply(neighborhood && matches!(queries, 1 | 3))
-            }
-            other => return Err(format!("unexpected command {other:?}")),
-        };
-        reader
-            .get_mut()
-            .write_all(response.as_bytes())
-            .map_err(|error| error.to_string())?;
-        if (fail && command.first().is_some_and(|name| name == "GRAPH.RO_QUERY"))
-            || queries == if neighborhood { 3 } else { 1 }
-        {
-            return Ok(());
-        }
-    }
-    Err("graph peer command budget exhausted".to_owned())
-}
-
-#[tokio::test]
-async fn given_graph_query_failure_when_refreshing_then_recovered_neighborhood_is_not_discarded()
--> TestResult {
-    let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
-    let endpoint = format!("redis://{}", listener.local_addr()?);
-    let server = thread::spawn(move || {
-        for (fail, neighborhood) in [(true, true), (false, true), (false, false)] {
-            let (socket, _) = listener.accept().map_err(|error| error.to_string())?;
-            serve_graph_connection(socket, fail, neighborhood)?;
-        }
-        Ok::<_, String>(())
-    });
-    let mut access = GraphAccess::new(
-        Some(endpoint),
-        Some("inventory".to_owned()),
-        DEFAULT_GRAPH_LIMITS,
-    );
-    let first = access.expand(node("vpc-root")).await;
-    assert!(
-        matches!(first, WorkerEvent::Graph { error: Some(error), .. } if error.contains("temporarily unavailable"))
-    );
-    let refreshed = access.refresh().await;
-    let WorkerEvent::Graph { graph, error } = refreshed else {
-        return Err("expected graph event".into());
-    };
-    assert_eq!(error, None);
-    assert_eq!(graph.nodes.len(), 2);
-    assert_eq!(graph.edges.len(), 1);
-    assert_eq!(
-        graph.edges.first().map(|edge| edge.provenance.as_str()),
-        Some("catalog")
-    );
-    server.join().map_err(|_| "graph peer panicked")??;
-    Ok(())
-}
-
-#[test]
-fn given_full_or_disconnected_intake_when_checking_worker_then_only_disconnection_is_closed()
--> TestResult {
-    let (worker, commands, _events, _cancellation) = harness(1);
-    assert!(!worker.is_closed());
-    worker.refresh(Filter::default())?;
-    assert_eq!(
-        worker.refresh(Filter::default()),
-        Err("inventory worker queue is full".to_owned())
-    );
-    assert!(!worker.is_closed());
-    drop(commands);
-    assert!(worker.is_closed());
-    Ok(())
-}
-
-#[test]
-fn given_valid_lod_config_string_then_parse_returns_custom_limits() -> TestResult {
-    let limits = parse_lod_config("3:500:1000")?;
-    assert_eq!(limits.depth, 3);
-    assert_eq!(limits.nodes, 500);
-    assert_eq!(limits.edges, 1000);
-    Ok(())
-}
-
-#[test]
-fn given_invalid_lod_format_when_parsing_then_error_is_returned() -> TestResult {
-    let Err(error) = parse_lod_config("invalid") else {
-        return Err("invalid lod format must fail".into());
-    };
-    assert!(error.contains("depth:nodes:edges"));
-    Ok(())
-}
-
-#[test]
-fn given_lod_with_partial_numbers_when_parsing_then_error_is_returned() -> TestResult {
-    let Err(error) = parse_lod_config("1:2:abc") else {
-        return Err("partial lod numbers must fail".into());
-    };
-    assert!(error.contains("invalid edges"));
-    Ok(())
-}
-
-#[test]
-fn given_default_config_then_default_lod_limits_are_used() {
-    let config = WorkerConfig::default();
-    assert_eq!(config.graph_limits, DEFAULT_GRAPH_LIMITS);
-    assert_eq!(config.graph_limits.depth, 2);
-    assert_eq!(config.graph_limits.nodes, 200);
-    assert_eq!(config.graph_limits.edges, 500);
-}
-
-#[test]
-fn given_lod_with_wrong_field_count_when_parsing_then_error_is_returned() {
-    assert!(parse_lod_config("1:2").is_err());
-    assert!(parse_lod_config("1:2:3:4").is_err());
-}
-
-#[test]
-fn postgres_given_database_password_when_debugging_config_then_url_is_never_printed() -> TestResult
-{
-    for scheme in ["postgres", "postgresql", "POSTGRES", "PoStGrEsQl"] {
-        let target = format!("{scheme}://reader:secret-password@localhost/inventory");
-        let config = WorkerConfig {
-            database: Some(target.clone()),
-            ..WorkerConfig::default()
-        };
-        assert_eq!(config.database.as_deref(), Some(target.as_str()));
-        let debug = format!("{config:?}");
-        assert_eq!(
-            debug
-                .split("database: ")
-                .nth(1)
-                .and_then(|value| value.split(", graph_url").next()),
-            Some("Some(\"[PostgreSQL URL redacted]\")")
-        );
-        assert!(!debug.contains("secret-password"));
-    }
-    let config = WorkerConfig {
-        database: Some("inventory.sqlite".into()),
-        ..WorkerConfig::default()
-    };
-    assert!(format!("{config:?}").contains("database: Some(\"inventory.sqlite\")"));
-    Ok(())
-}
-
-#[test]
-fn given_unread_refresh_when_expanding_without_waiting_then_the_command_is_rejected() -> TestResult
-{
-    let (worker, mut commands, _events, _cancellation) = harness(2);
-    worker.refresh(Filter::default())?;
-    let error = worker
-        .expand(node("vpc-new"))
-        .err()
-        .ok_or("expected unread Snapshot rejection")?;
-    assert_eq!(
-        error,
-        "real worker command would abandon unconsumed Snapshot"
-    );
-    assert_eq!(revision(commands.try_recv()?)?, 1);
-    assert_eq!(
-        commands.try_recv().err(),
-        Some(tokio::sync::mpsc::error::TryRecvError::Empty)
-    );
-    Ok(())
-}
-
-#[test]
-fn given_unread_expansion_when_expanding_without_waiting_then_the_command_is_rejected() -> TestResult
-{
-    let (worker, mut commands, _events, _cancellation) = harness(2);
-    worker.expand(node("vpc-old"))?;
-    let error = worker
-        .expand(node("vpc-new"))
-        .err()
-        .ok_or("expected unread Graph rejection")?;
-    assert_eq!(error, "real worker command would abandon unconsumed Graph");
-    assert_eq!(revision(commands.try_recv()?)?, 1);
-    assert_eq!(
-        commands.try_recv().err(),
-        Some(tokio::sync::mpsc::error::TryRecvError::Empty)
-    );
-    Ok(())
-}
-
-#[test]
-fn given_drained_snapshot_when_refreshing_again_then_the_terminal_is_accounted_for() -> TestResult {
-    let (worker, mut commands, events, _cancellation) = harness(2);
-    worker.refresh(Filter::default())?;
-    let first = revision(commands.try_recv()?)?;
-    events.send(page(first, 7))?;
-    let drained = worker.drain();
-    assert_eq!(drained.len(), 1);
-    assert!(matches!(
-        drained.first(),
-        Some(WorkerEvent::Snapshot { total: 7, .. })
-    ));
-    worker.refresh(Filter::default())?;
-    assert_eq!(revision(commands.try_recv()?)?, 2);
-    Ok(())
-}
-
-#[test]
-fn given_only_drained_graph_status_when_enqueuing_again_then_unread_graph_is_rejected() -> TestResult
-{
-    let (worker, mut commands, events, _cancellation) = harness(2);
-    worker.expand(node("vpc-old"))?;
-    let current = revision(commands.try_recv()?)?;
-    events.send(Output {
-        revision: Some(current),
-        event: WorkerEvent::GraphStatus {
-            error: Some("offline".to_owned()),
-        },
-    })?;
-    let drained = worker.drain();
-    assert_eq!(drained.len(), 1);
-    assert!(
-        matches!(drained.first(), Some(WorkerEvent::GraphStatus { error: Some(error) }) if error == "offline")
-    );
-    assert_eq!(
-        worker.refresh(Filter::default()),
-        Err("real worker command would abandon unconsumed Graph".to_owned())
-    );
-    Ok(())
-}
-
-#[test]
-fn given_stale_graph_status_when_recording_deadline_context_then_its_revision_is_explicit()
--> TestResult {
-    let (worker, mut commands, events, _cancellation) = harness(2);
-    worker.expand(node("vpc-old"))?;
-    assert_eq!(revision(commands.try_recv()?)?, 1);
-    events.send(Output {
-        revision: Some(0),
-        event: WorkerEvent::GraphStatus {
-            error: Some("old offline status".to_owned()),
-        },
-    })?;
-    assert!(worker.test_event(false)?.is_none());
-    assert_eq!(
-        worker.last_test_graph_status(),
-        "revision Some(0): old offline status"
-    );
-    assert_eq!(
-        worker.expand(node("vpc-new")),
-        Err("real worker command would abandon unconsumed Graph".to_owned())
-    );
-    Ok(())
-}

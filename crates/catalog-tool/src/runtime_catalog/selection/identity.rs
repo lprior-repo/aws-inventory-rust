@@ -87,18 +87,7 @@ fn validate_fields(
             path: "identity fields".to_owned(),
         });
     }
-    fields
-        .iter()
-        .try_for_each(|field| validate_single_field(service, operation, item, field))
-}
-
-fn validate_single_field(
-    service: Service<'_>,
-    operation: Operation<'_>,
-    item: Target,
-    field: &IdentityField,
-) -> Result<(), RuntimeCatalogCompileError> {
-    match field {
+    fields.iter().try_for_each(|field| match field {
         IdentityField::Selected(path) => scalar(service, target(service, item, path.as_str())?),
         IdentityField::SelectedDigest(path) => {
             digest_target(service, target(service, item, path.as_str())?)
@@ -134,46 +123,40 @@ fn validate_single_field(
             path,
             max_items,
             max_item_bytes,
-        } => validate_string_list(service, item, path, *max_items, *max_item_bytes),
+        } => {
+            if !(1..=64).contains(max_items) || !(1..=4096).contains(max_item_bytes) {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
+            }
+            let Target::Shape(index) = target(service, item, path.as_str())? else {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
+            };
+            let shape = service
+                .shape(index)?
+                .ok_or(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                })?;
+            if shape.kind()? != "list" {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
+            }
+            text(
+                service,
+                shape
+                    .element()?
+                    .ok_or(RuntimeCatalogCompileError::Path {
+                        path: path.as_str().to_owned(),
+                    })?,
+            )
+        }
         IdentityField::MapValue { path, .. } => text_map(service, item, path.as_str()),
         // Cross-plan context paths are checked against reviewed producer selectors by the runtime catalog dependency validator.
         IdentityField::Context { .. } => Ok(()),
-    }
-}
-
-fn validate_string_list(
-    service: Service<'_>,
-    item: Target,
-    path: &crate::overlay::MemberPath,
-    max_items: u32,
-    max_item_bytes: u32,
-) -> Result<(), RuntimeCatalogCompileError> {
-    if !(1..=64).contains(&max_items) || !(1..=4096).contains(&max_item_bytes) {
-        return Err(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        });
-    }
-    let Target::Shape(index) = target(service, item, path.as_str())? else {
-        return Err(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        });
-    };
-    let shape = service
-        .shape(index)?
-        .ok_or(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        })?;
-    if shape.kind()? != "list" {
-        return Err(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        });
-    }
-    text(
-        service,
-        shape.element()?.ok_or(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        })?,
-    )
+    })
 }
 fn target(
     service: Service<'_>,
@@ -209,16 +192,16 @@ fn text_map(
     text(
         service,
         shape
-            .map_key()?
-            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            .map_key()
+            ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
                 path: format!("text_map key {path}"),
             })?,
     )?;
     text(
         service,
         shape
-            .map_value()?
-            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            .map_value()
+            ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
                 path: format!("text_map value {path}"),
             })?,
     )
@@ -262,7 +245,7 @@ fn integral(
         _ => {
             return Err(RuntimeCatalogCompileError::Path {
                 path: format!("integral kind {kind}"),
-            });
+            })
         }
     };
     if minimum <= maximum && minimum >= low && maximum <= high {
