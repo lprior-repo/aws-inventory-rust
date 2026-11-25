@@ -33,7 +33,7 @@ metricTransformations = [{ metricName = "Errors", metricNamespace = "InventorySe
 id = "resource_policy"
 operation = "PutResourcePolicy"
 kind = "AWS::Logs::ResourcePolicy"
-identity = "resourcePolicy.policyName"
+identity = { input = "policyName", template = "ACCOUNT:{value}" }
 [step.input]
 policyName = "inventory-seed-log-policy"
 policyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"route53.amazonaws.com"},"Action":["logs:CreateLogStream","logs:PutLogEvents"],"Resource":"arn:aws:logs:us-east-1:000000000000:log-group:inventory-thin-cloudwatch-logs:*"}]}'

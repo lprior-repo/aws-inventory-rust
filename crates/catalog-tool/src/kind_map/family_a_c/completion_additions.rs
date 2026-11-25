@@ -1,6 +1,6 @@
 use crate::kind_map::{
-    ApiOnlyMapping, CfnMapping, MappingSource, OperationMapping, RelationMapping, RelationPath,
-    RelationSource, RelationTarget,
+    AdditionalEmissionMapping, ApiOnlyMapping, CfnMapping, MappingSource, OperationMapping,
+    RelationMapping, RelationPath, RelationSource, RelationTarget,
 };
 
 pub(super) const SOURCE: MappingSource<'static> = MappingSource {
@@ -42,6 +42,9 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
         CfnMapping::canonical("AWS::ApiGatewayV2::Authorizer"),
         CfnMapping::canonical("AWS::AuditManager::AssessmentFramework"),
         CfnMapping::canonical("AWS::Batch::QuotaShare"),
+        CfnMapping::canonical("AWS::CloudWatch::Alarm"),
+        CfnMapping::canonical("AWS::CloudWatch::CompositeAlarm"),
+        CfnMapping::canonical("AWS::CloudWatch::LogAlarm"),
     ],
     api_only: &[
         ApiOnlyMapping {
@@ -266,6 +269,25 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
             service: "batch",
             operation: "ListQuotaShares",
             kind: "AWS::Batch::QuotaShare",
+        },
+        OperationMapping {
+            service: "cloudwatch",
+            operation: "DescribeAlarms",
+            kind: "AWS::CloudWatch::Alarm",
+        },
+    ],
+    additional_emissions: &[
+        AdditionalEmissionMapping {
+            service: "cloudwatch",
+            operation: "DescribeAlarms",
+            emitter_key: "composite_alarms",
+            kind: "AWS::CloudWatch::CompositeAlarm",
+        },
+        AdditionalEmissionMapping {
+            service: "cloudwatch",
+            operation: "DescribeAlarms",
+            emitter_key: "log_alarms",
+            kind: "AWS::CloudWatch::LogAlarm",
         },
     ],
     relations: &[

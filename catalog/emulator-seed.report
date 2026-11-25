@@ -220,6 +220,8 @@ config-service	StartResourceEvaluation	resource_evaluation	accepted
 connect	CreateContactFlow	flow	accepted
 connect	CreateInstance	instance	accepted
 connect	CreateInstance	instance	accepted
+connect	ListContactFlows	default-flows	accepted
+connect	ListContactFlows	default-flows	accepted
 connectcampaigns	CreateCampaign	campaign	accepted
 connectcampaigns	StartInstanceOnboardingJob	onboard	accepted
 connectcases	CreateDomain	resource	accepted
@@ -265,12 +267,16 @@ docdb	CreateDBClusterParameterGroup	parameter_group	accepted
 docdb	CreateEventSubscription	event_subscription	accepted
 docdb	CreateGlobalCluster	resource	accepted
 docdb-elastic	CreateCluster	cluster	accepted
+drs	InitializeService	init	accepted
 dsql	CreateCluster	resource	accepted
 dynamodb	CreateTable	backup_table	accepted
 dynamodb	CreateTable	table	accepted
 dynamodb	CreateTable	table	accepted
 dynamodb	CreateTable	table[1]	accepted
 dynamodb	CreateTable	table[2]	accepted
+ec2	AllocateAddress	address[1]	accepted
+ec2	AllocateAddress	address[2]	accepted
+ec2	CreateFlowLogs	flow_log	accepted
 ec2	CreateInternetGateway	internet_gateway	accepted
 ec2	CreateKeyPair	key_pair	accepted
 ec2	CreateKeyPair	key_pair	accepted
@@ -289,6 +295,7 @@ ec2	CreateSecurityGroup	security_group	accepted
 ec2	CreateSecurityGroup	security_group	accepted
 ec2	CreateSecurityGroup	security_group	accepted
 ec2	CreateSecurityGroup	security_group	accepted
+ec2	CreateSnapshot	snapshot	accepted
 ec2	CreateSubnet	capacity_subnet	accepted
 ec2	CreateSubnet	domain_subnet	accepted
 ec2	CreateSubnet	endpoint_subnet	accepted
@@ -334,6 +341,9 @@ ec2	CreateSubnet	subnet_b	accepted
 ec2	CreateSubnet	subnet_b	accepted
 ec2	CreateSubnet	subnet_c	accepted
 ec2	CreateTransitGateway	transit_gateway	accepted
+ec2	CreateTransitGateway	transit_gateway	accepted
+ec2	CreateVolume	volume[1]	accepted
+ec2	CreateVolume	volume[2]	accepted
 ec2	CreateVpc	capacity_vpc	accepted
 ec2	CreateVpc	domain_vpc	accepted
 ec2	CreateVpc	endpoint_vpc	accepted
@@ -430,9 +440,10 @@ entityresolution	CreateIdMappingWorkflow	id_mapping_workflow	accepted
 entityresolution	CreateMatchingWorkflow	matching_workflow	accepted
 entityresolution	CreateSchemaMapping	schema	accepted
 entityresolution	StartMatchingJob	matching_job	accepted
+eventbridge	CreateEventBus	bus	accepted
 eventbridge	CreateEventBus	event_bus	accepted
 eventbridge	CreateEventBus	event_bus	accepted
-eventbridge	CreateEventBus	resource	accepted
+eventbridge	PutRule	rule	accepted
 eventbridgev2	CreateEventBus	resource	accepted
 firehose	CreateDeliveryStream	metric_firehose	accepted
 firehose	CreateDeliveryStream	stream	accepted
@@ -455,10 +466,12 @@ glacier	CreateVault	vault	accepted
 global-accelerator	CreateAccelerator	resource	accepted
 global-accelerator	CreateEndpointGroup	endpoint_group	accepted
 global-accelerator	CreateListener	listener	accepted
+glue	CreateCrawler	crawler	accepted
 glue	CreateDatabase	database	accepted
 glue	CreateDatabase	database	accepted
 glue	CreateDatabase	glue_database	accepted
 glue	CreateDatabase	workflow_database	accepted
+glue	CreateJob	job	accepted
 glue	CreateTable	glue_table	accepted
 glue	CreateTable	table	accepted
 glue	CreateTable	workflow_table	accepted
@@ -679,6 +692,7 @@ kms	CreateGrant	grant	accepted
 kms	CreateKey	dnssec_key	accepted
 kms	CreateKey	grant_key	accepted
 kms	CreateKey	key	accepted
+kms	CreateKey	key	accepted
 kms	CreateKey	key[1]	accepted
 kms	CreateKey	key[2]	accepted
 kms	CreateKey	publishing_key	accepted
@@ -869,9 +883,25 @@ rds	CreateDBShardGroup	shard_group	accepted
 rds	CreateEventSubscription	event_subscription	accepted
 rds	CreateGlobalCluster	resource	accepted
 rds	CreateIntegration	integration	accepted
-redshift	CreateHsmClientCertificate	resource	accepted
+redshift	CreateCluster	cluster	accepted
+redshift	CreateClusterSnapshot	cluster_snapshot	accepted
+redshift	CreateClusterSubnetGroup	cluster_subnet_group	rejected	InvalidParameterValue	Some input subnets in :[subnet-12345678] are invalid.
+redshift	CreateEndpointAccess	endpoint_access	rejected	ClusterSubnetGroupNotFoundFault	Cluster subnet group 'inv-cluster-subnet-group' does not exist.
+redshift	CreateEventSubscription	event_subscription	accepted
+redshift	CreateHsmClientCertificate	hsm_cert	accepted
+redshift	CreateHsmConfiguration	hsm_config	accepted
+redshift	CreateIntegration	integration	rejected	InvalidParameterValue	You don't have access to zero-ETL integrations because the source Amazon S3 bucket doesn't exist or you don't have the required permissions. Check the resource and key policy on the source bucket and 
+redshift	CreateQev2IdcApplication	qev2_idc_app	accepted
+redshift	CreateRedshiftIdcApplication	redshift_idc_app	accepted
+redshift	CreateScheduledAction	scheduled_action	accepted
+redshift	CreateSnapshotCopyGrant	snapshot_copy_grant	accepted
+redshift	CreateSnapshotSchedule	snapshot_schedule	accepted
+redshift	CreateUsageLimit	usage_limit	rejected	InvalidClusterState	Cluster inventory-thin-redshift-cluster is in state creating; it must be available to set a usage limit.
 redshift-serverless	CreateNamespace	integration_namespace	accepted
-redshift-serverless	CreateNamespace	resource	accepted
+redshift-serverless	CreateNamespace	namespace	accepted
+redshift-serverless	CreateSnapshot	snapshot	rejected	SeedError	invalid response: invalid timestamp
+redshift-serverless	CreateUsageLimit	usage_limit	accepted
+redshift-serverless	CreateWorkgroup	workgroup	accepted
 rekognition	CreateCollection	resource	accepted
 rekognition	CreateProject	createproject	accepted
 resiliencehub	CreateApp	resource	accepted

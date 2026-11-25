@@ -25,6 +25,7 @@ const TREE_2: &[(&str, Shape)] = &[
 
 const TREE_3: &[(&str, Shape)] = &[
     ("", Shape::Map),
+    ("$", Shape::Text),
     ("AttributeDefinitions", Shape::List),
     ("AttributeDefinitions.*", Shape::Map),
     ("AttributeDefinitions.*.AttributeName", Shape::Text),

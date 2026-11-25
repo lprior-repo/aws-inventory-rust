@@ -13,6 +13,7 @@ fn state() -> Result<SeedState, SeedError> {
         AccountId::parse("123456789012")?,
         Region::parse("us-east-1")?,
         String::from("aws"),
+        1,
     ))
 }
 
@@ -56,11 +57,22 @@ fn given_account_scope_when_response_identity_recorded_then_key_is_global_and_tr
         vec![FieldId::new(1)?],
         Value::Text(String::from("observed-id")),
     )])?;
-    let resource = identity::resource(&state, StepId::new(0), &spec, &record, &[])?;
+    let step = StepId::new(0);
+    let resources = identity::resources(&state, step, &spec, &record, &[])?;
+    let [resource] = resources.as_slice() else {
+        return Err("expected one response identity".into());
+    };
     assert_eq!(resource.key.region, Region::Global);
     assert_eq!(resource.id.as_str(), "observed-id");
     assert_eq!(resource.evidence, SeedIdentityEvidence::Response);
-    record_output(&mut state, StepId::new(0), Some(resource), record)?;
+    record_output(
+        &mut state,
+        SeedOutput {
+            step,
+            resources,
+            record,
+        },
+    )?;
     let oracle = state.generic_oracle(&[])?;
     assert_eq!(
         oracle
@@ -93,14 +105,25 @@ fn given_unit_response_when_request_identity_recorded_then_explicit_provenance_a
         vec![FieldId::new(2)?],
         Value::Text(String::from("alias/requested")),
     )];
-    let resource = identity::resource(&state, StepId::new(0), &spec, &record, &inputs)?;
+    let step = StepId::new(0);
+    let resources = identity::resources(&state, step, &spec, &record, &inputs)?;
+    let [resource] = resources.as_slice() else {
+        return Err("expected one request identity".into());
+    };
     assert_eq!(
         resource.id.as_str(),
         "arn:aws:example:us-east-1:123456789012:alias/requested"
     );
     assert_eq!(resource.evidence, SeedIdentityEvidence::Request);
     assert_eq!(resource.key.region.as_str(), "us-east-1");
-    record_output(&mut state, StepId::new(0), Some(resource), record)?;
+    record_output(
+        &mut state,
+        SeedOutput {
+            step,
+            resources,
+            record,
+        },
+    )?;
     assert_eq!(state.generic_oracle(&[])?.resources.len(), 1);
     Ok(())
 }
@@ -109,7 +132,14 @@ fn given_unit_response_when_request_identity_recorded_then_explicit_provenance_a
 fn given_auxiliary_response_when_selected_then_map_names_and_list_indices_return_actual_values()
 -> TestResult {
     let mut state = state()?;
-    record_output(&mut state, StepId::new(0), None, observed()?)?;
+    record_output(
+        &mut state,
+        SeedOutput {
+            step: StepId::new(0),
+            resources: SeedResources::None,
+            record: observed()?,
+        },
+    )?;
     let map_path = [
         Selector::Field(FieldId::new(1)?),
         Selector::Name(String::from("QueueArn")),
@@ -147,7 +177,14 @@ fn given_auxiliary_response_when_selected_then_map_names_and_list_indices_return
 fn given_nested_list_placeholder_when_materialized_then_encoded_request_contains_observed_output()
 -> TestResult {
     let mut state = state()?;
-    record_output(&mut state, StepId::new(0), None, observed()?)?;
+    record_output(
+        &mut state,
+        SeedOutput {
+            step: StepId::new(0),
+            resources: SeedResources::None,
+            record: observed()?,
+        },
+    )?;
     let field = FieldId::new(4)?;
     let template = PreparedTemplate {
         value: Value::Map(BTreeMap::from([(
@@ -205,9 +242,9 @@ fn given_invalid_request_identity_when_materialized_then_missing_or_nontext_valu
         SeedScope::Regional,
     )?;
     let record = wire::input_record(std::iter::empty::<(Vec<FieldId>, Value)>())?;
-    assert!(identity::resource(&state, StepId::new(0), &spec, &record, &[]).is_err());
+    assert!(identity::resources(&state, StepId::new(0), &spec, &record, &[]).is_err());
     assert!(
-        identity::resource(
+        identity::resources(
             &state,
             StepId::new(0),
             &spec,

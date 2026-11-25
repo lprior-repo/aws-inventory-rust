@@ -216,3 +216,61 @@ async fn given_explicit_keep_when_database_owner_is_consumed_then_database_remai
     admin_connection.close().await?;
     assert_database_dropped(&admin, &name).await
 }
+
+struct LocalSession<'a> {
+    root: &'a Path,
+    failed: Option<Stage>,
+}
+
+impl Session for LocalSession<'_> {
+    async fn stage(&mut self, stage: Stage) -> Result<(), HarnessError> {
+        event(self.root, stage.name())?;
+        if self.failed == Some(stage) {
+            return Err(HarnessError::invalid(format!("{} failed", stage.name())));
+        }
+        Ok(())
+    }
+
+    async fn finish(self, interrupted: bool) -> Result<(), HarnessError> {
+        event(self.root, if interrupted { "interrupted" } else { "stop" })
+    }
+}
+
+#[tokio::test]
+async fn given_local_stage_runner_when_driven_then_baseline_precedes_seed_and_stop_is_last()
+-> TestResult {
+    let root = tempfile::tempdir()?;
+    workflow::drive(LocalSession {
+        root: root.path(),
+        failed: None,
+    })
+    .await?;
+    assert_events(root.path(), false)
+}
+
+#[tokio::test]
+async fn given_local_sweep_failure_when_driven_then_counts_and_resweep_do_not_run() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let error = workflow::drive(LocalSession {
+        root: root.path(),
+        failed: Some(Stage::Sweep),
+    })
+    .await
+    .err()
+    .ok_or("failed sweep passed")?;
+    assert_eq!(error.to_string(), "sweep failed");
+    assert_events(root.path(), true)
+}
+
+#[test]
+fn given_two_failing_stages_when_recorded_then_first_stage_is_reported() -> TestResult {
+    let recorded = first_failure(None, Stage::Baseline, 0);
+    let recorded = first_failure(recorded, Stage::Baseline, 2);
+    let recorded = first_failure(recorded, Stage::Sweep, 5);
+    let error = reject_recorded_failure(recorded)
+        .err()
+        .ok_or("recorded failure passed")?;
+    assert_eq!(error.to_string(), "collector baseline failed=2; expected 0");
+    assert!(reject_recorded_failure(None).is_ok());
+    Ok(())
+}

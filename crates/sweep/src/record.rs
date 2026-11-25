@@ -1,9 +1,19 @@
 mod composite;
 use composite::key_text;
+#[cfg(test)]
+mod contact_exclusion_ac_tests;
+#[cfg(test)]
+mod contact_exclusion_df_tests;
+#[cfg(test)]
+mod contact_exclusion_lp_tests;
+#[cfg(test)]
+mod contact_exclusion_support;
 mod identity_choice;
 #[cfg(test)]
 mod identity_tests;
 mod identity_validation;
+#[cfg(test)]
+mod organizations_email_tests;
 #[cfg(test)]
 mod policy_ac_tests;
 #[cfg(test)]
@@ -27,6 +37,7 @@ mod selection;
 mod selection_tests;
 mod tags;
 pub(crate) mod trusted_arn;
+pub(super) use identity_choice::is_identity_member;
 pub(super) use identity_validation::IdentityTextValidation;
 pub(super) use tags::tag_observation;
 #[cfg(test)]

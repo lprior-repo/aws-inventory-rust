@@ -2,9 +2,146 @@ format = 1
 service = "redshift"
 
 [[step]]
-id = "resource"
+id = "hsm_cert"
 operation = "CreateHsmClientCertificate"
 kind = "AWS::ApiOnly::RedshiftHsmClientCertificate"
 identity = "HsmClientCertificate.HsmClientCertificateIdentifier"
 [step.input]
 "HsmClientCertificateIdentifier" = "inventory-thin-redshift"
+
+[[step]]
+id = "snapshot_schedule"
+operation = "CreateSnapshotSchedule"
+kind = "AWS::ApiOnly::RedshiftSnapshotSchedule"
+identity = "ScheduleIdentifier"
+[step.input]
+"ScheduleIdentifier" = "inventory-thin-snapshot-schedule"
+"ScheduleDescription" = "Seed snapshot schedule"
+
+[[step]]
+id = "cluster"
+operation = "CreateCluster"
+kind = "AWS::Redshift::Cluster"
+identity = "Cluster.ClusterIdentifier"
+[step.input]
+"ClusterIdentifier" = "inventory-thin-redshift-cluster"
+"NodeType" = "dc2.large"
+"MasterUsername" = "admin"
+"MasterUserPassword" = "password123"
+
+[[step]]
+id = "cluster_subnet_group"
+operation = "CreateClusterSubnetGroup"
+kind = "AWS::Redshift::ClusterSubnetGroup"
+identity = "ClusterSubnetGroup.ClusterSubnetGroupName"
+[step.input]
+"ClusterSubnetGroupName" = "inv-cluster-subnet-group"
+"Description" = "Seed subnet group"
+"SubnetIds" = ["subnet-12345678"]
+
+[[step]]
+id = "scheduled_action"
+operation = "CreateScheduledAction"
+kind = "AWS::Redshift::ScheduledAction"
+identity = "ScheduledActionName"
+[step.input]
+"ScheduledActionName" = "inventory-thin-scheduled-action"
+"ScheduledActionDescription" = "Seed scheduled action"
+"TargetAction.ResumeCluster.ClusterIdentifier" = "inventory-thin-redshift-cluster"
+"IamRole" = "arn:aws:iam::000000000000:role/seed"
+"Schedule" = "cron(0 12 * * ? *)"
+
+[[step]]
+id = "cluster_snapshot"
+operation = "CreateClusterSnapshot"
+kind = "AWS::ApiOnly::RedshiftSnapshot"
+identity = "Snapshot.SnapshotIdentifier"
+[step.input]
+"ClusterIdentifier" = "inventory-thin-redshift-cluster"
+"SnapshotIdentifier" = "inventory-thin-cluster-snapshot"
+
+[[step]]
+id = "event_subscription"
+operation = "CreateEventSubscription"
+kind = "AWS::Redshift::EventSubscription"
+identity = "EventSubscription.CustSubscriptionId"
+[step.input]
+"SubscriptionName" = "inventory-thin-event-subscription"
+"SnsTopicArn" = "arn:aws:sns:us-east-1:000000000000:inventory-thin-topic"
+"Severity" = "ERROR"
+"Enabled" = true
+
+[[step]]
+id = "hsm_config"
+operation = "CreateHsmConfiguration"
+kind = "AWS::ApiOnly::RedshiftHsmConfiguration"
+identity = "HsmConfiguration.HsmConfigurationIdentifier"
+[step.input]
+"HsmConfigurationIdentifier" = "inv-hsm-config"
+"HsmIpAddress" = "10.0.0.1"
+"HsmPartitionName" = "inv-partition"
+"HsmPartitionPassword" = "test"
+"HsmServerPublicCertificate" = "dummy-cert"
+"Description" = "Seed"
+
+[[step]]
+id = "snapshot_copy_grant"
+operation = "CreateSnapshotCopyGrant"
+kind = "AWS::Redshift::SnapshotCopyGrant"
+identity = "SnapshotCopyGrant.SnapshotCopyGrantName"
+[step.input]
+"SnapshotCopyGrantName" = "inv-snapshot-copy-grant"
+
+[[step]]
+id = "endpoint_access"
+operation = "CreateEndpointAccess"
+kind = "AWS::Redshift::EndpointAccess"
+identity = "EndpointName"
+[step.input]
+"ClusterIdentifier" = "inventory-thin-redshift-cluster"
+"EndpointName" = "inv-endpoint"
+"SubnetGroupName" = "inv-cluster-subnet-group"
+
+[[step]]
+id = "integration"
+operation = "CreateIntegration"
+kind = "AWS::Redshift::Integration"
+identity = "IntegrationArn"
+[step.input]
+"IntegrationName" = "inv-integration"
+"SourceArn" = "arn:aws:s3:us-east-1:000000000000:inv-bucket"
+"TargetArn" = "arn:aws:redshift:us-east-1:000000000000:namespace:6f1c2b1e-0000-4000-8000-000000000002"
+
+[[step]]
+id = "qev2_idc_app"
+operation = "CreateQev2IdcApplication"
+kind = "AWS::ApiOnly::RedshiftQev2IdcApplication"
+identity = "Qev2IdcApplication.Qev2IdcApplicationName"
+[step.input]
+"Qev2IdcApplicationName" = "inv-qev2-app"
+"IdcDisplayName" = "inv-qev2"
+"IdcInstanceArn" = "arn:aws:redshift:us-east-1:000000000000:instance/dummy"
+
+[[step]]
+id = "redshift_idc_app"
+operation = "CreateRedshiftIdcApplication"
+kind = "AWS::ApiOnly::RedshiftIdcApplication"
+identity = "RedshiftIdcApplication.RedshiftIdcApplicationName"
+[step.input]
+"RedshiftIdcApplicationName" = "inv-redshift-idc-app"
+"IdcDisplayName" = "inv-redshift-idc"
+"IamRoleArn" = "arn:aws:iam::000000000000:role/seed"
+"IdcInstanceArn" = "arn:aws:redshift:us-east-1:000000000000:instance/dummy"
+"ApplicationType" = "Lakehouse"
+
+[[step]]
+id = "usage_limit"
+operation = "CreateUsageLimit"
+kind = "AWS::ApiOnly::RedshiftUsageLimit"
+identity = "UsageLimitId"
+[step.input]
+"ClusterIdentifier" = "inventory-thin-redshift-cluster"
+"FeatureType" = "concurrency-scaling"
+"LimitType" = "time"
+"Amount" = 1000
+"BreachAction" = "log"

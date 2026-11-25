@@ -44,7 +44,7 @@ type	AWS::AppConfig::ConfigurationProfile	mapped_live=0	mapped_held=0	unmapped=1
 unmapped	AWS::AppConfig::ConfigurationProfile	/RetrievalRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RetrievalRoleArn not in item shape
 type	AWS::AppConfig::DeploymentStrategy	mapped_live=0	mapped_held=0	unmapped=0
 type	AWS::AppConfig::Environment	mapped_live=0	mapped_held=0	unmapped=2
-unmapped	AWS::AppConfig::Environment	/Monitors/*/AlarmArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::AppConfig::Environment	/Monitors/*/AlarmArn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
 unmapped	AWS::AppConfig::Environment	/Monitors/*/AlarmRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
 type	AWS::AppConfig::ExperimentDefinition	mapped_live=0	mapped_held=0	unmapped=0
 type	AWS::AppRunner::AutoScalingConfiguration	mapped_live=0	mapped_held=0	unmapped=0
@@ -1228,8 +1228,8 @@ unmapped	AWS::VpcLattice::ServiceNetworkVpcAssociation	/SecurityGroupIds/*	USES_
 unmapped	AWS::VpcLattice::ServiceNetworkVpcAssociation	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
 type	AWS::VpcLattice::TargetGroup	mapped_live=0	mapped_held=0	unmapped=0
 mapped, held: path crosses a list (needs E2.2) count=58
-unmapped_reason	identifier matches multiple enumerated kinds	108
-unmapped_reason	no enumerated kind has this identifier	49
+unmapped_reason	identifier matches multiple enumerated kinds	109
+unmapped_reason	no enumerated kind has this identifier	48
 unmapped_reason	pointer segment ActionGroups not in item shape	1
 unmapped_reason	pointer segment AgentCollaborators not in item shape	1
 unmapped_reason	pointer segment AgentResourceRoleArn not in item shape	1

@@ -1,8 +1,11 @@
 mod coverage;
+#[path = "../coverage_status.rs"]
+mod coverage_status;
 mod failures;
 mod snapshot;
 use crate::HarnessError;
 pub use coverage::Coverage;
+pub(super) use coverage_status::Selection;
 pub use failures::failed_operations;
 pub use snapshot::capture_baseline;
 use std::{
@@ -12,6 +15,7 @@ use std::{
 };
 
 type Keys = BTreeMap<String, BTreeSet<(String, String, String)>>;
+type Counts = BTreeMap<String, usize>;
 
 pub struct Baseline(Keys);
 
@@ -85,27 +89,85 @@ pub async fn counts(
     coverage: &Coverage,
 ) -> Result<(), HarnessError> {
     let expected = verified_keys(oracle_keys(&read_text(oracle)?)?, coverage)?;
-    let kinds: Vec<_> = expected.keys().map(String::as_str).collect();
-    let actual = snapshot::read(database, Some(&kinds)).await?;
-    compare(&expected, &snapshot::added(actual, baseline))
+    verify_keys(database, baseline, &expected).await
 }
 
-fn verified_keys(expected: Keys, coverage: &Coverage) -> Result<Keys, HarnessError> {
-    let verified =
-        expected
-            .into_iter()
-            .try_fold(Keys::new(), |mut verified, (kind, identities)| {
-                if let Some(reason) = coverage.reason(&kind)? {
-                    println!(
-                        "count {kind} seeded={} not-verified: catalog-deferred ({reason})",
-                        identities.len()
-                    );
-                } else {
-                    verified.insert(kind, identities);
-                }
-                Ok::<_, HarnessError>(verified)
-            })?;
-    if verified.is_empty() {
+pub(super) async fn counts_with_report(
+    database: &str,
+    work: &Path,
+    baseline: &Baseline,
+    coverage: &Coverage,
+    selection: Selection<'_>,
+) -> Result<(), HarnessError> {
+    let expected = read_text(&work.join("oracle.tsv"))
+        .and_then(|text| oracle_keys(&text))
+        .and_then(|keys| verified_keys(keys, coverage));
+    let empty = Keys::new();
+    report_then_verify(
+        expected,
+        async |keys| {
+            coverage
+                .report(
+                    database,
+                    work,
+                    keys.map_or(&empty, |keys| &keys.required),
+                    selection,
+                )
+                .await
+        },
+        async |keys| verify_keys(database, baseline, &keys).await,
+    )
+    .await
+}
+
+async fn report_then_verify<T>(
+    expected: Result<T, HarnessError>,
+    report: impl AsyncFnOnce(Option<&T>) -> Result<(), HarnessError>,
+    verify: impl AsyncFnOnce(T) -> Result<(), HarnessError>,
+) -> Result<(), HarnessError> {
+    report(expected.as_ref().ok()).await?;
+    verify(expected?).await
+}
+
+async fn verify_keys(
+    database: &str,
+    baseline: &Baseline,
+    expected: &Expected,
+) -> Result<(), HarnessError> {
+    let (mut actual, mut counts) = snapshot::read_snapshot(database).await?;
+    snapshot::relevant(
+        &mut actual,
+        &mut counts,
+        baseline,
+        expected,
+        &mut std::io::stdout().lock(),
+    )?;
+    compare(&expected.required, &actual, &counts)
+}
+
+#[derive(Default)]
+struct Expected {
+    required: Keys,
+    deferred: Keys,
+}
+
+fn verified_keys(expected: Keys, coverage: &Coverage) -> Result<Expected, HarnessError> {
+    let verified = expected.into_iter().try_fold(
+        Expected::default(),
+        |mut verified, (kind, identities)| {
+            if let Some(reason) = coverage.reason(&kind)? {
+                println!(
+                    "count {kind} seeded={} not-verified: catalog-deferred ({reason})",
+                    identities.len()
+                );
+                verified.deferred.insert(kind, identities);
+            } else {
+                verified.required.insert(kind, identities);
+            }
+            Ok::<_, HarnessError>(verified)
+        },
+    )?;
+    if verified.required.is_empty() {
         return Err(HarnessError::invalid("no callable seeded kinds to verify"));
     }
     Ok(verified)
@@ -128,6 +190,7 @@ fn oracle_row(mut keys: Keys, line: &str) -> Result<Keys, HarnessError> {
     let fields: Vec<_> = line.split('\t').collect();
     match fields.as_slice() {
         ["resource", kind, account, region, id]
+        | ["resource", kind, account, region, id, "service-created"]
             if [kind, account, region, id]
                 .iter()
                 .all(|value| !value.is_empty()) =>
@@ -137,7 +200,16 @@ fn oracle_row(mut keys: Keys, line: &str) -> Result<Keys, HarnessError> {
                 return Err(HarnessError::invalid("duplicate oracle resource"));
             }
         }
-        ["edge", _, _, _, _, _] => {}
+        [
+            "edge",
+            source_kind,
+            source_id,
+            relation,
+            target_kind,
+            target_id,
+        ] if [source_kind, source_id, relation, target_kind, target_id]
+            .iter()
+            .all(|value| !value.is_empty()) => {}
         _ => return Err(HarnessError::invalid("malformed seed oracle row")),
     }
     Ok(keys)
@@ -146,31 +218,61 @@ fn oracle_row(mut keys: Keys, line: &str) -> Result<Keys, HarnessError> {
 type Identities = BTreeSet<(String, String, String)>;
 
 fn listed<'a>(identities: impl Iterator<Item = &'a (String, String, String)>) -> String {
-    identities
+    let mut identities = identities;
+    let mut listed = identities
+        .by_ref()
         .take(5)
         .map(|(account, region, id)| format!("{account}/{region}/{id}"))
-        .collect::<Vec<_>>()
-        .join(", ")
+        .collect::<Vec<_>>();
+    let omitted = identities.count();
+    if omitted != 0 {
+        listed.push(format!("+{omitted} more"));
+    }
+    listed.join(", ")
 }
 
-fn identity_mismatch(kind: &str, expected: &Identities, actual: Option<&Identities>) -> String {
+fn identity_mismatch(
+    kind: &str,
+    expected: &Identities,
+    actual: Option<&Identities>,
+    count: usize,
+) -> String {
     let empty = BTreeSet::new();
     let actual = actual.map_or(&empty, |identities| identities);
     format!(
-        "{kind} missing=[{}] unexpected=[{}]",
+        "{kind} expected={} actual={count} missing=[{}] unexpected=[{}]",
+        expected.len(),
         listed(expected.difference(actual)),
         listed(actual.difference(expected))
     )
 }
 
-fn compare(expected: &Keys, actual: &Keys) -> Result<(), HarnessError> {
-    let mismatches: Vec<String> = expected
+fn compare(expected: &Keys, actual: &Keys, counts: &Counts) -> Result<(), HarnessError> {
+    let kinds: BTreeSet<_> = expected
+        .keys()
+        .chain(
+            actual
+                .iter()
+                .filter(|(_, ids)| !ids.is_empty())
+                .map(|(kind, _)| kind),
+        )
+        .chain(
+            counts
+                .iter()
+                .filter(|(_, count)| **count != 0)
+                .map(|(kind, _)| kind),
+        )
+        .collect();
+    let empty = BTreeSet::new();
+    let mismatches: Vec<String> = kinds
         .iter()
-        .filter_map(|(kind, keys)| {
+        .filter_map(|&kind| {
+            let keys = expected.get(kind).map_or(&empty, |keys| keys);
             let found = actual.get(kind);
-            let count = found.map_or(0, BTreeSet::len);
+            let count = counts.get(kind).map_or(0, |value| *value);
             println!("count {kind} expected={} actual={count}", keys.len());
-            (found != Some(keys)).then(|| identity_mismatch(kind, keys, found))
+            (found.map_or(&empty, |ids| ids) != keys || count != keys.len())
+                .then(|| identity_mismatch(kind, keys, found, count))
         })
         .collect();
     if mismatches.is_empty() {
@@ -179,7 +281,7 @@ fn compare(expected: &Keys, actual: &Keys) -> Result<(), HarnessError> {
     Err(HarnessError::invalid(format!(
         "seeded identities/counts differ for {} of {} kinds: {}",
         mismatches.len(),
-        expected.len(),
+        kinds.len(),
         mismatches.join("; ")
     )))
 }

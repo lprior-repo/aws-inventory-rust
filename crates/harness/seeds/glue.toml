@@ -8,3 +8,24 @@ kind = "AWS::Glue::Database"
 identity = { input = "DatabaseInput.Name" }
 [step.input]
 DatabaseInput = { Name = "inventory-thin-glue" }
+
+[[step]]
+id = "crawler"
+operation = "CreateCrawler"
+kind = "AWS::Glue::Crawler"
+identity = { input = "Name" }
+[step.input]
+Name = "inventory-thin-crawler"
+Role = "arn:aws:iam::000000000000:instance-profile/inventory-seed-profile"
+DatabaseName = "inventory-thin-glue"
+Targets = { S3Targets = [{ Path = "s3://inventory-seed-bucket/" }] }
+
+[[step]]
+id = "job"
+operation = "CreateJob"
+kind = "AWS::Glue::Job"
+identity = { input = "Name" }
+[step.input]
+Name = "inventory-thin-job"
+Role = "arn:aws:iam::000000000000:instance-profile/inventory-seed-profile"
+Command = { Name = "glueetl", ScriptLocation = "s3://inventory-seed-bucket/script.py" }

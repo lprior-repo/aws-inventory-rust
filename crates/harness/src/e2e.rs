@@ -23,6 +23,7 @@ struct Run {
     database: TestDatabase,
     baseline: Option<verify::Baseline>,
     collector_services: Vec<String>,
+    failed: Option<(Stage, u64)>,
 }
 
 pub async fn execute(args: RunArgs, admin: &str) -> Result<(), HarnessError> {
@@ -55,6 +56,7 @@ async fn start(args: RunArgs, admin: &str) -> Result<Run, HarnessError> {
         database,
         baseline: None,
         collector_services,
+        failed: None,
     })
 }
 
@@ -108,16 +110,21 @@ impl Run {
             &seed::selected_recipes(&self.args)
                 .map_err(|error| HarnessError::invalid(format!("seed recipes: {error}")))?,
         )?;
-        verify::counts(
+        verify::counts_with_report(
             self.database.url(),
-            &self.args.work.join("oracle.tsv"),
+            &self.args.work,
             baseline,
             &coverage,
+            verify::Selection {
+                requested: &self.args.services,
+                executed: &self.collector_services,
+            },
         )
-        .await
+        .await?;
+        reject_recorded_failure(self.failed)
     }
 
-    async fn sweep(&self, stage: Stage) -> Result<(), HarnessError> {
+    async fn sweep(&mut self, stage: Stage) -> Result<(), HarnessError> {
         let summary = collector::sweep(
             &self.stack,
             &self.args.collector,
@@ -129,7 +136,11 @@ impl Run {
         .await?;
         verify::failed_operations(self.database.url(), &summary).await?;
         if stage == Stage::Resweep {
+            verify::zero(&summary, "failed")?;
             verify::zero(&summary, "resource_writes")?;
+        } else {
+            let failed = verify::metric_value(&summary, "failed")?;
+            self.failed = first_failure(self.failed, stage, failed);
         }
         Ok(())
     }
@@ -139,6 +150,24 @@ async fn stop_stack(stack: Stack) -> Result<(), HarnessError> {
     tokio::task::spawn_blocking(move || stack.finish())
         .await
         .map_err(|error| HarnessError::invalid(format!("stack shutdown task failed: {error}")))?
+}
+
+fn first_failure(
+    recorded: Option<(Stage, u64)>,
+    stage: Stage,
+    failed: u64,
+) -> Option<(Stage, u64)> {
+    recorded.or((failed != 0).then_some((stage, failed)))
+}
+
+fn reject_recorded_failure(recorded: Option<(Stage, u64)>) -> Result<(), HarnessError> {
+    match recorded {
+        Some((stage, failed)) => Err(HarnessError::invalid(format!(
+            "collector {} failed={failed}; expected 0",
+            stage.name()
+        ))),
+        None => Ok(()),
+    }
 }
 
 #[cfg(test)]

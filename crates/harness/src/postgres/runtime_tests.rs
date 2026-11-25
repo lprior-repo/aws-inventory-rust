@@ -5,11 +5,28 @@ use std::path::Path;
 use super::{Action, Runtime, compose_at, detect_in};
 use crate::HarnessError;
 
+fn script(path: &Path, body: &str) -> Result<(), HarnessError> {
+    fs::write(
+        path,
+        format!("#!/bin/sh\n[ -z \"$FIXTURE_PROBE\" ] || exit 0\n{body}\n"),
+    )?;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o700))?;
+    for _ in 0..500 {
+        match std::process::Command::new(path)
+            .env("FIXTURE_PROBE", "1")
+            .status()
+        {
+            Err(error) if error.raw_os_error() == Some(libc::ETXTBSY) => {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            other => return other.map(|_| ()).map_err(Into::into),
+        }
+    }
+    Err(HarnessError::invalid("fixture script stayed busy"))
+}
+
 fn stub(directory: &Path, runtime: &str, status: u8) -> Result<(), HarnessError> {
-    let executable = directory.join(runtime);
-    fs::write(&executable, format!("#!/bin/sh\nexit {status}\n"))?;
-    fs::set_permissions(executable, fs::Permissions::from_mode(0o700))?;
-    Ok(())
+    script(&directory.join(runtime), &format!("exit {status}"))
 }
 
 #[tokio::test]
@@ -60,11 +77,10 @@ async fn postgres_runtime_compose_arguments_and_failures() -> Result<(), Harness
     let directory = tempfile::tempdir()?;
     let executable = directory.path().join("docker");
     let trace = directory.path().join("arguments");
-    fs::write(
+    script(
         &executable,
-        format!("#!/bin/sh\nprintf '%s\\n' \"$@\" > '{}'\n", trace.display()),
+        &format!("printf '%s\\n' \"$@\" > '{}'", trace.display()),
     )?;
-    fs::set_permissions(&executable, fs::Permissions::from_mode(0o700))?;
     let file = directory.path().join("compose.yaml");
     compose_at(&executable, &file, Action::Up).await?;
     let prefix = format!(

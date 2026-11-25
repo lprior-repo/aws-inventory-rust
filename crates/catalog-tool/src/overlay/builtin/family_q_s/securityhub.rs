@@ -1,4 +1,4 @@
-use super::super::{name, path};
+use super::super::{exclude_members, name, path};
 use super::{NameError, ServiceOverlay, construction};
 use crate::overlay::{ExecutionBranch, FixedValue, Identity, IdentityField, Scope};
 use std::collections::BTreeMap;
@@ -23,6 +23,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             IdentityField::Selected(path("AccountId")?),
         ]));
     }
+    exclude_members(&mut service, "ListMembers", &["Members.Email"])?;
     Ok(service)
 }
 

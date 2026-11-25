@@ -2,9 +2,41 @@ format = 1
 service = "redshift-serverless"
 
 [[step]]
-id = "resource"
+id = "namespace"
 operation = "CreateNamespace"
 kind = "AWS::RedshiftServerless::Namespace"
 identity = "namespace.namespaceArn"
 [step.input]
 "namespaceName" = "inventory-thin-redshift-serverless"
+
+[[step]]
+id = "workgroup"
+operation = "CreateWorkgroup"
+kind = "AWS::RedshiftServerless::Workgroup"
+identity = "workgroup.workgroupArn"
+[step.input]
+"namespaceName" = "inventory-thin-redshift-serverless"
+"workgroupName" = "inv-workgroup"
+"baseCapacity" = 8
+"maxCapacity" = 16
+"port" = 5432
+
+[[step]]
+id = "snapshot"
+operation = "CreateSnapshot"
+kind = "AWS::RedshiftServerless::Snapshot"
+identity = "snapshot.snapshotArn"
+[step.input]
+"namespaceName" = "inventory-thin-redshift-serverless"
+"snapshotName" = "inv-snapshot"
+
+[[step]]
+id = "usage_limit"
+operation = "CreateUsageLimit"
+kind = "AWS::ApiOnly::RedshiftServerlessUsageLimit"
+identity = "usageLimit.usageLimitId"
+[step.input]
+"resourceArn" = { from = "workgroup", path = "workgroup.workgroupArn" }
+"usageType" = "serverless-compute"
+"amount" = 1000
+"breachAction" = "log"

@@ -2,9 +2,17 @@ format = 1
 service = "codeartifact"
 
 [[step]]
+id = "key"
+service = "kms"
+operation = "CreateKey"
+kind = "AWS::KMS::Key"
+identity = "KeyMetadata.Arn"
+
+[[step]]
 id = "resource"
 operation = "CreateDomain"
 kind = "AWS::CodeArtifact::Domain"
 identity = "domain.arn"
 [step.input]
 "domain" = "inventory-thin-codeartifact"
+encryptionKey = { from = "key", path = "KeyMetadata.Arn" }

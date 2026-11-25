@@ -14,7 +14,7 @@ impl SeedState {
             .map(|relationship| self.edge(relationship))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(ScenarioSeedOracle {
-            resources: self.resources(),
+            resources: resources(self.outputs),
             account_id: self.account,
             region: self.region,
             edges,
@@ -38,15 +38,8 @@ impl SeedState {
             .collect::<Vec<_>>();
         let missing = SeedError::Invalid("seed scenario produced no verified VPC relationship");
         let primary = pairs.first().cloned().ok_or(missing)?;
-        let parts = (pairs, self.resources(), edges);
+        let parts = (pairs, resources(self.outputs), edges);
         Ok(assemble(self.account, self.region, primary, parts))
-    }
-
-    fn resources(&self) -> Vec<super::super::SeedResourceIdentity> {
-        self.outputs
-            .iter()
-            .filter_map(|output| output.resource.clone())
-            .collect()
     }
 
     pub(super) fn edge(&self, relationship: &PreparedRelationship) -> Result<Edge, SeedError> {
@@ -95,25 +88,36 @@ impl SeedState {
         &self,
         step: super::super::StepId,
     ) -> Result<&SeedResourceIdentity, SeedError> {
-        self.output(step)?
-            .resource
-            .as_ref()
-            .ok_or(SeedError::Invalid(
+        match &self.output(step)?.resources {
+            SeedResources::One(resource) => Ok(resource),
+            _ => Err(SeedError::Invalid(
                 "relationship endpoint must be a resource step",
-            ))
+            )),
+        }
     }
 
     pub(super) fn output(
         &self,
         step: super::super::scenario::StepId,
     ) -> Result<&SeedOutput, SeedError> {
-        self.outputs
-            .iter()
-            .find(|output| output.step == step)
-            .ok_or(SeedError::Invalid(
-                "relationship resource output is unavailable",
-            ))
+        self.accepted_output(step).ok_or(SeedError::Invalid(
+            "relationship resource output is unavailable",
+        ))
     }
+}
+
+fn resources(outputs: Vec<Option<SeedOutput>>) -> Vec<SeedResourceIdentity> {
+    outputs
+        .into_iter()
+        .flatten()
+        .fold(Vec::new(), |mut all, output| {
+            match output.resources {
+                SeedResources::None => {}
+                SeedResources::One(resource) => all.push(resource),
+                SeedResources::List(items) => all.extend(items),
+            }
+            all
+        })
 }
 
 type OracleParts = (
@@ -181,24 +185,41 @@ pub(super) fn value_path<'a>(
     root: MapRef<'a>,
     path: &[super::super::model::Selector],
 ) -> Result<ValueRef<'a>, SeedError> {
+    select_value(ValueRef::Map(root), path)
+}
+
+pub(super) fn select_value<'a>(
+    root: ValueRef<'a>,
+    path: &[super::super::model::Selector],
+) -> Result<ValueRef<'a>, SeedError> {
+    optional_value(root, path)?.ok_or(SeedError::Invalid(
+        "modeled output field or element is missing",
+    ))
+}
+
+pub(super) fn optional_value<'a>(
+    mut value: ValueRef<'a>,
+    path: &[super::super::model::Selector],
+) -> Result<Option<ValueRef<'a>>, SeedError> {
     use super::super::model::Selector;
     if path.is_empty() {
         return Err(SeedError::Invalid("modeled output path is empty"));
     }
-    path.iter()
-        .try_fold(ValueRef::Map(root), |value, selector| {
-            let value = match (value, selector) {
-                (ValueRef::Map(map), Selector::Field(field)) => map.get_field(*field)?,
-                (ValueRef::Map(map), Selector::Name(name)) => map.get_name(name)?,
-                (ValueRef::List(list), Selector::Index(index)) => list.get(*index)?,
-                _ => {
-                    return Err(SeedError::Invalid(
-                        "modeled output selector has the wrong container type",
-                    ));
-                }
-            };
-            value.ok_or(SeedError::Invalid(
-                "modeled output field or element is missing",
-            ))
-        })
+    for selector in path {
+        let next = match (value, selector) {
+            (ValueRef::Map(map), Selector::Field(field)) => map.get_field(*field)?,
+            (ValueRef::Map(map), Selector::Name(name)) => map.get_name(name)?,
+            (ValueRef::List(list), Selector::Index(index)) => list.get(*index)?,
+            _ => {
+                return Err(SeedError::Invalid(
+                    "modeled output selector has the wrong container type",
+                ));
+            }
+        };
+        let Some(next) = next else {
+            return Ok(None);
+        };
+        value = next;
+    }
+    Ok(Some(value))
 }

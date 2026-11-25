@@ -1,4 +1,4 @@
-use super::{TestResult, native::NativeGraph};
+use super::{TestResult, listed_resources, native::NativeGraph, runtime::NativeRuntime};
 use cmdb_view::{
     Database, EdgePageRequest, GraphConnection, GraphEdge, GraphLimits, GraphNode, PageRequest,
     ResourceFilter,
@@ -13,6 +13,8 @@ pub(super) struct Expected {
     pub(super) resources: BTreeSet<ResourceKey>,
     pub(super) edges: BTreeSet<Vec<String>>,
     pub(super) safe_records: super::safe_fields::Expectations,
+    listed: BTreeSet<ResourceKey>,
+    listed_edges: BTreeSet<Vec<String>>,
 }
 
 impl Expected {
@@ -32,23 +34,79 @@ impl Expected {
         let edges = oracles
             .iter()
             .flat_map(|oracle| oracle.edges.iter())
-            .map(|edge| {
-                key_fields(&edge.from)
-                    .into_iter()
-                    .chain(key_fields(&edge.to))
-                    .chain([
-                        edge.relation.as_str().to_owned(),
-                        edge.source.as_str().to_owned(),
-                    ])
-                    .collect()
-            })
+            .map(oracle_edge_fields)
             .collect();
-        Ok(Self {
+        Ok(Self::new(
             resources,
             edges,
-            safe_records: super::safe_fields::Expectations::new(),
-        })
+            super::safe_fields::Expectations::new(),
+        ))
     }
+
+    pub(super) fn new(
+        resources: BTreeSet<ResourceKey>,
+        edges: BTreeSet<Vec<String>>,
+        safe_records: super::safe_fields::Expectations,
+    ) -> Self {
+        Self {
+            resources,
+            edges,
+            safe_records,
+            listed: BTreeSet::new(),
+            listed_edges: BTreeSet::new(),
+        }
+    }
+
+    pub(super) async fn refresh_listed(&mut self, native: &NativeRuntime) -> TestResult {
+        let listed = listed_resources::read(native).await?;
+        let missing: Vec<_> = self
+            .resources
+            .difference(&self.listed)
+            .filter(|key| listed_resources::supports(&key.kind) && !listed.contains_key(*key))
+            .collect();
+        if !missing.is_empty() {
+            return Err(
+                format!("independent Describe responses omitted seeded keys: {missing:?}").into(),
+            );
+        }
+        self.listed.retain(|key| {
+            if listed.contains_key(key) {
+                true
+            } else {
+                self.resources.remove(key);
+                self.safe_records.remove(key);
+                false
+            }
+        });
+        self.edges.retain(|edge| !self.listed_edges.contains(edge));
+        self.listed_edges.clear();
+        for edge in listed_resources::vpc_edges(&listed)?.map(|edge| oracle_edge_fields(&edge)) {
+            if self.edges.insert(edge.clone()) {
+                self.listed_edges.insert(edge);
+            }
+        }
+        for (key, resource) in listed {
+            if !self.resources.contains(&key) {
+                self.resources.insert(key.clone());
+                self.listed.insert(key.clone());
+            } else if !self.listed.contains(&key) {
+                continue;
+            }
+            self.safe_records.insert(key, resource.fields);
+        }
+        Ok(())
+    }
+}
+
+fn oracle_edge_fields(edge: &inventory_core::inventory::Edge) -> Vec<String> {
+    key_fields(&edge.from)
+        .into_iter()
+        .chain(key_fields(&edge.to))
+        .chain([
+            edge.relation.as_str().to_owned(),
+            edge.source.as_str().to_owned(),
+        ])
+        .collect()
 }
 
 pub(super) fn key_fields(key: &ResourceKey) -> Vec<String> {
@@ -107,18 +165,21 @@ async fn assert_sql_projection(store: &BinaryStore, expected: &Expected) -> Test
         resources.len() < 1000,
         "fixture must fit the explicit exact resource budget"
     );
+    let count = resources.len();
+    let actual = resources
+        .into_iter()
+        .map(|row| row.key)
+        .collect::<BTreeSet<_>>();
     assert_eq!(
-        resources.len(),
+        count,
         expected.resources.len(),
-        "SQLite resource cardinality"
+        "SQLite resource cardinality; unexpected keys: {:?}; missing keys: {:?}",
+        actual.difference(&expected.resources).collect::<Vec<_>>(),
+        expected.resources.difference(&actual).collect::<Vec<_>>()
     );
     assert_eq!(
-        resources
-            .into_iter()
-            .map(|row| row.key)
-            .collect::<BTreeSet<_>>(),
-        expected.resources,
-        "SQLite must contain exactly the independently seeded full keys, not merely a subset"
+        actual, expected.resources,
+        "SQLite full key set must match the independent seed and Describe oracles exactly"
     );
     let page = store.projection_edges(None, 1000).await?;
     assert_eq!(page.next, None, "fixture exceeds exact edge budget");
@@ -167,7 +228,7 @@ async fn assert_native(database: &Path, graph: &NativeGraph, expected: &Expected
     assert_eq!(
         rows.into_iter().collect::<BTreeSet<_>>(),
         resources,
-        "native resource full keys and production digest must match the seed oracle"
+        "native resource full keys and production digest must match the independent oracles"
     );
     let view = Database::open(database.to_str().ok_or("non-UTF-8 database path")?).await?;
     let mut metadata = BTreeSet::new();
@@ -229,6 +290,73 @@ async fn assert_read_model(
         expected.resources.len(),
         "every resource needs independent safe field evidence"
     );
+    assert_read_page(&database, expected).await?;
+    let graph_reader = GraphConnection::connect(graph.endpoint(), graph.name())?;
+    let mut sql_edges = BTreeSet::new();
+    let mut native_edges = BTreeSet::new();
+    let mut issues = super::safe_shape::Violations::default();
+    for key in &expected.resources {
+        let node = node(key);
+        let detail = database
+            .detail(&node)
+            .await?
+            .ok_or("UI reader lost seeded resource detail")?;
+        assert_eq!(&detail.key, key);
+        let fields = expected
+            .safe_records
+            .get(key)
+            .ok_or("missing independent safe-field fixture")?;
+        super::safe_fields::inspect_detail(&detail, fields, &catalog, &mut issues)?;
+        let edges = database
+            .edges_page(
+                &node,
+                EdgePageRequest {
+                    limit: 1000,
+                    after: None,
+                },
+            )
+            .await?;
+        assert_eq!(edges.next, None);
+        sql_edges.extend(edges.edges.iter().map(edge_fields));
+        extend_ui_neighbors(&graph_reader, &node, key, &mut native_edges).await?;
+    }
+    issues.finish()?;
+    assert_eq!(
+        sql_edges, expected.edges,
+        "public UI SQLite dependency/provenance set"
+    );
+    assert_eq!(
+        native_edges, expected.edges,
+        "public UI actual FalkorDB dependency/provenance set"
+    );
+    Ok(())
+}
+
+async fn extend_ui_neighbors(
+    graph: &GraphConnection,
+    node: &GraphNode,
+    key: &ResourceKey,
+    edges: &mut BTreeSet<Vec<String>>,
+) -> TestResult {
+    let neighborhood = graph
+        .neighbors(
+            node,
+            GraphLimits {
+                depth: 3,
+                nodes: 500,
+                edges: 2000,
+            },
+        )
+        .await?;
+    assert!(
+        !neighborhood.truncated,
+        "fixture native UI neighborhood must be complete: {key:?}"
+    );
+    edges.extend(neighborhood.edges.iter().map(edge_fields));
+    Ok(())
+}
+
+async fn assert_read_page(database: &Database, expected: &Expected) -> TestResult {
     let page = database
         .page(
             &ResourceFilter::default(),
@@ -250,56 +378,6 @@ async fn assert_read_model(
             .collect::<BTreeSet<_>>(),
         expected.resources,
         "public UI SQLite resource reader must return exact full keys"
-    );
-    let graph_reader = GraphConnection::connect(graph.endpoint(), graph.name())?;
-    let mut sql_edges = BTreeSet::new();
-    let mut native_edges = BTreeSet::new();
-    for key in &expected.resources {
-        let node = node(key);
-        let detail = database
-            .detail(&node)
-            .await?
-            .ok_or("UI reader lost seeded resource detail")?;
-        assert_eq!(&detail.key, key);
-        let fields = expected
-            .safe_records
-            .get(key)
-            .ok_or("missing independent safe-field fixture")?;
-        super::safe_fields::assert_detail(&detail, fields, &catalog)?;
-        let edges = database
-            .edges_page(
-                &node,
-                EdgePageRequest {
-                    limit: 1000,
-                    after: None,
-                },
-            )
-            .await?;
-        assert_eq!(edges.next, None);
-        sql_edges.extend(edges.edges.iter().map(edge_fields));
-        let neighborhood = graph_reader
-            .neighbors(
-                &node,
-                GraphLimits {
-                    depth: 3,
-                    nodes: 500,
-                    edges: 2000,
-                },
-            )
-            .await?;
-        assert!(
-            !neighborhood.truncated,
-            "fixture native UI neighborhood must be complete: {key:?}"
-        );
-        native_edges.extend(neighborhood.edges.iter().map(edge_fields));
-    }
-    assert_eq!(
-        sql_edges, expected.edges,
-        "public UI SQLite dependency/provenance set"
-    );
-    assert_eq!(
-        native_edges, expected.edges,
-        "public UI actual FalkorDB dependency/provenance set"
     );
     Ok(())
 }

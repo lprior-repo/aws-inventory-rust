@@ -2,6 +2,56 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Sweeps no longer store a resource's own identifier as a reference to itself.
+  The next sweep removes those edges; deliberate self-relationships, such as an
+  IAM role that trusts itself, are unchanged.
+- CloudWatch sweeps collect metric, composite, and log alarms by ARN. They omit
+  evaluated state explanations and log alarm scheduled query configuration from
+  stored records.
+- Organizations sweeps no longer store account email addresses: the management
+  account email on `DescribeOrganization`, each account email from
+  `DescribeAccount`, `ListAccounts` and `ListDelegatedAdministrators`, and both
+  participant emails on responsibility transfers are omitted. Databases written
+  by earlier versions keep the addresses in their stored records until the
+  resource is swept again, which replaces the record without them. Records for
+  resources that are no longer swept are not rewritten.
+- Sweeps of ACM, ACM Private CA, AWS B2B Data Interchange, Amazon Chime SDK
+  Voice, Amazon Connect, Amazon Connect Outbound Campaigns (v1 and v2),
+  Detective, Macie, AWS User Notifications Contacts, Oracle Database@AWS, AWS
+  End User Messaging SMS (v2), Security Hub, SES (v1 and v2), Systems Manager
+  Incident Manager Contacts, and WorkMail omit these contact fields from stored
+  records: certificate validation emails and RFC 822 names, member,
+  invitation, user, group and resource emails, contact and customer-contact
+  addresses, sender addresses of custom verification templates and
+  deliverability reports, and the phone number fields of phone number,
+  partnership, profile and campaign records. Other fields that can hold a
+  contact value are still stored: SNS origination numbers and SES certificate
+  sender addresses (they identify the resource), Chime SIP rule trigger values
+  (a phone number or a hostname), Chime phone number IDs, and the Google Cloud
+  service account email on Config connectors. Databases written
+  by earlier versions keep the omitted values in their stored records until the
+  resource is swept again, which replaces the record without them. Records for
+  resources that are no longer swept are not rewritten.
+- EC2 records now carry the tags returned on each item by the operations that
+  list them, including VPCs, subnets, network interfaces, internet and NAT
+  gateways, security groups, volumes, snapshots, images, and transit gateway
+  resources. Four operations are deliberately not covered because their `Tags`
+  member holds another resource's tags, such as `DescribeVpcClassicLink`, which
+  returns the VPC's tags. Operations that are deferred or denied, such as
+  `DescribeInstances`, store no records, so they carry no tags.
+- Seed bindings resolve outputs by step ID after rejected or skipped steps. A
+  binding to an unavailable step names that step, and the dependent request is
+  not sent.
+- Sweeps treat confirmed missing singletons, inactive features, and ineligible
+  account scopes as empty without hiding IAM denials. Absence requires an HTTP
+  client error other than 429, and any account or Region named by a message must
+  match the request. Conflicting values in the selected error header are rejected.
+  A conflicting readable body code also prevents a scope from counting as empty.
+  The emulator probe now runs modeled endpoint discovery before dependent calls.
+  `AmbiguousService`, observed only from the emulator, fails immediately.
+- The harness graph installer builds `redis-server` and `redis-cli` one after
+  the other under one shared deadline. Building both in one parallel `make`
+  could fail intermittently.
 - `sweep` and `serve` accept `--idle-timeout-ms` and `--pool-idle-per-host`
   (or `INVENTORY_SWEEP_IDLE_TIMEOUT_MS` and `INVENTORY_SWEEP_POOL_IDLE_PER_HOST`).
   Idle timeout must be 1–10,000 ms; the per-endpoint cap must be between 1 and
@@ -24,11 +74,22 @@
 - Inventory requests use compatible page limits for EC2 Image Builder lists,
   MediaPackage origin endpoints, and Chime SDK Voice phone numbers. Pagination
   still follows each operation's continuation token.
-- Seed recipes for 23 services create more resources before the emulator
-  probe. The regenerated reports record 390 accepted seed steps with none
-  rejected and 335 list operations returning items, out of 2,237 probed.
+- Seed recipes for 271 services create more resources before the emulator
+  probe. The regenerated reports record 1181 accepted seed steps with 5
+  rejected and 655 list operations returning items, out of 2,238 probed.
   `securityagent ListSecurityRequirementPacks` now reads empty, and seeded ECS
   task definitions join the kinds with no Cloud Control target.
+- Seed identities are checked against the catalog. Four steps declare composite
+  identity templates (Logs metric filter, CodeDeploy deployment group, ECR image,
+  ECR Public image). Seventeen steps whose composite identity contains a runtime
+  id are prerequisite-only (`kind = ""`). Six S3 bucket steps use the
+  account-scoped ARN identity. Fifty-three step kinds invented by the authoring
+  lanes now use the kind the catalog assigns to the list or get operation.
+- The `inventory_seed::file::identity_arity` test reads the embedded catalog and
+  fails when a seed step for a composite-only kind lacks a composite template of
+  the right arity.
+- The Cloud Control "no mapped target" pin lists eight more kinds, each excluded
+  or not callable in the capability catalog.
 - `cmdb-bench` measures cold and warm sweeps in owned stacks, compares benchmark
   results, and times catalog opens. The proxy profile adds latency and request
   pacing; reports retain run provenance and distinguish incomplete runs.
@@ -744,6 +805,25 @@
   execution evidence never transfers SDK versions; receipts require matching
   source, version and module fingerprints. Current exact-version evidence
   credits 47 operations, not the former 76 cross-version rollup.
+- `inventory-harness head-to-head` times repeated collector runs against one
+  seeded emulator and a PostgreSQL database it creates and drops. It compares
+  results only when every tool reports the seeded scope and counts.
+- E2E seeds now record the nine default Connect flows the pinned emulator
+  creates with each instance, and use an explicitly seeded KMS key for
+  CodeArtifact domains.
+- E2E coverage reports distinguish unselected kinds, and count verification
+  reports unexpected kinds and pre-existing seeded identities.
+- Seed validation now rejects a relationship endpoint that names a step with a
+  response identity list, because such a step does not yield one resource.
+- E2E count verification now fails when the run adds resources of a kind that
+  the seed oracle does not list.
+- Head-to-head comparisons enforce exact seeded counts, except for the EC2
+  defaults documented for VPCs and subnets. They handle SIGINT, SIGTERM, SIGHUP
+  and SIGQUIT throughout startup and collection, settle database creation
+  before cleanup, and report a failed deletion.
+- Head-to-head samples report killed leftover processes, retain leaders until
+  group signalling, and stop the native stack on interruption.
+- Fixture downloads retry reads interrupted by a signal.
 
 ## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
 

@@ -12,6 +12,7 @@ mod wire;
 const MAX_VALUE_BYTES: usize = 1_048_576;
 
 pub use file::load;
+pub(crate) use file::load_labeled;
 pub use report::{SeedRunReport, StepOutcome};
 pub use runner::{
     run_data_scenario, run_report, run_report_with_concurrency, run_scenario, run_seed,

@@ -1,8 +1,5 @@
-# Explicit IAM action exceptions for callable model operations.
-# Every target is checked against catalog/iam-actions.tsv.
 [operation]
 
-# API Gateway REST and v2 use the HTTP-verb IAM action.
 "api-gateway/GetAccount" = "apigateway:GET"
 "api-gateway/GetApiKeys" = "apigateway:GET"
 "api-gateway/GetAuthorizers" = "apigateway:GET"
@@ -27,7 +24,7 @@
 "apigatewayv2/GetVpcLink" = "apigateway:GET"
 "apigatewayv2/GetVpcLinks" = "apigateway:GET"
 "budgets/DescribeBudgets" = "budgets:ViewBudget"
-# CloudWatch's signing name is monitoring, not its IAM namespace.
+"cloudwatch/DescribeAlarms" = "cloudwatch:DescribeAlarms"
 "cloudwatch/DescribeAnomalyDetectors" = "cloudwatch:DescribeAnomalyDetectors"
 "cloudwatch/DescribeInsightRules" = "cloudwatch:DescribeInsightRules"
 "cloudwatch/GetDashboard" = "cloudwatch:GetDashboard"
@@ -42,9 +39,7 @@
 "database-migration-service/DescribeInstanceProfiles" = "dms:ListInstanceProfiles"
 "database-migration-service/DescribeMigrationProjects" = "dms:ListMigrationProjects"
 "detective/ListOrganizationAdminAccounts" = "detective:ListOrganizationAdminAccount"
-# https://servicereference.us-east-1.amazonaws.com/v1/iot/iot.json lists ListTunnels.
 "iotsecuretunneling/ListTunnels" = "iot:ListTunnels"
-# Keyspaces uses SELECT for control-plane metadata reads as well as CQL reads.
 "keyspaces/GetTable" = "cassandra:Select"
 "keyspaces/ListKeyspaces" = "cassandra:Select"
 "keyspaces/ListTables" = "cassandra:Select"

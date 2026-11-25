@@ -2,9 +2,20 @@ format = 1
 service = "eventbridge"
 
 [[step]]
-id = "resource"
+id = "bus"
 operation = "CreateEventBus"
 kind = "AWS::Events::EventBus"
 identity = "EventBusArn"
 [step.input]
-"Name" = "inventory-thin-eventbridge"
+Name = "inventory-thin-eventbridge"
+
+[[step]]
+id = "rule"
+operation = "PutRule"
+kind = "AWS::Events::Rule"
+identity = "RuleArn"
+[step.input]
+Name = "inventory-thin-rule"
+EventBusName = "inventory-thin-eventbridge"
+State = "ENABLED"
+EventPattern = '{"source":["aws.ec2"]}'

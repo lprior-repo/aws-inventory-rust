@@ -1,5 +1,4 @@
 use aws_wire::sign::Credentials;
-use futures_util::{TryStreamExt, stream};
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
     inventory::{InventoryError, Region},
@@ -7,8 +6,9 @@ use inventory_core::{
 };
 use inventory_harness::inventory_seed::{
     FieldPath, ScenarioSeedOracle, SeedConfig, SeedError, SeedIdentity, SeedIdentityEvidence,
-    SeedInput, SeedInputValue, SeedNestedBinding, SeedScenario, SeedScope, SeedStep, SeedTemplate,
-    SeedValuePart, StepId, run_data_scenario,
+    SeedInput, SeedInputValue, SeedNestedBinding, SeedRelationship, SeedRunReport, SeedScenario,
+    SeedScope, SeedStep, SeedTemplate, SeedValuePart, StepId, StepOutcome, load, run_data_scenario,
+    run_report,
 };
 use rustls_pki_types::{PrivateKeyDer, PrivatePkcs8KeyDer};
 use sha2::{Digest, Sha256};
@@ -22,6 +22,7 @@ use tokio_rustls::{TlsAcceptor, rustls};
 type TestResult = Result<(), Box<dyn Error>>;
 const REGION: &str = "us-west-2";
 const ACCOUNT: &str = "123456789012";
+const DEADLOCK_GUARD: Duration = Duration::from_secs(60);
 const CALLER: &str = "<GetCallerIdentityResponse xmlns=\"https://sts.amazonaws.com/doc/2011-06-15/\"><GetCallerIdentityResult><Account>123456789012</Account><Arn>arn:aws:iam::123456789012:user/seed-contract</Arn><UserId>observed-user</UserId></GetCallerIdentityResult></GetCallerIdentityResponse>";
 fn text(field: &str, value: &str) -> Result<SeedInput, SeedError> {
     Ok(SeedInput::new(
@@ -179,8 +180,12 @@ async fn read_request(
         .find(|(name, _)| name.eq_ignore_ascii_case("content-length"))
         .map(|(_, value)| value.trim().parse::<usize>())
         .transpose()
-        .map_err(io::Error::other)?
-        .ok_or_else(|| io::Error::other("missing content-length"))?;
+        .map_err(io::Error::other)?;
+    let length = match length {
+        Some(length) => length,
+        None if text.starts_with("GET ") => 0,
+        None => return Err(io::Error::other("missing content-length")),
+    };
     if length > 65_536 {
         return Err(io::Error::other("request body exceeds bound"));
     }
@@ -194,22 +199,25 @@ async fn serve(
     listener: TcpListener,
     acceptor: TlsAcceptor,
     replies: Vec<&str>,
-) -> io::Result<Vec<Vec<u8>>> {
-    stream::iter(replies.into_iter().map(Ok::<_, io::Error>))
-        .try_fold(Vec::new(), |mut requests, body| {
-            let listener = &listener;
-            let acceptor = &acceptor;
-            async move {
-                let (socket, _) = listener.accept().await?;
-                let mut socket = acceptor.accept(socket).await?;
-                requests.push(read_request(&mut socket).await?);
-                let content_type = if body.starts_with('{') { "application/x-amz-json-1.1" } else { "text/xml" };
-                let response = format!("HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}", body.len());
-                socket.write_all(response.as_bytes()).await?;
-                socket.shutdown().await?;
-                Ok(requests)
-            }
-        }).await
+    requests: &mut Vec<Vec<u8>>,
+) -> io::Result<()> {
+    for body in replies {
+        let (socket, _) = listener.accept().await?;
+        let mut socket = acceptor.accept(socket).await?;
+        requests.push(read_request(&mut socket).await?);
+        let content_type = if body.starts_with('{') {
+            "application/x-amz-json-1.1"
+        } else {
+            "text/xml"
+        };
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+            body.len()
+        );
+        socket.write_all(response.as_bytes()).await?;
+        socket.shutdown().await?;
+    }
+    Ok(())
 }
 
 async fn execute(
@@ -223,14 +231,21 @@ async fn execute(
     )?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let credentials = Credentials::new("SEEDCONTRACT", "contract-secret", Some("contract-token"))?;
-    let result = tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::join!(
-            run_data_scenario(&catalog, fixture.config, &credentials, scenario),
-            serve(fixture.listener, fixture.acceptor, replies)
-        )
+    let mut requests = Vec::with_capacity(replies.len());
+    let result = tokio::time::timeout(DEADLOCK_GUARD, async {
+        let seed = run_data_scenario(&catalog, fixture.config, &credentials, scenario);
+        tokio::pin!(seed);
+        tokio::select! {
+            biased;
+            served = serve(fixture.listener, fixture.acceptor, replies, &mut requests) => {
+                served?;
+                Ok::<_, io::Error>(seed.await)
+            }
+            result = &mut seed => Ok(result),
+        }
     })
-    .await?;
-    Ok((result.0, result.1?))
+    .await??;
+    Ok((result, requests))
 }
 
 fn parts(request: &[u8]) -> Result<(&str, &str), Box<dyn Error>> {
@@ -347,6 +362,121 @@ fn form(request: &[u8]) -> Result<BTreeMap<String, String>, Box<dyn Error>> {
             Ok((decode_form(key)?, decode_form(value)?))
         })
         .collect()
+}
+
+const FIRST_TOPIC: &str = "<CreateTopicResponse xmlns=\"http://sns.amazonaws.com/doc/2010-03-31/\"><CreateTopicResult><TopicArn>arn:aws:sns:us-west-2:123456789012:first</TopicArn></CreateTopicResult></CreateTopicResponse>";
+const LATER_TOPIC: &str = "<CreateTopicResponse xmlns=\"http://sns.amazonaws.com/doc/2010-03-31/\"><CreateTopicResult><TopicArn>arn:aws:sns:us-west-2:123456789012:later</TopicArn></CreateTopicResult></CreateTopicResponse>";
+const TOPIC_ATTRIBUTES: &str = "<GetTopicAttributesResponse xmlns=\"http://sns.amazonaws.com/doc/2010-03-31/\"><GetTopicAttributesResult><Attributes><entry><key>Owner</key><value>123456789012</value></entry></Attributes></GetTopicAttributesResult></GetTopicAttributesResponse>";
+
+fn topic_step(id: u16, name: &str) -> Result<SeedStep, SeedError> {
+    Ok(SeedStep::new(
+        StepId::new(id),
+        "sns".into(),
+        "CreateTopic".into(),
+        "AWS::SNS::Topic".into(),
+        FieldPath::new(&["TopicArn"])?,
+        vec![text("Name", name)?],
+    ))
+}
+
+async fn run_report_with_topic_binding(
+    dependency: StepId,
+    replies: Vec<&str>,
+) -> Result<(SeedRunReport, Vec<Vec<u8>>), Box<dyn Error>> {
+    let scenario = SeedScenario::new(vec![
+        topic_step(0, "first")?,
+        topic_step(1, "duplicate")?,
+        topic_step(2, "later")?,
+        SeedStep::auxiliary(
+            StepId::new(3),
+            "sns".into(),
+            "GetTopicAttributes".into(),
+            vec![SeedInput::new(
+                FieldPath::new(&["TopicArn"])?,
+                SeedInputValue::PreviousOutput {
+                    step: dependency,
+                    path: FieldPath::new(&["TopicArn"])?,
+                },
+            )],
+        ),
+    ])?;
+    let fixture = Fixture::new().await?;
+    let bytes = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../catalog/aws-api.catalog"),
+    )?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let credentials = Credentials::new("SEEDCONTRACT", "contract-secret", Some("contract-token"))?;
+    let mut requests = Vec::with_capacity(replies.len());
+    let (report, served) = tokio::time::timeout(Duration::from_secs(10), async {
+        tokio::join!(
+            run_report(&catalog, &fixture.config, &credentials, &scenario),
+            serve(fixture.listener, fixture.acceptor, replies, &mut requests)
+        )
+    })
+    .await?;
+    served?;
+    Ok((report?, requests))
+}
+
+#[tokio::test]
+async fn given_rejection_before_accepted_output_when_bound_then_the_later_value_is_sent()
+-> TestResult {
+    let replies = vec![
+        CALLER,
+        FIRST_TOPIC,
+        FIRST_TOPIC,
+        LATER_TOPIC,
+        TOPIC_ATTRIBUTES,
+    ];
+    let (report, requests) = run_report_with_topic_binding(StepId::new(2), replies).await?;
+    assert_eq!(
+        report.outcomes,
+        [
+            StepOutcome::Accepted,
+            StepOutcome::Rejected {
+                code: "SeedError".into(),
+                message: "invalid emulator seed configuration: seed operation returned a duplicate resource identity".into(),
+            },
+            StepOutcome::Accepted,
+            StepOutcome::Accepted,
+        ]
+    );
+    assert_eq!(requests.len(), 5);
+    let request = requests
+        .get(4)
+        .ok_or("missing bound GetTopicAttributes request")?;
+    let fields = form(request)?;
+    assert_eq!(
+        fields.get("Action").map(String::as_str),
+        Some("GetTopicAttributes")
+    );
+    assert_eq!(
+        fields.get("TopicArn").map(String::as_str),
+        Some("arn:aws:sns:us-west-2:123456789012:later")
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_rejected_output_when_bound_then_dependency_is_named_and_no_request_is_sent()
+-> TestResult {
+    let rejected = StepId::new(1);
+    let replies = vec![CALLER, FIRST_TOPIC, FIRST_TOPIC, LATER_TOPIC];
+    let (report, requests) = run_report_with_topic_binding(rejected, replies).await?;
+    assert_eq!(
+        report.outcomes,
+        [
+            StepOutcome::Accepted,
+            StepOutcome::Rejected {
+                code: "SeedError".into(),
+                message: "invalid emulator seed configuration: seed operation returned a duplicate resource identity".into(),
+            },
+            StepOutcome::Accepted,
+            StepOutcome::Skipped { dependency: rejected },
+        ]
+    );
+    assert_eq!(requests.len(), 4);
+    Ok(())
 }
 
 #[tokio::test]
@@ -550,3 +680,6 @@ async fn given_nontext_request_identity_when_executed_then_modeled_type_rejects_
     );
     Ok(())
 }
+
+#[path = "data_seed_contract/connect.rs"]
+mod connect;

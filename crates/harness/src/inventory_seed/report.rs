@@ -71,8 +71,12 @@ pub(super) fn rejection(error: SeedError) -> StepOutcome {
 
 fn resource_row(resource: &super::SeedResourceIdentity) -> String {
     let key = &resource.key;
+    let origin = match resource.evidence {
+        super::SeedIdentityEvidence::ServiceCreated => "\tservice-created",
+        _ => "",
+    };
     format!(
-        "resource\t{}\t{}\t{}\t{}",
+        "resource\t{}\t{}\t{}\t{}{origin}",
         key.kind.as_str(),
         key.account.as_str(),
         key.region.as_str(),

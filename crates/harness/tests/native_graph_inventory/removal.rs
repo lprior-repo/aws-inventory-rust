@@ -1,8 +1,8 @@
 use super::{
-    TestResult,
+    InPhase, TestResult,
     compare::{self, Expected},
     fault::DeniedRoute,
-    native::{self, NativeGraph},
+    native::{self, FixtureCollector, NativeGraph},
     runtime::NativeRuntime,
     tags::{self, TagSets},
 };
@@ -16,14 +16,15 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::path::Path;
 
 pub(super) async fn retire(
-    native: &NativeRuntime,
-    database: &Path,
+    collector: &FixtureCollector<'_>,
     store: &BinaryStore,
     graph: &NativeGraph,
     expected: &mut Expected,
     tags: &mut TagSets,
     target: &ResourceKey,
 ) -> TestResult {
+    let native = collector.native;
+    let database = collector.database;
     let before = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(target))
@@ -34,7 +35,7 @@ pub(super) async fn retire(
     assert!(!memberships.is_empty() && memberships.iter().all(|(_, missing)| *missing == 0));
     delete_subnet(native, target).await?;
 
-    native::collect(native, database, "miss-one").await?;
+    collector.collect("miss-one").await?;
     native::project(store, graph).await?;
     let once = misses(database, target).await?;
     assert_eq!(
@@ -47,11 +48,25 @@ pub(super) async fn retire(
     compare::all(database, store, graph, expected).await?;
     tags::assert_sets(database, graph, expected, tags).await?;
 
-    denied_miss(native, database, graph, store, target, &once).await?;
+    denied_miss(collector, graph, store, target, &once).await?;
     compare::all(database, store, graph, expected).await?;
     tags::assert_sets(database, graph, expected, tags).await?;
 
-    native::collect(native, database, "miss-two").await?;
+    collector.collect("miss-two").await?;
+    update_removed_expectations(native, expected, tags, target).await?;
+    native::project(store, graph).await?;
+    compare::all(database, store, graph, expected).await?;
+    tags::assert_sets(database, graph, expected, tags).await?;
+    assert_absent(database, graph, target).await?;
+    reject_late_snapshot(store, database, graph, target, expected, tags).await
+}
+
+async fn update_removed_expectations(
+    native: &NativeRuntime,
+    expected: &mut Expected,
+    tags: &mut TagSets,
+    target: &ResourceKey,
+) -> TestResult {
     assert!(expected.resources.remove(target));
     assert!(expected.safe_records.remove(target).is_some());
     let fields = compare::key_fields(target);
@@ -59,11 +74,15 @@ pub(super) async fn retire(
         edge.get(..4) != Some(fields.as_slice()) && edge.get(4..8) != Some(fields.as_slice())
     });
     assert!(tags.remove(target).is_some());
-    native::project(store, graph).await?;
-    compare::all(database, store, graph, expected).await?;
-    tags::assert_sets(database, graph, expected, tags).await?;
-    assert_absent(database, graph, target).await?;
-    reject_late_snapshot(store, database, graph, target, expected, tags).await
+    expected
+        .refresh_listed(native)
+        .await
+        .in_phase("read resource listings after subnet removal")?;
+    assert!(
+        !expected.resources.contains(target),
+        "independent DescribeSubnets still lists the retired key: {target:?}"
+    );
+    Ok(())
 }
 
 async fn delete_subnet(native: &NativeRuntime, target: &ResourceKey) -> TestResult {
@@ -83,13 +102,13 @@ async fn delete_subnet(native: &NativeRuntime, target: &ResourceKey) -> TestResu
 }
 
 async fn denied_miss(
-    native: &NativeRuntime,
-    database: &Path,
+    collector: &FixtureCollector<'_>,
     graph: &NativeGraph,
     store: &BinaryStore,
     target: &ResourceKey,
     expected_misses: &[(Vec<u8>, i64)],
 ) -> TestResult {
+    let database = collector.database;
     let observation = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(target))
@@ -97,23 +116,23 @@ async fn denied_miss(
         .ok_or("denied target missing")?
         .tag_observation;
     let started = tags::now_ms()?;
-    let route = DeniedRoute::start(native).await?;
-    let result = native::collect_at(
-        native,
-        database,
-        "denied-between-misses",
-        route.endpoint(),
-        route.ca(),
-    )
-    .await;
+    let route = DeniedRoute::start(collector.native).await?;
+    let stage = "denied-between-misses";
+    let result = collector
+        .collect_at(stage, route.endpoint(), route.ca())
+        .await;
     let drained = route.close().await;
     let output = result?;
     drained?;
-    assert!(
-        output.status.success(),
-        "scope denial is a durable degraded sweep, not bootstrap failure: {}",
-        String::from_utf8_lossy(&output.stderr)
+    native::assert_sweep_exit(stage, &output)?;
+    assert_eq!(
+        output.status.code(),
+        Some(2),
+        "a durable denied scope makes a completed sweep incomplete (exit 2)"
     );
+    collector
+        .assert_complete(stage, Some(("ec2", "DescribeSubnets")))
+        .await?;
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(

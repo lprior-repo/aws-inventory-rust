@@ -21,11 +21,17 @@ impl SeedScope {
 pub enum SeedIdentityEvidence {
     Response,
     Request,
+    ServiceCreated,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SeedIdentity {
     Response(FieldPath),
+    ResponseList {
+        list: FieldPath,
+        member: FieldPath,
+        count: usize,
+    },
     Request {
         input_field: FieldPath,
         template: Option<String>,

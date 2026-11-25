@@ -28,7 +28,12 @@ pub async fn run_report_with_concurrency(
     let client = seed_client(config)?;
     let context = context(&models, &client, credentials, config);
     let (account, partition) = caller_account(&context).await?;
-    let state = SeedState::new(account, config.region.clone(), partition);
+    let state = SeedState::new(
+        account,
+        config.region.clone(),
+        partition,
+        models.steps.len(),
+    );
     let batches = super::batches::ranges(&models.steps, scenario.steps(), concurrency)?;
     let (state, outcomes) = execute_batches(state, batches, &context, concurrency).await?;
     finish(state, outcomes, models.relationships)
@@ -137,12 +142,10 @@ async fn execute(
 
 fn publish(state: &mut SeedState, attempt: Attempt) -> StepOutcome {
     match attempt {
-        Attempt::Output(output) => {
-            match record_output(state, output.step, output.resource, output.record) {
-                Ok(()) => StepOutcome::Accepted,
-                Err(error) => report::rejection(error),
-            }
-        }
+        Attempt::Output(output) => match record_output(state, output) {
+            Ok(()) => StepOutcome::Accepted,
+            Err(error) => report::rejection(error),
+        },
         Attempt::Outcome(outcome) => outcome,
     }
 }

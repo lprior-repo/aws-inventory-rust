@@ -33,7 +33,12 @@ pub(crate) const CLOUDWATCH_KINDS: [(u16, &str); 2] = [
     (1, "AWS::CloudWatch::CompositeAlarm"),
 ];
 pub(crate) const EC2_EDGES: [(u16, u16, &str); 1] = [(1, 0, "IN_VPC")];
-pub(crate) const ELBV2_EDGES: [(u16, u16, &str); 2] = [(1, 0, "IN_VPC"), (2, 0, "IN_VPC")];
+pub(crate) const ELBV2_EDGES: [(u16, u16, &str); 4] = [
+    (1, 0, "IN_VPC"),
+    (2, 0, "IN_VPC"),
+    (4, 0, "IN_VPC"),
+    (5, 0, "IN_VPC"),
+];
 
 pub(crate) fn ec2_network() -> Result<SeedScenario, SeedError> {
     SeedScenario::with_relationships(
@@ -57,7 +62,22 @@ pub(crate) fn elbv2() -> Result<SeedScenario, SeedError> {
             load_balancer()?,
             target_group()?,
         ],
-        vec![subnet_edge(1)?, subnet_edge(2)?],
+        vec![
+            subnet_edge(1)?,
+            subnet_edge(2)?,
+            SeedRelationship::new(
+                StepId::new(4),
+                StepId::new(0),
+                "IN_VPC".into(),
+                FieldPath::new(&["LoadBalancers", "0", "VpcId"])?,
+            ),
+            SeedRelationship::new(
+                StepId::new(5),
+                StepId::new(0),
+                "IN_VPC".into(),
+                FieldPath::new(&["TargetGroups", "0", "VpcId"])?,
+            ),
+        ],
     )
 }
 
