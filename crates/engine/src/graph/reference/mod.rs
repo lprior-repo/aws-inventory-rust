@@ -10,7 +10,9 @@ mod walk;
 use walk::{serialized_size_exceeds, walk_properties};
 mod persist;
 pub use persist::persist_scan;
-pub(crate) use persist::{SyntheticSnapshot, restore_synthetic, snapshot_synthetic};
+pub(crate) use persist::{
+    RestoreOutcome, SyntheticRollback, persist_scan_owned, restore_synthetic,
+};
 
 pub const REFERENCE_RELATION: &str = "REFERENCES";
 

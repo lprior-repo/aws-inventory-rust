@@ -4,36 +4,53 @@ use crate::store::{Store, StoreError};
 use inventory_core::{CollectionScope, Edge};
 use sqlx::SqliteConnection;
 
-pub(crate) struct SyntheticSnapshot {
+/// The derived-reference state of one scan as it was immediately before a
+/// mutation, captured inside the same write transaction as that mutation.
+pub(super) struct SyntheticSnapshot {
     scopes: Vec<(String, CollectionScope, Vec<Edge>)>,
 }
 
-pub(crate) async fn snapshot_synthetic(
-    store: &Store,
-    scan_id: &str,
-) -> Result<SyntheticSnapshot, StoreError> {
-    let keys = snapshot_keys(store, scan_id).await?;
-    let mut scopes = Vec::with_capacity(keys.len());
-    for key in keys {
-        scopes.push(snapshot_scope(store, scan_id, key).await?);
-    }
-    Ok(SyntheticSnapshot { scopes })
+/// Ownership of one derived-reference mutation. `generation` is the value
+/// written by the mutation itself; the compensating restore only applies while
+/// that value is still current, so a later writer's state is never erased.
+pub(crate) struct SyntheticRollback {
+    before: SyntheticSnapshot,
+    generation: i64,
 }
 
-async fn snapshot_keys(store: &Store, scan_id: &str) -> Result<Vec<String>, StoreError> {
-    let keys = sqlx::query_scalar(
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum RestoreOutcome {
+    Restored,
+    Superseded,
+}
+
+impl SyntheticRollback {
+    pub(super) fn new(before: SyntheticSnapshot, generation: i64) -> Self {
+        Self { before, generation }
+    }
+}
+
+pub(super) async fn snapshot_synthetic(
+    tx: &mut SqliteConnection,
+    scan_id: &str,
+) -> Result<SyntheticSnapshot, StoreError> {
+    let keys: Vec<String> = sqlx::query_scalar(
         "SELECT scope_key FROM scope_checkpoints
          WHERE scan_id=?1 AND collector=?2 ORDER BY scope_key",
     )
     .bind(scan_id)
     .bind(COLLECTOR)
-    .fetch_all(store.export_reader())
+    .fetch_all(&mut *tx)
     .await?;
-    Ok(keys)
+    let mut scopes = Vec::with_capacity(keys.len());
+    for key in keys {
+        scopes.push(snapshot_scope(tx, scan_id, key).await?);
+    }
+    Ok(SyntheticSnapshot { scopes })
 }
 
 async fn snapshot_scope(
-    store: &Store,
+    tx: &mut SqliteConnection,
     scan_id: &str,
     key: String,
 ) -> Result<(String, CollectionScope, Vec<Edge>), StoreError> {
@@ -46,7 +63,7 @@ async fn snapshot_scope(
     )
     .bind(scan_id)
     .bind(&key)
-    .fetch_all(store.export_reader())
+    .fetch_all(&mut *tx)
     .await?;
     let mut edges = Vec::with_capacity(payloads.len());
     for payload in payloads {
@@ -55,18 +72,43 @@ async fn snapshot_scope(
     Ok((key, scope, edges))
 }
 
+/// Advances the scan's generation and returns the new value.
+pub(super) async fn next_generation(
+    tx: &mut SqliteConnection,
+    scan_id: &str,
+) -> Result<i64, StoreError> {
+    Ok(sqlx::query_scalar(
+        "INSERT INTO synthetic_generations(scan_id,generation) VALUES (?1,1)
+         ON CONFLICT(scan_id) DO UPDATE SET generation=generation+1 RETURNING generation",
+    )
+    .bind(scan_id)
+    .fetch_one(&mut *tx)
+    .await?)
+}
+
+/// Compensates `rollback`'s mutation unless another writer changed the scan's
+/// derived references afterwards. The ownership check and the restore share one
+/// `BEGIN IMMEDIATE` transaction, so they are atomic across connections.
 pub(crate) async fn restore_synthetic(
     store: &Store,
     scan_id: &str,
-    snapshot: &SyntheticSnapshot,
-) -> Result<(), StoreError> {
+    rollback: &SyntheticRollback,
+) -> Result<RestoreOutcome, StoreError> {
     let mut tx = store.writer_pool().begin_with("BEGIN IMMEDIATE").await?;
+    let current: Option<i64> =
+        sqlx::query_scalar("SELECT generation FROM synthetic_generations WHERE scan_id=?1")
+            .bind(scan_id)
+            .fetch_optional(&mut *tx)
+            .await?;
+    if current != Some(rollback.generation) {
+        return Ok(RestoreOutcome::Superseded);
+    }
     clear(scan_id, &mut tx).await?;
-    for (key, scope, edges) in &snapshot.scopes {
+    for (key, scope, edges) in &rollback.before.scopes {
         insert_snapshot_scope(&mut tx, scan_id, key, scope, edges).await?;
     }
     tx.commit().await?;
-    Ok(())
+    Ok(RestoreOutcome::Restored)
 }
 
 async fn insert_snapshot_scope(

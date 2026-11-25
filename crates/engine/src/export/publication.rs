@@ -1,6 +1,6 @@
 use super::*;
 use crate::graph::reference::{
-    ReferenceConfig, SyntheticSnapshot, persist_scan, restore_synthetic, snapshot_synthetic,
+    ReferenceConfig, RestoreOutcome, SyntheticRollback, persist_scan_owned, restore_synthetic,
 };
 
 #[tracing::instrument(skip(store, output, cancellation), fields(scan_id))]
@@ -16,13 +16,13 @@ pub async fn export_snapshot(
     check_cancel(cancellation)?;
     let temporary = partial_path(output)?;
     reject_existing(output).await?;
-    let snapshot = if options.reference_mode.is_enabled() {
+    let rollback = if options.reference_mode.is_enabled() {
         Some(persist_references(store, scan_id, options, cancellation).await?)
     } else {
         None
     };
     let result = write_and_publish(store, scan_id, output, options, &temporary, cancellation).await;
-    settle(result, store, scan_id, snapshot.as_ref()).await
+    settle(result, store, scan_id, rollback.as_ref()).await
 }
 
 #[tracing::instrument(skip_all)]
@@ -31,16 +31,15 @@ async fn persist_references(
     scan_id: &str,
     options: ExportOptions,
     cancellation: &CancellationToken,
-) -> Result<SyntheticSnapshot, ExportError> {
+) -> Result<SyntheticRollback, ExportError> {
     let status = await_read(cancellation, store.scan_status(scan_id)).await?;
     validate_status(status, options)?;
-    let before = await_read(cancellation, snapshot_synthetic(store, scan_id)).await?;
-    await_read(
+    let persisted = await_read(
         cancellation,
-        persist_scan(store, scan_id, &ReferenceConfig::default()),
+        persist_scan_owned(store, scan_id, &ReferenceConfig::default()),
     )
     .await?;
-    Ok(before)
+    Ok(persisted.rollback)
 }
 
 #[tracing::instrument(skip_all)]
@@ -64,13 +63,13 @@ async fn settle(
     result: Result<ExportSummary, ExportError>,
     store: &Store,
     scan_id: &str,
-    snapshot: Option<&SyntheticSnapshot>,
+    rollback: Option<&SyntheticRollback>,
 ) -> Result<ExportSummary, ExportError> {
-    match (result, snapshot) {
+    match (result, rollback) {
         (Ok(summary), _) => Ok(summary),
         (Err(cause), None) => Err(cause),
-        (Err(cause), Some(snapshot)) => match restore_synthetic(store, scan_id, snapshot).await {
-            Ok(()) => Err(cause),
+        (Err(cause), Some(rollback)) => match restore_synthetic(store, scan_id, rollback).await {
+            Ok(RestoreOutcome::Restored | RestoreOutcome::Superseded) => Err(cause),
             Err(restore) => Err(ExportError::Restore {
                 cause: Box::new(cause),
                 restore: Box::new(restore),
