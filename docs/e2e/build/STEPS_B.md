@@ -584,6 +584,11 @@ and queue update commit together or not at all, and the kill matrix proves it.
   deadlock unless rows are locked in key order. A larger group raises the cost
   of one failure and the latency of the first page in it; record P1, not only
   throughput.
+  The staging tables of C6.7 are `ON COMMIT DELETE ROWS` and are emptied only
+  when the transaction ends, which is correct while each page has its own
+  transaction. A group must empty the staging tables after each page's
+  upsert, inside that page's savepoint, or a later page of the same kind
+  re-applies the earlier page's rows.
 
 ### B4.3 The kill matrix
 

@@ -2,9 +2,16 @@ use crate::inventory::StoreError;
 use std::num::NonZeroUsize;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum DirectCopy {
+    Disabled,
+    Enabled,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PgWriteConfig {
     max_connections: u32,
     copy_min_rows: Option<NonZeroUsize>,
+    direct_copy: DirectCopy,
 }
 
 impl Default for PgWriteConfig {
@@ -12,6 +19,7 @@ impl Default for PgWriteConfig {
         Self {
             max_connections: 8,
             copy_min_rows: None,
+            direct_copy: DirectCopy::Disabled,
         }
     }
 }
@@ -24,6 +32,7 @@ impl PgWriteConfig {
         Ok(Self {
             max_connections,
             copy_min_rows: None,
+            direct_copy: DirectCopy::Disabled,
         })
     }
 
@@ -39,7 +48,23 @@ impl PgWriteConfig {
         }
     }
 
+    pub fn with_direct_copy(self) -> Result<Self, StoreError> {
+        if self.copy_min_rows.is_none() {
+            return Err(StoreError::Invalid(
+                "direct PostgreSQL COPY requires copy_min_rows",
+            ));
+        }
+        Ok(Self {
+            direct_copy: DirectCopy::Enabled,
+            ..self
+        })
+    }
+
     pub(super) fn copy_min_rows(self) -> Option<NonZeroUsize> {
         self.copy_min_rows
+    }
+
+    pub(super) fn direct_copy(self) -> DirectCopy {
+        self.direct_copy
     }
 }

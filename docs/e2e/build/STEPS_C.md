@@ -5,7 +5,7 @@
 > store interface, C6 builds the PostgreSQL store and then deletes the old
 > store code (C6.12), and C1 to C4 are built on it. Steps C5.2 and C5.4 were
 > removed by V53; see "Removed by V53" in [BUILD_PLAN.md](../BUILD_PLAN.md).
-> Nothing here has been built.
+> A step's own Status line, where it has one, says what exists in the tree.
 
 Conventions: as in [STEPS_A.md](STEPS_A.md). The store is PostgreSQL in every
 step.
@@ -460,6 +460,10 @@ reports remain backend-local. They do not expand the portable store contract.
   staging table and apply them with one set-based upsert, and measure it
   against C6.6's `UNNEST` form.
 - **Depends on:** C6.6, C6.8, B5.2.
+- **Status:** PostgreSQL defaults to UNNEST. `INVENTORY_POSTGRES_COPY_MIN_ROWS=N`
+  selects staging COPY; adding `INVENTORY_POSTGRES_COPY_DIRECT=1` selects
+  direct COPY for pages whose keys are all absent. Direct without the threshold
+  is rejected, and the measurement itself is NOT yet recorded.
 - **Files:** `crates/engine/src/inventory/postgres/copy.rs` (new),
   `postgres/copy/binary.rs` (new), `postgres/commit/kind_rows.rs`,
   `postgres/commit/resources.rs`.
@@ -479,11 +483,11 @@ reports remain backend-local. They do not expand the portable store contract.
      stg_<table> ON CONFLICT (...) DO UPDATE SET ... WHERE <table>.content_hash
      IS DISTINCT FROM EXCLUDED.content_hash`. Below the threshold keep the
      `UNNEST` form.
-  4. Measured variant: when step 2 of C6.6 found none of the page's keys,
-     COPY straight into the target tables with no staging. If the server
-     reports a unique violation (another scope stored the same resource in
-     between), the transaction is rolled back and the page is retried through
-     staging. Keep the variant only if its row shows a gain.
+  4. When C6.6's key lookup found none of the page's keys and the changed-row
+     threshold is met, COPY directly into the resource and kind tables. A 23505
+     unique violation rolls back only the direct-attempt savepoint, preserving
+     earlier outer-transaction work, then retries this page through staging.
+     Other errors propagate.
 - **Tests:** binary writer against the server for every column type and NULL;
   a 100,000-row COPY; staging is empty after commit; the direct variant's
   fallback on a forced unique violation; the conformance suite passes with

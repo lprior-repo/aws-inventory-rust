@@ -36,6 +36,41 @@ pub(in crate::inventory::postgres) async fn persist(
     Ok(())
 }
 
+pub(super) async fn direct(
+    tx: &mut Transaction<'_, Postgres>,
+    registry: &SchemaRegistry,
+    states: &BTreeMap<&ResourceKey, State<'_>>,
+) -> Result<(), StoreError> {
+    let mut groups = groups(states)?;
+    for schema in registry.schemas() {
+        if let Some(rows) = groups.remove(schema.kind()) {
+            let statement = direct_copy_statement(schema);
+            copy::load_direct(tx, &statement, &rows, |buffer, row| {
+                encode(buffer, schema, row)
+            })
+            .await?;
+        }
+    }
+    if !groups.is_empty() {
+        return Err(StoreError::Invalid("observation kind has no schema"));
+    }
+    Ok(())
+}
+
+fn direct_copy_statement(schema: &KindSchema) -> String {
+    let mut statement = format!(
+        "COPY inventory.\"{}\"(account,region,id,content_hash,first_seen,last_changed,record,nested",
+        schema.table().as_str()
+    );
+    schema.columns().iter().for_each(|column| {
+        statement.push_str(",\"");
+        statement.push_str(column.name());
+        statement.push('"');
+    });
+    statement.push_str(") FROM STDIN (FORMAT binary)");
+    statement
+}
+
 fn groups<'a>(
     states: &'a BTreeMap<&ResourceKey, State<'_>>,
 ) -> Result<BTreeMap<&'a Kind, Vec<&'a Prepared>>, StoreError> {

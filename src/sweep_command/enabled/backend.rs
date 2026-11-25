@@ -69,21 +69,42 @@ async fn open_postgres(options: &SweepArgs, catalog: &RuntimeCatalog<'_>) -> Res
 }
 
 fn postgres_config() -> Result<PgWriteConfig> {
-    let value = std::env::var("INVENTORY_POSTGRES_COPY_MIN_ROWS").ok();
-    postgres_config_value(value)
+    postgres_config_value(
+        std::env::var("INVENTORY_POSTGRES_COPY_MIN_ROWS").ok(),
+        direct_copy_environment()?,
+    )
 }
 
-fn postgres_config_value(value: Option<String>) -> Result<PgWriteConfig> {
-    const NAME: &str = "INVENTORY_POSTGRES_COPY_MIN_ROWS";
-    let config = PgWriteConfig::default();
-    match value {
+fn direct_copy_environment() -> Result<Option<String>> {
+    const NAME: &str = "INVENTORY_POSTGRES_COPY_DIRECT";
+    match std::env::var(NAME) {
+        Ok(value) => Ok(Some(value)),
+        Err(std::env::VarError::NotPresent) => Ok(None),
+        Err(std::env::VarError::NotUnicode(_)) => {
+            anyhow::bail!("{NAME} must be 1 or 0")
+        }
+    }
+}
+
+fn postgres_config_value(
+    min_rows: Option<String>,
+    direct: Option<String>,
+) -> Result<PgWriteConfig> {
+    const MIN_ROWS: &str = "INVENTORY_POSTGRES_COPY_MIN_ROWS";
+    const DIRECT: &str = "INVENTORY_POSTGRES_COPY_DIRECT";
+    let config = match min_rows {
         Some(value) => {
             let threshold = value
                 .parse::<std::num::NonZeroUsize>()
-                .with_context(|| format!("{NAME} must be a positive integer"))?;
-            Ok(config.with_copy_min_rows(threshold))
+                .with_context(|| format!("{MIN_ROWS} must be a positive integer"))?;
+            PgWriteConfig::default().with_copy_min_rows(threshold)
         }
-        None => Ok(config),
+        None => PgWriteConfig::default(),
+    };
+    match direct.as_deref() {
+        None | Some("0") => Ok(config),
+        Some("1") => config.with_direct_copy().context(DIRECT),
+        Some(_) => anyhow::bail!("{DIRECT} must be 1 or 0"),
     }
 }
 

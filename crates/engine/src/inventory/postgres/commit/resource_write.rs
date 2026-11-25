@@ -10,6 +10,8 @@ use std::num::NonZeroUsize;
 const CREATE_STAGE: &str = "CREATE TEMPORARY TABLE IF NOT EXISTS stg_resources (LIKE inventory.resources, is_new boolean NOT NULL) ON COMMIT DELETE ROWS";
 const COPY_STAGE: &str = "COPY pg_temp.stg_resources FROM STDIN (FORMAT binary)";
 
+const COPY_DIRECT: &str = "COPY inventory.resources(account,region,kind,id,name,content_hash,first_seen,last_changed) FROM STDIN (FORMAT binary)";
+
 enum Input<'a> {
     Unnest(&'a [&'a Prepared]),
     Staging,
@@ -33,7 +35,7 @@ pub(super) async fn persist(
     }
     let input = if copy_min_rows.is_some_and(|min| changed.len() >= min.get()) {
         copy::load(tx, CREATE_STAGE, COPY_STAGE, &changed, |buffer, row| {
-            encode(buffer, row)
+            encode(buffer, row, true)
         })
         .await?;
         Input::Staging
@@ -47,10 +49,42 @@ pub(super) async fn persist(
     Ok(())
 }
 
-fn encode(buffer: &mut Vec<u8>, row: &Prepared) -> Result<(), StoreError> {
+pub(super) async fn direct(
+    tx: &mut Transaction<'_, Postgres>,
+    rows: &[&Prepared],
+    page: &PageCommit,
+    scope: &[u8],
+) -> Result<(), StoreError> {
+    copy::load_direct(tx, COPY_DIRECT, rows, |buffer, row| {
+        encode(buffer, row, false)
+    })
+    .await?;
+    let mut query = QueryBuilder::new("WITH input AS (SELECT * FROM UNNEST(");
+    keys(&mut query, rows);
+    metadata(&mut query, rows);
+    query.push(") u(account,region,kind,id,name,content_hash,first_seen,last_changed,is_new))");
+    observe(&mut query, page, scope);
+    parents(&mut query, page, scope, true);
+    query.push(" SELECT count(*) FROM input");
+    query.build().execute(&mut **tx).await?;
+    Ok(())
+}
+
+fn observe(query: &mut QueryBuilder<Postgres>, page: &PageCommit, scope: &[u8]) {
+    query.push(", observed AS (INSERT INTO resource_scopes(account,region,kind,id,scope_key,last_seen,missing_complete,observed_sweep) SELECT account,region,kind,id,");
+    query
+        .push_bind(scope)
+        .push(",")
+        .push_bind(page.observed_at_ms)
+        .push(",0,")
+        .push_bind(page.lease.sweep().as_str());
+    query.push(" FROM input WHERE is_new ON CONFLICT(account,region,kind,id,scope_key) DO UPDATE SET last_seen=EXCLUDED.last_seen,missing_complete=0,observed_sweep=EXCLUDED.observed_sweep)");
+}
+
+fn encode(buffer: &mut Vec<u8>, row: &Prepared, include_new: bool) -> Result<(), StoreError> {
     let observation = &row.aggregate.observation;
     let key = observation.key();
-    copy::row(buffer, 9)?;
+    copy::row(buffer, if include_new { 9 } else { 8 })?;
     [
         Field::Text(key.account.as_str()),
         Field::Text(key.region.as_str()),
@@ -60,10 +94,13 @@ fn encode(buffer: &mut Vec<u8>, row: &Prepared) -> Result<(), StoreError> {
         Field::Bytes(&row.hash),
         Field::Bigint(row.first_seen),
         Field::Bigint(row.last_changed),
-        Field::Boolean(row.new),
     ]
     .into_iter()
-    .try_for_each(|field| copy::field(buffer, field))
+    .try_for_each(|field| copy::field(buffer, field))?;
+    if include_new {
+        copy::field(buffer, Field::Boolean(row.new))?;
+    }
+    Ok(())
 }
 
 fn statement(input: Input<'_>, page: &PageCommit, scope: &[u8]) -> QueryBuilder<Postgres> {
@@ -89,7 +126,7 @@ fn statement(input: Input<'_>, page: &PageCommit, scope: &[u8]) -> QueryBuilder<
         .push(",0,")
         .push_bind(page.lease.sweep().as_str());
     query.push(" FROM input JOIN saved USING(account,region,kind,id) WHERE is_new ON CONFLICT(account,region,kind,id,scope_key) DO UPDATE SET last_seen=EXCLUDED.last_seen,missing_complete=0,observed_sweep=EXCLUDED.observed_sweep)");
-    parents(&mut query, page, scope);
+    parents(&mut query, page, scope, false);
     query.push(" SELECT count(*) FROM saved");
     query
 }
@@ -115,7 +152,7 @@ fn metadata(query: &mut QueryBuilder<Postgres>, rows: &[&Prepared]) {
     query.push_bind(new).push("::boolean[]");
 }
 
-fn parents(query: &mut QueryBuilder<Postgres>, page: &PageCommit, scope: &[u8]) {
+fn parents(query: &mut QueryBuilder<Postgres>, page: &PageCommit, scope: &[u8], direct: bool) {
     if let Some(parent) = page.lease.scope().parent() {
         query.push(", parents AS (INSERT INTO resource_parents(parent_account,parent_region,parent_kind,parent_id,child_account,child_region,child_kind,child_id,scope_key) SELECT ");
         query
@@ -128,7 +165,11 @@ fn parents(query: &mut QueryBuilder<Postgres>, page: &PageCommit, scope: &[u8]) 
             .push_bind(parent.id.as_str())
             .push(",account,region,kind,id,")
             .push_bind(scope);
-        query.push(" FROM input JOIN saved USING(account,region,kind,id) WHERE is_new ON CONFLICT DO NOTHING)");
+        query.push(" FROM input ");
+        if !direct {
+            query.push("JOIN saved USING(account,region,kind,id) ");
+        }
+        query.push("WHERE is_new ON CONFLICT DO NOTHING)");
     }
 }
 
