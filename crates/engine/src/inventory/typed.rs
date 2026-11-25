@@ -189,11 +189,11 @@ fn bind_column(
         }
         ScalarType::Real => {
             let (value, flag) = real_value(value)?;
-            query.push_bind(value).push_bind(flag);
+            query.push_bind(value).push(",").push_bind(flag);
         }
         ScalarType::Timestamp => {
             let (seconds, nanos) = time_value(value)?;
-            query.push_bind(seconds).push_bind(nanos);
+            query.push_bind(seconds).push(",").push_bind(nanos);
         }
     }
     Ok(())
@@ -229,3 +229,6 @@ fn time_value(value: Option<ValueRef<'_>>) -> Result<(Option<i64>, Option<i64>),
         )),
     }
 }
+
+#[cfg(test)]
+mod tests;
