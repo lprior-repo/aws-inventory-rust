@@ -30,8 +30,8 @@ __pycache__/
 /.moon/cache/
 
 # Local agent tooling state
-/.beads/
 /.claude/
 /.codex/
+/.beads/proxieddb/
 .dolt/
 .beads-credential-key

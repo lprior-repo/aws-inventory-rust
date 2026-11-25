@@ -1,7 +1,6 @@
 use super::{RuntimeCatalogCompileError, model_path};
-use crate::overlay::{Identity, ItemSelector, OperationOverlay};
+use crate::overlay::{Binding, Identity, ItemSelector, OperationOverlay};
 use inventory_core::catalog::{Operation, Service, Target};
-mod bindings;
 mod pagination;
 mod resource;
 pub(in crate::runtime_catalog) use resource::validate_resource;
@@ -83,8 +82,9 @@ fn validate_identity_template(
     item: Target,
     template: &str,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    super::plans::identity::fields(template)
-        .try_for_each(|path| map_path_error(path, scalar_target(service, item, path)))
+    super::plans::identity::fields(template).try_for_each(|path| {
+        map_path_error(path, scalar_target(service, item, path))
+    })
 }
 
 fn selected_target(
@@ -135,7 +135,74 @@ fn validate_bindings(
     input: Target,
     overlay: &OperationOverlay,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    bindings::validate(service, input, overlay)
+    overlay
+        .bind
+        .iter()
+        .chain(
+            overlay
+                .branches
+                .iter()
+                .flat_map(|branch| branch.bind.iter()),
+        )
+        .try_for_each(|(path, binding)| {
+            let target = model_path::resolve(service, input, &path.to_string())?.1;
+            let path_str = path.to_string();
+            match binding {
+                Binding::Region | Binding::Account => {
+                    model_path::string_target(service, target).map_err(|_| {
+                        RuntimeCatalogCompileError::Path { path: path_str }
+                    })
+                }
+                Binding::RegionList => {
+                    let element = model_path::list_element(service, target)?;
+                    model_path::string_target(service, element).map_err(|_| {
+                        RuntimeCatalogCompileError::Path { path: path_str }
+                    })
+                }
+                Binding::FromAny(alternatives) => {
+                    if alternatives.is_empty()
+                        || alternatives.len() > 8
+                        || alternatives.iter().enumerate().any(|(index, alternative)| {
+                            alternatives
+                                .iter()
+                                .take(index)
+                                .any(|prior| prior.operation == alternative.operation)
+                        })
+                    {
+                        return Err(RuntimeCatalogCompileError::Path { path: path_str });
+                    }
+                    Ok(())
+                }
+                Binding::From { .. }
+                | Binding::Context { .. }
+                | Binding::FromArn { .. }
+                | Binding::FromUrl { .. }
+                | Binding::FromService { .. }
+                | Binding::FromBranch { .. }
+                | Binding::ContextFromBranch { .. } => Ok(()),
+                Binding::Transformed {
+                    binding,
+                    transform: crate::overlay::BindingTransform::StripPrefix(prefix),
+                } => {
+                    if prefix.is_empty()
+                        || prefix.len() > 256
+                        || prefix.chars().any(char::is_control)
+                        || !matches!(
+                            binding.as_ref(),
+                            Binding::From { .. }
+                                | Binding::Context { .. }
+                                | Binding::FromArn { .. }
+                                | Binding::FromService { .. }
+                        )
+                    {
+                        return Err(RuntimeCatalogCompileError::Path { path: path_str });
+                    }
+                    model_path::string_target(service, target).map_err(|_| {
+                        RuntimeCatalogCompileError::Path { path: path_str }
+                    })
+                }
+            }
+        })
 }
 
 fn validate_page(
@@ -166,10 +233,10 @@ fn map_path_error<T>(
     result: Result<T, RuntimeCatalogCompileError>,
 ) -> Result<T, RuntimeCatalogCompileError> {
     result.map_err(|error| match error {
-        RuntimeCatalogCompileError::Capability | RuntimeCatalogCompileError::Path { .. } => {
-            RuntimeCatalogCompileError::Path {
-                path: path.to_owned(),
-            }
+        RuntimeCatalogCompileError::Path { path: inner }
+            if inner != path =>
+        {
+            RuntimeCatalogCompileError::Path { path: path.to_owned() }
         }
         error => error,
     })

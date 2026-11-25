@@ -22,3 +22,5 @@ pub(in crate::runtime_catalog) fn active_kind(
 ) -> bool {
     emission_sources::sources(context.kinds, context.checked).any(|source| source.emits_kind(kind))
 }
+
+

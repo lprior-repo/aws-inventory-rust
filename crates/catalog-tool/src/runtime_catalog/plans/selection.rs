@@ -39,7 +39,35 @@ pub(super) fn identity(
                 .map_err(|_| RuntimeCatalogCompileError::Path {
                     path: "identity choice validation".to_owned(),
                 })?;
-            choice_value(choice, service, services)
+            match choice {
+                IdentityChoice::PreferArn {
+                    path,
+                    fallback,
+                    review,
+                } => encode::map([
+                    (1, Value::Int(3)),
+                    (2, selected_path(services, path.as_str())?),
+                    (3, leaf(fallback, service, services)?),
+                    (4, Value::Text(review.clone())),
+                ]),
+                IdentityChoice::Discriminated(branches) => encode::map([
+                    (1, Value::Int(4)),
+                    (
+                        2,
+                        Value::List(
+                            branches
+                                .iter()
+                                .map(|branch| {
+                                    encode::map([
+                                        (1, predicate(&branch.predicate, services)?),
+                                        (2, leaf(&branch.identity, service, services)?),
+                                    ])
+                                })
+                                .collect::<Result<_, _>>()?,
+                        ),
+                    ),
+                ]),
+            }
         }
         Identity::CorrelatedKey(fields) => fields_value(fields, service, services),
         Identity::MapArn {
@@ -62,42 +90,6 @@ pub(super) fn identity(
         _ => Err(RuntimeCatalogCompileError::Path {
             path: "identity value".to_owned(),
         }),
-    }
-}
-
-fn choice_value(
-    choice: &IdentityChoice,
-    service: &str,
-    services: &ServiceIndex<'_>,
-) -> Result<Value, RuntimeCatalogCompileError> {
-    match choice {
-        IdentityChoice::PreferArn {
-            path,
-            fallback,
-            review,
-        } => encode::map([
-            (1, Value::Int(3)),
-            (2, selected_path(services, path.as_str())?),
-            (3, leaf(fallback, service, services)?),
-            (4, Value::Text(review.clone())),
-        ]),
-        IdentityChoice::Discriminated(branches) => encode::map([
-            (1, Value::Int(4)),
-            (
-                2,
-                Value::List(
-                    branches
-                        .iter()
-                        .map(|branch| {
-                            encode::map([
-                                (1, predicate(&branch.predicate, services)?),
-                                (2, leaf(&branch.identity, service, services)?),
-                            ])
-                        })
-                        .collect::<Result<_, _>>()?,
-                ),
-            ),
-        ]),
     }
 }
 
@@ -183,7 +175,11 @@ fn field_value(
         IdentityField::Selected(path)
         | IdentityField::SelectedDigest(path)
         | IdentityField::Request(path) => {
-            let tag = field_selected_tag(field);
+            let tag = match field {
+                IdentityField::Selected(_) => 0,
+                IdentityField::SelectedDigest(_) => 1,
+                _ => 4,
+            };
             encode::map([
                 (1, Value::Int(tag)),
                 (2, selected_path(services, path.as_str())?),
@@ -209,12 +205,41 @@ fn field_value(
             path,
             minimum,
             maximum,
-        } => field_integer_value(field, path, minimum, maximum, services),
+        } => {
+            if minimum > maximum {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
+            }
+            let tag = if matches!(field, IdentityField::SelectedInteger { .. }) {
+                5
+            } else {
+                6
+            };
+            encode::map([
+                (1, Value::Int(tag)),
+                (2, selected_path(services, path.as_str())?),
+                (3, Value::Int(*minimum)),
+                (4, Value::Int(*maximum)),
+            ])
+        }
         IdentityField::SelectedStringList {
             path,
             max_items,
             max_item_bytes,
-        } => field_string_list_value(path, *max_items, *max_item_bytes, services),
+        } => {
+            if !(1..=64).contains(max_items) || !(1..=4096).contains(max_item_bytes) {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
+            }
+            encode::map([
+                (1, Value::Int(7)),
+                (2, selected_path(services, path.as_str())?),
+                (3, Value::Int(i64::from(*max_items))),
+                (4, Value::Int(i64::from(*max_item_bytes))),
+            ])
+        }
         IdentityField::Context {
             operation,
             source,
@@ -232,58 +257,6 @@ fn field_value(
             (3, Value::Text(key.clone())),
         ]),
     }
-}
-
-fn field_selected_tag(field: &IdentityField) -> i64 {
-    match field {
-        IdentityField::Selected(_) => 0,
-        IdentityField::SelectedDigest(_) => 1,
-        _ => 4,
-    }
-}
-
-fn field_integer_value(
-    field: &IdentityField,
-    path: &crate::overlay::MemberPath,
-    minimum: &i64,
-    maximum: &i64,
-    services: &ServiceIndex<'_>,
-) -> Result<Value, RuntimeCatalogCompileError> {
-    if minimum > maximum {
-        return Err(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        });
-    }
-    let tag = if matches!(field, IdentityField::SelectedInteger { .. }) {
-        5
-    } else {
-        6
-    };
-    encode::map([
-        (1, Value::Int(tag)),
-        (2, selected_path(services, path.as_str())?),
-        (3, Value::Int(*minimum)),
-        (4, Value::Int(*maximum)),
-    ])
-}
-
-fn field_string_list_value(
-    path: &crate::overlay::MemberPath,
-    max_items: u32,
-    max_item_bytes: u32,
-    services: &ServiceIndex<'_>,
-) -> Result<Value, RuntimeCatalogCompileError> {
-    if !(1..=64).contains(&max_items) || !(1..=4096).contains(&max_item_bytes) {
-        return Err(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        });
-    }
-    encode::map([
-        (1, Value::Int(7)),
-        (2, selected_path(services, path.as_str())?),
-        (3, Value::Int(i64::from(max_items))),
-        (4, Value::Int(i64::from(max_item_bytes))),
-    ])
 }
 
 pub(super) fn source_tag(source: ContextSource) -> i64 {

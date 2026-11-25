@@ -29,12 +29,11 @@ pub(super) fn encode(
             })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let masks =
-        Exclusions::none()
-            .with_map_keys(masks)
-            .map_err(|_| RuntimeCatalogCompileError::Path {
-                path: "exclude_map_keys".to_owned(),
-            })?;
+    let masks = Exclusions::none()
+        .with_map_keys(masks)
+        .map_err(|_| RuntimeCatalogCompileError::Path {
+            path: "exclude_map_keys".to_owned(),
+        })?;
     masks
         .map_keys()
         .iter()
@@ -74,15 +73,15 @@ fn validate_map(service: Service<'_>, target: Target) -> Result<(), RuntimeCatal
     }
     model_path::string_target(
         service,
-        map.map_key()?
-            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+        map.map_key()
+            ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
                 path: "map_exclusions key".to_owned(),
             })?,
     )?;
     let value = model_path::kind(
         service,
-        map.map_value()?
-            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+        map.map_value()
+            ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
                 path: "map_exclusions value".to_owned(),
             })?,
     )?;

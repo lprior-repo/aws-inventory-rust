@@ -12,25 +12,14 @@ pub(super) fn compile(
     checked: &crate::overlay::CheckedOverlays,
     services: &super::super::ServiceIndex<'_>,
 ) -> Result<[(u32, Value); 2], RuntimeCatalogCompileError> {
-    let route = compile_routing(overlay, services)?;
-    validate_branches(overlay)?;
-    let branches = compile_branches(service, operation, overlay, checked, services)?;
-    Ok([(15, route), (16, Value::List(branches))])
-}
-
-fn compile_routing(
-    overlay: &OperationOverlay,
-    services: &super::super::ServiceIndex<'_>,
-) -> Result<Value, RuntimeCatalogCompileError> {
-    match &overlay.routing {
-        RequestRouting::Regional => encode::map([(1, Value::Int(0))]),
+    let route = match &overlay.routing {
+        RequestRouting::Regional => encode::map([(1, Value::Int(0))])?,
         RequestRouting::FixedRegion { region } => {
-            inventory_core::inventory::RegionId::parse(region).map_err(|_| {
-                RuntimeCatalogCompileError::Path {
+            inventory_core::inventory::RegionId::parse(region)
+                .map_err(|_| RuntimeCatalogCompileError::Path {
                     path: "fixed region".to_owned(),
-                }
-            })?;
-            encode::map([(1, Value::Int(1)), (2, Value::Text(region.clone()))])
+                })?;
+            encode::map([(1, Value::Int(1)), (2, Value::Text(region.clone()))])?
         }
         RequestRouting::Discovered {
             operation,
@@ -46,21 +35,18 @@ fn compile_routing(
                     path: "discovered routing".to_owned(),
                 });
             }
-            Ok(encode::map([
+            encode::map([
                 (1, Value::Int(2)),
                 (2, Value::Text(operation.clone())),
                 (3, encode::path(services, endpoints_path.as_str())?),
                 (4, encode::path(services, address_path.as_str())?),
                 (5, encode::path(services, cache_minutes_path.as_str())?),
                 (6, Value::Text(trusted_dns_suffix.clone())),
-            ])?)
+            ])?
         }
-        RequestRouting::S3Outposts => encode::map([(1, Value::Int(3))]),
-        RequestRouting::S3ExpressControl => encode::map([(1, Value::Int(4))]),
-    }
-}
-
-fn validate_branches(overlay: &OperationOverlay) -> Result<(), RuntimeCatalogCompileError> {
+        RequestRouting::S3Outposts => encode::map([(1, Value::Int(3))])?,
+        RequestRouting::S3ExpressControl => encode::map([(1, Value::Int(4))])?,
+    };
     if overlay.branches.len() > 16 {
         return Err(RuntimeCatalogCompileError::Path {
             path: "branch count".to_owned(),
@@ -76,17 +62,7 @@ fn validate_branches(overlay: &OperationOverlay) -> Result<(), RuntimeCatalogCom
             path: "branch duplicate".to_owned(),
         });
     }
-    Ok(())
-}
-
-fn compile_branches(
-    service: Service<'_>,
-    operation: Operation<'_>,
-    overlay: &OperationOverlay,
-    checked: &crate::overlay::CheckedOverlays,
-    services: &super::super::ServiceIndex<'_>,
-) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    overlay
+    let branches = overlay
         .branches
         .iter()
         .map(|branch| {
@@ -99,7 +75,8 @@ fn compile_branches(
                 services,
             )
         })
-        .collect()
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok([(15, route), (16, Value::List(branches))])
 }
 fn compile_branch(
     service: Service<'_>,
@@ -110,35 +87,6 @@ fn compile_branch(
     services: &super::super::ServiceIndex<'_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let name = &branch.discriminator;
-    validate_branch(name, branch)?;
-    let bindings = compile_branch_bindings(service, operation, branch, services)?;
-    let region = compile_branch_region(branch)?;
-    let emission = compile_branch_emission(branch);
-    let ctx = BranchCompileCtx {
-        service,
-        operation,
-        items,
-        checked,
-        services,
-    };
-    let row_policy = compile_branch_row_policy(&ctx, branch)?;
-    encode::map(
-        [
-            (1, Value::Text(name.clone())),
-            (2, Value::List(bindings)),
-            (3, Value::Int(super::scope(Some(branch.scope))?)),
-        ]
-        .into_iter()
-        .chain(region)
-        .chain(emission)
-        .chain(row_policy),
-    )
-}
-
-fn validate_branch(
-    name: &str,
-    branch: &crate::overlay::ExecutionBranch,
-) -> Result<(), RuntimeCatalogCompileError> {
     if !valid_branch_name(name)
         || branch.bind.len() > 4096
         || branch
@@ -150,16 +98,7 @@ fn validate_branch(
             path: name.to_owned(),
         });
     }
-    Ok(())
-}
-
-fn compile_branch_bindings(
-    service: Service<'_>,
-    operation: Operation<'_>,
-    branch: &crate::overlay::ExecutionBranch,
-    services: &super::super::ServiceIndex<'_>,
-) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    branch
+    let bindings = branch
         .fixed
         .iter()
         .map(|(path, value)| {
@@ -173,68 +112,55 @@ fn compile_branch_bindings(
                 super::binding_value(service.name()?, path, binding, services)
             }),
         )
-        .collect()
-}
-
-fn compile_branch_region(
-    branch: &crate::overlay::ExecutionBranch,
-) -> Result<Option<(u32, Value)>, RuntimeCatalogCompileError> {
-    branch
+        .collect::<Result<Vec<_>, _>>()?;
+    let region = branch
         .request_region
         .as_ref()
         .map(|region| -> Result<_, RuntimeCatalogCompileError> {
-            inventory_core::inventory::RegionId::parse(region).map_err(|_| {
-                RuntimeCatalogCompileError::Path {
+            inventory_core::inventory::RegionId::parse(region)
+                .map_err(|_| RuntimeCatalogCompileError::Path {
                     path: "branch request_region".to_owned(),
-                }
-            })?;
+                })?;
             Ok((4, Value::Text(region.to_owned())))
         })
-        .transpose()
-}
-
-fn compile_branch_emission(branch: &crate::overlay::ExecutionBranch) -> Option<(u32, Value)> {
-    branch.emission.map(|emission| {
+        .transpose()?;
+    let emission = branch.emission.map(|emission| {
         (
             5,
             Value::Int(match emission {
                 crate::overlay::Emission::EmitMetadata => 0,
                 crate::overlay::Emission::DiscoveryOnly => 1,
-                crate::overlay::Emission::WorkOnly => 2,
             }),
         )
-    })
-}
-
-struct BranchCompileCtx<'a> {
-    service: Service<'a>,
-    operation: Operation<'a>,
-    items: Option<&'a crate::overlay::ItemSelector>,
-    checked: &'a crate::overlay::CheckedOverlays,
-    services: &'a super::super::ServiceIndex<'a>,
-}
-
-fn compile_branch_row_policy(
-    ctx: &BranchCompileCtx<'_>,
-    branch: &crate::overlay::ExecutionBranch,
-) -> Result<Option<(u32, Value)>, RuntimeCatalogCompileError> {
-    let policy = branch
+    });
+    let row_policy = branch
         .row_policy
         .as_ref()
         .map(|policy| {
             super::row_policy::compile(
-                ctx.service,
-                ctx.operation,
+                service,
+                operation,
                 policy,
-                ctx.items,
-                ctx.checked,
-                ctx.service.name()?,
-                ctx.services,
+                items,
+                checked,
+                service.name()?,
+                services,
             )
         })
         .transpose()?
-        .flatten();
-    Ok(policy.map(|(_, value)| (6, value)))
+        .flatten()
+        .map(|(_, value)| (6, value));
+    encode::map(
+        [
+            (1, Value::Text(name.clone())),
+            (2, Value::List(bindings)),
+            (3, Value::Int(super::scope(Some(branch.scope))?)),
+        ]
+        .into_iter()
+        .chain(region)
+        .chain(emission)
+        .chain(row_policy),
+    )
 }
 
 pub(super) fn valid_branch_name(name: &str) -> bool {

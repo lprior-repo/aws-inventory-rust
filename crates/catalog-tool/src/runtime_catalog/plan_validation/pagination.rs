@@ -1,6 +1,6 @@
 use super::{RuntimeCatalogCompileError, model_path};
-use crate::overlay::Paginator;
 use inventory_core::catalog::{Operation, Service, Target};
+use crate::overlay::Paginator;
 
 pub(super) fn validate(
     service: Service<'_>,
@@ -17,7 +17,7 @@ pub(super) fn validate(
             truncated,
         }) => validate_last_item(service, input, output, request, response, truncated),
         Some(Paginator::Tokens { pairs, truncated }) => {
-            validate_token_pairs(service, input, output, pairs, truncated.as_ref())
+            validate_token_pairs(service, input, output, pairs, truncated)
         }
         Some(Paginator::None) | None => Ok(()),
     }
@@ -61,10 +61,7 @@ fn validate_truncated_path(
 ) -> Result<(), RuntimeCatalogCompileError> {
     path.map_or(Ok(()), |p| {
         let path_str = p.as_str();
-        map_path_error(
-            path_str,
-            model_path::resolve(service, output, path_str).map(|_| ()),
-        )
+        map_path_error(path_str, model_path::resolve(service, output, path_str).map(|_| ()))
     })
 }
 
@@ -79,8 +76,7 @@ fn validate_last_item(
     let request_str = request.as_str();
     map_path_error(
         request_str,
-        model_path::resolve(service, input, request_str)
-            .and_then(|(_, target)| model_path::string_target(service, target)),
+        model_path::resolve(service, input, request_str).map(|_| ()),
     )?;
     validate_last_item_response(service, output, response, truncated)
 }
@@ -95,9 +91,7 @@ fn validate_last_item_response(
     let truncated_str = truncated.as_str();
     map_path_error(
         response_str,
-        model_path::resolve(service, output, response_str)
-            .and_then(|(_, target)| model_path::list_element(service, target))
-            .and_then(|target| model_path::string_target(service, target)),
+        model_path::resolve(service, output, response_str).map(|_| ()),
     )?;
     let flag = map_path_error(
         truncated_str,
@@ -116,10 +110,10 @@ fn map_path_error<T>(
     result: Result<T, RuntimeCatalogCompileError>,
 ) -> Result<T, RuntimeCatalogCompileError> {
     result.map_err(|error| match error {
-        RuntimeCatalogCompileError::Capability | RuntimeCatalogCompileError::Path { .. } => {
-            RuntimeCatalogCompileError::Path {
-                path: path.to_owned(),
-            }
+        RuntimeCatalogCompileError::Path { path: inner }
+            if inner != path =>
+        {
+            RuntimeCatalogCompileError::Path { path: path.to_owned() }
         }
         error => error,
     })

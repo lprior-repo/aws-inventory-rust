@@ -18,26 +18,16 @@ pub struct ChildCheckContext<'a> {
 }
 
 pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
-    let children = ctx.children;
-    let pages = ctx.pages;
-    let _resources = ctx.resources;
-    let _fixture = ctx.fixture;
-    let _child_types: std::collections::HashSet<String> = children
-        .iter()
-        .chain(pages.iter())
-        .filter_map(|c| {
-            c.get("type_name")
-                .and_then(Value::as_str)
-                .map(str::to_owned)
-        })
-        .collect();
-
-    for child in children {
-        push_one_child_checks(checks, child, ctx);
+    for child in ctx.children {
+        process_child(checks, ctx, child);
     }
 }
 
-fn push_one_child_checks(checks: &mut Vec<Value>, child: &Value, ctx: &ChildCheckContext) {
+fn process_child(
+    checks: &mut Vec<Value>,
+    ctx: &ChildCheckContext,
+    child: &Value,
+) {
     let name = child.get("name").and_then(Value::as_str).unwrap_or("");
     let type_name = child.get("type_name").and_then(Value::as_str).unwrap_or("");
     let parent_key = child
@@ -45,61 +35,49 @@ fn push_one_child_checks(checks: &mut Vec<Value>, child: &Value, ctx: &ChildChec
         .and_then(Value::as_str)
         .unwrap_or("");
 
-    let parent = ctx.parents.get(parent_key).cloned().unwrap_or(Value::Null);
-    let _parent_type = parent
-        .get("type_name")
-        .and_then(Value::as_str)
-        .unwrap_or("");
+    let parent = ctx
+        .parents
+        .get(parent_key)
+        .cloned()
+        .unwrap_or(Value::Null);
 
-    let (seed, parent_seed) = seed_pair(ctx.seeds, name, parent_key);
-    push_seed_complete_checks(checks, name, &seed, &parent_seed);
+    let child_seed = ctx
+        .seeds
+        .get(&format!("child:{name}"))
+        .cloned()
+        .unwrap_or(Value::Null);
+    let parent_seed = ctx
+        .seeds
+        .get(&format!("parent:{parent_key}"))
+        .cloned()
+        .unwrap_or(Value::Null);
 
-    let identity = normalized_id(child, &seed);
+    check_seed_status(checks, name, &child_seed, &parent_seed);
+
+    let identity = normalized_id(child, &child_seed);
     let parent_identity = normalized_id(&parent, &parent_seed);
 
-    match (identity, parent_identity) {
-        (Some(id), Some(_pid)) => {
-            push_identified_child_checks(checks, child, ctx, name, type_name, &id);
-        }
-        _ => {
-            add_check(checks, &format!("{name}:one_exact_child"), false, None);
-        }
-    }
+    check_child_identity(checks, name, child, type_name, identity, parent_identity, ctx);
 }
 
-fn seed_pair(
-    seeds: &std::collections::HashMap<String, Value>,
-    name: &str,
-    parent_key: &str,
-) -> (Value, Value) {
-    let child_seed_key = format!("child:{name}");
-    let seed = seeds.get(&child_seed_key).cloned().unwrap_or(Value::Null);
-    let parent_seed_key = format!("parent:{parent_key}");
-    let parent_seed = seeds.get(&parent_seed_key).cloned().unwrap_or(Value::Null);
-    (seed, parent_seed)
-}
-
-fn push_seed_complete_checks(
+fn check_seed_status(
     checks: &mut Vec<Value>,
     name: &str,
-    seed: &Value,
+    child_seed: &Value,
     parent_seed: &Value,
 ) {
-    let seed_status = seed.get("status").and_then(Value::as_str).unwrap_or("");
-    let parent_seed_status = parent_seed
+    let child_complete = child_seed
         .get("status")
         .and_then(Value::as_str)
-        .unwrap_or("");
+        .unwrap_or("")
+        == "complete";
+    let parent_complete = parent_seed
+        .get("status")
+        .and_then(Value::as_str)
+        .unwrap_or("")
+        == "complete";
 
-    let child_complete = seed_status == "complete";
-    let parent_complete = parent_seed_status == "complete";
-
-    add_check(
-        checks,
-        &format!("{name}:seed_complete"),
-        child_complete,
-        None,
-    );
+    add_check(checks, &format!("{name}:seed_complete"), child_complete, None);
     add_check(
         checks,
         &format!("{name}:parent_seed_complete"),
@@ -108,13 +86,32 @@ fn push_seed_complete_checks(
     );
 }
 
-fn push_identified_child_checks(
+fn check_child_identity(
     checks: &mut Vec<Value>,
-    child: &Value,
-    ctx: &ChildCheckContext,
     name: &str,
+    child: &Value,
+    type_name: &str,
+    identity: Option<String>,
+    parent_identity: Option<String>,
+    ctx: &ChildCheckContext,
+) {
+    match (identity, parent_identity) {
+        (Some(id), Some(_pid)) => {
+            check_child_with_identity(checks, name, child, type_name, &id, ctx);
+        }
+        _ => {
+            add_check(checks, &format!("{name}:one_exact_child"), false, None);
+        }
+    }
+}
+
+fn check_child_with_identity(
+    checks: &mut Vec<Value>,
+    name: &str,
+    child: &Value,
     type_name: &str,
     id: &str,
+    ctx: &ChildCheckContext,
 ) {
     let matches: Vec<&Value> = ctx
         .observed_children
@@ -129,56 +126,37 @@ fn push_identified_child_checks(
         None,
     );
 
-    if matches.len() == 1 {
-        let resource = match matches.first() {
-            Some(r) => r,
-            None => return,
-        };
-        push_resource_checks(checks, child, ctx, name, type_name, id, resource);
+    if matches.len() != 1 {
+        return;
     }
+
+    let Some(resource) = matches.first() else {
+        return;
+    };
+
+    check_child_resource(checks, name, child, type_name, resource);
+    check_child_edges(checks, name, child, id, ctx);
+    check_child_architecture(checks, name, child, id, ctx);
 }
 
-fn push_resource_checks(
+fn check_child_resource(
     checks: &mut Vec<Value>,
-    child: &Value,
-    ctx: &ChildCheckContext,
     name: &str,
+    child: &Value,
     type_name: &str,
-    id: &str,
     resource: &Value,
 ) {
-    let properties = resource.get("properties").cloned().unwrap_or(Value::Null);
-    push_resource_type_checks(checks, name, type_name, child, &properties);
+    let properties = resource
+        .get("properties")
+        .cloned()
+        .unwrap_or(Value::Null);
 
-    let actual_edges: Vec<&Value> = ctx
-        .parent_edges
-        .iter()
-        .filter(|e| e.get("from_id").and_then(Value::as_str).unwrap_or("") == id)
-        .collect();
-
-    push_edge_count_check(checks, name, child, actual_edges.len());
-    push_edge_relation_checks(checks, name, child, &actual_edges);
-    push_architecture_checks(checks, name, child, ctx.all_edges, id);
-}
-
-fn push_resource_type_checks(
-    checks: &mut Vec<Value>,
-    name: &str,
-    type_name: &str,
-    child: &Value,
-    properties: &Value,
-) {
     let child_type_ok = properties
         .get("cloudformation_type")
         .and_then(Value::as_str)
         .unwrap_or("")
         == type_name;
-    add_check(
-        checks,
-        &format!("{name}:resource_type"),
-        child_type_ok,
-        None,
-    );
+    add_check(checks, &format!("{name}:resource_type"), child_type_ok, None);
 
     let type_kind = child
         .get("expected_kind")
@@ -197,7 +175,19 @@ fn push_resource_type_checks(
     add_check(checks, &format!("{name}:resource_kind"), kind_ok, None);
 }
 
-fn push_edge_count_check(checks: &mut Vec<Value>, name: &str, child: &Value, actual_count: usize) {
+fn check_child_edges(
+    checks: &mut Vec<Value>,
+    name: &str,
+    child: &Value,
+    id: &str,
+    ctx: &ChildCheckContext,
+) {
+    let actual_edges: Vec<&Value> = ctx
+        .parent_edges
+        .iter()
+        .filter(|e| e.get("from_id").and_then(Value::as_str).unwrap_or("") == id)
+        .collect();
+
     let expected_count = child
         .get("expected_edge_count")
         .and_then(Value::as_i64)
@@ -207,18 +197,11 @@ fn push_edge_count_check(checks: &mut Vec<Value>, name: &str, child: &Value, act
         add_check(
             checks,
             &format!("{name}:edge_count"),
-            actual_count == expected,
+            actual_edges.len() == expected,
             None,
         );
     }
-}
 
-fn push_edge_relation_checks(
-    checks: &mut Vec<Value>,
-    name: &str,
-    child: &Value,
-    actual_edges: &[&Value],
-) {
     let expected_rels: Vec<String> = child
         .get("expected_relations")
         .and_then(Value::as_array)
@@ -230,7 +213,9 @@ fn push_edge_relation_checks(
     if !expected_rels.is_empty() {
         let observed_rels: std::collections::HashSet<String> = actual_edges
             .iter()
-            .filter_map(|e| e.get("relation").and_then(Value::as_str).map(str::to_owned))
+            .filter_map(|e| {
+                e.get("relation").and_then(Value::as_str).map(str::to_owned)
+            })
             .collect();
 
         let rel_ok = expected_rels.iter().all(|r| observed_rels.contains(r));
@@ -238,12 +223,12 @@ fn push_edge_relation_checks(
     }
 }
 
-fn push_architecture_checks(
+fn check_child_architecture(
     checks: &mut Vec<Value>,
     name: &str,
     child: &Value,
-    all_edges: &[Value],
     id: &str,
+    ctx: &ChildCheckContext,
 ) {
     let expected_architecture = child
         .get("expected_relationships")
@@ -251,7 +236,8 @@ fn push_architecture_checks(
         .cloned()
         .unwrap_or_default();
 
-    let architecture: Vec<Value> = all_edges
+    let architecture: Vec<Value> = ctx
+        .all_edges
         .iter()
         .filter(|e| {
             e.get("from_id").and_then(Value::as_str).unwrap_or("") == id
@@ -261,11 +247,11 @@ fn push_architecture_checks(
         .collect();
 
     for edge in expected_architecture {
-        push_architecture_edge_check(checks, name, &edge, &architecture);
+        check_architecture_edge(checks, name, &edge, &architecture);
     }
 }
 
-fn push_architecture_edge_check(
+fn check_architecture_edge(
     checks: &mut Vec<Value>,
     name: &str,
     edge: &Value,
@@ -277,11 +263,6 @@ fn push_architecture_edge_check(
         .unwrap_or("");
     let target = edge.get("target").and_then(Value::as_str).unwrap_or("");
     let type_name = edge.get("type_name").and_then(Value::as_str).unwrap_or("");
-    let _owner_resolution = edge
-        .get("owner_resolution")
-        .and_then(Value::as_str)
-        .unwrap_or("");
-    let _paths = edge.get("paths").cloned().unwrap_or(Value::Array(vec![]));
 
     let matching: Vec<Value> = architecture
         .iter()
@@ -294,13 +275,12 @@ fn push_architecture_edge_check(
 
     let edge_passed = matching.len() == 1
         && match matching.first() {
-            Some(m) => {
-                m.get("properties")
-                    .and_then(|p| p.get("cloudformation_type"))
-                    .and_then(Value::as_str)
-                    .unwrap_or("")
-                    == type_name
-            }
+            Some(m) => m
+                .get("properties")
+                .and_then(|p| p.get("cloudformation_type"))
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                == type_name,
             None => false,
         };
 

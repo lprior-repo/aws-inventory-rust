@@ -23,36 +23,23 @@ pub fn check(
     region: &str,
 ) -> Result<(), HarnessError> {
     let resources = &data.resources;
-    let edges = &data.edges;
+    let _edges = &data.edges;
     let scopes = &data.scopes;
 
-    let network = fixtures.get("ec2").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let roles = fixtures.get("roles").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let lambda = fixtures.get("lambda").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let dynamodb = fixtures.get("dynamodb").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let ecs = fixtures.get("ecs").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let eks = fixtures.get("eks").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let elbv2 = fixtures.get("elbv2").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let sqs = fixtures.get("sqs").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let sns = fixtures.get("sns").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let kms = fixtures.get("kms").unwrap_or(&Value::Object(serde_json::Map::new()));
-    let workflows = fixtures.get("step_functions").unwrap_or(&Value::Object(serde_json::Map::new()));
+    let network = fixtures
+        .get("ec2")
+        .unwrap_or(&Value::Object(serde_json::Map::new()));
 
-    // Kind coverage
-    let regional_kinds = regional_kind_list();
-    push_kind_coverage_checks(checks, resources, &regional_kinds);
-
-    push_network_identity_checks(checks, resources, region, network);
-
-    // Scope pagination checks
-    let regional_scopes: Vec<&Value> = regional_scopes_for_pagination(scopes, &regional_kinds);
-    push_root_scope_checks(checks, &regional_scopes);
-    push_scope_completion_checks(checks, &regional_scopes);
+    let regional_kinds = get_regional_kinds();
+    let kind_counts = compute_kind_counts(resources);
+    check_kind_coverage(checks, &kind_counts, &regional_kinds);
+    check_ec2_network_identities(checks, resources, network, region);
+    check_scope_pagination(checks, scopes, &regional_kinds);
 
     Ok(())
 }
 
-fn regional_kind_list() -> Vec<&'static str> {
+fn get_regional_kinds() -> Vec<&'static str> {
     vec![
         "aws_vpc", "aws_vpc_subnet", "aws_vpc_security_group",
         "aws_ec2_network_interface", "aws_ebs_volume", "aws_ec2_instance",
@@ -68,19 +55,26 @@ fn regional_kind_list() -> Vec<&'static str> {
     ]
 }
 
-fn push_kind_coverage_checks(
-    checks: &mut Vec<Value>,
+fn compute_kind_counts(
     resources: &HashMap<String, Value>,
-    regional_kinds: &[&str],
-) {
-    let kind_counts: HashMap<String, u32> = resources
+) -> HashMap<String, u32> {
+    resources
         .values()
-        .filter_map(|r| r.get("kind").and_then(Value::as_str).map(|s| (s.to_owned(), 1u32)))
+        .filter_map(|r| {
+            r.get("kind").and_then(Value::as_str).map(|s| (s.to_owned(), 1u32))
+        })
         .fold(HashMap::new(), |mut map, (kind, count)| {
-            *map.entry(kind).or_insert(0) += count;
+            let entry = map.entry(kind).or_insert(0);
+            *entry = entry.saturating_add(count);
             map
-        });
+        })
+}
 
+fn check_kind_coverage(
+    checks: &mut Vec<Value>,
+    kind_counts: &HashMap<String, u32>,
+    regional_kinds: &[&'static str],
+) {
     for kind in regional_kinds {
         let observed = kind_counts.get(*kind).copied().unwrap_or(0);
         add_check(
@@ -92,8 +86,13 @@ fn push_kind_coverage_checks(
     }
 }
 
-fn network_resource_map() -> [(&'static str, &'static str, &'static str, &'static str); 12] {
-    [
+fn check_ec2_network_identities(
+    checks: &mut Vec<Value>,
+    resources: &HashMap<String, Value>,
+    network: &Value,
+    region: &str,
+) {
+    let network_map = [
         ("vpc_ids", "vpc", "aws_vpc", "vpc_id"),
         ("subnet_ids", "subnet", "aws_vpc_subnet", "subnet_id"),
         ("security_group_ids", "security-group", "aws_vpc_security_group", "group_id"),
@@ -106,37 +105,43 @@ fn network_resource_map() -> [(&'static str, &'static str, &'static str, &'stati
         ("vpc_endpoint_ids", "vpc-endpoint", "aws_vpc_endpoint", "vpc_endpoint_id"),
         ("network_acl_ids", "network-acl", "aws_vpc_network_acl", "network_acl_id"),
         ("vpc_peering_connection_ids", "vpc-peering-connection", "aws_vpc_peering_connection", "vpc_peering_connection_id"),
-    ]
+    ];
+
+    for (key, path, kind, field) in network_map {
+        check_network_resource_type(checks, resources, network, key, path, kind, field, region);
+    }
 }
 
-// EC2 network resource identity checks
-fn push_network_identity_checks(
+fn check_network_resource_type(
     checks: &mut Vec<Value>,
     resources: &HashMap<String, Value>,
-    region: &str,
     network: &Value,
+    key: &str,
+    path: &str,
+    kind: &str,
+    field: &str,
+    region: &str,
 ) {
-    for (key, path, kind, field) in network_resource_map() {
-        let ids = network
-            .get(key)
-            .and_then(Value::as_array)
-            .unwrap_or(&Value::Array(vec![]));
-        for id_value in ids {
-            if let Some(id) = id_value.as_str() {
-                push_network_identity_check(checks, resources, region, path, kind, field, id);
-            }
+    let ids = network
+        .get(key)
+        .and_then(Value::as_array)
+        .unwrap_or(&Value::Array(vec![]));
+
+    for id_value in ids {
+        if let Some(id) = id_value.as_str() {
+            check_single_network_identity(checks, resources, id, path, kind, field, region);
         }
     }
 }
 
-fn push_network_identity_check(
+fn check_single_network_identity(
     checks: &mut Vec<Value>,
     resources: &HashMap<String, Value>,
-    region: &str,
+    id: &str,
     path: &str,
     kind: &str,
     field: &str,
-    id: &str,
+    region: &str,
 ) {
     let identity = ec2_identity(region, path, id);
     let row = resources.get(&identity);
@@ -148,21 +153,24 @@ fn push_network_identity_check(
             false,
             Some(&json!({"category": "identity", "kind": kind})),
         );
-    } else {
-        push_network_row_kind_check(checks, row, &identity, kind);
-        push_network_row_source_checks(checks, row, &identity, region);
-        push_network_row_field_check(checks, row, &identity, field, id);
+        return;
     }
+
+    check_identity_kind(checks, identity, row, kind);
+    check_identity_source(checks, identity, row);
+    check_identity_account(checks, identity, row);
+    check_identity_region(checks, identity, row, region);
+    check_identity_field(checks, identity, row, field, id);
 }
 
-fn push_network_row_kind_check(
+fn check_identity_kind(
     checks: &mut Vec<Value>,
-    row: Option<&Value>,
-    identity: &str,
+    identity: String,
+    row: &Value,
     kind: &str,
 ) {
     let kind_actual = row
-        .and_then(|r| r.get("kind"))
+        .get("kind")
         .and_then(Value::as_str)
         .unwrap_or("");
     add_check(
@@ -173,15 +181,13 @@ fn push_network_row_kind_check(
     );
 }
 
-fn push_network_row_source_checks(
+fn check_identity_source(
     checks: &mut Vec<Value>,
-    row: Option<&Value>,
-    identity: &str,
-    region: &str,
+    identity: String,
+    row: &Value,
 ) {
-    // Direct source check
     let source = row
-        .and_then(|r| r.get("source"))
+        .get("source")
         .and_then(Value::as_str)
         .unwrap_or("");
     add_check(
@@ -190,10 +196,15 @@ fn push_network_row_source_checks(
         source == "direct",
         Some(&json!({"category": "source"})),
     );
+}
 
-    // Account check
+fn check_identity_account(
+    checks: &mut Vec<Value>,
+    identity: String,
+    row: &Value,
+) {
     let account = row
-        .and_then(|r| r.get("account_id"))
+        .get("account_id")
         .and_then(Value::as_str)
         .unwrap_or("");
     add_check(
@@ -202,10 +213,16 @@ fn push_network_row_source_checks(
         account == "000000000000",
         Some(&json!({"category": "source"})),
     );
+}
 
-    // Region check
+fn check_identity_region(
+    checks: &mut Vec<Value>,
+    identity: String,
+    row: &Value,
+    region: &str,
+) {
     let region_actual = row
-        .and_then(|r| r.get("region"))
+        .get("region")
         .and_then(Value::as_str)
         .unwrap_or("");
     add_check(
@@ -216,15 +233,14 @@ fn push_network_row_source_checks(
     );
 }
 
-fn push_network_row_field_check(
+fn check_identity_field(
     checks: &mut Vec<Value>,
-    row: Option<&Value>,
-    identity: &str,
+    identity: String,
+    row: &Value,
     field: &str,
     id: &str,
 ) {
-    // Field check
-    let props = row.and_then(|r| r.get("properties")).unwrap_or(&Value::Object(serde_json::Map::new()));
+    let props = row.get("properties").unwrap_or(&Value::Object(serde_json::Map::new()));
     let field_actual = props
         .get(field)
         .and_then(Value::as_str)
@@ -237,11 +253,12 @@ fn push_network_row_field_check(
     );
 }
 
-fn regional_scopes_for_pagination<'a>(
-    scopes: &'a [Value],
-    regional_kinds: &[&str],
-) -> Vec<&'a Value> {
-    scopes
+fn check_scope_pagination(
+    checks: &mut Vec<Value>,
+    scopes: &[Value],
+    regional_kinds: &[&'static str],
+) {
+    let regional_scopes: Vec<&Value> = scopes
         .iter()
         .filter(|s| {
             let collector = s.get("collector").and_then(Value::as_str).unwrap_or("");
@@ -250,69 +267,100 @@ fn regional_scopes_for_pagination<'a>(
                 || collector.starts_with("aws_eks_")
                 || collector.starts_with("aws_elbv2_")
         })
-        .collect()
-}
-
-fn push_root_scope_checks(checks: &mut Vec<Value>, regional_scopes: &[&Value]) {
-    let root_collectors: Vec<&str> = network_resource_map()
-        .iter()
-        .map(|entry| entry[2])
-        .chain(["aws_dynamodb_table", "aws_lambda_function", "aws_ecs_cluster", "aws_eks_cluster", "aws_elbv2_load_balancer", "aws_elbv2_target_group", "aws_sqs_queue", "aws_sns_topic", "aws_sns_subscription", "aws_kms_key", "aws_kms_alias", "aws_step_functions_state_machine", "aws_step_functions_activity"])
         .collect();
 
+    check_root_scopes(checks, &regional_scopes);
+    check_individual_scopes(checks, &regional_scopes);
+}
+
+fn check_root_scopes(
+    checks: &mut Vec<Value>,
+    regional_scopes: &[&Value],
+) {
+    let root_collectors = [
+        "aws_vpc", "aws_vpc_subnet", "aws_vpc_security_group",
+        "aws_ec2_network_interface", "aws_ebs_volume", "aws_ec2_instance",
+        "aws_vpc_route_table", "aws_vpc_internet_gateway", "aws_vpc_nat_gateway",
+        "aws_vpc_endpoint", "aws_vpc_network_acl", "aws_vpc_peering_connection",
+        "aws_dynamodb_table", "aws_lambda_function", "aws_ecs_cluster",
+        "aws_eks_cluster", "aws_elbv2_load_balancer", "aws_elbv2_target_group",
+        "aws_sqs_queue", "aws_sns_topic", "aws_sns_subscription", "aws_kms_key",
+        "aws_kms_alias", "aws_step_functions_state_machine",
+        "aws_step_functions_activity",
+    ];
+
     for collector in root_collectors {
-        let selected: Vec<&Value> = regional_scopes
-            .iter()
-            .filter(|s| {
-                s.get("collector").and_then(Value::as_str) == Some(collector)
-                    && s.get("parent_id").is_none()
-            })
-            .collect();
-        add_check(
-            checks,
-            &format!("regional:{collector}:root-scope-present"),
-            selected.len() == 1,
-            Some(&json!({"category": "pagination", "observed": selected.len()})),
-        );
+        check_root_scope_present(checks, collector, regional_scopes);
     }
 }
 
-fn push_scope_completion_checks(checks: &mut Vec<Value>, regional_scopes: &[&Value]) {
+fn check_root_scope_present(
+    checks: &mut Vec<Value>,
+    collector: &str,
+    regional_scopes: &[&Value],
+) {
+    let selected: Vec<&Value> = regional_scopes
+        .iter()
+        .filter(|s| {
+            s.get("collector").and_then(Value::as_str) == Some(collector)
+                && s.get("parent_id").is_none()
+        })
+        .collect();
+
+    add_check(
+        checks,
+        &format!("regional:{collector}:root-scope-present"),
+        selected.len() == 1,
+        Some(&json!({"category": "pagination", "observed": selected.len()})),
+    );
+}
+
+fn check_individual_scopes(
+    checks: &mut Vec<Value>,
+    regional_scopes: &[&Value],
+) {
     for scope in regional_scopes {
-        let collector = scope
-            .get("collector")
-            .and_then(Value::as_str)
-            .unwrap_or("");
-        let parent_id = scope
-            .get("parent_id")
-            .and_then(Value::as_str)
-            .unwrap_or("");
-        let label = if parent_id.is_empty() {
-            collector.to_owned()
-        } else {
-            format!("{collector}:{parent_id}")
-        };
-
-        let complete = scope
-            .get("complete")
-            .and_then(Value::as_i64)
-            .unwrap_or(-1);
-        add_check(
-            checks,
-            &format!("regional:{label}:scope-complete"),
-            complete == 1,
-            Some(&json!({"category": "pagination"})),
-        );
-
-        let failed = scope
-            .get("failed")
-            .and_then(Value::as_i64)
-            .unwrap_or(-1);
-        add_check(
-            checks,
-            &format!("regional:{label}:scope-no-failure"),
-            failed == 0,
-            Some(&json!({"category": "pagination"})),
-        );
+        check_scope_status(checks, scope);
     }
+}
+
+fn check_scope_status(
+    checks: &mut Vec<Value>,
+    scope: &Value,
+) {
+    let collector = scope
+        .get("collector")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let parent_id = scope
+        .get("parent_id")
+        .and_then(Value::as_str)
+        .unwrap_or("");
+    let label = if parent_id.is_empty() {
+        collector.to_owned()
+    } else {
+        format!("{collector}:{parent_id}")
+    };
+
+    let complete = scope
+        .get("complete")
+        .and_then(Value::as_i64)
+        .unwrap_or(-1);
+    add_check(
+        checks,
+        &format!("regional:{label}:scope-complete"),
+        complete == 1,
+        Some(&json!({"category": "pagination"})),
+    );
+
+    let failed = scope
+        .get("failed")
+        .and_then(Value::as_i64)
+        .unwrap_or(-1);
+    add_check(
+        checks,
+        &format!("regional:{label}:scope-no-failure"),
+        failed == 0,
+        Some(&json!({"category": "pagination"})),
+    );
 }

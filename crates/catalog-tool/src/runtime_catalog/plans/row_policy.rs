@@ -17,141 +17,65 @@ pub(super) fn compile(
     service_name: &str,
     services: &ServiceIndex<'_>,
 ) -> Result<Option<(u32, Value)>, RuntimeCatalogCompileError> {
-    validate_assertion_count(policy)?;
-    if is_empty_policy(policy) {
-        return Ok(None);
-    }
-    let selected = resolve_selected(service, operation, policy, items)?;
-    let owned = compile_owned(service, operation, policy, selected, services)?;
-    let assertions = compile_assertions(service, operation, policy, selected, services)?;
-    let ctx = RowPolicyCompileCtx {
-        service,
-        service_name,
-        checked,
-        services,
-    };
-    let child = compile_child(&ctx, policy)?;
-    Ok(Some(encode_row_policy(assertions, owned, child)?))
-}
-
-fn validate_assertion_count(policy: &RowPolicy) -> Result<(), RuntimeCatalogCompileError> {
     if policy.assertions.len() > 8 {
         return Err(RuntimeCatalogCompileError::Path {
             path: "row policy assertions count".to_owned(),
         });
     }
-    Ok(())
-}
-
-fn is_empty_policy(policy: &RowPolicy) -> bool {
-    policy.owned.is_none() && policy.assertions.is_empty() && policy.child.is_none()
-}
-
-fn resolve_selected(
-    service: Service<'_>,
-    operation: Operation<'_>,
-    policy: &RowPolicy,
-    items: Option<&crate::overlay::ItemSelector>,
-) -> Result<Target, RuntimeCatalogCompileError> {
-    if policy.owned.is_none() && policy.assertions.is_empty() {
-        return Ok(operation.output()?);
+    if policy.owned.is_none() && policy.assertions.is_empty() && policy.child.is_none() {
+        return Ok(None);
     }
-    super::super::selection::target(service, operation.output()?, items)
-}
-
-fn compile_owned(
-    service: Service<'_>,
-    operation: Operation<'_>,
-    policy: &RowPolicy,
-    selected: Target,
-    services: &ServiceIndex<'_>,
-) -> Result<Option<Value>, RuntimeCatalogCompileError> {
-    policy
+    let selected = if policy.owned.is_none() && policy.assertions.is_empty() {
+        operation.output()?
+    } else {
+        super::super::selection::target(service, operation.output()?, items)?
+    };
+    let owned = policy
         .owned
         .as_ref()
         .map(|predicate| predicate_value(service, operation, selected, predicate, services))
-        .transpose()
-}
-
-fn compile_assertions(
-    service: Service<'_>,
-    operation: Operation<'_>,
-    policy: &RowPolicy,
-    selected: Target,
-    services: &ServiceIndex<'_>,
-) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    policy
+        .transpose()?;
+    let assertions = policy
         .assertions
         .iter()
         .map(|predicate| predicate_value(service, operation, selected, predicate, services))
-        .collect()
-}
-
-struct RowPolicyCompileCtx<'a> {
-    service: Service<'a>,
-    service_name: &'a str,
-    checked: &'a crate::overlay::CheckedOverlays,
-    services: &'a ServiceIndex<'a>,
-}
-
-fn compile_child(
-    ctx: &RowPolicyCompileCtx<'_>,
-    policy: &RowPolicy,
-) -> Result<Option<Value>, RuntimeCatalogCompileError> {
-    policy
+        .collect::<Result<Vec<_>, _>>()?;
+    let child = policy
         .child
         .as_ref()
-        .map(|child| compile_child_policy(ctx, child))
-        .transpose()
-}
-
-fn compile_child_policy(
-    ctx: &RowPolicyCompileCtx<'_>,
-    child: &crate::overlay::ChildEligibility,
-) -> Result<Value, RuntimeCatalogCompileError> {
-    let parent = find_parent_service(ctx.checked, ctx.service_name, &child.operation)?;
-    let parent_operation = super::catalog_operation(ctx.service, child.operation.as_str())?;
-    let selected = super::super::selection::target(
-        ctx.service,
-        parent_operation.output()?,
-        parent.plan().items.as_ref(),
-    )?;
-    let predicate = predicate_value(
-        ctx.service,
-        parent_operation,
-        selected,
-        &child.predicate,
-        ctx.services,
-    )?;
-    encode::map([
-        (1, Value::Text(child.operation.to_string())),
-        (2, predicate),
-    ])
-}
-
-fn find_parent_service<'a>(
-    checked: &'a crate::overlay::CheckedOverlays,
-    service_name: &'a str,
-    operation_name: &'a crate::overlay::OperationName,
-) -> Result<&'a crate::overlay::CallableOperation, RuntimeCatalogCompileError> {
-    checked
-        .services()
-        .iter()
-        .filter(|review| review.service() == service_name)
-        .flat_map(|review| review.callable())
-        .find(|parent| parent.operation() == operation_name.as_str())
-        .ok_or_else(|| RuntimeCatalogCompileError::Path {
-            path: operation_name.as_str().to_owned(),
+        .map(|child| {
+            let parent = checked
+                .services()
+                .iter()
+                .filter(|review| review.service() == service_name)
+                .flat_map(|review| review.callable())
+                .find(|parent| parent.operation() == child.operation.as_str())
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: child.operation.as_str().to_owned(),
+                })?;
+            let parent_operation = super::catalog_operation(service, child.operation.as_str())?;
+            let selected = super::super::selection::target(
+                service,
+                parent_operation.output()?,
+                parent.plan().items.as_ref(),
+            )?;
+            encode::map([
+                (1, Value::Text(child.operation.to_string())),
+                (
+                    2,
+                    predicate_value(
+                        service,
+                        parent_operation,
+                        selected,
+                        &child.predicate,
+                        services,
+                    )?,
+                ),
+            ])
         })
-}
-
-fn encode_row_policy(
-    assertions: Vec<Value>,
-    owned: Option<Value>,
-    child: Option<Value>,
-) -> Result<(u32, Value), RuntimeCatalogCompileError> {
+        .transpose()?;
     let fields = [(2, Value::List(assertions))];
-    Ok((
+    Ok(Some((
         22,
         encode::map(
             fields
@@ -159,7 +83,7 @@ fn encode_row_policy(
                 .chain(owned.map(|value| (1, value)))
                 .chain(child.map(|value| (3, value))),
         )?,
-    ))
+    )))
 }
 
 fn predicate_value(

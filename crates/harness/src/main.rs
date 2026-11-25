@@ -10,12 +10,99 @@ use inventory_harness::{
 };
 
 mod cli;
-#[path = "cli/command.rs"]
-mod cli_command;
-
-use cli_command::{Command, USAGE};
 
 use cli::parse;
+
+const USAGE: &str = "usage:\n  inventory-harness snapshot freeze --evidence <dir> --output <file> \
+--binary <file> [--root <dir>]\n  inventory-harness install <destination> [--root <dir>]\n  \
+inventory-harness install-graph <destination> [--jobs N]\n  \
+inventory-harness catalog universal --root <dir> [--check]\n  \
+inventory-harness seed s3 --bucket <name>\n  \
+inventory-harness seed cloud-control --prefix <inventory-page-...> --count <n>\n  \
+inventory-harness assert cloud-control --db <file> --scan-id <id> [--seed-results <file>] \
+[--root <dir>]\n  \
+inventory-harness assert-global --db <file> --scan-id <id> [--seed-results <file>] \
+[--root <dir>]\n  \
+inventory-harness assert-parents --db <file> --scan-id <id> [--seed-results <file>] \
+[--root <dir>]\n  \
+inventory-harness assert-regional --db <file> --scan-id <id> [--seed-results <file>] \
+[--root <dir>] [--region <region>]";
+
+enum Command {
+    Freeze {
+        evidence: PathBuf,
+        output: PathBuf,
+        binary: PathBuf,
+        root: PathBuf,
+    },
+    Install {
+        destination: PathBuf,
+        root: PathBuf,
+    },
+    InstallGraph {
+        destination: PathBuf,
+        jobs: usize,
+    },
+    CatalogUniversal {
+        root: PathBuf,
+        check: bool,
+    },
+    AssertCloudControl {
+        database: PathBuf,
+        scan_id: String,
+        seed_results: Option<PathBuf>,
+        root: PathBuf,
+    },
+    AssertGlobal {
+        database: PathBuf,
+        scan_id: String,
+        seed_results: Option<PathBuf>,
+        root: PathBuf,
+    },
+    AssertParents {
+        database: PathBuf,
+        scan_id: String,
+        seed_results: Option<PathBuf>,
+        root: PathBuf,
+    },
+    AssertRegional {
+        database: PathBuf,
+        scan_id: String,
+        seed_results: Option<PathBuf>,
+        root: PathBuf,
+        region: Option<String>,
+    },
+    SeedS3 {
+        bucket: String,
+    },
+    SeedCloudControl {
+        prefix: String,
+        count: usize,
+    },
+    Mutate {
+        emulator: PathBuf,
+        binary: PathBuf,
+        branch_probe: PathBuf,
+        output: PathBuf,
+        workspace: PathBuf,
+        redis_server: Option<PathBuf>,
+        falkor_module: Option<PathBuf>,
+        command_deadline: i64,
+        command: Vec<String>,
+    },
+    VerifyDelivery {
+        binary: PathBuf,
+        redis_cli: PathBuf,
+        database: PathBuf,
+        output: PathBuf,
+    },
+    CatalogOperations {
+        root: PathBuf,
+        emulator_summary: Option<PathBuf>,
+        check_additions: bool,
+        output: PathBuf,
+    },
+}
 
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -32,100 +119,21 @@ fn has_failed_check(receipt: &serde_json::Value) -> bool {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> ExitCode {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
-    if let [command, rest @ ..] = arguments.as_slice()
-        && command == "postgres"
-    {
-        return inventory_harness::postgres::command::run(rest).await;
-    }
-    if let Some(status) = routed_command(&arguments).await {
-        return status;
-    }
     match execute(&arguments).await {
-        Ok(receipt) => print_receipt(&receipt),
-        Err(error) => {
-            eprintln!("{error}");
-            ExitCode::FAILURE
-        }
-    }
-}
-
-async fn routed_command(arguments: &[String]) -> Option<ExitCode> {
-    if let [verify, command, rest @ ..] = arguments
-        && verify == "verify"
-        && command == "cloud-control"
-    {
-        return Some(run_cloud_control(rest).await);
-    }
-    if let [command, rest @ ..] = arguments
-        && command == "e2e"
-    {
-        return Some(inventory_harness::e2e::command::run(rest).await);
-    }
-    if let [command, rest @ ..] = arguments
-        && command == "probe"
-    {
-        return Some(inventory_harness::probe::command(rest).await);
-    }
-    if let [seed, draft, rest @ ..] = arguments
-        && seed == "seed"
-        && draft == "draft"
-    {
-        return Some(seed_draft(rest));
-    }
-    if let [seed, run, rest @ ..] = arguments
-        && seed == "seed"
-        && matches!(run.as_str(), "run" | "validate")
-    {
-        return Some(inventory_harness::inventory_seed::command::dispatch(run, rest).await);
-    }
-    None
-}
-
-async fn run_cloud_control(arguments: &[String]) -> ExitCode {
-    let result = match cli::parse_verify_cloud_control(arguments) {
-        Ok(args) => inventory_harness::verify::cloud_control::run(&args).await,
-        Err(error) => Err(error),
-    };
-    match result {
-        Ok(report) => {
-            print!("{}", report.text);
-            if report.passed() {
-                ExitCode::SUCCESS
-            } else {
+        Ok(receipt) => match serde_json::to_string_pretty(&receipt) {
+            Ok(text) if has_failed_check(&receipt) => {
+                println!("{text}");
                 ExitCode::FAILURE
             }
-        }
-        Err(error) => {
-            eprintln!("{error}");
-            ExitCode::FAILURE
-        }
-    }
-}
-
-fn seed_draft(arguments: &[String]) -> ExitCode {
-    let result = cli::parse_seed_draft(arguments).and_then(|(service, catalog, output)| {
-        inventory_harness::inventory_seed::draft::run(&service, &catalog, output.as_deref())
-            .map_err(|error| HarnessError::invalid(error.to_string()))
-    });
-    match result {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(error) => {
-            eprintln!("{error}");
-            ExitCode::FAILURE
-        }
-    }
-}
-
-fn print_receipt(receipt: &serde_json::Value) -> ExitCode {
-    match serde_json::to_string_pretty(receipt) {
-        Ok(text) => {
-            println!("{text}");
-            if has_failed_check(receipt) {
-                ExitCode::FAILURE
-            } else {
+            Ok(text) => {
+                println!("{text}");
                 ExitCode::SUCCESS
             }
-        }
+            Err(error) => {
+                eprintln!("{error}");
+                ExitCode::FAILURE
+            }
+        },
         Err(error) => {
             eprintln!("{error}");
             ExitCode::FAILURE
@@ -183,149 +191,165 @@ async fn assert_regional(
 
 async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
     match command {
-        Command::Mutate {
-            emulator,
-            binary,
-            branch_probe,
-            output,
-            workspace,
-            redis_server,
-            falkor_module,
-            command_deadline,
-            command,
-        } => {
-            let args = mutate::Args {
-                emulator,
-                binary,
-                branch_probe,
-                output,
-                workspace,
-                redis_server,
-                falkor_module,
-                command_deadline,
-                command,
-            };
-            mutate::run(&args).await
+        Command::Freeze { evidence, output, binary, root } => {
+            snapshot::freeze(&evidence, &output, &binary, &root).await
         }
-        Command::VerifyDelivery {
-            binary,
-            redis_cli,
-            database,
-            output,
-        } => {
-            let args = verify_delivery::Args {
-                binary,
-                redis_cli,
-                database,
-                output,
-            };
-            verify_delivery::run_verify(args)
-                .await
-                .map(|r| r.to_value())
-        }
-        Command::CatalogOperations {
-            root,
-            emulator_summary,
-            check_additions,
-            output,
-        } => catalog_operations(&root, emulator_summary.as_deref(), check_additions, &output),
-        inventory => dispatch_inventory(inventory).await,
-    }
-}
-
-/// Snapshot, install, catalog, assertion and seed commands.
-async fn dispatch_inventory(command: Command) -> Result<serde_json::Value, HarnessError> {
-    match command {
-        Command::Freeze {
-            evidence,
-            output,
-            binary,
-            root,
-        } => snapshot::freeze(&evidence, &output, &binary, &root).await,
         Command::Install { destination, root } => install::install(&root, &destination),
-        Command::InstallGraph { destination, jobs } => install::graph::install(&destination, jobs),
+        Command::InstallGraph { destination, jobs } => {
+            install::graph::install(&destination, jobs)
+        }
         Command::CatalogUniversal { root, check } => universal(root, check),
-        Command::AssertCloudControl {
-            database,
-            scan_id,
-            seed_results,
-            root,
-        } => assert_cloud_control(root, database, scan_id, seed_results).await,
-        Command::AssertGlobal {
-            database,
-            scan_id,
-            seed_results,
-            root,
-        } => assert_global(root, database, scan_id, seed_results).await,
-        Command::AssertParents {
-            database,
-            scan_id,
-            seed_results,
-            root,
-        } => assert_parents(root, database, scan_id, seed_results).await,
-        Command::AssertRegional {
-            database,
-            scan_id,
-            seed_results,
-            root,
-            region,
-        } => assert_regional(root, database, scan_id, seed_results, region).await,
+        Command::AssertCloudControl { database, scan_id, seed_results, root } => {
+            assert_cloud_control(root, database, scan_id, seed_results).await
+        }
+        Command::AssertGlobal { database, scan_id, seed_results, root } => {
+            assert_global(root, database, scan_id, seed_results).await
+        }
+        Command::AssertParents { database, scan_id, seed_results, root } => {
+            assert_parents(root, database, scan_id, seed_results).await
+        }
+        Command::AssertRegional { database, scan_id, seed_results, root, region } => {
+            assert_regional(root, database, scan_id, seed_results, region).await
+        }
         Command::SeedS3 { bucket } => seed::s3_bucket(&bucket).await,
         Command::SeedCloudControl { prefix, count } => {
             seed::cloud_control_topics(&prefix, count).await
         }
-        // `dispatch` consumes these before delegating here; naming them keeps the match
-        // exhaustive without a wildcard, so a new variant is a compile error in one place.
-        Command::Mutate { .. }
-        | Command::VerifyDelivery { .. }
-        | Command::CatalogOperations { .. } => Err(HarnessError::invalid(USAGE)),
+        Command::Mutate { emulator, binary, branch_probe, output, workspace,
+            redis_server, falkor_module, command_deadline, command } => {
+            let mutate_args = MutateArgs { emulator, binary, branch_probe, output, workspace,
+                redis_server, falkor_module, command_deadline, command };
+            handle_mutate(mutate_args).await
+        }
+        Command::VerifyDelivery { binary, redis_cli, database, output } => {
+            handle_verify_delivery(binary, redis_cli, database, output).await
+        }
+        Command::CatalogOperations { root, emulator_summary, check_additions, output } => {
+            handle_catalog_operations(root, emulator_summary, check_additions, output)
+        }
     }
 }
 
-fn catalog_operations(
-    root: &Path,
-    emulator_summary: Option<&Path>,
+struct MutateArgs {
+    emulator: PathBuf,
+    binary: PathBuf,
+    branch_probe: PathBuf,
+    output: PathBuf,
+    workspace: PathBuf,
+    redis_server: Option<PathBuf>,
+    falkor_module: Option<PathBuf>,
+    command_deadline: i64,
+    command: Vec<String>,
+}
+
+async fn handle_mutate(args: MutateArgs) -> Result<serde_json::Value, HarnessError> {
+    let mutate_args = mutate::Args {
+        emulator: args.emulator,
+        binary: args.binary,
+        branch_probe: args.branch_probe,
+        output: args.output,
+        workspace: args.workspace,
+        redis_server: args.redis_server,
+        falkor_module: args.falkor_module,
+        command_deadline: args.command_deadline,
+        command: args.command,
+    };
+    mutate::run(&mutate_args).await
+}
+
+async fn handle_verify_delivery(
+    binary: PathBuf,
+    redis_cli: PathBuf,
+    database: PathBuf,
+    output: PathBuf,
+) -> Result<serde_json::Value, HarnessError> {
+    let args = verify_delivery::Args {
+        binary,
+        redis_cli,
+        database,
+        output,
+    };
+    verify_delivery::run_verify(args)
+        .await
+        .map(|r| r.to_value())
+}
+
+fn handle_catalog_operations(
+    root: PathBuf,
+    emulator_summary: Option<PathBuf>,
     check_additions: bool,
-    output: &Path,
+    output: PathBuf,
 ) -> Result<serde_json::Value, HarnessError> {
     if check_additions {
-        let result = audit::check_additions(root)?;
-        return Ok(serde_json::json!({ "status": "ok", "additions": result }));
+        handle_catalog_check_additions(&root)
+    } else {
+        handle_catalog_reconcile(&root, emulator_summary, &output)
     }
+}
+
+fn handle_catalog_check_additions(
+    root: &Path,
+) -> Result<serde_json::Value, HarnessError> {
+    let result = audit::check_additions(root)?;
+    Ok(serde_json::json!({ "status": "ok", "additions": result }))
+}
+
+fn handle_catalog_reconcile(
+    root: &Path,
+    emulator_summary: Option<PathBuf>,
+    output: &Path,
+) -> Result<serde_json::Value, HarnessError> {
     let report = inventory_harness::audit::reconcile(root)?;
     if let Some(summary_path) = emulator_summary {
-        let (emulator, rows) =
-            inventory_harness::audit::validate_emulator(&report, root, summary_path)?;
-        let mut extended = report.clone();
-        if let Some(obj) = extended.as_object_mut() {
-            obj.insert("emulator_evidence".to_string(), emulator);
-        }
-        write_reconciliation(root, &extended, output)?;
-        let status = extended
-            .get("status")
-            .cloned()
-            .unwrap_or(serde_json::json!("unknown"));
-        Ok(serde_json::json!({
-            "output": output.to_string_lossy(),
-            "status": status,
-            "operation_results": rows
-        }))
+        handle_catalog_with_emulator(report, root, &summary_path, output)
     } else {
-        write_reconciliation(root, &report, output)?;
-        let status = report
-            .get("status")
-            .cloned()
-            .unwrap_or(serde_json::json!("unknown"));
-        let summary = report
-            .get("summary")
-            .cloned()
-            .unwrap_or(serde_json::json!(""));
-        Ok(serde_json::json!({
-            "output": output.to_string_lossy(),
-            "status": status,
-            "summary": summary
-        }))
+        handle_catalog_without_emulator(report, root, output)
     }
+}
+
+fn handle_catalog_with_emulator(
+    report: serde_json::Value,
+    root: &Path,
+    summary_path: &Path,
+    output: &Path,
+) -> Result<serde_json::Value, HarnessError> {
+    let (emulator, rows) =
+        inventory_harness::audit::validate_emulator(&report, root, summary_path)?;
+    let mut extended = report.clone();
+    if let Some(obj) = extended.as_object_mut() {
+        obj.insert("emulator_evidence".to_string(), emulator);
+    }
+    write_reconciliation(root, &extended, output)?;
+    let status = extended
+        .get("status")
+        .cloned()
+        .unwrap_or(serde_json::json!("unknown"));
+    Ok(serde_json::json!({
+        "output": output.to_string_lossy(),
+        "status": status,
+        "operation_results": rows
+    }))
+}
+
+fn handle_catalog_without_emulator(
+    report: serde_json::Value,
+    root: &Path,
+    output: &Path,
+) -> Result<serde_json::Value, HarnessError> {
+    write_reconciliation(root, &report, output)?;
+    let status = report
+        .get("status")
+        .cloned()
+        .unwrap_or(serde_json::json!("unknown"));
+    let summary = report
+        .get("summary")
+        .cloned()
+        .unwrap_or(serde_json::json!(""));
+    Ok(serde_json::json!({
+        "output": output.to_string_lossy(),
+        "status": status,
+        "summary": summary
+    }))
 }
 
 fn universal(root: PathBuf, check: bool) -> Result<serde_json::Value, HarnessError> {
