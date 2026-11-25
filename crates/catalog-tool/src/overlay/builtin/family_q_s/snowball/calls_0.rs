@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/snowball/service/2016-06-30/snowball-2016-06-30.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

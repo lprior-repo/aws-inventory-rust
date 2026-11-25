@@ -10,7 +10,6 @@ use crate::SweepError;
 
 const MAX_ENDPOINTS: usize = 65_536;
 
-/// Run-owned modeled endpoints. Discovered endpoint leases remain separate and expire.
 #[derive(Default)]
 pub(crate) struct ResolvedEndpoints(Mutex<Entries>);
 

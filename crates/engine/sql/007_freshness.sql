@@ -1,7 +1,3 @@
--- Current selection is freshness-first across sources. Source authority only
--- breaks equal observation timestamps. Snapshot views (scan_resources,
--- scan_edges) and per-source latest_resource_sources keep their existing
--- priority-first semantics for provenance and reproducible exports.
 DROP VIEW latest_resources;
 DROP VIEW latest_edges;
 

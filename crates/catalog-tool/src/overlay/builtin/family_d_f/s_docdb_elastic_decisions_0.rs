@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/docdb-elastic/service/2022-11-28/docdb-elastic-2022-11-28.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "ApplyPendingMaintenanceAction",

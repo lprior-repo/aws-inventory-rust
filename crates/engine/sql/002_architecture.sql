@@ -1,5 +1,3 @@
--- Additive views. Version 1 observations, page fingerprints and checkpoints
--- remain unchanged. The caller runs this entire migration in one transaction.
 CREATE VIEW aws_vpc_route_table AS
 SELECT r.*, json_extract(properties, '$.route_table_id') AS route_table_id,
        json_extract(properties, '$.vpc_id') AS vpc_id,
@@ -135,8 +133,6 @@ SELECT r.*, json_extract(properties, '$.rule_arn') AS rule_arn,
        json_extract(properties, '$.target_group_arns') AS target_group_arns
 FROM latest_resources r WHERE kind = 'aws_elbv2_rule';
 
--- Exact route rows retain destination and target separately. These are
--- configuration observations, not an inference of effective reachability.
 CREATE VIEW scan_vpc_routes AS
 SELECT r.scan_id, r.id AS route_table_arn, r.account_id, r.region, r.source,
        r.observed_at, json_extract(r.properties, '$.route_table_id') AS route_table_id,

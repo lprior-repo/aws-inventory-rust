@@ -1,5 +1,3 @@
-//! Component fixture: public store -> real native projection -> public readers.
-//! Account/region collisions are injected deliberately, not emulator evidence.
 use super::{
     TestResult,
     compare::{self, Expected},
@@ -103,8 +101,6 @@ async fn assert_tag_replacements(
     native::project(store, graph).await?;
     assert_fixture(database, store, graph, expected, &pairs).await?;
     assert_tag_count(graph, 4).await?;
-    // Equal values with distinct keys must not merge; the newline value must
-    // round-trip through actual Cypher escaping and both public readers.
     tags::tag_commit::replace(
         store,
         first,

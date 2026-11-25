@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/datasync/service/2018-11-09/datasync-2018-11-09.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "UpdateAgent",

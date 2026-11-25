@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/license-manager-user-subscriptions/service/2018-05-10/license-manager-user-subscriptions-2018-05-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -48,7 +47,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the Active Directory identity providers for user-based subscriptions.
     Resource {
         operation: "ListIdentityProviders",
         items: "IdentityProviderSummaries",
@@ -60,7 +58,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the EC2 instances providing user-based subscriptions.
     Resource {
         operation: "ListInstances",
         items: "InstanceSummaries",
@@ -72,7 +69,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List the Remote Desktop Services (RDS) License Server endpoints
     Resource {
         operation: "ListLicenseServerEndpoints",
         items: "LicenseServerEndpoints",

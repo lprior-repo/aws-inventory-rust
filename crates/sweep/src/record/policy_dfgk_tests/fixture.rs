@@ -10,8 +10,6 @@ use inventory_core::{
 pub(super) use persistence::persist;
 use std::{collections::BTreeMap, sync::LazyLock};
 
-// These tests intentionally require the pinned model checkout used by catalog compilation.
-// Missing model inputs fail the scenario; they never silently skip resource coverage.
 const SERVICES: &[(&str, &str, &[&str])] = &[
     ("elasticsearch-service", "2015-01-01", &["ListDomainNames"]),
     ("opensearch", "2021-01-01", &["ListDomainNames"]),

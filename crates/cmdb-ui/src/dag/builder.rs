@@ -64,10 +64,6 @@ fn add_resource_edges(dag: &mut DagGraph, source: &DataGraph) {
 }
 
 fn add_containment_edge(dag: &mut DagGraph, from: usize, to: usize) {
-    // Containment edges are not overlay edges; they form the hierarchy that
-    // the layout algorithm uses for layer assignment. Use an explicit
-    // relation name to avoid collision with overlay edges that have empty
-    // relation.
     dag.add_hierarchy_edge(from, to, "contains".to_owned());
 }
 

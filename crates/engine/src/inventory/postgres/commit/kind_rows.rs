@@ -95,7 +95,6 @@ fn encode(buffer: &mut Vec<u8>, schema: &KindSchema, row: &Prepared) -> Result<(
         Field::Bigint(row.first_seen),
         Field::Bigint(row.last_changed),
         Field::Bytes(observation.record().as_bytes()),
-        // The current UNNEST insert leaves the reserved `nested` column NULL.
         Field::Jsonb(None),
     ]
     .into_iter()

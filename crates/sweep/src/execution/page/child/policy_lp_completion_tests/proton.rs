@@ -21,7 +21,6 @@ const FAMILIES: &[(&str, &str, &str, &str)] = &[
 #[tokio::test]
 async fn given_proton_templates_when_major_discovery_and_minor_pages_resume_after_reopen_then_finite_stages_persist_every_version()
 -> TestResult {
-    // Given real pinned plans, two paginated templates per family, and durable work.
     let operations: Vec<_> = FAMILIES
         .iter()
         .flat_map(|family| [family.0, family.1])
@@ -37,10 +36,7 @@ async fn given_proton_templates_when_major_discovery_and_minor_pages_resume_afte
     for family in FAMILIES {
         scenario.seed(plan(&catalog, "proton", family.0)?).await?;
     }
-    // When actual template -> major discovery -> minor work resumes across reopen.
     let scenario = consume_pages(scenario, &catalog).await?.reopen().await?;
-    // Then all sixteen minor resources and exact owning-template edges survive.
-    // Major discovery's synthetic latest-minor 99 rows must never be emitted.
     for family in FAMILIES {
         let mut expected = BTreeSet::new();
         let mut edges = BTreeSet::new();
@@ -150,7 +146,6 @@ async fn consume_pages<'a, 'catalog>(
                 },
                 second
             )));
-            // A selected response templateName must not redirect the same-request binding.
             json!({"templateVersions":[{"templateName":if stage == "majors" { "not-the-requested-template" } else { name.as_str() },
                 "majorVersion":major,"minorVersion":minor,"status":"PUBLISHED","createdAt":1,"lastModifiedAt":1,
                 "arn":format!("arn:aws:proton:us-east-1:123456789012:{}-template/{name}:{major}.{minor}", family.2)}]})
@@ -180,7 +175,6 @@ fn proton_cursor(
     native: &Json,
     registry: &Registry,
 ) -> TestResult<String> {
-    // Bindings are independently persisted discovery inputs, never the request token or wire.
     let (name, major) = if let Some(stage) = stage {
         let name = bound_text(base, registry, "templateName")?;
         assert_eq!(

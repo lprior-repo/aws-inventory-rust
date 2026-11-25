@@ -161,7 +161,7 @@ async fn serve_connection(
             .send(())
             .map_err(|_| anyhow::anyhow!("checkpoint observer dropped"))?;
         checkpoint.release.await?;
-        return Ok(()); // The test killed and reaped this request's process.
+        return Ok(());
     }
     let (status, body) = page_response(&uri, tuple, pages);
     let reply = format!(

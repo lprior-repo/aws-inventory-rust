@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/personalize/service/2018-05-22/personalize-2018-05-22.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -196,7 +195,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of campaigns that use the given solution. When a solution is not specified, all the campaigns associated with the account are listed. The response provides the prope
     Resource {
         operation: "ListCampaigns",
         items: "campaigns",
@@ -208,7 +206,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of dataset groups. The response provides the properties for each dataset group, including the Amazon Resource Name (ARN). For more information on dataset groups, see
     Resource {
         operation: "ListDatasetGroups",
         items: "datasetGroups",
@@ -220,7 +217,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns the list of datasets contained in the given dataset group. The response provides the properties for each dataset, including the Amazon Resource Name (ARN). For more informa
     Resource {
         operation: "ListDatasets",
         items: "datasets",
@@ -232,7 +228,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("datasetGroupArn", "ListDatasetGroups", "datasetGroupArn")],
         fixed: &[],
     },
-    // Returns the list of event trackers associated with the account. The response provides the properties for each event tracker, including the Amazon Resource Name (ARN) and tracking I
     Resource {
         operation: "ListEventTrackers",
         items: "eventTrackers",
@@ -244,7 +239,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("datasetGroupArn", "ListDatasetGroups", "datasetGroupArn")],
         fixed: &[],
     },
-    // Lists all filters that belong to a given dataset group.
     Resource {
         operation: "ListFilters",
         items: "Filters",
@@ -256,7 +250,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("datasetGroupArn", "ListDatasetGroups", "datasetGroupArn")],
         fixed: &[],
     },
-    // Returns a list of recommenders in a given Domain dataset group. When a Domain dataset group is not specified, all the recommenders associated with the account are listed. The respo
     Resource {
         operation: "ListRecommenders",
         items: "recommenders",
@@ -274,7 +267,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns the list of schemas associated with the account. The response provides the properties for each schema, including the Amazon Resource Name (ARN). For more information on sch
     Resource {
         operation: "ListSchemas",
         items: "schemas",
@@ -286,7 +278,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of solutions in a given dataset group. When a dataset group is not specified, all the solutions associated with the account are listed. The response provides the pro
     Resource {
         operation: "ListSolutions",
         items: "solutions",
@@ -314,7 +305,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists metric attributions.
     Resource {
         operation: "ListMetricAttributions",
         items: "metricAttributions",

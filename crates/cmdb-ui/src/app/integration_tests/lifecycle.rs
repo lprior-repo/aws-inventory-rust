@@ -44,7 +44,6 @@ fn given_successful_empty_database_when_startup_page_commits_then_graph_access_d
             })?;
             assert_eq!(selected(&app, &mut cx), None);
             assert_eq!(graph(&app, &mut cx), Graph::default());
-            // A later ordinary drain must not erase the persistent access state.
             app.handle_event(&mut cx, &Event::Signal);
             assert_eq!(graph_status(&app, &mut cx), expected);
             shutdown(&mut app, &mut cx);
@@ -88,7 +87,6 @@ fn given_failed_real_database_when_repaired_and_filter_action_retries_then_close
         })?;
         assert!(app.retry_worker);
         assert_eq!(selected(&app, &mut cx), None);
-        // Repair the actual file, without invoking any App lifecycle method.
         runtime.block_on(sqlx::query("PRAGMA user_version=17").execute(&pool))?;
         text_action(&mut app, &mut cx, ids!(search_input), "recovered");
         assert_eq!(status(&app, &mut cx), "Loading inventory…");
@@ -149,7 +147,6 @@ fn given_failed_resource_query_when_filter_removes_selection_then_new_empty_page
         );
         wait_for(&mut app, &mut cx, |app, cx| graph(app, cx).nodes.len() == 2)?;
         assert_eq!(app.graph_access_error, None);
-        // Corrupt real native identity metadata, not a synthetic WorkerEvent.
         runtime.block_on(native.query(inventory_graph::cypher::diagnostics::CORRUPT_ACCOUNT))?;
         let root = fixtures::digest(&fixtures::root())?;
         graph_action(&mut app, &mut cx, &root);
@@ -210,8 +207,6 @@ fn given_cached_access_failure_and_current_selection_when_stale_success_arrives_
         })?;
         let previous = graph(&app, &mut cx);
         let selection = selected(&app, &mut cx);
-        // Exercise the defensive App consumer directly: even a successful
-        // output must not clear access state if the table rejects its root.
         app.apply_worker_event(
             &mut cx,
             WorkerEvent::Graph {

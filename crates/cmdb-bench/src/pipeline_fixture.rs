@@ -27,8 +27,6 @@ pub(super) fn scope(shard: usize) -> BenchResult<ScopeKey> {
     )?)
 }
 
-/// Typed, deterministic transport fixture, not a service/app configuration.
-/// At most 1,000 short table names and one response body are live per page.
 pub(super) struct TablePage {
     pub start: usize,
     pub rows: usize,
@@ -141,8 +139,6 @@ fn text_at<'a>(record: &'a Record, path: &[FieldId]) -> BenchResult<&'a str> {
     }
 }
 
-// The runtime normalizer is private. This fixture adapter deliberately uses the
-// checked catalog identity rather than claiming to benchmark root drain_work.
 fn identity(record: &Record, plan: &IdentityPlan, scope: &ScopeKey) -> BenchResult<ResourceId> {
     let text = match plan {
         IdentityPlan::Arn(path) => text_at(record, path)?.to_owned(),

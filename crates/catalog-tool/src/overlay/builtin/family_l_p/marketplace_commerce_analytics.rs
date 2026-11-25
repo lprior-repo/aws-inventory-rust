@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/marketplace-commerce-analytics/service/2015-07-01/marketplace-commerce-analytics-2015-07-01.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

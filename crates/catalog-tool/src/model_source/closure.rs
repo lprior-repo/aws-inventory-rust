@@ -1,13 +1,3 @@
-//! Service closure of a Smithy model file.
-//!
-//! A service's API is the set of operations bound to it directly or through its
-//! resource tree. A pinned model may also carry operation shapes outside that
-//! closure in another namespace: healthlake ships an unbound transformation
-//! namespace whose `ListTagsForResource` shares a name with the service's own
-//! operation. No SDK exposes such shapes, and keeping them makes operation names
-//! ambiguous. An unbound operation in a service's own namespace cannot collide
-//! by name and is left for the compiler to judge.
-
 use serde::Deserialize;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -75,11 +65,6 @@ impl Shape {
     }
 }
 
-/// Returns the sorted identifiers of operation shapes that are outside every
-/// service closure and outside every service namespace.
-///
-/// A model without a service shape reports none: its consumer rejects the missing
-/// service, and pruning here would hide which operations that model declared.
 pub(super) fn unbound_operations(bytes: &[u8]) -> Result<Vec<String>, serde_json::Error> {
     let view: View = serde_json::from_slice(bytes)?;
     let mut pending = view

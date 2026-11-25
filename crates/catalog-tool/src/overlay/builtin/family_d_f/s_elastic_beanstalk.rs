@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/elastic-beanstalk/service/2010-12-01/elastic-beanstalk-2010-12-01.json
 use super::support::{arn, inventory, queried, reviewed, token};
 use crate::overlay::{NameError, Paginator, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "elastic-beanstalk",
         vec![
-            // Returns the descriptions of existing applications.
             queried(
                 inventory(
                     "DescribeApplications",
@@ -16,7 +14,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ApplicationArn", "ApplicationName"],
             )?,
-            // Retrieve a list of application versions.
             queried(
                 inventory(
                     "DescribeApplicationVersions",
@@ -26,7 +23,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ApplicationVersionArn", "ApplicationName", "Status"],
             )?,
-            // Returns descriptions for existing environments.
             queried(
                 inventory(
                     "DescribeEnvironments",

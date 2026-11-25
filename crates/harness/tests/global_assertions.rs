@@ -1,5 +1,3 @@
-//! Negative controls for the global architecture assertion oracle.
-
 use serde_json::json;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteConnection};
 use sqlx::{Connection, Executor};
@@ -97,8 +95,6 @@ async fn given_fixture_metadata_when_asserting_global_then_authoritative_flag_pa
 
 #[test]
 fn fixture_completeness_validation_checks_all_required_fields() -> TestResult {
-    // This tests the fixture completeness logic with an incomplete fixture set
-    // that should fail validation
     let fixtures = json!({
         "iam": {"policy_arns": ["arn:aws:iam::000000000000:policy/p1"], "role_arns": ["arn:aws:iam::000000000000:role/r1"], "profile_arns": ["arn:aws:iam::000000000000:role-profile/p1"]},
         "s3": {},

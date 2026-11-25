@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/marketplace-discovery/service/2026-02-05/marketplace-discovery-2026-02-05.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

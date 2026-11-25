@@ -15,7 +15,6 @@ fn request(payload_bytes: usize) -> Result<Record, SweepError> {
 }
 
 fn persisted(current: &Record, partial: bool) -> Result<Record, SweepError> {
-    // Independently encode the persisted wire contract, not cursor::encode.
     record([
         (65_530, Value::Int(1)),
         (65_532, Value::Bytes(current.as_bytes().to_vec())),
@@ -25,19 +24,15 @@ fn persisted(current: &Record, partial: bool) -> Result<Record, SweepError> {
 
 #[test]
 fn cursor_preserves_and_resumes_a_request_of_exactly_65000_encoded_bytes() -> TestResult {
-    // Given a single token whose complete encoded request, not its text alone,
-    // is exactly 65000 bytes (one map byte, one key byte, three text-header bytes).
     let expected = request(64_995)?;
     assert_eq!(expected.as_bytes().len(), 65_000);
     let expected_checkpoint = persisted(&expected, false)?;
     assert_eq!(expected_checkpoint.as_bytes().len(), 65_015);
     let plan = single_token_plan()?;
     let response = record([(11, Value::Text("t".repeat(64_995)))])?;
-    // When the real response consumer builds and then resumes its checkpoint.
     let next = advance(&plan, &response)?;
     let resumed = restored(&next)?;
     let fields = resumed.request_fields(&plan)?;
-    // Then the inclusive bound is resumable and preserves the full native token.
     assert_eq!(next.cursor.as_bytes(), expected_checkpoint.as_bytes());
     assert_eq!(
         next.continuation_digest,
@@ -62,7 +57,6 @@ fn cursor_preserves_and_resumes_a_request_of_exactly_65000_encoded_bytes() -> Te
 
 #[test]
 fn cursor_marks_a_65001_byte_encoded_request_partial_without_persisting_its_token() -> TestResult {
-    // Given exactly one additional token byte, with the page limit not reached.
     let expected = request(64_996)?;
     assert_eq!(expected.as_bytes().len(), 65_001);
     let empty = Record::from_bytes(vec![0xa0])?;
@@ -70,11 +64,8 @@ fn cursor_marks_a_65001_byte_encoded_request_partial_without_persisting_its_toke
     assert_eq!(expected_checkpoint.as_bytes().len(), 14);
     let plan = single_token_plan()?;
     let response = record([(11, Value::Text("t".repeat(64_996)))])?;
-    // When the actual checkpoint consumer advances and resumes the result.
     let next = advance(&plan, &response)?;
     let resumed = restored(&next)?;
-    // Then it is explicitly partial, with a digest of the complete oversized
-    // continuation but no truncated or oversized resumable request in storage.
     assert_eq!(next.cursor.as_bytes(), expected_checkpoint.as_bytes());
     assert_eq!(
         next.continuation_digest,
@@ -105,15 +96,10 @@ fn rejects_with_operation(bytes: &[u8], expected: &'static str) -> TestResult {
 #[test]
 fn cursor_at_exactly_65536_bytes_reaches_the_nested_token_bound_not_the_outer_bound() -> TestResult
 {
-    // Given a structurally valid canonical wrapper of exactly 65536 bytes.
-    // Its current request must exceed the independent 65000-byte token bound:
-    // a legal maximal token produces only a 65015-byte wrapper, not 65536.
     let current = request(65_516)?;
     assert_eq!(current.as_bytes().len(), 65_521);
     let checkpoint = persisted(&current, false)?;
     assert_eq!(checkpoint.as_bytes().len(), 65_536);
-    // When resumed, then the inclusive outer bound permits parsing, and the
-    // precise inner-token error is observable instead of a false size error.
     rejects_with_operation(
         checkpoint.as_bytes(),
         "persisted pagination cursor has invalid token",
@@ -123,12 +109,10 @@ fn cursor_at_exactly_65536_bytes_reaches_the_nested_token_bound_not_the_outer_bo
 #[test]
 fn cursor_rejects_65537_encoded_bytes_with_the_outer_bound_error_before_nested_parsing()
 -> TestResult {
-    // Given the identical canonical shape with precisely one additional byte.
     let current = request(65_517)?;
     assert_eq!(current.as_bytes().len(), 65_522);
     let checkpoint = persisted(&current, false)?;
     assert_eq!(checkpoint.as_bytes().len(), 65_537);
-    // When resumed, then the durable envelope guard wins before token parsing.
     rejects_with_operation(
         checkpoint.as_bytes(),
         "persisted pagination cursor exceeds its bound",

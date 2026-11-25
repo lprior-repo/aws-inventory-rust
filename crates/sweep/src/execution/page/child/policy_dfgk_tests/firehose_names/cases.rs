@@ -2,7 +2,6 @@ use super::*;
 #[tokio::test]
 async fn given_native_firehose_names_when_last_name_continues_and_nonempty_final_page_stops_then_literal_scoped_arns_survive_reopen()
 -> TestResult {
-    // Given a real pinned producer, including the one- and 64-character name boundaries.
     let catalog = catalog()?;
     assert!(
         catalog
@@ -14,7 +13,6 @@ async fn given_native_firehose_names_when_last_name_continues_and_nonempty_final
     let scenario = Scenario::new(&catalog, "native-firehose-last-name").await?;
     scenario.seed(plan).await?;
     first_page(&scenario, &catalog, plan).await?;
-    // When page two starts after the LAST native name, not the first name or an ARN.
     let lease = claim(&scenario, 1001).await?;
     let request = native_request(
         &scenario,
@@ -31,7 +29,6 @@ async fn given_native_firehose_names_when_last_name_continues_and_nonempty_final
             json!({"DeliveryStreamNames":[MAX_NAME],"HasMoreDeliveryStreams":false}),
         )
         .await?;
-    // Then a nonempty false page is terminal and all metadata is durably scoped.
     assert_persisted(scenario, &[FIRST_ARN, LAST_ARN, MAX_ARN], "complete").await
 }
 
@@ -42,7 +39,6 @@ async fn given_a_durable_firehose_marker_when_true_page_has_empty_or_missing_nam
         json!({"DeliveryStreamNames":[],"HasMoreDeliveryStreams":true}),
         json!({"HasMoreDeliveryStreams":true}),
     ] {
-        // Given prior real native data and a durable last-name cursor.
         let catalog = catalog()?;
         let plan = fixture::plan(&catalog, "firehose", "ListDeliveryStreams")?;
         let scenario = Scenario::new(&catalog, "native-firehose-invalid-next").await?;
@@ -58,7 +54,6 @@ async fn given_a_durable_firehose_marker_when_true_page_has_empty_or_missing_nam
         )?;
         let reader = scenario.reader().await?;
         let before = state(&reader).await?;
-        // When an asserted-more response has no possible last native name.
         let error = match scenario
             .apply(&catalog, plan, lease, &request, invalid)
             .await
@@ -73,7 +68,6 @@ async fn given_a_durable_firehose_marker_when_true_page_has_empty_or_missing_nam
             *message,
             "pagination response omitted required continuation"
         );
-        // Then no rows, authority, ledger, outcome, or cursor changed, even after reopen.
         assert_eq!(state(&reader).await?, before);
         reader.close().await;
         let resumed = reopen(scenario).await?;
@@ -121,14 +115,12 @@ async fn given_a_durable_firehose_marker_when_true_page_has_empty_or_missing_nam
 #[tokio::test]
 async fn given_a_reopened_native_firehose_cursor_when_last_marker_repeats_then_new_page_data_persists_as_partial_without_more_work()
 -> TestResult {
-    // Given the first marker already recorded durably, not just held in memory.
     let catalog = catalog()?;
     let plan = fixture::plan(&catalog, "firehose", "ListDeliveryStreams")?;
     let scenario = Scenario::new(&catalog, "native-firehose-repeated-marker").await?;
     scenario.seed(plan).await?;
     first_page(&scenario, &catalog, plan).await?;
     let scenario = reopen(scenario).await?;
-    // When a native page contributes a new stream but repeats its last marker.
     let lease = claim(&scenario, 1001).await?;
     let request = native_request(
         &scenario,
@@ -145,6 +137,5 @@ async fn given_a_reopened_native_firehose_cursor_when_last_marker_repeats_then_n
             json!({"DeliveryStreamNames":["b",LAST_NAME],"HasMoreDeliveryStreams":true}),
         )
         .await?;
-    // Then existing durable repeat protection retains data and records partial, never complete.
     assert_persisted(scenario, &[FIRST_ARN, NEW_ARN, LAST_ARN], "partial").await
 }

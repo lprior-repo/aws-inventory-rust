@@ -11,7 +11,6 @@ enum Work<'a> {
     Object(Vec<Key>),
 }
 
-/// Materialize the already bounded and model-checked tree into the common aws-wire input.
 pub(crate) fn value(literal: &BindingValue) -> Result<Value, SweepError> {
     let mut work = vec![Work::Read(literal)];
     let mut output = Vec::new();

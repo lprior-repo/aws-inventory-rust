@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cost-and-usage-report-service/service/2017-01-06/cost-and-usage-report-service-2017-01-06.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -10,7 +8,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ReportName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified report. Any tags associated with the report are also deleted.",
             ),
         ),
-        // Model: Lists the Amazon Web Services Cost and Usage Report available to this account.
         (
             "DescribeReportDefinitions",
             OperationOverlay {

@@ -39,8 +39,6 @@ impl DatabaseSnapshot {
         })
     }
 
-    /// Returns lightweight rows without record payloads for table views.
-    /// Payload is loaded lazily via `detail` when the user opens a resource.
     pub async fn page_rows(
         &mut self,
         filter: &ResourceFilter,

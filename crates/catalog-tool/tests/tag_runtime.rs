@@ -158,10 +158,8 @@ fn given_prefixed_tag_members_when_compiled_then_key_and_value_fields_are_bound(
             value: FieldId::new(10)?
         })
     );
-    // A multi-valued TagValues member is not a scalar tag value: no plan may be emitted.
     let plural = ITEM.replace("Key", "TagKey").replace("Value", "TagValues");
     assert!(compiled("Items", Some("Tags"), LIST, &plural).is_err());
-    // Two key spellings on one element stay ambiguous and fail closed.
     let ambiguous = prefixed.replace(
         "\"TagKey\":",
         "\"Key\":{\"target\":\"smithy.api#String\"},\"TagKey\":",
@@ -222,7 +220,6 @@ fn given_invalid_tag_models_when_compiled_then_no_executable_plan_is_emitted() -
             "{error}"
         );
     }
-    // A response-root decoy Tags map must not rescue the selected item's invalid Tags list.
     assert!(compiled("Items", Some("Tags"), LIST, &missing).is_err());
     assert!(compiled("Items", Some("Items.Tags"), LIST, ITEM).is_err());
     assert!(compiled("Items", Some("Id.Tags"), LIST, ITEM).is_err());

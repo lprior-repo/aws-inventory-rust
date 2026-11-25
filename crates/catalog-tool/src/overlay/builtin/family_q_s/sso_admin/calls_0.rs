@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/sso-admin/service/2020-07-20/sso-admin-2020-07-20.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

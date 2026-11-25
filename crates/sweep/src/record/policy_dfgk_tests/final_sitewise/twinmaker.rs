@@ -4,14 +4,12 @@ use std::collections::BTreeSet;
 #[tokio::test]
 async fn given_two_workspaces_when_scene_and_sync_job_pages_resume_then_same_names_remain_distinct_and_attached_without_content_fetches()
 -> TestResult {
-    // Given pinned summary-only plans and a real SQLite work queue.
     let catalog = catalog()?;
     let mut scenario = Scenario::new(&catalog, "twinmaker-scene-sync").await?;
     scenario
         .seed(plan(&catalog, "iottwinmaker", "ListWorkspaces")?)
         .await?;
     let mut requests = BTreeSet::new();
-    // When each empty initial page checkpoints, the next request carries both cursor and workspace.
     for _ in 0..12 {
         let Some(lease) = scenario.store.claim(&scenario.sweep, 1001, 10_000).await? else {
             break;
@@ -70,7 +68,6 @@ async fn given_two_workspaces_when_scene_and_sync_job_pages_resume_then_same_nam
             .apply(&catalog, plan, lease, &request, response)
             .await?;
     }
-    // Then both workspaces' same-named resources are independent SQL rows and exact graph nodes.
     assert_eq!(requests.len(), 10);
     assert!(
         scenario

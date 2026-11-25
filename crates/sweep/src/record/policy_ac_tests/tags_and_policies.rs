@@ -93,7 +93,6 @@ fn given_certificate_tag_only_response_when_extracted_then_tags_keep_the_trusted
         serde_json::from_slice::<Json>(request.body())?.get("CertificateArn"),
         Some(&json!(arn))
     );
-    // No ARN appears in the response. Production tag extraction must attach to durable parent ownership.
     let response = decode(
         child,
         &json!({"Tags":[{"Key":"Owner","Value":"inventory"}]}),
@@ -113,7 +112,6 @@ fn given_certificate_tag_only_response_when_extracted_then_tags_keep_the_trusted
     assert!(empty.tags().is_empty());
     let absent = tag_observation(&decode(child, &json!({}))?, &owner, &endpoint.tags)?;
     assert_eq!(absent.coverage(), TagCoverage::Unobserved);
-    // A second parent's response cannot inherit the first parent's key from the payload.
     let other_owner = ResourceKey {
         id: ResourceId::parse(
             "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000002",

@@ -187,8 +187,6 @@ async fn retract_kind_matches(
     reference: &UnresolvedReference,
     kind: &Kind,
 ) -> Result<(), StoreError> {
-    // A primary term may live only in checked request context. Enumerate existing
-    // edges, not selected columns, and let every independent proof veto retraction.
     stream::try_unfold(Some((tx, None::<ResourceId>)), |state| async move {
         let Some((tx, after)) = state else { return Ok::<_, StoreError>(None); };
         let target = &reference.target;
@@ -200,7 +198,6 @@ async fn retract_kind_matches(
             .bind(after.as_ref().map_or("", ResourceId::as_str)).fetch_all(&mut **tx).await?;
         let more = rows.len() == 64;
         if rows.is_empty() { return Ok(None); }
-        // Finish each bounded query before retraction issues queries on this transaction.
         let (tx, after) = stream::iter(rows.into_iter().map(Ok::<_, StoreError>))
             .try_fold((tx, None), |(tx, _), row| async move {
                 let key = ResourceKey { account: target.account().clone(), region: target.region().clone(),

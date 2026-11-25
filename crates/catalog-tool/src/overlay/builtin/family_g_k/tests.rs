@@ -80,13 +80,11 @@ fn operation<'a>(
 
 #[test]
 fn embedded_catalog_exposes_every_reviewed_g_k_operation_with_explicit_disposition() -> TestResult {
-    // Given the pinned service namespaces and the application's assembled registry.
     let policies = crate::overlay::embedded()?;
     let family = policies
         .into_iter()
         .filter(|policy| FAMILIES.contains(&policy.service()))
         .collect::<Vec<_>>();
-    // Then every namespace and distinct modeled operation retains its reviewed disposition.
     assert_eq!(
         family
             .iter()
@@ -100,7 +98,6 @@ fn embedded_catalog_exposes_every_reviewed_g_k_operation_with_explicit_dispositi
 
 #[test]
 fn credential_content_and_billed_calls_remain_denied_without_projection() -> TestResult {
-    // Given whole-response exposures in the pinned model documentation.
     let policies = crate::overlay::embedded()?;
     let cases = [
         ("gamelift", "GetComputeAccess", DenyReason::Secret),
@@ -125,10 +122,8 @@ fn credential_content_and_billed_calls_remain_denied_without_projection() -> Tes
         ("geo-routes", "CalculateRoutes", DenyReason::Paid),
         ("iot", "DescribeEndpoint", DenyReason::Mutating),
     ];
-    // When clients resolve each explicitly dispositioned operation.
     for (service, name, reason) in cases {
         let decision = operation(&policies, service, name)?;
-        // Then removing a sensitive output field never makes the whole API callable.
         assert_eq!(
             decision.class,
             Some(OverlayClass::Deny(reason)),
@@ -143,11 +138,8 @@ fn credential_content_and_billed_calls_remain_denied_without_projection() -> Tes
 
 #[test]
 fn sitewise_collects_all_model_scoped_assets_instead_of_only_top_level_assets() -> TestResult {
-    // Given asset-model enumeration is the parent of complete asset discovery.
     let policies = crate::overlay::embedded()?;
-    // When resolving the public ListAssets plan.
     let decision = operation(&policies, "iotsitewise", "ListAssets")?;
-    // Then ALL is explicit and the model ID comes from each discovered parent.
     assert_eq!(decision.class, Some(OverlayClass::Expand));
     assert_eq!(
         decision.bind.get(&MemberPath::selected("assetModelId")?),
@@ -173,11 +165,8 @@ fn sitewise_collects_all_model_scoped_assets_instead_of_only_top_level_assets() 
 
 #[test]
 fn keyspaces_details_bind_both_table_identifiers_from_one_enumerated_parent() -> TestResult {
-    // Given tables belong to distinct keyspaces and names are not globally unique.
     let policies = crate::overlay::embedded()?;
-    // When resolving table detail expansion.
     let decision = operation(&policies, "keyspaces", "GetTable")?;
-    // Then both request identifiers preserve the selected table's parent context.
     assert_eq!(decision.class, Some(OverlayClass::Expand));
     for member in ["keyspaceName", "tableName"] {
         assert_eq!(
@@ -198,11 +187,8 @@ fn keyspaces_details_bind_both_table_identifiers_from_one_enumerated_parent() ->
 
 #[test]
 fn scalar_resource_ids_use_the_whole_selected_item_and_real_cursor_case() -> TestResult {
-    // Given jobs return scalar strings rather than objects with fabricated name fields.
     let policies = crate::overlay::embedded()?;
-    // When reading the Glue job enumeration plan.
     let decision = operation(&policies, "glue", "ListJobs")?;
-    // Then identity is the selected scalar, and cursor casing matches the model.
     assert_eq!(
         decision.items,
         Some(ItemSelector::Member(MemberPath::selected("JobNames")?))
@@ -225,12 +211,9 @@ fn scalar_resource_ids_use_the_whole_selected_item_and_real_cursor_case() -> Tes
 #[test]
 fn global_accelerators_are_account_scoped_and_private_components_are_owner_filtered() -> TestResult
 {
-    // Given global accelerators and marketplace/public Greengrass components.
     let policies = crate::overlay::embedded()?;
-    // When reading the two approved enumeration plans.
     let accelerators = operation(&policies, "global-accelerator", "ListAccelerators")?;
     let components = operation(&policies, "greengrassv2", "ListComponents")?;
-    // Then global resources are not duplicated by regional identity or public component inclusion.
     assert_eq!(accelerators.scope, Some(Scope::Account));
     assert_eq!(
         components.fixed.get(&MemberPath::selected("scope")?),
@@ -241,11 +224,8 @@ fn global_accelerators_are_account_scoped_and_private_components_are_owner_filte
 
 #[test]
 fn legacy_analytics_cursor_blocker_is_explicit_not_falsely_supported() -> TestResult {
-    // Given ListApplications requires last-item-derived continuation semantics.
     let policies = crate::overlay::embedded()?;
-    // When a client resolves this service operation.
     let decision = operation(&policies, "kinesis-analytics", "ListApplications")?;
-    // Then the gap is visible, with no incomplete one-page collection plan.
     assert_eq!(decision.class, Some(OverlayClass::Defer));
     assert_eq!(decision.items, None);
     assert!(
@@ -352,11 +332,8 @@ fn iot_metric_and_dimension_names_are_complete_regional_scalar_roots_without_nam
 
 #[test]
 fn keyspace_type_names_keep_selected_roots_and_keyspace_request_correlation() -> TestResult {
-    // Given the public assembled policies, including scalar UDT-name collections.
     let policies = crate::overlay::embedded()?;
-    // When the keyspace-qualified type collection is selected.
     let plan = operation(&policies, "keyspaces", "ListTypes")?;
-    // Then its identity distinguishes equal type names in different keyspaces.
     assert_eq!(
         plan.identity,
         Some(Identity::CorrelatedKey(vec![
@@ -378,13 +355,10 @@ fn keyspace_type_names_keep_selected_roots_and_keyspace_request_correlation() ->
 
 #[test]
 fn scalar_selected_paths_do_not_make_request_members_or_tokens_valid() -> TestResult {
-    // Given a valid scalar collection.
     let plan = super::policy::enumerate("names", super::policy::key("$")?, None)?;
     let error = crate::overlay::NameError {
         value: "$".to_owned(),
     };
-    // When the selected-root marker is supplied in a request-only domain.
-    // Then it is rejected rather than parsed through the selected-path helper.
     assert_eq!(
         super::policy::bind(plan.clone(), "$", "ListNames", "$"),
         Err(error.clone())
@@ -404,11 +378,8 @@ fn scalar_selected_paths_do_not_make_request_members_or_tokens_valid() -> TestRe
 #[test]
 fn full_builtin_assembly_keeps_guardduty_scalar_filters_and_unrelated_families_callable()
 -> TestResult {
-    // Given the complete public builtin assembly, not an isolated family helper.
     let policies = crate::overlay::embedded()?;
-    // When detector-qualified scalar filter names are consumed.
     let filters = operation(&policies, "guardduty", "ListFilters")?;
-    // Then both the selected scalar and its request correlation survive assembly.
     assert_eq!(
         filters.identity,
         Some(Identity::CorrelatedKey(vec![

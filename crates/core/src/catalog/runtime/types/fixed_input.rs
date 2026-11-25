@@ -6,7 +6,6 @@ pub const MAX_FIXED_COLLECTION: usize = 64;
 pub const MAX_FIXED_STRING: usize = 16_384;
 pub const MAX_FIXED_TEXT_BYTES: usize = 1_048_576;
 
-/// A bounded model-checked literal. Structures use numeric keys; maps use text keys.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BindingValue {
     String(String),
@@ -20,7 +19,6 @@ pub enum BindingValue {
     Object(Box<[(Key, Self)]>),
 }
 
-// Keep bounds shared by compiler and loader without a second runtime DSL.
 impl BindingValue {
     pub const MAX_DEPTH: usize = MAX_FIXED_DEPTH;
     pub const MAX_NODES: usize = MAX_FIXED_NODES;

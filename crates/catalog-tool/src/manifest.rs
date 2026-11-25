@@ -10,8 +10,6 @@ use crate::report::{ReportError, ReportMode};
 
 const MODELS_LOCK_PATH: &str = "models.lock";
 const MANIFEST_PATH: &str = "MANIFEST.sha256";
-/// Catalog outputs that scripts/bootstrap-catalog.sh regenerates. They are gitignored,
-/// so `git ls-files` does not list them, but the manifest still pins their digests.
 const GENERATED_CATALOG_FILES: &[&str] = &[
     "catalog/aws-api.catalog",
     "catalog/aws-models.report",
@@ -77,7 +75,6 @@ fn aws_models_revision(root: &Path) -> Result<String, Error> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    // Expected: "160000 commit <sha>\t.local/aws-models\n"
     let fields: Vec<&str> = stdout.split_whitespace().collect();
     let sha = fields.get(2).ok_or_else(|| Error::GitModelsRevision {
         source: io::Error::other("unexpected git output"),
@@ -126,7 +123,6 @@ fn tracked_catalog_files(root: &Path) -> Result<Vec<(PathBuf, String)>, Error> {
     Ok(files)
 }
 
-/// `catalog/.gitignore` is tooling metadata, not catalog data, so it is not pinned.
 fn is_dotfile(relative: &str) -> bool {
     Path::new(relative)
         .file_name()

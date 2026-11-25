@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-# Read-only pinned-model scan. Output is evidence, not an automatic deny policy.
 require 'json'
 require 'set'
 

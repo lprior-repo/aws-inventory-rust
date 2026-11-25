@@ -23,8 +23,6 @@ fn native_observation(id: &str, value: ValueRef<'_>) -> TestResult<Observation> 
 
 async fn related_fixture() -> TestResult<(tempfile::TempDir, BinaryStore)> {
     let (directory, store) = create_store().await?;
-    // Use one real request binding identity throughout this resource's lifetime;
-    // changing bindings here would create a second independent source facet.
     store
         .seed_works(&[
             support::relationship_work(
@@ -171,7 +169,6 @@ fn changed_page(lease: WorkLease, second: ValueRef<'_>) -> TestResult<PageCommit
 #[tokio::test]
 async fn given_changed_text_prefix_when_later_native_bool_hits_text_schema_then_entire_page_rolls_back_and_same_lease_can_retry()
 -> TestResult {
-    // Given: real tags, edges, unresolved references, facets and projection revisions.
     let (directory, store) = related_fixture().await?;
     store
         .seed_work(support::relationship_work(
@@ -186,8 +183,6 @@ async fn given_changed_text_prefix_when_later_native_bool_hits_text_schema_then_
     assert_seeded_relations(&pool).await?;
     let before = stored_state(&pool).await?;
 
-    // When: an in-scope valid change precedes a distinct wrong-native typed row.
-    // Kills TEXT-SCHEMA-COERCES-BOOL-TO-NULL and COMMIT-VALID-PREFIX-ON-LATE-ERROR.
     assert!(matches!(
         store
             .commit_page(changed_page(lease.clone(), ValueRef::Bool(true))?)
@@ -197,7 +192,6 @@ async fn given_changed_text_prefix_when_later_native_bool_hits_text_schema_then_
         ))
     ));
 
-    // Then: even the earlier relation clear and facet/outbox writes roll back durably.
     assert_eq!(stored_state(&pool).await?, before);
     pool.close().await;
     drop(store);
@@ -270,7 +264,6 @@ async fn tag_coverage(
 #[tokio::test]
 async fn given_earlier_tag_values_and_coverage_updates_when_later_owner_is_absent_then_exact_error_rolls_back_every_table()
 -> TestResult {
-    // Given: persisted resources and complete tag coverage at a distinct earlier timestamp.
     let (directory, store) = related_fixture().await?;
     store
         .seed_work(support::relationship_work(
@@ -305,7 +298,6 @@ async fn given_earlier_tag_values_and_coverage_updates_when_later_owner_is_absen
     assert_eq!(store.projection_resource(&resource(ABSENT)?).await?, None);
     let before = stored_state(&pool).await?;
 
-    // When: two valid tag observations execute before the absent-owner failure.
     let mut invalid = changed_tags_page(lease.clone())?;
     invalid.tags.push(TagObservation::new(
         resource(ABSENT)?,
@@ -319,7 +311,6 @@ async fn given_earlier_tag_values_and_coverage_updates_when_later_owner_is_absen
         ))
     ));
 
-    // Then: neither tag values nor coverage timestamps, relations, or work state leak.
     assert_eq!(stored_state(&pool).await?, before);
     pool.close().await;
     drop(store);

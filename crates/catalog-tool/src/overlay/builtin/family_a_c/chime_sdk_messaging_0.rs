@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/chime-sdk-messaging/service/2021-05-15/chime-sdk-messaging-2021-05-15.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -196,7 +194,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ChimeBearer. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all channels that an AppInstanceUser or AppInstanceBot is a part of. Only an AppInstanceAdmin can call the API with a user ARN that is not their own. The x-amz-chime-bearer request header is mandatory. Use the ARN of the…",
             ),
         ),
-        // Model: List all the messages in a channel. Returns a paginated list of ChannelMessages . By default, sorted by creation timestamp in descending order. Redacted messages appear in the results as empty, since…
         ("ListChannelMessages", denied(DenyReason::Content)),
         (
             "ListChannelModerators",

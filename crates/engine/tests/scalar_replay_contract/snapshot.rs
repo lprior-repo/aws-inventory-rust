@@ -15,8 +15,6 @@ struct TableState {
     rows: Vec<Vec<String>>,
 }
 
-// Snapshot every persisted column, including new facet/candidate metadata, rather
-// than silently omitting a table when the inventory schema gains another field.
 pub(super) async fn read_durable_state(pool: &SqlitePool) -> TestResult<DurableState> {
     let version = sqlx::query_scalar("PRAGMA user_version")
         .fetch_one(pool)

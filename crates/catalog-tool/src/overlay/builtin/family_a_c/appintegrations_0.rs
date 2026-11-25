@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/appintegrations/service/2020-07-29/appintegrations-2020-07-29.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -46,7 +44,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified existing event integration. If the event integration is associated with clients, the request is rejected.",
             ),
         ),
-        // Model: Get an Application resource.
         (
             "GetApplication",
             OperationOverlay {
@@ -76,7 +73,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Identifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about the DataIntegration. You cannot create a DataIntegration association for a DataIntegration that has been previously associated. Use a different DataIntegration, or recreate the DataIntegration using the…",
             ),
         ),
-        // Model: Returns information about the event integration.
         (
             "GetEventIntegration",
             OperationOverlay {
@@ -100,7 +96,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a paginated list of application associations for an application.
         (
             "ListApplicationAssociations",
             OperationOverlay {
@@ -123,7 +118,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists applications in the account.
         (
             "ListApplications",
             OperationOverlay {
@@ -141,7 +135,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a paginated list of DataIntegration associations in the account. You cannot create a DataIntegration association for a DataIntegration that has been previously associated. Use a different…
         (
             "ListDataIntegrationAssociations",
             OperationOverlay {
@@ -164,7 +157,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a paginated list of DataIntegrations in the account. You cannot create a DataIntegration association for a DataIntegration that has been previously associated. Use a different…
         (
             "ListDataIntegrations",
             OperationOverlay {
@@ -177,7 +169,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a paginated list of event integration associations in the account.
         (
             "ListEventIntegrationAssociations",
             OperationOverlay {
@@ -200,7 +191,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a paginated list of event integrations in the account.
         (
             "ListEventIntegrations",
             OperationOverlay {

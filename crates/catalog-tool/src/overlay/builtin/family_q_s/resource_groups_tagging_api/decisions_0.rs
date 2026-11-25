@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/resource-groups-tagging-api/service/2017-01-26/resource-groups-tagging-api-2017-01-26.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
@@ -39,13 +38,10 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required-tag policy aggregates span organization targets and report output; not an account-owned resource root with a stable ARN.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Generates a report that lists all tagged resources in the accounts across your organization and tells whether each resource is compliant with the effective tag policy. Compliance data is refreshed daily. The report is generated asynchronously. The generated report is saved to the following location: s3://amzn-s3-demo-bucket/AwsTagPolicies/o-exampleorgid/YYYY-MM-ddTHH:mm:ssZ/report.csv For more inf
     (
         "StartReportCreation",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Applies one or more tags to the specified resources. Note the following: Not all resources can have tags. For a list of services with resources that support tagging using this operation, see Services that support the Resource Groups Tagging API . If the resource doesn't yet support this operation, the resource's service might support tagging using its own API operations. For more information, refe
     ("TagResources", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes the specified tags from the specified resources. When you specify a tag key, the action removes both that key and its associated value. The operation succeeds even if you attempt to remove tags from a resource that were already removed. Note the following: To remove tags from a resource, you need the necessary permissions for the service that the resource belongs to as well as permissions
     ("UntagResources", Decision::Denied(DenyReason::Mutating)),
 ];

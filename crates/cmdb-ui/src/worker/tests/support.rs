@@ -1,4 +1,3 @@
-//! Deterministic ordering around the production runner, never fabricated outputs.
 pub(crate) mod transport;
 
 use super::super::*;
@@ -78,8 +77,6 @@ pub(crate) fn close_worker(worker: DataWorker) -> TestResult {
     Ok(())
 }
 
-/// An external RESP transport peer which acknowledges the *actual* graph read
-/// and deliberately withholds its response. Socket EOF proves runtime cleanup.
 pub(crate) struct BlockedGraph {
     pub endpoint: String,
     received: Receiver<Vec<String>>,

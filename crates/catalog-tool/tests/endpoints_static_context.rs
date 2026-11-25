@@ -105,18 +105,14 @@ fn resolved(host: &str, name: &str, signing_region: &str) -> DerivedEndpoint {
 
 #[test]
 fn modeled_operation_constants_select_their_route_and_independent_signing_context() -> TestResult {
-    // Given a service with two modeled routes and distinct SigV4 overrides,
     let dir = fixture(
         rules(),
         cases(),
         json!({"ListProfiles":agent(),"ListGoals":agent()}),
     )?;
-    // When endpoint evidence is compiled for the individual operations,
     let endpoints = verified_endpoints(dir.path())?;
     let endpoint = endpoints.get("mixed").ok_or("missing service evidence")?;
     let agent_route = resolved("research", "agent-signer", "us-east-1");
-    // Then both static-context operations use the modeled agent route/signature,
-    // while the ordinary service operation remains regional and unchanged.
     assert_eq!(
         endpoint.operation_endpoint("ListProfiles"),
         Some(&agent_route)
@@ -232,9 +228,6 @@ fn omitted_case_parameters_use_only_the_original_modeled_default_as_evidence() -
 #[test]
 fn inputs_of_the_operation_itself_are_route_evidence_and_another_operations_are_not() -> TestResult
 {
-    // A case's parameters are its complete rule inputs, so the request members
-    // its own operation lists add nothing. Another operation's requests are not
-    // requests the compiled operation makes, even when the constants match.
     let own = json!([{"operationName":"ListProfiles","operationParams":{"Profile":"p"}}]);
     let other = json!([{"operationName":"ListGoals"}]);
     for (inputs, expected) in [
@@ -318,7 +311,6 @@ fn boolean_and_string_array_constants_use_the_modeled_parameter_types() -> TestR
 
 #[test]
 fn only_accountless_non_required_cases_are_evidence_for_an_operation_route() -> TestResult {
-    // Given a route whose only modeled cases also pin the account-endpoint mode,
     let mut document = rules();
     document
         .get_mut("parameters")
@@ -354,10 +346,6 @@ fn only_accountless_non_required_cases_are_evidence_for_an_operation_route() -> 
         let endpoint = endpoints.get("mixed").ok_or("missing service evidence")?;
         Ok(endpoint.operation_endpoint("ListProfiles").cloned())
     };
-    // When the case describes the runtime, which holds no account: `disabled`,
-    // or the SDK-default `preferred` that falls back to the regional route,
-    // Then the cases verify the operation route; `required` or a supplied
-    // account describes requests the runtime never sends and proves nothing.
     assert_eq!(
         route(evidence("disabled", None)?)?,
         Some(resolved("research", "agent-signer", "us-east-1"))
@@ -374,8 +362,6 @@ fn only_accountless_non_required_cases_are_evidence_for_an_operation_route() -> 
 
 #[test]
 fn operation_constants_route_a_service_whose_own_route_cannot_resolve() -> TestResult {
-    // Given a rule set whose required selector has no default, so only an
-    // operation's modeled constant can complete it,
     let mut document = rules();
     document
         .get_mut("parameters")
@@ -401,11 +387,8 @@ fn operation_constants_route_a_service_whose_own_route_cannot_resolve() -> TestR
         evidence.clone(),
         json!({"ListProfiles":agent(),"ListControl":control}),
     )?;
-    // When endpoint evidence is compiled,
     let endpoints = verified_endpoints(dir.path())?;
     let endpoint = endpoints.get("mixed").ok_or("missing operation routes")?;
-    // Then each operation uses the route its own constant selects, and an
-    // operation without one inherits nothing callable from the service.
     assert_eq!(
         endpoint.operation_endpoint("ListProfiles"),
         Some(&resolved("research", "agent-signer", "us-east-1"))
@@ -418,7 +401,6 @@ fn operation_constants_route_a_service_whose_own_route_cannot_resolve() -> TestR
         endpoint.operation_endpoint("ListOrdinary"),
         Some(DerivedEndpoint::Resolved { .. })
     ));
-    // And a service with no verified operation route is not published at all.
     let dir = fixture(
         document,
         evidence,
@@ -483,9 +465,6 @@ fn express_route(
 #[test]
 fn a_published_case_for_the_operation_itself_with_default_and_inert_flags_is_route_evidence()
 -> TestResult {
-    // Given the only control-plane evidence names the operation and spells out
-    // a default and an inert optional flag, whether it lists client built-ins
-    // or request members that bind no endpoint parameter,
     let own =
         json!([{"operationName":"ListDirectories","builtInParams":{"AWS::Region":"us-east-1"}}]);
     let bound = json!([{"operationName":"ListDirectories","operationParams":{"Bucket":"b"}}]);
@@ -495,7 +474,6 @@ fn a_published_case_for_the_operation_itself_with_default_and_inert_flags_is_rou
             inputs,
             json!({"DisableSessionAuth":false})
         )]);
-        // When the operation route is compiled, Then that case verifies it.
         assert_eq!(
             express_route(cases, express_rules())?,
             Some(resolved("research", "agent-signer", "us-east-1"))
@@ -531,7 +509,6 @@ fn cases_for_other_operations_request_values_or_meaningful_flags_are_not_route_e
             "{name}"
         );
     }
-    // A false flag the rules do distinguish from the unset flag stays a parameter.
     let mut rules = express_rules();
     let flagged = rules
         .get_mut("rules")
@@ -600,8 +577,6 @@ fn account_endpoint(host: &str, region: &str) -> Value {
     json!({"endpoint":endpoint_url(false, region, &format!("https://{host}.{region}.example.test"))})
 }
 
-/// Compiles `ListJobs`, whose required `AccountId` member is a host label bound
-/// to the endpoint parameter of the same name, under the given constant flag.
 fn label_route(
     prefix: Option<&str>,
     flag: &str,
@@ -643,8 +618,6 @@ fn label_route(
 
 #[test]
 fn a_request_host_label_is_left_for_the_modeled_host_prefix_to_supply() -> TestResult {
-    // Given every published case for the operation carries some account as the
-    // leading host label, and the operation's host prefix is that label,
     let prefixed = ["us-west-2", "eu-west-1"].map(|region| {
         account_case(
             region,
@@ -653,7 +626,6 @@ fn a_request_host_label_is_left_for_the_modeled_host_prefix_to_supply() -> TestR
             account_endpoint("123456789012.control", region),
         )
     });
-    // When its route is compiled, Then the route is the host the prefix extends.
     assert_eq!(
         label_route(
             Some("{AccountId}."),
@@ -663,8 +635,6 @@ fn a_request_host_label_is_left_for_the_modeled_host_prefix_to_supply() -> TestR
         )?,
         Some(resolved("control", "service-signing", "{region}"))
     );
-    // Given rules that route the operation without using its label, and no host
-    // prefix, Then the published route stands as it is.
     let ignored = account_case(
         "us-east-1",
         Some("123456789012"),

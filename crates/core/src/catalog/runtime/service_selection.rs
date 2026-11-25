@@ -2,8 +2,6 @@ use super::{CallablePlan, PlanPurpose, RuntimeCatalog, RuntimeCatalogError};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 impl RuntimeCatalog<'_> {
-    /// Select services or `service:Operation` roots, retaining bootstrap plans and
-    /// their required ancestors. Descendants run only when selected explicitly.
     pub fn select_services(mut self, selectors: &[String]) -> Result<Self, RuntimeCatalogError> {
         if selectors.is_empty() {
             return Ok(self);

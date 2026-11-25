@@ -2,10 +2,8 @@ use std::time::Duration;
 
 use thiserror::Error;
 
-/// Most profiles one `serve` loop schedules.
 pub const MAX_PROFILES: usize = 64;
 
-/// A monotonic instant in whole milliseconds on the injected clock.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Millis(u64);
 
@@ -24,22 +22,14 @@ impl Millis {
     }
 }
 
-/// How one profile run ended.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RunOutcome {
-    /// The profile's sweep finished. Its freshness advances.
     Completed,
-    /// The run failed. Freshness does not advance, so the profile stays stale
-    /// and goes first in the next pass.
     Failed,
-    /// Pending work in the store belongs to another profile. Nothing ran; the
-    /// profile is retried after the owner has made progress.
     NotOwner,
-    /// A stop request interrupted the run. The loop ends.
     Interrupted,
 }
 
-/// What the loop does next.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
     Run { profile: usize },
@@ -64,8 +54,6 @@ pub enum CadenceError {
     UnexpectedOutcome,
 }
 
-/// One pass: each profile once, stalest first, then the deferred profiles if
-/// this pass made progress.
 #[derive(Debug)]
 struct Pass {
     order: Vec<usize>,
@@ -76,14 +64,10 @@ struct Pass {
 }
 
 impl Pass {
-    /// The profile at the cursor, or `None` once the order is exhausted.
     fn current(&self) -> Option<usize> {
         self.order.get(self.cursor).copied()
     }
 
-    /// Replace the order with the deferred profiles. Returns false, and leaves
-    /// the pass as it is, when no profile made progress: that would retry the
-    /// same owners in a loop.
     fn requeue_deferred(&mut self) -> bool {
         if !self.progressed || self.deferred.is_empty() {
             return false;
@@ -102,7 +86,6 @@ enum Phase {
     Stopped,
 }
 
-/// The pure scheduler. It never reads a clock: every call is given `now`.
 #[derive(Debug)]
 pub struct Scheduler {
     interval_ms: u64,
@@ -112,16 +95,11 @@ pub struct Scheduler {
 }
 
 impl Scheduler {
-    /// A scheduler over `profiles` profiles, none of them completed yet. Its
-    /// first pass is due at `now`.
     pub fn new(interval: Duration, profiles: usize, now: Millis) -> Result<Self, CadenceError> {
         check_profiles(profiles)?;
         Self::seeded(interval, vec![None; profiles], now)
     }
 
-    /// A scheduler whose freshness is what the store last recorded: one entry
-    /// per profile, `None` if that profile never completed. A restart therefore
-    /// keeps the stalest-first order.
     pub fn seeded(
         interval: Duration,
         last_completed: Vec<Option<Millis>>,
@@ -137,8 +115,6 @@ impl Scheduler {
         })
     }
 
-    /// The next action at `now`. Repeated calls return the same `Run` until
-    /// [`Scheduler::record`] reports its outcome.
     pub fn next_action(&mut self, now: Millis) -> Action {
         loop {
             if let Some(action) = self.step(now) {
@@ -147,7 +123,6 @@ impl Scheduler {
         }
     }
 
-    /// Record how the running profile ended, at `now`.
     pub fn record(
         &mut self,
         profile: usize,
@@ -175,23 +150,18 @@ impl Scheduler {
         Ok(())
     }
 
-    /// End the loop. Nothing further is started.
     pub fn request_stop(&mut self) {
         self.phase = Phase::Stopped;
     }
 
-    /// When each profile last completed, by profile index.
     pub fn last_completed(&self) -> &[Option<Millis>] {
         &self.last_completed
     }
 
-    /// Passes started so far. A pass that follows an overrun at once counts.
     pub fn passes(&self) -> u64 {
         self.passes
     }
 
-    /// One state transition. `Some` is the action to return; `None` means the
-    /// phase changed and the caller should look again.
     fn step(&mut self, now: Millis) -> Option<Action> {
         match &mut self.phase {
             Phase::Stopped => Some(Action::Stop),
@@ -223,8 +193,6 @@ impl Scheduler {
         });
     }
 
-    /// Never-completed profiles first, then oldest completion; ties go to the
-    /// smaller index.
     fn stalest_first(&self) -> Vec<usize> {
         let mut order: Vec<usize> = (0..self.last_completed.len()).collect();
         order

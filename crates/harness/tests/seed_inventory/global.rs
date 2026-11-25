@@ -5,10 +5,6 @@ use inventory_harness::inventory_seed::{
 };
 use std::error::Error;
 
-// Given a local emulator, when the shared runner executes a recipe, then its
-// response-derived identity and echoed configuration become independent evidence
-// for comparison with collection. Generated IDs are never guessed in advance.
-
 pub(super) fn iam() -> Result<SeedScenario, SeedError> {
     let step = SeedStep::new(
         StepId::new(0),
@@ -28,8 +24,6 @@ pub(super) fn iam() -> Result<SeedScenario, SeedError> {
     account_scenario(step)
 }
 
-// The native emulator starts with an organization and root. Read both
-// rather than trying to create a second organization.
 pub(super) fn organizations() -> Result<SeedScenario, SeedError> {
     let organization = SeedStep::new(
         StepId::new(0),
@@ -52,9 +46,6 @@ pub(super) fn organizations() -> Result<SeedScenario, SeedError> {
     SeedScenario::new(vec![organization, root])
 }
 
-// Public-zone metadata only: no records, registration or VPC association.
-// Preserve the returned HostedZone.Id, including any /hostedzone/ prefix;
-// ChangeInfo.Id is not the hosted-zone identity.
 pub(super) fn route53() -> Result<SeedScenario, SeedError> {
     let step = SeedStep::new(
         StepId::new(0),
@@ -77,8 +68,6 @@ pub(super) fn route53() -> Result<SeedScenario, SeedError> {
     account_scenario(step)
 }
 
-// An unattached origin access control is configuration metadata only. It creates
-// no distribution, origin request, function, content or key material.
 pub(super) fn cloudfront() -> Result<SeedScenario, SeedError> {
     let fields = [
         ("Name", "inventory-seed-origin-access-control"),

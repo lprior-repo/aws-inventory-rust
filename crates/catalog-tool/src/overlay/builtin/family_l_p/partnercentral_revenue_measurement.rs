@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/partnercentral-revenue-measurement/service/2022-07-26/partnercentral-revenue-measurement-2022-07-26.json
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -72,7 +71,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a paginated list of revenue attributions with optional filters.
     Resource {
         operation: "ListRevenueAttributions",
         items: "RevenueAttributionSummaries",
@@ -84,7 +82,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("Catalog", "AWS")],
     },
-    // Returns a paginated list of marketplace revenue shares with optional filters.
     Resource {
         operation: "ListMarketplaceRevenueShares",
         items: "MarketplaceRevenueShareSummaries",

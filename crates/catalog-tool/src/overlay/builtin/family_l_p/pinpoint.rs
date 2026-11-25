@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pinpoint/service/2016-12-01/pinpoint-2016-12-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -251,7 +250,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves information about all the applications that are associated with your Amazon Pinpoint account.
     Resource {
         operation: "GetApps",
         items: "ApplicationsResponse.Item",
@@ -263,7 +261,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves information about all the recommender model configurations that are associated with your Amazon Pinpoint account.
     Resource {
         operation: "GetRecommenderConfigurations",
         items: "ListRecommenderConfigurationsResponse.Item",
@@ -281,7 +278,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetApps; no content-bearing expansion.
     Resource {
         operation: "GetApp",
         items: "ApplicationResponse",
@@ -293,7 +289,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("ApplicationId", "GetApps", "Id")],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetRecommenderConfigurations; no content-bearing expansion.
     Resource {
         operation: "GetRecommenderConfiguration",
         items: "RecommenderConfigurationResponse",

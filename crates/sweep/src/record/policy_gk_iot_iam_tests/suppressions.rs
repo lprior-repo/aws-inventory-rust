@@ -31,8 +31,6 @@ async fn given_typed_suppression_targets_when_pages_and_field_order_change_then_
     let lease = scenario.claim("ListAuditSuppressions").await?;
     let (request, wire) = scenario.request(plan, &lease)?;
     request_contains(&wire, "resume2")?;
-    // Same nested identifier in another wire-member order is the same suppression;
-    // mutable description/expiration do not participate in its identity.
     let last = br#"{"suppressions":[{"checkName":"CHECK_A","resourceIdentifier":{"policyVersionIdentifier":{"policyVersionId":"1","policyName":"policy-a"}},"description":"changed","expirationDate":1234},{"checkName":"CHECK_A","resourceIdentifier":{"issuerCertificateIdentifier":{"issuerId":"same-id","issuerCertificateSerialNumber":"serial-a"}}}]}"#;
     scenario
         .apply(&catalog, plan, lease, &request, last)

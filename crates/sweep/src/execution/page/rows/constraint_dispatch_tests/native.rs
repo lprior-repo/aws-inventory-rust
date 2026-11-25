@@ -2,7 +2,6 @@ use super::*;
 #[tokio::test]
 async fn given_five_native_constraint_types_in_one_page_when_dispatched_then_each_exact_canonical_row_and_portfolio_edge_persists()
 -> TestResult {
-    // Given a real root lease whose assembled portfolio page discovers one bound constraint child.
     let catalog = catalog()?;
     let plan = catalog
         .lookup(SERVICE, OPERATION)
@@ -15,7 +14,6 @@ async fn given_five_native_constraint_types_in_one_page_when_dispatched_then_eac
     let body = json!({"ConstraintDetails":details});
     let native = flow::decode(plan, body.clone())?;
     let rows = record::item_records(&native.record, plan.items())?;
-    // When the actual claimed child request is encoded and the complete native response is assembled.
     let parts = flow::prepare(&catalog, &lease, body).await?;
     assert_eq!(parts.observations.len(), 5);
     assert_eq!(parts.references.len(), 5);
@@ -30,7 +28,6 @@ async fn given_five_native_constraint_types_in_one_page_when_dispatched_then_eac
             .await?,
         6
     );
-    // Then reopening retains exact canonical IDs/records and actual resolved portfolio graph edges.
     for (index, ((_, kind), row)) in MAPPINGS.iter().zip(&rows).enumerate() {
         let id = format!("8:port-one|6:cons-{index}");
         let schema = catalog
@@ -68,10 +65,8 @@ async fn given_five_native_constraint_types_in_one_page_when_dispatched_then_eac
 #[tokio::test]
 async fn given_unknown_constraint_after_known_row_when_dispatched_then_incomplete_coverage_is_explicit_and_no_generic_resource_persists()
 -> TestResult {
-    // Given a persisted portfolio and its real discovered child lease, not a fabricated parentless scope.
     let catalog = catalog()?;
     let (root, store, lease) = flow::rooted(&catalog).await?;
-    // When native request encoding and complete production assembly encounter an unknown second row.
     let error = flow::prepare(&catalog, &lease, json!({"ConstraintDetails":[
         {"ConstraintId":"known","Type":"LAUNCH"}, {"ConstraintId":"future","Type":"FUTURE_CONSTRAINT"}
     ]})).await.err().ok_or("unknown discriminator unexpectedly assembled")?;
@@ -81,7 +76,6 @@ async fn given_unknown_constraint_after_known_row_when_dispatched_then_incomplet
     );
     assert!(matches!(error.downcast_ref::<SweepError>(),
         Some(SweepError::Catalog(RuntimeCatalogError::UnclassifiedKind { discriminator })) if discriminator == "FUTURE_CONSTRAINT"));
-    // Then reopening shows only the committed root; even the preceding known child row is absent.
     let _store = flow::reopen(store, &root, &catalog).await?;
     let reader = flow::reader(&root).await?;
     assert_eq!(
@@ -104,7 +98,6 @@ async fn given_unknown_constraint_after_known_row_when_dispatched_then_incomplet
 #[test]
 fn given_missing_null_or_nontext_typed_discriminator_when_dispatched_then_malformed_input_is_not_unknown_coverage()
 -> TestResult {
-    // Given already typed rows, including forms the native JSON decoder may reject earlier.
     let catalog = catalog()?;
     let plan = catalog
         .lookup(SERVICE, OPERATION)
@@ -123,9 +116,7 @@ fn given_missing_null_or_nontext_typed_discriminator_when_dispatched_then_malfor
             fields.insert(Key::Field(field("Type")?), value);
         }
         let row = Record::encode(&Value::Map(fields))?;
-        // When classification sees invalid modeled discriminator data, it fails distinctly.
         let result = dispatched(&catalog, plan, &[row]);
-        // Then it never falls back to LaunchRoleConstraint or calls five APIs.
         assert!(matches!(
             result,
             Err(SweepError::Catalog(RuntimeCatalogError::Capability))
@@ -139,7 +130,6 @@ async fn given_each_classified_kind_with_wrong_request_evidence_when_committed_t
 -> TestResult {
     let catalog = catalog()?;
     for (value, _) in MAPPINGS {
-        // Given an actually discovered child lease and references from the complete production assembly.
         let (root, store, lease) = flow::rooted(&catalog).await?;
         let mut parts = flow::prepare(
             &catalog,
@@ -153,7 +143,6 @@ async fn given_each_classified_kind_with_wrong_request_evidence_when_committed_t
             .first_mut()
             .ok_or("assembled portfolio reference absent")?;
         assert_eq!(reference.target.value().as_str(), PORTFOLIO);
-        // When a caller forges relationship evidence inconsistent with the unchanged real lease request.
         reference.target = inventory_core::inventory::ReferenceTarget::new(
             AccountId::parse("123456789012")?,
             Region::parse("us-east-1")?,
@@ -165,7 +154,6 @@ async fn given_each_classified_kind_with_wrong_request_evidence_when_committed_t
             .await
             .err()
             .ok_or("forged request evidence committed")?;
-        // Then the checked store rejects atomically, preserving only the previously committed root.
         assert!(
             matches!(
                 error.downcast_ref::<inventory_engine::inventory::StoreError>(),

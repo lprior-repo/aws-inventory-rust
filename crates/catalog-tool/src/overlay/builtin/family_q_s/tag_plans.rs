@@ -17,7 +17,6 @@ struct Tags {
     parents: &'static [Parent],
 }
 
-// Explicit reviewed parent sources. No runtime operation-prefix or ARN-string discovery.
 const TAGS: &[Tags] = &[
     Tags {
         service: "sagemaker",

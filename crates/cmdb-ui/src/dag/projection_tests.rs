@@ -129,11 +129,8 @@ fn native_tag_graph(account: &str, region: &str) -> Graph {
 #[test]
 fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affiliation_links()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given one native affiliation and two resources, with a different SQL-only tag.
     let source = native_tag_graph("111111111111", "us-east-1");
-    // When the actual graph surface projection is constructed.
     let graph = builder::from_data_graph(&source);
-    // Then there is one distinct tag vertex and one affiliation, never a resource clique.
     let tags: Vec<_> = graph
         .nodes()
         .iter()
@@ -152,7 +149,6 @@ fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affil
         .filter(|edge| edge.to == *tag_index)
         .collect();
     assert_eq!(links.len(), 1);
-    // Tag affiliation edges are overlay edges with relation "has_tag".
     assert_eq!(
         links.first().map(|edge| (edge.from, edge.overlay)),
         Some((root, true))
@@ -171,11 +167,9 @@ fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affil
 #[test]
 fn given_identical_tag_text_when_scopes_differ_then_tag_vertex_identities_do_not_alias()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given identical key/value text in different account or region scopes.
     let source = native_tag_graph("111111111111", "us-east-1");
     let other_account = native_tag_graph("222222222222", "us-east-1");
     let other_region = native_tag_graph("111111111111", "eu-west-1");
-    // When each native affiliation is projected.
     let tag_id = |source: &Graph| -> Result<String, &'static str> {
         builder::from_data_graph(source)
             .nodes()
@@ -184,7 +178,6 @@ fn given_identical_tag_text_when_scopes_differ_then_tag_vertex_identities_do_not
             .map(|node| node.id().to_owned())
             .ok_or("tag vertex")
     };
-    // Then stable scoped identity is separate even though labels match.
     assert_ne!(tag_id(&source)?, tag_id(&other_account)?);
     assert_ne!(tag_id(&source)?, tag_id(&other_region)?);
     Ok(())
@@ -193,7 +186,6 @@ fn given_identical_tag_text_when_scopes_differ_then_tag_vertex_identities_do_not
 #[test]
 fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_invented()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given native-looking tag data not bound to the displayed resource scope.
     let mut source = native_tag_graph("111111111111", "us-east-1");
     source
         .tag_affiliations
@@ -201,7 +193,6 @@ fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_inve
         .ok_or("affiliation")?
         .tag
         .account = "222222222222".to_owned();
-    // When projected, foreign-scope data cannot attach to the root.
     let graph = builder::from_data_graph(&source);
     assert_eq!(
         graph
@@ -211,7 +202,6 @@ fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_inve
             .count(),
         0
     );
-    // Nor can affiliations without a requested root be attached to arbitrary neighbors.
     source.tag_root = None;
     let graph = builder::from_data_graph(&source);
     assert_eq!(
@@ -228,7 +218,6 @@ fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_inve
 
 #[test]
 fn given_more_native_tags_than_render_capacity_when_projecting_then_vertices_stay_bounded() {
-    // Given a native affiliation fanout exceeding the graph renderer's hard cap.
     let mut source = native_tag_graph("111111111111", "us-east-1");
     source.tag_affiliations = (0..MAX_NODES.saturating_add(10))
         .map(|index| cmdb_view::TagAffiliation {
@@ -241,9 +230,7 @@ fn given_more_native_tags_than_render_capacity_when_projecting_then_vertices_sta
             provenance: "resource-tags".to_owned(),
         })
         .collect();
-    // When projected, resource hierarchy plus tag vertices share the same fixed budget.
     let graph = builder::from_data_graph(&source);
-    // Then overflow is explicit and the layout never receives excess vertices.
     assert_eq!(graph.len(), MAX_NODES);
     assert_eq!(graph.dropped_nodes(), 15);
     assert!(graph.edges().len() <= super::super::graph::MAX_EDGES);

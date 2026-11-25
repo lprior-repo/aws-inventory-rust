@@ -90,7 +90,6 @@ fn response(operation: &str, request: &Record, second: bool) -> TestResult<(Json
     assert!(farm_ids().iter().any(|expected| expected == farm));
     let base = format!("/2023-10-12/farms/{farm}");
     if operation == "ListFleets" {
-        // A response echo is not binding authority: descendants must inherit the actual farm request.
         let fleets = vec![json!({
             "farmId":identifier("farm","c"),"fleetId":local("fleet",second),"displayName":"fleet","status":"ACTIVE","workerCount":0,"minWorkerCount":0,"maxWorkerCount":1,
             "configuration":{"customerManaged":{"mode":"NO_SCALING","workerCapabilities":{"vCpuCount":{"min":1},"memoryMiB":{"min":1024},"osFamily":"linux","cpuArchitectureType":"x86_64"}}},"createdAt":"2026-01-01T00:00:00Z","createdBy":"owner"

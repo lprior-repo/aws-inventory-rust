@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/rtbfabric/service/2023-05-15/rtbfabric-2023-05-15.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

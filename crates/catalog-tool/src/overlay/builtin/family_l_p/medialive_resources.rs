@@ -2,7 +2,6 @@ use super::super::policy::{Id, Resource};
 use crate::overlay::Scope;
 
 pub(super) const RESOURCES: &[Resource] = &[
-    // Produces list of channels that have been created
     Resource {
         operation: "ListChannels",
         items: "Channels",
@@ -14,7 +13,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List input devices
     Resource {
         operation: "ListInputDevices",
         items: "InputDevices",
@@ -35,7 +33,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Produces a list of Input Security Groups for an account
     Resource {
         operation: "ListInputSecurityGroups",
         items: "InputSecurityGroups",
@@ -47,7 +44,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Produces list of inputs that have been created
     Resource {
         operation: "ListInputs",
         items: "Inputs",
@@ -67,7 +63,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieve a list of the existing multiplexes.
     Resource {
         operation: "ListMultiplexes",
         items: "Multiplexes",
@@ -79,7 +74,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieve the list of Networks.
     Resource {
         operation: "ListNetworks",
         items: "Networks",
@@ -91,7 +85,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieve the list of Clusters.
     Resource {
         operation: "ListClusters",
         items: "Clusters",
@@ -110,7 +103,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List all the SdiSources in the AWS account.
     Resource {
         operation: "ListSdiSources",
         items: "SdiSources",
@@ -122,7 +114,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists signal maps.
     Resource {
         operation: "ListSignalMaps",
         items: "SignalMaps",
@@ -134,7 +125,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists cloudwatch alarm templates.
     Resource {
         operation: "ListCloudWatchAlarmTemplates",
         items: "CloudWatchAlarmTemplates",
@@ -153,7 +143,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists cloudwatch alarm template groups.
     Resource {
         operation: "ListCloudWatchAlarmTemplateGroups",
         items: "CloudWatchAlarmTemplateGroups",
@@ -165,7 +154,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists eventbridge rule templates.
     Resource {
         operation: "ListEventBridgeRuleTemplates",
         items: "EventBridgeRuleTemplates",
@@ -177,7 +165,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists eventbridge rule template groups.
     Resource {
         operation: "ListEventBridgeRuleTemplateGroups",
         items: "EventBridgeRuleTemplateGroups",

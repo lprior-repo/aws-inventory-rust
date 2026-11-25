@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/application-signals/service/2024-04-15/application-signals-2024-04-15.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -70,7 +68,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires StartTime, EndTime, KeyAttributes. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about a service discovered by Application Signals.",
             ),
         ),
-        // Model: Returns information about one SLO created in the account.
         (
             "GetServiceLevelObjective",
             OperationOverlay {
@@ -135,7 +132,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Id. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves all exclusion windows configured for a specific SLO.",
             ),
         ),
-        // Model: Returns a list of SLOs created in this account.
         (
             "ListServiceLevelObjectives",
             OperationOverlay {

@@ -72,7 +72,6 @@ fn timestamp(value: Time) -> Result<i64, StoreError> {
         .and_then(|seconds| seconds.checked_mul(1_000_000))
         .and_then(|micros| micros.checked_add(i128::from(value.nanoseconds() / 1_000)))
         .and_then(|micros| i64::try_from(micros).ok())
-        // PostgreSQL uses the two extremes as infinity sentinels, not finite times.
         .filter(|micros| !matches!(*micros, i64::MIN | i64::MAX))
         .ok_or(StoreError::Invalid(
             "timestamp exceeds PostgreSQL microsecond range",

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/comprehend/service/2017-11-27/comprehend-2017-11-27.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -267,7 +265,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SourceModelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new custom model that replicates a source custom model that you import. The source model can be in your Amazon Web Services account or another one. If the source model is in another Amazon Web Services account, then it…",
             ),
         ),
-        // Model: List the datasets that you have configured in this Region. For more information about datasets, see Flywheel overview in the Amazon Comprehend Developer Guide .
         (
             "ListDatasets",
             OperationOverlay {
@@ -280,7 +277,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of the documentation classification jobs that you have submitted.
         (
             "ListDocumentClassificationJobs",
             OperationOverlay {
@@ -299,7 +295,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is DocumentClassifierSummariesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets a list of summaries of the document classifiers that you have created",
             ),
         ),
-        // Model: Gets a list of the document classifiers that you have created.
         (
             "ListDocumentClassifiers",
             OperationOverlay {
@@ -312,7 +307,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of the dominant language detection jobs that you have submitted.
         (
             "ListDominantLanguageDetectionJobs",
             OperationOverlay {
@@ -325,7 +319,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of all existing endpoints that you've created. For information about endpoints, see Managing endpoints .
         (
             "ListEndpoints",
             OperationOverlay {
@@ -338,7 +331,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of the entity detection jobs that you have submitted.
         (
             "ListEntitiesDetectionJobs",
             OperationOverlay {
@@ -357,7 +349,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is EntityRecognizerSummariesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets a list of summaries for the entity recognizers that you have created.",
             ),
         ),
-        // Model: Gets a list of the properties of all entity recognizers that you created, including recognizers currently in training. Allows you to filter the list of recognizers based on criteria such as status…
         (
             "ListEntityRecognizers",
             OperationOverlay {
@@ -375,7 +366,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Gets a list of the events detection jobs that you have submitted.
         (
             "ListEventsDetectionJobs",
             OperationOverlay {
@@ -394,7 +384,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Information about the history of a flywheel iteration. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .",
             ),
         ),
-        // Model: Gets a list of the flywheels that you have created.
         (
             "ListFlywheels",
             OperationOverlay {
@@ -407,7 +396,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Get a list of key phrase detection jobs that you have submitted.
         (
             "ListKeyPhrasesDetectionJobs",
             OperationOverlay {
@@ -420,7 +408,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of the PII entity detection jobs that you have submitted.
         (
             "ListPiiEntitiesDetectionJobs",
             OperationOverlay {
@@ -433,7 +420,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of sentiment detection jobs that you have submitted.
         (
             "ListSentimentDetectionJobs",
             OperationOverlay {
@@ -452,7 +438,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all tags associated with a given Amazon Comprehend resource.",
             ),
         ),
-        // Model: Gets a list of targeted sentiment detection jobs that you have submitted.
         (
             "ListTargetedSentimentDetectionJobs",
             OperationOverlay {
@@ -465,7 +450,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of the topic detection jobs that you have submitted.
         (
             "ListTopicsDetectionJobs",
             OperationOverlay {

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mwaa/service/2020-07-01/mwaa-2020-07-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -36,20 +35,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Lists the Amazon Managed Workflows for Apache Airflow (MWAA) environments.
-    Resource {
-        operation: "ListEnvironments",
-        items: "Environments",
-        id: Id::Key(&["$"]),
-        scope: Scope::Region,
-        tokens: Some(("NextToken", "NextToken")),
-        query: &["$"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListEnvironments",
+    items: "Environments",
+    id: Id::Key(&["$"]),
+    scope: Scope::Region,
+    tokens: Some(("NextToken", "NextToken")),
+    query: &["$"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("mwaa", GROUPS, RESOURCES)

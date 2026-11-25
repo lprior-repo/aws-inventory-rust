@@ -1,6 +1,3 @@
-// Pinned qconnect 2020-10-19 resource AIPrompt: aws.api#arn.template is
-// ai-prompt/{assistantId}/{aiPromptId}; its summary's #Arn supplies lowercase UUID grammar.
-// This reviewed resource kind is stricter than the shared #Arn shape's 1–3 UUID suffixes.
 pub(super) fn valid(resource: &str) -> bool {
     let mut parts = resource.split('/');
     matches!(parts.next(), Some("ai-prompt"))

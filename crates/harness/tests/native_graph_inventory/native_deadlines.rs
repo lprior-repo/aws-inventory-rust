@@ -1,4 +1,3 @@
-//! Controlled Unix peers exercise client deadlines without installing FalkorDB.
 use super::{Duration, NativeGraph, Stdio, TestResult};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, BufReader},
@@ -102,7 +101,6 @@ fn fixture() -> TestResult<(NativeGraph, UnixListener, std::path::PathBuf)> {
     let directory = installation.path().to_path_buf();
     let socket = directory.join("silent.sock");
     let listener = UnixListener::bind(&socket)?;
-    // A real owned child makes reap assertions independent of Redis behavior.
     let child = Command::new("sleep")
         .arg("60")
         .env_clear()

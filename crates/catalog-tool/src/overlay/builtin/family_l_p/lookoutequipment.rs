@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lookoutequipment/service/2020-12-15/lookoutequipment-2020-12-15.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -116,7 +115,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists all datasets currently available in your account, filtering on the dataset name.
     Resource {
         operation: "ListDatasets",
         items: "DatasetSummaries",
@@ -128,7 +126,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of all inference schedulers currently available for your account.
     Resource {
         operation: "ListInferenceSchedulers",
         items: "InferenceSchedulerSummaries",
@@ -146,7 +143,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Generates a list of all models in the account, including model name and ARN, dataset, and status.
     Resource {
         operation: "ListModels",
         items: "ModelSummaries",
@@ -167,7 +163,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of the label groups.
     Resource {
         operation: "ListLabelGroups",
         items: "LabelGroupSummaries",
@@ -179,7 +174,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all retraining schedulers in your account, filtering by model name prefix and status.
     Resource {
         operation: "ListRetrainingSchedulers",
         items: "RetrainingSchedulerSummaries",

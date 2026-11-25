@@ -5,7 +5,6 @@ use std::collections::BTreeSet;
 #[test]
 fn given_a_grandchild_when_its_grandparent_lists_it_as_a_skip_then_only_a_direct_parent_can_skip_it()
 -> TestResult {
-    // ListAnalyzers binds ListArchiveRules, and ListArchiveRules binds GetArchiveRule.
     let parent = "ListArchiveRules";
     let grandchild = "GetArchiveRule";
     let base = base_catalog::base()?;
@@ -43,7 +42,6 @@ fn given_a_grandchild_when_its_grandparent_lists_it_as_a_skip_then_only_a_direct
 
 #[test]
 fn given_one_unbound_branch_when_loading_a_skip_then_the_decoder_refuses_it() -> TestResult {
-    // The second branch overrides the parent binding with a fixed analyzer name.
     let base = branched_child(Some("analyzer-without-parent"))?;
     RuntimeCatalog::from_bytes(&base)?;
 
@@ -59,7 +57,6 @@ fn given_one_unbound_branch_when_loading_a_skip_then_the_decoder_refuses_it() ->
 #[test]
 fn given_every_branch_bound_to_the_direct_parent_when_loading_a_skip_then_it_is_retained()
 -> TestResult {
-    // Both branches inherit GetAnalyzer's common binding to ListAnalyzers.
     let base = branched_child(None)?;
 
     let bytes = branched_skip(&base)?;
@@ -131,8 +128,6 @@ fn archive_rule_skip(binding: AnalyzerBinding) -> TestResult<Vec<u8>> {
         let Some(Value::List(bindings)) = child.get_mut(&key(7)?) else {
             return Err("missing archive rule child bindings".into());
         };
-        // Replace the request-context binding for analyzerName, retaining the
-        // direct binding of ruleName to the carrier.
         let source_key = key(2)?;
         let analyzer = bindings
             .iter_mut()

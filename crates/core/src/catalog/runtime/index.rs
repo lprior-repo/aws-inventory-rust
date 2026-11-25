@@ -21,8 +21,6 @@ impl Index {
         })
     }
 
-    /// Plan positions are only valid for the slice they were built from, so a
-    /// catalog that replaces its plans must replace them here too.
     pub(super) fn with_plans(
         mut self,
         plans: &[CallablePlan<'_>],

@@ -1,4 +1,3 @@
-//! Reviewed summary-only collections from the pinned T–Z service models.
 use super::{bind, inventory, name, path, paths, token};
 use crate::overlay::{
     Binding, ContextSource, Identity, IdentityField, NameError, OperationOverlay, Paginator, Scope,

@@ -205,7 +205,6 @@ pub(super) fn child_row(case: &Case, parent: &str, second: bool) -> TestResult<J
         }
         _ => return Err("unexpected LP child fixture operation".into()),
     };
-    // No selected parent identifiers: reviewed request-origin joins must supply them.
     Ok(if case.child == "ListPrivateGraphEndpoints" {
         json!({"vpcId":value,"subnetIds":["subnet-11111111"],"status":"AVAILABLE"})
     } else {

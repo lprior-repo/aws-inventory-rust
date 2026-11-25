@@ -1,10 +1,7 @@
-// Pinned source: .local/aws-models/models/bedrock-agentcore-control/service/2023-06-05/bedrock-agentcore-control-2023-06-05.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists all workload identities in your account.
         (
             "ListWorkloadIdentities",
             OperationOverlay {

@@ -113,8 +113,6 @@ pub(super) async fn given_a_failed_edge_insert_when_page_commits_then_all_page_w
             SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
         )
         .await?;
-    // Both observations and the request-origin relation are valid. Fail only at
-    // the actual edge insert, after the resource/facet/typed prefix was written.
     sqlx::query("CREATE TRIGGER fail_reviewed_edge BEFORE INSERT ON edges WHEN NEW.relation='depends-on' BEGIN SELECT RAISE(ABORT,'reviewed edge storage failure'); END")
         .execute(&pool).await?;
     let before = snapshot::read_durable_state(&pool).await?;
@@ -170,8 +168,6 @@ pub(super) async fn given_a_higher_priority_target_facet_when_a_direct_edge_uses
     let (directory, store, _) = declared_branch_fixture(&["detail", "list"]).await?;
     let source = resource("thing-1")?;
     let target = resource("thing-2")?;
-    // Both authorities must be declared in the checked catalog; root bindings
-    // alone do not create independent facets.
     let branch_work =
         |sweep: &str, branch: &str, dependency: Option<&str>| -> TestResult<WorkSpec> {
             use inventory_core::record::{FieldId, Key, Record, Value};

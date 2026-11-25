@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/auto-scaling/service/2011-01-01/auto-scaling-2011-01-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -136,7 +134,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is AdjustmentTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the available adjustment types for step scaling and simple scaling policies. The following adjustment types are supported: ChangeInCapacity ExactCapacity PercentChangeInCapacity",
             ),
         ),
-        // Model: Gets information about the Auto Scaling groups in the account and Region. If you specify Auto Scaling group names, the output includes information for only the specified Auto Scaling groups. If you…
         (
             "DescribeAutoScalingGroups",
             OperationOverlay {
@@ -168,7 +165,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the instance refreshes for the specified Auto Scaling group from the previous six weeks. This operation is part of the instance refresh feature in Amazon EC2 Auto Scaling, which helps you update instances…",
             ),
         ),
-        // Model: Gets information about the launch configurations in the account and Region.
         ("DescribeLaunchConfigurations", denied(DenyReason::Content)),
         (
             "DescribeLifecycleHookTypes",
@@ -211,7 +207,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Gets information about the scaling policies in the account and Region.
         (
             "DescribePolicies",
             OperationOverlay {
@@ -236,7 +231,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is Processes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the scaling process types for use with the ResumeProcesses and SuspendProcesses APIs.",
             ),
         ),
-        // Model: Gets information about the scheduled actions that haven't run or that have not reached their end time. To describe the scaling activities for scheduled actions that have already run, call the…
         (
             "DescribeScheduledActions",
             OperationOverlay {

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/backup/service/2018-11-15/backup-2018-11-15.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -178,7 +176,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires BackupJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns backup job details for the specified BackupJobId .",
             ),
         ),
-        // Model: Returns metadata about a backup vault specified by its name.
         (
             "DescribeBackupVault",
             OperationOverlay {
@@ -212,7 +209,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns the framework details for the specified FrameworkName .
         (
             "DescribeFramework",
             OperationOverlay {
@@ -265,7 +261,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ReportJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the details associated with creating a report as specified by its ReportJobId .",
             ),
         ),
-        // Model: Returns a list of all report plans for an Amazon Web Services account and Amazon Web Services Region.
         (
             "DescribeReportPlan",
             OperationOverlay {
@@ -425,7 +420,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of the backup access points in your account and Region.
         (
             "ListBackupAccessPoints",
             OperationOverlay {
@@ -456,7 +450,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is BackupJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This is a request for a summary of backup jobs created or running within the most recent 14 days. You can include parameters AccountID, State, ResourceType, MessageCategory, AggregationPeriod, MaxResults, or NextToken to filter…",
             ),
         ),
-        // Model: Returns a list of existing backup jobs for an authenticated account for the last 30 days. For a longer period of time, consider using these monitoring tools .
         (
             "ListBackupJobs",
             OperationOverlay {
@@ -481,7 +474,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns version metadata of your backup plans, including Amazon Resource Names (ARNs), backup plan IDs, creation and deletion dates, plan names, and version IDs.",
             ),
         ),
-        // Model: Lists the active backup plans for the account.
         (
             "ListBackupPlans",
             OperationOverlay {
@@ -494,7 +486,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Reviewed full response: selection metadata includes both keys, role ARN and creation/request metadata, not backup contents.
         (
             "ListBackupSelections",
             OperationOverlay {
@@ -517,7 +508,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of recovery point storage containers along with information about them.
         (
             "ListBackupVaults",
             OperationOverlay {
@@ -536,7 +526,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is CopyJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This request obtains a list of copy jobs created or running within the the most recent 14 days. You can include parameters AccountID, State, ResourceType, MessageCategory, AggregationPeriod, MaxResults, or NextToken to filter…",
             ),
         ),
-        // Model: Returns metadata about your copy jobs.
         (
             "ListCopyJobs",
             OperationOverlay {
@@ -549,7 +538,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of all frameworks for an Amazon Web Services account and Amazon Web Services Region.
         (
             "ListFrameworks",
             OperationOverlay {
@@ -562,7 +550,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: This operation returns a list of recovery points that have an associated index, belonging to the specified account. Optional parameters you can include are: MaxResults; NextToken; SourceResourceArns;…
         (
             "ListIndexedRecoveryPoints",
             OperationOverlay {
@@ -580,7 +567,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: This action returns metadata about active and previous legal holds.
         (
             "ListLegalHolds",
             OperationOverlay {
@@ -593,7 +579,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns an array of resources with recovery points created by Backup (regardless of the recovery point's status ), including the time the resource was saved, an Amazon Resource Name (ARN) of the…
         (
             "ListProtectedResources",
             OperationOverlay {
@@ -612,7 +597,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request lists the protected resources corresponding to each backup vault.",
             ),
         ),
-        // Model: Returns detailed information about the recovery points stored in a backup vault.
         (
             "ListRecoveryPointsByBackupVault",
             OperationOverlay {
@@ -647,7 +631,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: The information about the recovery points of the type specified by a resource Amazon Resource Name (ARN). For Amazon EFS and Amazon EC2, this action only lists recovery points created by Backup.",
             ),
         ),
-        // Model: Returns details about your report jobs.
         (
             "ListReportJobs",
             OperationOverlay {
@@ -660,7 +643,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of your report plans. For detailed information about a single report plan, use DescribeReportPlan .
         (
             "ListReportPlans",
             OperationOverlay {
@@ -685,7 +667,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is RestoreJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This request obtains a summary of restore jobs created or running within the the most recent 14 days. You can include parameters AccountID, State, ResourceType, AggregationPeriod, MaxResults, or NextToken to filter results. This…",
             ),
         ),
-        // Model: Returns a list of jobs that Backup initiated to restore a saved resource, including details about the recovery process.
         (
             "ListRestoreJobs",
             OperationOverlay {
@@ -709,7 +690,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of restore testing plans.
         (
             "ListRestoreTestingPlans",
             OperationOverlay {
@@ -722,7 +702,6 @@ pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Reviewed full response: plan/selection names, role/resource-type references, creation time and validation window only.
         (
             "ListRestoreTestingSelections",
             OperationOverlay {
@@ -757,7 +736,6 @@ pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is ScanJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This is a request for a summary of scan jobs created or running within the most recent 14 days.",
             ),
         ),
-        // Model: Returns a list of existing scan jobs for an authenticated account for the last 30 days.
         (
             "ListScanJobs",
             OperationOverlay {
@@ -776,7 +754,6 @@ pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the tags assigned to the resource, such as a target recovery point, backup plan, or backup vault. This operation returns results depending on the resource type used in the value for resourceArn . For example, recovery…",
             ),
         ),
-        // Model: Returns a list of tiering configurations.
         (
             "ListTieringConfigurations",
             OperationOverlay {

@@ -97,8 +97,6 @@ async fn given_foreign_oam_sink_reference_when_equal_value_wrong_owner_or_region
             kind: inventory_core::inventory::Kind::parse("AWS::Oam::Sink")?,
             id: ResourceId::parse(SINK)?,
         };
-        // This public storage seam deliberately bypasses native ARN identity extraction:
-        // the typed owner differs while the actual indexed target value is byte-for-byte equal.
         let other = SINK.replace("000000000001", "000000000003");
         for (index, value) in [Some(record(SINK)?), Some(record(&other)?), None, None]
             .into_iter()

@@ -44,7 +44,6 @@ pub(crate) fn has_nodes() -> &'static str {
     "MATCH (n) RETURN 1 LIMIT 1"
 }
 
-/// Builds one replacement statement for at most 1,000 rows with one relation label.
 pub fn replace_edges(key: &NodeKey, edges: &[EdgeRow]) -> Result<String, GraphError> {
     edge_query(key, edges, true)
 }
@@ -315,8 +314,6 @@ pub(crate) fn clear_page() -> &'static str {
     "MATCH (n) WITH n LIMIT 1000 DETACH DELETE n"
 }
 
-/// Queries used by native acceptance fixtures and schema-13 diagnostics.
-/// These are not part of the backend-neutral runtime query subset.
 pub mod diagnostics {
     pub const RESOURCE_COUNT: &str = "MATCH (r:Resource) RETURN count(r)";
     pub const NODE_COUNT: &str = "MATCH (n) RETURN count(n)";
@@ -385,7 +382,6 @@ pub mod diagnostics {
         )
     }
     #[cfg(any(test, feature = "test-fixtures"))]
-    /// Builds bounded node and directed-edge seed queries without clearing incident edges.
     pub fn resource_fixture<'a>(
         nodes: &'a [super::NodeRow],
         edges: &'a [super::EdgeRow],

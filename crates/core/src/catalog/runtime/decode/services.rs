@@ -1,9 +1,3 @@
-//! Catalog services and operations opened once per runtime-catalog decode.
-//!
-//! [`Catalog::service`] re-validates every service blob on each call, so
-//! resolving every plan and review decision through it costs
-//! `lookups x catalog bytes`. This index pays that validation once.
-
 use super::RuntimeCatalogError;
 use crate::catalog::{Catalog, CatalogError, Operation, Service};
 
@@ -25,7 +19,6 @@ impl<'a> Services<'a> {
         Ok(Self(entries))
     }
 
-    /// The named service and operation; each name must occur exactly once.
     pub(super) fn operation(
         &self,
         service_name: &str,
@@ -59,7 +52,6 @@ fn entry(service: Service<'_>) -> Result<Entry<'_>, CatalogError> {
     })
 }
 
-/// The run of items in `sorted` whose key equals `key`.
 fn equal_run<'s, T>(sorted: &'s [T], key_of: impl Fn(&T) -> &str, key: &str) -> &'s [T] {
     let start = sorted.partition_point(|item| key_of(item) < key);
     let rest = sorted.get(start..).unwrap_or_default();

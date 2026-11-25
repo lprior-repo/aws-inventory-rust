@@ -46,7 +46,6 @@ fn response(
 #[tokio::test]
 async fn given_channels_when_empty_and_second_stream_key_pages_resume_then_metadata_keeps_bound_channel_and_never_reads_secrets()
 -> TestResult {
-    // Given two channel owners and the real embedded summary-only plans.
     let catalog = catalog()?;
     let mut scenario = Scenario::new(&catalog, "stream-key-metadata-only").await?;
     let root = fixture::plan(&catalog, "ivs", "ListChannels")?;
@@ -54,7 +53,6 @@ async fn given_channels_when_empty_and_second_stream_key_pages_resume_then_metad
     assert_eq!(keys.kind().as_str(), "AWS::IVS::StreamKey");
     scenario.seed(root).await?;
     let mut requests = Vec::new();
-    // When durable cursors resume empty, second and last pages through actual wire requests.
     for _ in 0..8 {
         let lease = scenario
             .store
@@ -76,7 +74,6 @@ async fn given_channels_when_empty_and_second_stream_key_pages_resume_then_metad
             .await?
             .is_none()
     );
-    // Then all four keys and their bound-parent edges are persisted without secret detail work.
     requests.sort();
     assert_eq!(
         requests,

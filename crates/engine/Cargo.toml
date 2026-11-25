@@ -17,8 +17,6 @@ futures-util.workspace = true
 tracing.workspace = true
 sha2.workspace = true
 base16ct.workspace = true
-# Upstream's merged SQLite 0.39 support; retain bundled SQLite and allocation limits.
-# https://github.com/transact-rs/sqlx/pull/4502
 sqlx.workspace = true
 redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
 

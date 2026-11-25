@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/personalize-runtime/service/2018-05-22/personalize-runtime-2018-05-22.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

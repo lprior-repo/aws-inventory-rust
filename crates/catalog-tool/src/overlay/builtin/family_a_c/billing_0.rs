@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/billing/service/2023-09-07/billing-2023-09-07.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -106,7 +104,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is items; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the segments of a billing view over a given time period. Each segment identifies the billing domain ( PRO_FORMA or BILLABLE ) and the account relationships that apply during its time range. If you don't provide an arn , the…",
             ),
         ),
-        // Model: Lists the billing views available for a given time period. Every Amazon Web Services account has a unique PRIMARY billing view that represents the billing data available by default. Accounts that use…
         (
             "ListBillingViews",
             OperationOverlay {

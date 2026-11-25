@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/resource-groups/service/2017-11-27/resource-groups-2017-11-27.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

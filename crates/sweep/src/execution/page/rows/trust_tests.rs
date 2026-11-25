@@ -123,7 +123,6 @@ fn policy(effect: &str, principal: &str) -> String {
 #[tokio::test]
 async fn given_actual_iam_allow_principal_when_foreign_role_arrives_in_either_order_then_reviewed_trust_resolves()
 -> TestResult {
-    // Given actual pinned IAM query decoding, reviewed projection and native catalog authority.
     let catalog = fixture::catalog()?;
     for target_first in [false, true] {
         let (_directory, store) = trust_store(&catalog).await?;
@@ -136,7 +135,6 @@ async fn given_actual_iam_allow_principal_when_foreign_role_arrives_in_either_or
         } else {
             [(source, allow.as_str()), (target, empty.as_str())]
         };
-        // When the genuine foreign resource and the Allow declaration commit in either order.
         for (index, (owner, document)) in pages.into_iter().enumerate() {
             let at = i64::try_from(index)?
                 .checked_add(1)
@@ -145,7 +143,6 @@ async fn given_actual_iam_allow_principal_when_foreign_role_arrives_in_either_or
                 .commit_page(trust_page(&store, &catalog, owner, document, at).await?)
                 .await?;
         }
-        // Then the graph contains exactly the observed cross-account resource, never a placeholder.
         assert_eq!(store.projection_resources(None, 100).await?.len(), 2);
         let edges = store.projection_edges(None, 100).await?.edges;
         assert_eq!(edges.len(), 1);
@@ -173,7 +170,6 @@ async fn given_reviewed_iam_trust_tuple_when_public_caller_forges_source_or_wild
         "missing-source",
     ] {
         let (directory, store) = trust_store(&catalog).await?;
-        // Given a real producer reference, not a handcrafted allowlist or arbitrary relation tuple.
         let mut page = trust_page(
             &store,
             &catalog,
@@ -195,7 +191,6 @@ async fn given_reviewed_iam_trust_tuple_when_public_caller_forges_source_or_wild
             "missing-source" => policy("Allow", TARGET),
             _ => return Err("unknown trust attack".into()),
         };
-        // When the public caller bypasses reference production and substitutes a different summary.
         page.observations = trust_rows(&catalog, ("123456789012", "collector"), &document)?.1;
         if attack == "missing-source" {
             page.observations.clear();
@@ -220,7 +215,6 @@ async fn given_reviewed_iam_trust_tuple_when_public_caller_forges_source_or_wild
             ),
             "{attack}"
         );
-        // Then no resource, candidate or edge survives the rejected transaction.
         assert!(
             store.projection_resources(None, 100).await?.is_empty(),
             "{attack}"

@@ -21,7 +21,6 @@ fn real_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Copies only the artifacts the coverage denominator reads, so tampering never touches the repo.
 fn copy_inputs() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     for path in INPUTS {

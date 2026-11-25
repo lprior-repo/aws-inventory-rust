@@ -1,7 +1,3 @@
-//! Within a sweep the stalest scopes are claimed first.
-//! "Stale" is the time of a scope's latest complete outcome in any earlier sweep;
-//! a scope that never completed is the stalest of all. Ties go to the smaller scope key.
-
 use super::*;
 use inventory_engine::inventory::{InventoryStore, WorkSpec};
 
@@ -34,7 +30,6 @@ where
     given_migrated_database_when_claiming_then_stalest_first_ordering_is_preserved(&store).await
 }
 
-/// Complete one sweep over the test scopes, each observed at its own time.
 async fn completed_first_sweep<S: InventoryStore>(store: &S) -> TestResult {
     let works: Vec<WorkSpec> = AGES
         .iter()
@@ -85,7 +80,6 @@ async fn given_earlier_outcomes_when_claiming_then_the_stalest_scope_goes_first<
 ) -> TestResult {
     completed_first_sweep(store).await?;
 
-    // ap-south-1 was never swept; the others completed at 100, 200 and 300.
     let works: Vec<WorkSpec> = ["us-east-1", "ap-south-1", "eu-west-1", "us-east-2"]
         .iter()
         .map(|region| work("second", region))
@@ -121,7 +115,6 @@ async fn given_only_an_incomplete_outcome_when_claiming_then_the_scope_is_still_
     store: &S,
 ) -> TestResult {
     completed_first_sweep(store).await?;
-    // A later partial outcome at 900 does not make us-east-2 fresh: only complete counts.
     seed(store, work("partial", "us-east-2")?).await?;
     let partial = SweepId::new("partial".to_owned())?;
     let lease = store
@@ -132,7 +125,6 @@ async fn given_only_an_incomplete_outcome_when_claiming_then_the_scope_is_still_
         .finish_scope(lease, ScopeOutcome::Inaccessible, 900, None)
         .await?;
 
-    // New sweep: all 3 scopes are ready again.
     let works: Vec<WorkSpec> = AGES
         .iter()
         .map(|(region, _)| work("third", region))
@@ -157,12 +149,10 @@ async fn given_expired_leases_and_ready_work_when_claiming_then_the_stalest_of_b
         seed(store, work("second", region)?).await?;
     }
     let sweep = SweepId::new("second".to_owned())?;
-    // Three scopes are leased for 10 ms and abandoned, as a killed process would.
     assert_eq!(
         claim_regions(store, &sweep, 1_000, 10, 3).await?,
         ["us-east-2", "eu-west-1", "us-east-1"]
     );
-    // A never-completed scope arrives as new ready work after the lease expired.
     seed(store, work("second", "ap-south-1")?).await?;
     assert_eq!(
         claim_regions(store, &sweep, 2_000, 1_000, 4).await?,
@@ -177,7 +167,6 @@ async fn given_scope_completed_at_time_zero_when_claiming_then_it_sorts_after_ne
 >(
     store: &S,
 ) -> TestResult {
-    // Complete ap-south-1 at observed_at=0
     seed(store, work("zero", "ap-south-1")?).await?;
     let sweep = SweepId::new("zero".to_owned())?;
     let lease = store
@@ -188,13 +177,11 @@ async fn given_scope_completed_at_time_zero_when_claiming_then_it_sorts_after_ne
         .finish_scope(lease, ScopeOutcome::Complete, 0, None)
         .await?;
 
-    // New sweep: ap-south-1 completed at 0, us-east-1 never completed.
     seed(store, work("second", "ap-south-1")?).await?;
     seed(store, work("second", "us-east-1")?).await?;
     let second = SweepId::new("second".to_owned())?;
     assert_eq!(
         claim_regions(store, &second, 1_000, 1_000, 2).await?,
-        // Never-completed sorts before time 0; key order would disagree
         ["us-east-1", "ap-south-1"]
     );
     Ok(())
@@ -205,7 +192,6 @@ async fn given_migrated_database_when_claiming_then_stalest_first_ordering_is_pr
 >(
     store: &S,
 ) -> TestResult {
-    // Complete first sweep with outcomes at different times
     seed(store, work("migrate", "us-east-1")?).await?;
     seed(store, work("migrate", "us-east-2")?).await?;
     let first = SweepId::new("migrate".to_owned())?;
@@ -228,14 +214,12 @@ async fn given_migrated_database_when_claiming_then_stalest_first_ordering_is_pr
             .await?;
     }
 
-    // New sweep with both old scopes and a never-completed one
     seed(store, work("second", "us-east-1")?).await?;
     seed(store, work("second", "us-east-2")?).await?;
     seed(store, work("second", "eu-west-1")?).await?;
     let second = SweepId::new("second".to_owned())?;
     assert_eq!(
         claim_regions(store, &second, 1_000, 1_000, 3).await?,
-        // Never-completed first, then oldest completion (100), then newest (200)
         ["eu-west-1", "us-east-1", "us-east-2"]
     );
     Ok(())

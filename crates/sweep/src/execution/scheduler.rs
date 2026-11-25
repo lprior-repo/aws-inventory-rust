@@ -1,13 +1,8 @@
-//! Generic lease-claim / page-processing scheduler.
-//! Keeps at most `concurrency` page futures in flight, claiming more work
-//! as pages complete.
-
 use futures_util::{StreamExt, stream::FuturesUnordered};
 use std::future::Future;
 
 use super::{SweepError, SweepSummary, add_writes};
 
-/// Most leases one claim may ask for.
 const MAX_CLAIM: u16 = 256;
 
 #[derive(Default)]
@@ -51,8 +46,6 @@ async fn try_claim<L, ClaimFut, PageFut>(
             state.first_error = Some(SweepError::Operation("claim limit exceeds u16"));
             break;
         };
-        // A page may hold the writer the claim is waiting for. Keep polling
-        // pages, but never drop an in-progress claim when a page completes.
         let claim = claim(want);
         tokio::pin!(claim);
         let claimed = loop {
@@ -72,7 +65,6 @@ async fn try_claim<L, ClaimFut, PageFut>(
                 }
             }
             Ok(leases) => {
-                // A page that finished during the claim may have added work.
                 state.queue_empty = leases.is_empty() && in_flight.len() == before;
                 for lease in leases {
                     in_flight.push(process(lease));
@@ -82,12 +74,6 @@ async fn try_claim<L, ClaimFut, PageFut>(
     }
 }
 
-/// Schedule lease claims and page processing at bounded concurrency.
-/// Returns when the queue is empty and all in-flight pages have finished.
-/// Errors are deferred: once any error is observed no new claim is started,
-/// but every already-admitted page is still polled to completion. Leases
-/// returned by a claim that was already pending when the error arrived are
-/// processed too, so they are not left claimed until their lease expires.
 pub(super) async fn run<L, ClaimFut, PageFut>(
     concurrency: usize,
     mut may_claim: impl FnMut() -> bool,

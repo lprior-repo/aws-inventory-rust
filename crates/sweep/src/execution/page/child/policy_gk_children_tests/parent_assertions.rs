@@ -70,7 +70,6 @@ async fn exercise_assertion(service: &str, date: &str, producer: Producer) -> Te
         Duplicate::Null,
         Duplicate::WrongType,
     ] {
-        // Given a real durable parent observation and its compiled, request-bound child work.
         let scenario = Scenario::new(&catalog).await?;
         let (parent, mut row, root_items, items, selected, owner) = rows(service, producer.segment);
         scenario.seed(root).await?;
@@ -111,7 +110,6 @@ async fn exercise_assertion(service: &str, date: &str, producer: Producer) -> Te
             wire.contains(owner),
             "native child wire omitted bound owner: {wire}"
         );
-        // The first row is valid: rejecting only the offending second row would leak a partial page.
         let first = row.clone();
         let object = row.as_object_mut().ok_or("summary is not an object")?;
         if service == "identitystore" {
@@ -145,7 +143,6 @@ async fn exercise_assertion(service: &str, date: &str, producer: Producer) -> Te
                 object.insert(selected.to_owned(), json!(7));
             }
         }
-        // When the pinned native response passes through the real row gate and page commit.
         let result = scenario
             .apply(
                 &catalog,
@@ -166,7 +163,6 @@ async fn exercise_assertion(service: &str, date: &str, producer: Producer) -> Te
                 producer.operation
             );
         }
-        // Then equality and genuine absence persist both rows/edges; inconsistency commits neither.
         let reader = scenario.reader().await?;
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resource_facets WHERE kind=?")
             .bind(child.kind().as_str())

@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/firehose/service/2015-08-04/firehose-2015-08-04.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateDeliveryStream",

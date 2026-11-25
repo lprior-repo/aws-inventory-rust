@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/ecr/service/2015-09-21/ecr-2015-09-21.json
 use super::support::{arn, bound, inventory, key, queried, reviewed, token};
 use crate::classes::DenyReason;
 use crate::overlay::{ExecutionBranch, FixedValue, MemberPath, NameError, Scope, ServiceOverlay};
@@ -7,7 +6,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "ecr",
         vec![
-            // Describes image repositories in a registry.
             queried(
                 inventory(
                     "DescribeRepositories",
@@ -17,7 +15,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["repositoryArn", "registryId", "repositoryName"],
             )?,
-            // Returns the pull through cache rules for a registry.
             queried(
                 inventory(
                     "DescribePullThroughCacheRules",
@@ -32,7 +29,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "customRoleArn",
                 ],
             )?,
-            // Returns details about the repository creation templates in a registry.
             queried(
                 inventory(
                     "DescribeRepositoryCreationTemplates",
@@ -42,7 +38,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["prefix", "customRoleArn"],
             )?,
-            // Lists the replication backfills for a registry, including their status and progress.
             queried(
                 inventory(
                     "ListReplicationBackfills",
@@ -52,7 +47,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["replicationBackfillId", "status"],
             )?,
-            // Every modeled lifecycle status has an independent repository-bound pagination chain.
             images()?,
         ],
         &[
@@ -60,11 +54,8 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             super::s_ecr_decisions_1::ENTRIES,
         ],
         &[
-            // Retrieves an authorization token.
             ("GetAuthorizationToken", DenyReason::Secret),
-            // Gets detailed information for an image.
             ("BatchGetImage", DenyReason::Content),
-            // Retrieves the pre-signed Amazon S3 download URL corresponding to an image layer.
             ("GetDownloadUrlForLayer", DenyReason::Content),
         ],
     )

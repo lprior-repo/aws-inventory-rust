@@ -1,4 +1,3 @@
-//! Server-reported settings and WAL/table counters, never inferred tuning labels.
 use futures_util::{StreamExt, TryStreamExt, stream};
 use sqlx::{Connection, PgConnection};
 const SETTINGS: &[&str] = &[
@@ -193,7 +192,6 @@ mod tests {
             result,
             Err("another session stayed connected for five seconds".into())
         );
-        // Tokio rounds timer deadlines to its 1-ms tick; query time must not extend the bound.
         assert!(
             (std::time::Duration::from_secs(5)..=std::time::Duration::from_millis(5001))
                 .contains(&elapsed)

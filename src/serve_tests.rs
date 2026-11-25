@@ -1,6 +1,3 @@
-//! Tests for the serve command CLI parsing. Interval parsing tests live in
-//! src/serve_command/config.rs to avoid duplication.
-
 use clap::Parser;
 
 #[test]

@@ -2,7 +2,6 @@ use super::*;
 #[tokio::test]
 async fn given_unattached_safe_roots_when_empty_pages_resume_after_sqlite_reopen_then_exact_resources_and_connector_edges_survive_without_forbidden_calls()
 -> TestResult {
-    // Given the real pinned models, production overlays/kind map, and no parent resources.
     let catalog = fixture::catalog()?;
     let consumers = ConsumerIndex::build(&catalog)?;
     let cases = cases::all();
@@ -12,7 +11,6 @@ async fn given_unattached_safe_roots_when_empty_pages_resume_after_sqlite_reopen
     let path = directory.path().join("gk-roots.sqlite");
     let registry = SchemaRegistry::new(catalog.raw_bytes(), catalog.schemas().to_vec())?;
     let mut store = BinaryStore::create(&path, registry).await?;
-    // A separate deterministic sweep per producer avoids assuming queue priority.
     for case in &cases {
         let sweep = SweepId::new(format!("roots-{}-{}", case.service, case.operation))?;
         seed(
@@ -45,7 +43,6 @@ async fn given_unattached_safe_roots_when_empty_pages_resume_after_sqlite_reopen
             case.operation
         );
     }
-    // Then actual queryable SQLite resources preserve both names/builds and all later-page IDs.
     let resources = store.projection_resources(None, 100).await?;
     assert_eq!(resources.len(), 36);
     let actual = resources

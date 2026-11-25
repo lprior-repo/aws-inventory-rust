@@ -1,7 +1,3 @@
-//! Runtime loader for the Smithy protocol-test fixtures. The seven JSON files
-//! are generated and gitignored; scripts/bootstrap-protocol-tests.sh writes them.
-//! Included by path from both unit tests (src) and integration tests.
-
 use std::{error::Error, fs, io, path::PathBuf};
 
 pub(crate) fn load(name: &str) -> Result<String, Box<dyn Error>> {

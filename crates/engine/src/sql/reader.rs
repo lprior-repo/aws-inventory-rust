@@ -2,7 +2,6 @@ use super::SqlError;
 use sqlx::{Connection, PgConnection, postgres::PgConnectOptions};
 use std::{str::FromStr, time::Duration};
 
-// Inspect every role the login can assume, including NOINHERIT memberships.
 const READER_CHECK: &str = r"
 SELECT (EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'inventory')
 AND has_schema_privilege(current_user, 'inventory', 'USAGE')
@@ -29,8 +28,6 @@ AND NOT EXISTS (
                 THEN has_sequence_privilege(r.oid, c.oid, 'USAGE,UPDATE') ELSE false END))
 )), pg_backend_pid()";
 
-/// Connection options verified as a non-administrative inventory reader.
-/// Privileges are checked again on the dedicated execution connection.
 #[derive(Clone)]
 pub struct ReaderUrl {
     options: PgConnectOptions,

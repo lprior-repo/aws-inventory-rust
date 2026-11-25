@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pcs/service/2023-02-10/pcs-2023-02-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -56,7 +55,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of running clusters in your account.
     Resource {
         operation: "ListClusters",
         items: "clusters",
@@ -68,7 +66,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of all compute node groups associated with a cluster.
     Resource {
         operation: "ListComputeNodeGroups",
         items: "computeNodeGroups",
@@ -80,7 +77,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("clusterIdentifier", "ListClusters", "id")],
         fixed: &[],
     },
-    // Returns a list of all queues associated with a cluster.
     Resource {
         operation: "ListQueues",
         items: "queues",

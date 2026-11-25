@@ -416,7 +416,6 @@ async fn writes_are_summed_across_pages() -> Result<(), SweepError> {
     .await;
 
     let run_result = result.map_err(|_| SweepError::Operation("run timed out"))?;
-    // Only writes accumulate; durable totals are applied after the drain.
     assert_eq!(
         run_result?,
         SweepSummary {

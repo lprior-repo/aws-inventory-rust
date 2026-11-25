@@ -75,7 +75,6 @@ fn pinned_with_limit(
     if existing(&anchored, digest)? {
         return Ok(());
     }
-    // Anonymous staging has no replaceable pathname and no pathname cleanup obligation.
     let flags = OFlags::RDWR | OFlags::TMPFILE | OFlags::CLOEXEC;
     let mut temporary = File::from(
         rustix::fs::openat(&parent, ".", flags, Mode::RUSR | Mode::WUSR)

@@ -1,4 +1,3 @@
-// Pinned CloudFormation operation decisions continued.
 use super::support::*;
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
@@ -68,7 +67,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is Exports; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists all exported output values in the account and Region in which you call this action. Use this action to see the exported output values that you can import into other stacks. To import values, use the Fn::ImportValue…",
             ),
         ),
-        // Model: Lists your generated templates in this Region.
         (
             "ListGeneratedTemplates",
             OperationOverlay {
@@ -105,7 +103,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceScanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the resources from a resource scan. The results can be filtered by resource identifier, resource type prefix, tag key, and tag value. Only resources that match all specified filters are returned. The response indicates…",
             ),
         ),
-        // Model: List the resource scans from newest to oldest. By default it will return up to 10 resource scans.
         (
             "ListResourceScans",
             OperationOverlay {
@@ -166,7 +163,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires StackSetName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns summary information about operations performed on a StackSet. This API provides eventually consistent reads meaning it may take some time but will eventually return the most up-to-date data.",
             ),
         ),
-        // Model: Returns summary information about StackSets that are associated with the user. This API provides strongly consistent reads meaning it will always return the most up-to-date data. [Self-managed…
         (
             "ListStackSets",
             OperationOverlay {

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/secrets-manager/service/2017-10-17/secrets-manager-2017-10-17.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

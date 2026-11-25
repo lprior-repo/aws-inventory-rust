@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/quicksight/service/2018-04-01/quicksight-2018-04-01.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
@@ -243,7 +242,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors AwsAccountId, TopicId, RefreshId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members RefreshDetails, RequestId, Status. Pinned purpose: Describes the status of a topic refresh.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a topic refresh schedule.
     (
         "DescribeTopicRefreshSchedule",
         Decision::Denied(DenyReason::Mutating),
@@ -266,22 +264,18 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors AwsAccountId, VPCConnectionId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members VPCConnection, RequestId, Status. Pinned purpose: Describes a VPC connection.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Generates an embed URL that you can use to embed an Amazon Quick dashboard or visual in your website, without having to register any reader users. Before you use this action, make sure that you have configured the dashboards and permissions. The following rules apply to the generated URL: It contains a temporary bearer token. It is valid for 5 minutes after it is generated. Once redeemed within th
     (
         "GenerateEmbedUrlForAnonymousUser",
         Decision::Denied(DenyReason::Content),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Generates an embed URL that you can use to embed an Amazon Quick experience in your website. This action can be used for any type of user registered in an Amazon Quick account. Before you use this action, make sure that you have configured the relevant Amazon Quick resource and permissions. The following rules apply to the generated URL: It contains a temporary bearer token. It is valid for 5 minu
     (
         "GenerateEmbedUrlForRegisteredUser",
         Decision::Denied(DenyReason::Content),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Generates an embed URL that you can use to embed an Amazon Quick Sight experience in your website. This action can be used for any type of user that is registered in an Amazon Quick Sight account that uses IAM Identity Center for authentication. This API requires identity-enhanced IAM Role sessions for the authenticated user that the API call is being made for. This API uses trusted identity propa
     (
         "GenerateEmbedUrlForRegisteredUserWithIdentity",
         Decision::Denied(DenyReason::Content),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Generates a temporary session URL and authorization code(bearer token) that you can use to embed an Amazon Quick Sight read-only dashboard in your website or application. Before you use this command, make sure that you have configured the dashboards and permissions. Currently, you can use GetDashboardEmbedURL only from the server, not from the user's browser. The following rules apply to the gener
     (
         "GetDashboardEmbedUrl",
         Decision::Denied(DenyReason::Content),
@@ -304,6 +298,5 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors AwsAccountId, UserIdentifier are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, RequestId, Context. Pinned purpose: Retrieves the identity context for a Quick Sight user in a specified namespace, allowing you to obtain identity tokens that can be used with identity-enhanced IAM role sessions to call identity-aware APIs. Currently, you can call the following APIs w",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Generates a session URL and authorization code that you can use to embed the Amazon Amazon Quick Sight console in your web server code. Use GetSessionEmbedUrl where you want to provide an authoring portal that allows users to create data sources, datasets, analyses, and dashboards. The users who access an embedded Amazon Quick Sight console need belong to the author or admin security cohort. If yo
     ("GetSessionEmbedUrl", Decision::Denied(DenyReason::Content)),
 ];

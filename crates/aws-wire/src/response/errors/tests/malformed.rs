@@ -73,7 +73,6 @@ fn xml_counts_unknown_attributes_and_empty_element_depth() -> TestResult {
     Ok(())
 }
 
-/// Outer error: fixture setup failed. Inner result: the decoder's verdict.
 fn decode_body(
     protocol: Protocol,
     body: &[u8],

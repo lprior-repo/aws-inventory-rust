@@ -10,14 +10,7 @@ use inventory_harness::inventory_seed::{
     StepId,
 };
 
-// Given an owned LOCAL emulator in the commercial partition, When the shared
-// runner creates metadata-only resources, Then independent assertions below
-// check canonical identity, provenance, scope, cardinality and absence of edges.
-// No objects/items, key material, database credentials or parameter values.
-
 pub(super) fn s3_scenario() -> Result<SeedScenario, SeedError> {
-    // CreateBucket without LocationConstraint requires the us-east-1 endpoint.
-    // Location is not a bucket ARN; identity is explicitly request-derived.
     SeedScenario::new(
         [
             (0, "inventory-seed-empty-bucket-a"),
@@ -44,8 +37,6 @@ pub(super) fn s3_scenario() -> Result<SeedScenario, SeedError> {
 }
 
 pub(super) fn kms_scenario() -> Result<SeedScenario, SeedError> {
-    // EXTERNAL creates no material. Never substitute the AWS_KMS default.
-    // Three keys/aliases exceed the reviewed ListKeys/ListAliases page size 1.
     let keys = [(0, false), (1, false), (2, true)]
         .into_iter()
         .map(|(id, multi_region)| key_step(id, multi_region));
@@ -56,7 +47,6 @@ pub(super) fn kms_scenario() -> Result<SeedScenario, SeedError> {
     ]
     .into_iter()
     .map(|(id, key, name)| alias_step(id, key, name));
-    // CreateAlias returns Unit: it cannot confirm an alias-to-key edge.
     SeedScenario::new(keys.chain(aliases).collect::<Result<Vec<_>, _>>()?)
 }
 
@@ -175,8 +165,6 @@ fn schema(name: &str, field: &str, value: &str) -> Value {
 }
 
 pub(super) fn rds_scenario() -> Result<SeedScenario, SeedError> {
-    // Parameter-group envelopes only: no instances, clusters, managed secrets,
-    // credentials or configured parameter values. Creation outputs have no edge.
     SeedScenario::new(
         [
             parameter_group(
@@ -341,7 +329,6 @@ pub(super) fn assert_kms_oracle(
     region: &str,
 ) -> Result<(), Box<dyn Error>> {
     assert_context(oracle, account, region, 6);
-    // KMS generates key IDs: a literal expected UUID would fabricate evidence.
     [(0, false), (1, false), (2, true)]
         .into_iter()
         .try_for_each(|(id, multi_region)| {

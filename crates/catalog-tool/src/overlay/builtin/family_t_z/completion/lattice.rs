@@ -53,7 +53,6 @@ fn rules_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
 }
 
 fn targets_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    // Lambda targets have no port. The ordered fallback still requires a real target ID.
     let with_port = vec![
         IdentityField::Request(path("targetGroupIdentifier")?),
         IdentityField::Selected(path("id")?),

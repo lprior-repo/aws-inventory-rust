@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/account/service/2021-02-01/account-2021-02-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -28,7 +26,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Enables (opts-in) a particular Region for an account.",
             ),
         ),
-        // Model: Retrieves information about the specified account including its account name, account ID, account creation date and time, and account state. To use this API, an IAM user or role must have the…
         (
             "GetAccountInformation",
             OperationOverlay {
@@ -53,7 +50,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is ContactInformation, VerificationStatus; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the primary contact information of an Amazon Web Services account. For complete details about how to use the primary contact operations, see Update the primary contact for your Amazon Web Services account .",
             ),
         ),
-        // Model: Retrieves information about the GovCloud account linked to the specified standard account (if it exists) including the GovCloud account ID and state. To use this API, an IAM user or role must have…
         (
             "GetGovCloudAccountInformation",
             OperationOverlay {
@@ -84,7 +80,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the opt-in status of a particular Region.",
             ),
         ),
-        // Model: Lists all the Regions for a given account and their respective opt-in statuses. Optionally, this list can be filtered by the region-opt-status-contains parameter.
         (
             "ListRegions",
             OperationOverlay {

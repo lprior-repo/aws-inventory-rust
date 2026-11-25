@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/b2bi/service/2022-06-23/b2bi-2022-06-23.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -70,7 +68,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires capabilityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the details for the specified capability. A trading capability contains the information required to transform incoming EDI documents into JSON or XML outputs.",
             ),
         ),
-        // Model: Retrieves the details for a partnership, based on the partner and profile IDs specified. A partnership represents the connection between you and your trading partner. It ties together a profile and…
         (
             "GetPartnership",
             OperationOverlay {
@@ -93,7 +90,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves the details for the profile specified by the profile ID. A profile is the mechanism used to create the concept of a private network.
         (
             "GetProfile",
             OperationOverlay {
@@ -116,7 +112,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves the details for the transformer specified by the transformer ID. A transformer can take an EDI file as input and transform it into a JSON-or XML-formatted document. Alternatively, a…
         ("GetTransformer", denied(DenyReason::Content)),
         (
             "GetTransformerJob",
@@ -124,7 +119,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires transformerJobId, transformerId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the details of the transformer run, based on the Transformer job ID. If 30 days have elapsed since your transformer job was started, the system deletes it. So, if you run GetTransformerJob and supply a transformerId and…",
             ),
         ),
-        // Model: Lists the capabilities associated with your Amazon Web Services account for your current or specified region. A trading capability contains the information required to transform incoming EDI…
         (
             "ListCapabilities",
             OperationOverlay {
@@ -137,7 +131,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the partnerships associated with your Amazon Web Services account for your current or specified region. A partnership represents the connection between you and your trading partner. It ties…
         (
             "ListPartnerships",
             OperationOverlay {
@@ -155,7 +148,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists the profiles associated with your Amazon Web Services account for your current or specified region. A profile is the mechanism used to create the concept of a private network.
         (
             "ListProfiles",
             OperationOverlay {
@@ -174,7 +166,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all of the tags associated with the Amazon Resource Name (ARN) that you specify. The resource can be a capability, partnership, profile, or transformer.",
             ),
         ),
-        // Model: Lists the available transformers. A transformer can take an EDI file as input and transform it into a JSON-or XML-formatted document. Alternatively, a transformer can take a JSON-or XML-formatted…
         ("ListTransformers", denied(DenyReason::Content)),
         (
             "StartTransformerJob",

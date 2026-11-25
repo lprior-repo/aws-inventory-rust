@@ -15,7 +15,6 @@ const PLANS: u32 = 2;
 const REVIEW_PROVENANCE: u32 = 11;
 const SKIPS: u32 = 26;
 
-/// Receipt of a member-by-member value comparison on seeded resources.
 #[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 #[non_exhaustive]
@@ -32,8 +31,6 @@ pub struct SkipEvidence {
 }
 
 impl SkipEvidence {
-    /// # Errors
-    /// Rejects malformed comparison evidence or operation names.
     pub fn new(
         service: &str,
         list: &str,
@@ -59,11 +56,6 @@ impl SkipEvidence {
         })
     }
 
-    /// Fingerprints the pinned models and both effective compiled plans. The
-    /// skip being authorized and review prose are not comparison inputs.
-    ///
-    /// # Errors
-    /// Returns an error if either operation or its compiled inputs are missing.
     pub fn fingerprint(
         catalog: &RuntimeCatalog<'_>,
         service: &str,
@@ -116,8 +108,6 @@ fn hash_pins(hash: &mut Sha256, pins: &CatalogSourceProvenance) {
         }
     }
     hash.update(pins.kind_map_sha256);
-    // Embedded source and review hashes include the receipt itself once merged.
-    // Their effect on the comparison is already captured by the compiled plans.
     match pins.cfn_sha256 {
         Some(sha256) => {
             hash.update([1]);
@@ -147,7 +137,6 @@ fn hash_plan(
                 }
                 Ok::<_, RuntimeCatalogError>(fields)
             })?;
-    // Each canonical CBOR map is self-delimiting.
     hash.update(encode_container(&Value::Map(fields), MAX_CATALOG_BYTES)?);
     Ok(())
 }

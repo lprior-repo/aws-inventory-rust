@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/backup-gateway/service/2021-01-01/backup-gateway-2021-01-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -40,7 +38,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires GatewayArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the bandwidth rate limit schedule for a specified gateway. By default, gateways do not have bandwidth rate limit schedules, which means no bandwidth rate limiting is in effect. Use this to get a gateway's bandwidth rate…",
             ),
         ),
-        // Model: By providing the ARN (Amazon Resource Name), this API returns the gateway.
         (
             "GetGateway",
             OperationOverlay {
@@ -63,7 +60,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: This action requests information about the specified hypervisor to which the gateway will connect. A hypervisor is hardware, software, or firmware that creates and manages virtual machines, and…
         (
             "GetHypervisor",
             OperationOverlay {
@@ -92,7 +88,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires HypervisorArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This action retrieves the property mappings for the specified hypervisor. A hypervisor property mapping displays the relationship of entity properties available from the hypervisor to the properties available in Amazon Web…",
             ),
         ),
-        // Model: By providing the ARN (Amazon Resource Name), this API returns the virtual machine.
         (
             "GetVirtualMachine",
             OperationOverlay {
@@ -121,7 +116,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Name, Host. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Connect to a hypervisor by importing its configuration.",
             ),
         ),
-        // Model: Lists backup gateways owned by an Amazon Web Services account in an Amazon Web Services Region. The returned list is ordered by gateway Amazon Resource Name (ARN).
         (
             "ListGateways",
             OperationOverlay {
@@ -134,7 +128,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists your hypervisors.
         (
             "ListHypervisors",
             OperationOverlay {
@@ -158,7 +151,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists your virtual machines.
         (
             "ListVirtualMachines",
             OperationOverlay {

@@ -38,9 +38,6 @@ pub fn encode_list(items: &[Value]) -> Result<Vec<u8>, RecordError> {
     encode::encode_list_record(items)
 }
 
-/// Encodes a map whose aggregate size is bounded by `max_bytes` instead of
-/// [`MAX_RECORD_BYTES`]. Only trusted build artifacts that nest independently
-/// bounded records use this; inventory and wire records stay on [`Record`].
 pub fn encode_container(value: &Value, max_bytes: usize) -> Result<Vec<u8>, RecordError> {
     if !matches!(value, Value::Map(_)) {
         return Err(RecordError::NotMap);

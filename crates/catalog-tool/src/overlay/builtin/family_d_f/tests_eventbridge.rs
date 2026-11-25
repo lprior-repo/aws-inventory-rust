@@ -18,7 +18,6 @@ fn operation<'a>(
 fn eventbridge_list_rules_uses_token_pagination_with_event_bus_binding() -> TestResult {
     let policies = overlay::embedded()?;
     let plan = operation(&policies, "eventbridge", "ListRules")?;
-    // ListRules uses token pagination for NextToken
     assert_eq!(
         plan.paginator,
         Some(Paginator::Token(TokenPair {
@@ -27,7 +26,6 @@ fn eventbridge_list_rules_uses_token_pagination_with_event_bus_binding() -> Test
             optional: false,
         }))
     );
-    // ListRules must bind EventBusName from ListEventBuses to disambiguate across event buses
     assert_eq!(
         plan.bind.get(&MemberPath::new("EventBusName")?),
         Some(&Binding::From {
@@ -42,7 +40,6 @@ fn eventbridge_list_rules_uses_token_pagination_with_event_bus_binding() -> Test
 fn eventbridge_describe_rule_binds_event_bus_name_from_list_rules() -> TestResult {
     let policies = overlay::embedded()?;
     let plan = operation(&policies, "eventbridge", "DescribeRule")?;
-    // DescribeRule must bind Name from ListRules to locate the rule
     assert_eq!(
         plan.bind.get(&MemberPath::new("Name")?),
         Some(&Binding::From {
@@ -50,7 +47,6 @@ fn eventbridge_describe_rule_binds_event_bus_name_from_list_rules() -> TestResul
             path: MemberPath::new("Name")?,
         })
     );
-    // DescribeRule must bind EventBusName from ListRules to disambiguate across event buses
     assert_eq!(
         plan.bind.get(&MemberPath::new("EventBusName")?),
         Some(&Binding::From {

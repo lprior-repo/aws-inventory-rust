@@ -1,5 +1,3 @@
-//! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/ivs/service.
-//! Review is source-only; no live service or emulator support claim.
 use super::policy;
 use crate::overlay::{
     MemberPath, MissingSelected, NameError, RowPredicate, RowValueType, ServiceOverlay,
@@ -88,8 +86,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["arn"],
             )?,
         ),
-        // Full pinned AdConfigurationSummary closure is metadata: the nested MediaTailor
-        // configuration has only playbackConfigurationArn; post-roll has enabled/duration.
         (
             "ListAdConfigurations",
             policy::query(
@@ -109,8 +105,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ],
             )?,
         ),
-        // FailoverSlateConfigurationSummary has ARN/name/tags, state and numeric
-        // activation/display durations, with no slate bytes, media URL or credentials.
         (
             "ListFailoverSlateConfigurations",
             policy::query(
@@ -132,7 +126,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ],
             )?,
         ),
-        // StreamKeySummary is arn/channelArn/tags only; GetStreamKey returns the secret value.
         ("ListStreamKeys", stream_keys),
     ];
     policy::finish(
@@ -147,8 +140,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     )
 }
 
-// Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
-// Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
     "GetAdConfiguration",
     "GetFailoverSlateConfiguration",

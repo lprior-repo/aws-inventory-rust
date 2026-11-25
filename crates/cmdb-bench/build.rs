@@ -1,5 +1,3 @@
-//! Fails early, with the fix, when the generated catalog has not been bootstrapped.
-
 use std::path::Path;
 
 const REQUIRED: &[&str] = &["../../catalog/aws-api.catalog"];

@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 const MAX_PATTERN_BYTES: usize = 16_384;
 const REGEX_SIZE_LIMIT: usize = 1_048_576;
 
-/// Catalog-load-only interning; no runtime row mutates or recompiles a pattern.
 #[derive(Default)]
 pub(crate) struct IdentityPatternCache<'a> {
     patterns: HashMap<&'a str, Arc<Regex>>,
@@ -35,7 +34,6 @@ impl<'a> IdentityPatternCache<'a> {
     }
 }
 
-/// A catalog-load-compiled text operand, including a modeled string-list element.
 pub struct IdentityTextOperand<'a> {
     source: ContextSource,
     path: Box<[FieldId]>,
@@ -70,10 +68,6 @@ impl<'a> IdentityTextOperand<'a> {
         })
     }
 
-    /// Checks retained shape/member constraints without allocating or recompiling.
-    ///
-    /// # Errors
-    /// Rejects malformed retained enum metadata.
     pub fn accepts(&self, text: &str) -> Result<bool, RuntimeCatalogError> {
         if !self.constraints.accepts(text) {
             return Ok(false);
@@ -136,7 +130,6 @@ impl CompiledTextConstraints {
     }
 }
 
-/// Validators for potential identity operands; only the chosen branch is checked.
 #[derive(Default)]
 pub struct IdentityTextPlan<'a> {
     operands: Box<[IdentityTextOperand<'a>]>,
@@ -155,10 +148,6 @@ impl<'a> IdentityTextPlan<'a> {
         }
     }
 
-    /// Checks one operand selected by the existing identity dispatch.
-    ///
-    /// # Errors
-    /// Rejects missing compiled operand metadata or malformed retained enums.
     pub fn accepts(
         &self,
         source: ContextSource,
@@ -168,10 +157,6 @@ impl<'a> IdentityTextPlan<'a> {
         self.operand(source, path)?.accepts(text)
     }
 
-    /// Resolves a validator once for a scalar operand or an entire selected list.
-    ///
-    /// # Errors
-    /// Rejects an operand not compiled from the emission's modeled schema.
     pub fn operand(
         &self,
         source: ContextSource,
@@ -256,7 +241,6 @@ mod tests {
     #[test]
     fn given_shape_and_member_constraints_when_compiled_then_both_patterns_and_tighter_member_bounds_apply()
     -> TestResult {
-        // Given independent modeled shape and member constraints.
         let target = ValueConstraints {
             min_length: Some(2),
             max_length: Some(6),
@@ -270,9 +254,7 @@ mod tests {
             ..ValueConstraints::default()
         };
         let mut cache = IdentityPatternCache::default();
-        // When the immutable intersection is compiled once.
         let rules = CompiledTextConstraints::compile(target, Some(member), &mut cache)?;
-        // Then both inclusive bounds and both independent patterns apply.
         for (text, expected) in [
             ("abcz", true),
             ("abcdz", true),
@@ -388,7 +370,6 @@ mod tests {
     #[test]
     fn given_modeled_namespace_element_constraints_when_a_list_validator_is_resolved_then_each_component_obeys_the_source()
     -> TestResult {
-        // Pinned S3Tables NamespaceName: length 1..=255 and ^[0-9a-z_]*$.
         let path = [FieldId::new(1)?];
         let mut cache = IdentityPatternCache::default();
         let operand = IdentityTextOperand::compile(

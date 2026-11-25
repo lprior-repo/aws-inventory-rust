@@ -187,7 +187,6 @@ fn missing_emission(
     producer: &Resource<'_>,
     emission: &Resource<'_>,
 ) -> Option<&'static str> {
-    // The probe compares only the primary selected row, not other response rows.
     if producer.items != parent.items.as_ref() || emission.items != child.items.as_ref() {
         return Some("skip resource selector is outside the compared rows");
     }

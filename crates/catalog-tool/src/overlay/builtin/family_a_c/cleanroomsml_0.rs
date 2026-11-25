@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cleanroomsml/service/2023-09-06/cleanroomsml-2023-09-06.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -208,7 +206,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is audienceExportJobs; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a list of the audience export jobs.",
             ),
         ),
-        // Model: Returns a list of audience generation jobs.
         (
             "ListAudienceGenerationJobs",
             OperationOverlay {
@@ -226,7 +223,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of audience models.
         (
             "ListAudienceModels",
             OperationOverlay {
@@ -269,7 +265,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires collaborationIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of the trained models in a collaboration.",
             ),
         ),
-        // Model: Returns a list of the configured audience models.
         (
             "ListConfiguredAudienceModels",
             OperationOverlay {
@@ -288,7 +283,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires membershipIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of configured model algorithm associations.",
             ),
         ),
-        // Model: Returns a list of configured model algorithms.
         (
             "ListConfiguredModelAlgorithms",
             OperationOverlay {
@@ -331,7 +325,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires membershipIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of trained models.",
             ),
         ),
-        // Model: Returns a list of training datasets.
         (
             "ListTrainingDatasets",
             OperationOverlay {

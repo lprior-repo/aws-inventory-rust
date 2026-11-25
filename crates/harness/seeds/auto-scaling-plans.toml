@@ -18,7 +18,6 @@ Tags = [{ "Key" = "inventory", "Value" = "seed" }]
 id = "plan"
 operation = "CreateScalingPlan"
 kind = "AWS::AutoScalingPlans::ScalingPlan"
-# Canonical key frames the 33-byte name and version; the pinned API always creates version 1.
 identity = { input = "ScalingPlanName", template = "33:{value}|1:1" }
 [step.input]
 ScalingPlanName = "inventory-thin-auto-scaling-plans"

@@ -308,9 +308,6 @@ async fn counts_are_database_derived_and_version_mismatch_fails_closed() -> Test
 
 #[tokio::test]
 async fn page_rows_batches_queries_and_returns_record_bytes() -> TestResult {
-    // UI-01: page_rows should batch table_for, record_byte_length, and tags
-    // queries. This test verifies the functional behavior: correct record
-    // bytes and tags for a page with multiple kinds and multiple rows.
     let dir = tempdir()?;
     let db = populated(&dir.path().join("inventory.sqlite")).await?;
     let page = db
@@ -322,12 +319,10 @@ async fn page_rows_batches_queries_and_returns_record_bytes() -> TestResult {
             },
         )
         .await?;
-    // Verify all 4 rows are returned with record bytes.
     assert_eq!(page.rows.len(), 4);
     for row in &page.rows {
         assert!(row.record_bytes > 0);
     }
-    // The page should not be truncated for 4 rows.
     assert!(!page.truncated);
     Ok(())
 }

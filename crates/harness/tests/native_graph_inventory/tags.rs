@@ -455,7 +455,6 @@ pub(super) async fn assert_tag_only_refresh(
         "tag-only update must preserve independent resource name"
     );
     compare::all(database, store, graph, expected).await?;
-    // Identical text in a global and regional scope must form distinct vertices.
     let bucket = expected
         .resources
         .iter()
@@ -525,7 +524,6 @@ pub(super) async fn assert_observation(
     resource: &ResourceKey,
     expected: Option<(inventory_core::inventory::TagCoverage, i64, Option<i64>)>,
 ) -> TestResult {
-    // A new reader connection on every check proves persistence, not cached state.
     let detail = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(resource))

@@ -64,8 +64,6 @@ async fn given_account_only_and_global_identity_collisions_when_reading_tags_the
         (ACCOUNT, "global", "own-global", "foreign-global"),
         (FOREIGN, "global", "foreign-global", "own-global"),
     ] {
-        // Given identical region/kind/id in different accounts, both the
-        // predicate and decoded pairs must refer to the selected account.
         let selected = database
             .page(&filter(account, region, "owner", Some(expected)), page(1))
             .await?;
@@ -96,8 +94,6 @@ async fn given_account_only_and_global_identity_collisions_when_reading_tags_the
         assert!(excluded.resources.is_empty());
         assert_eq!(excluded.next, None);
     }
-    // Then the key-only traversal preserves full identity across both account
-    // and global/regional boundaries, rather than deduplicating the shared ID.
     let all = ResourceFilter {
         tag: Some(cmdb_view::TagFilter {
             key: "owner".into(),
@@ -217,7 +213,6 @@ async fn given_complete_then_every_degraded_and_absent_observation_when_reading_
             vec![original.clone()]
         );
     }
-    // Absence at 500 changes metadata, not the latest tag evidence at 400.
     commit(
         &fixture.store,
         "absent",
@@ -492,8 +487,6 @@ async fn given_over_one_thousand_literal_tag_matches_when_paging_at_both_limits_
         }
         assert_eq!(actual, ids);
     }
-    // A LIKE mutation must fail in key-only mode too; the same-key nonempty
-    // decoy is included, while the pattern-matching different key is excluded.
     let key_only = filter(ACCOUNT, REGION, literal_key, None);
     let first = database.page(&key_only, page(1000)).await?;
     assert_eq!(first.total_matching, 1004);

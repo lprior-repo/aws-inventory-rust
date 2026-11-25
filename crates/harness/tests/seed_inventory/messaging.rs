@@ -7,9 +7,6 @@ use std::{collections::BTreeMap, error::Error};
 
 type TestResult = Result<(), Box<dyn Error>>;
 
-// Given fresh local emulator state, these recipes create metadata only. The
-// common entrypoint executes them and compares independent seed evidence with
-// collected resources. No sends, confirmation delivery, polling or executions.
 pub(super) fn sqs_scenario() -> Result<SeedScenario, SeedError> {
     SeedScenario::new(vec![
         queue_create(0, "inventory-seed-sqs-standard-a", false)?,
@@ -89,7 +86,6 @@ fn queue_create(id: u16, name: &str, fifo: bool) -> Result<SeedStep, SeedError> 
 }
 
 fn queue_read(id: u16, create: u16) -> Result<SeedStep, SeedError> {
-    // QueueUrl is transport data, not the canonical queue oracle identity.
     Ok(SeedStep::new(
         StepId::new(id),
         "sqs".into(),
@@ -126,7 +122,6 @@ fn topic(id: u16, name: &str, fifo: bool) -> Result<SeedStep, SeedError> {
 }
 
 fn subscribe() -> Result<SeedStep, SeedError> {
-    // Same-account SQS endpoints need no confirmation or external delivery.
     Ok(SeedStep::auxiliary(
         StepId::new(5),
         "sns".into(),
@@ -190,7 +185,6 @@ fn execution_role() -> Result<SeedStep, SeedError> {
 }
 
 fn state_machine(id: u16, name: &str, machine_type: &str) -> Result<SeedStep, SeedError> {
-    // Generated fixture ASL contains no customer data or service integrations.
     let definition = r#"{"StartAt":"Complete","States":{"Complete":{"Type":"Succeed"}}}"#;
     Ok(SeedStep::new(
         StepId::new(id),
@@ -207,8 +201,6 @@ fn state_machine(id: u16, name: &str, machine_type: &str) -> Result<SeedStep, Se
     ))
 }
 
-// Then: exact fixture names, canonical identities, steps, scopes and response
-// provenance must survive. Counts also reject helper records leaking as resources.
 pub(super) fn assert_sqs_oracle(
     oracle: &ScenarioSeedOracle,
     account: &str,
@@ -260,8 +252,6 @@ pub(super) fn assert_sns_oracle(
     if suffix.is_empty() || suffix.contains(':') {
         return Err("subscription ARN has invalid opaque identifier".into());
     }
-    // Its generated suffix is seed evidence, never invented or collector-derived.
-    // The read's response check separately matches Subscribe's returned exact ARN.
     assert_resources(
         oracle,
         account,
@@ -360,8 +350,6 @@ fn assert_resources(
     assert_eq!(oracle.account_id.as_str(), account);
     assert_eq!(oracle.region.as_str(), region);
     assert_eq!(oracle.resources.len(), expected.len());
-    // No relationship is fabricated: SNS has no modeled relation plan, and
-    // CreateStateMachine omits roleArn from the independently observed response.
     assert_eq!(oracle.edges.len(), 0);
     oracle
         .resources

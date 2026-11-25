@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/memorydb/service/2021-01-01/memorydb-2021-01-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -92,7 +91,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns information about all provisioned clusters if no cluster identifier is specified, or about a specific cluster if a cluster name is supplied.
     Resource {
         operation: "DescribeClusters",
         items: "Clusters",
@@ -118,7 +116,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns details about one or more multi-Region clusters.
     Resource {
         operation: "DescribeMultiRegionClusters",
         items: "MultiRegionClusters",
@@ -136,7 +133,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of parameter group descriptions. If a parameter group name is specified, the list contains only the descriptions for that group.
     Resource {
         operation: "DescribeParameterGroups",
         items: "ParameterGroups",
@@ -148,7 +144,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of subnet group descriptions. If a subnet group name is specified, the list contains only the description of that group.
     Resource {
         operation: "DescribeSubnetGroups",
         items: "SubnetGroups",
@@ -160,7 +155,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of ACLs.
     Resource {
         operation: "DescribeACLs",
         items: "ACLs",
@@ -172,7 +166,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of users.
     Resource {
         operation: "DescribeUsers",
         items: "Users",
@@ -184,7 +177,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about cluster snapshots. By default, DescribeSnapshots lists all of your snapshots; it can optionally describe a single snapshot, or just the snapshots associat
     Resource {
         operation: "DescribeSnapshots",
         items: "Snapshots",

@@ -1,11 +1,3 @@
-//! Coverage denominators computed from committed catalog artifacts.
-//!
-//! Each count is read from a committed artifact and checked against that
-//! artifact's own partition totals. A value the catalog does not record is
-//! rendered as `not_recorded`; it is never inferred or defaulted to zero.
-//! Stages form an ordered funnel: every recorded stage is no larger than the
-//! recorded stage before it.
-
 use std::{
     collections::BTreeMap,
     fmt::{self, Write as _},
@@ -84,18 +76,13 @@ impl Stage {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Funnel {
     pub name: &'static str,
-    /// Ordered funnel; recorded counts must not increase down the list.
     pub stages: Vec<Stage>,
-    /// Catalog partition of the population the funnel starts from.
     pub excluded: Vec<Stage>,
-    /// Recorded counts outside the funnel order.
     pub notes: Vec<Stage>,
-    /// Free-text basis for a recorded value the catalog states indirectly.
     pub basis: Vec<String>,
 }
 
 impl Funnel {
-    /// Name of the first stage whose recorded count exceeds the stage before it.
     #[must_use]
     pub fn first_violation(&self) -> Option<&str> {
         let mut previous = u64::MAX;
@@ -119,7 +106,6 @@ pub struct Report {
 }
 
 impl Report {
-    /// Renders the committed text form. Contains no timestamps or host paths.
     pub fn render(&self) -> Result<String, ReportError> {
         let mut text = String::new();
         writeln!(
@@ -269,7 +255,6 @@ fn count_u64(count: usize) -> u64 {
     u64::try_from(count).unwrap_or(u64::MAX)
 }
 
-/// Categories the catalog never records directly; every funnel marks them explicitly.
 fn unrecorded_categories() -> Vec<Stage> {
     vec![
         Stage::not_recorded("unsupported"),
@@ -279,7 +264,6 @@ fn unrecorded_categories() -> Vec<Stage> {
     ]
 }
 
-/// Parses `key value` lines; prose and table rows have other shapes and are skipped.
 fn key_values(input: &Input) -> Result<BTreeMap<String, u64>, Error> {
     let mut values = BTreeMap::new();
     for line in input.text.lines() {
@@ -342,7 +326,6 @@ struct OverlayCounts {
     deferred: u64,
 }
 
-/// Counts one row per operation and checks each category against the overlay's own totals line.
 fn overlay_counts(input: &Input, known: u64) -> Result<OverlayCounts, Error> {
     let lines = parse_overlay_lines(input)?;
     input.expect_equal("overlay rows", lines.rows, known)?;
@@ -620,8 +603,6 @@ fn real_aws_stage(resources: &Input, selected: u64) -> Result<(Stage, Vec<String
         count_u64(resource_types.len()),
         selected,
     )?;
-    // The resource file records that no live validation ran, so the real-AWS count is
-    // recorded as zero with that basis. Any other value means the count is unknown.
     if live_validated {
         Ok((Stage::not_recorded("real_aws_tested"), Vec::new()))
     } else {

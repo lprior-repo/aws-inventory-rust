@@ -89,10 +89,6 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
     ],
 };
 
-/// Compiles embedded reviewed mappings against the pinned CFN source.
-///
-/// # Errors
-/// Returns an error for conflicting mappings or mismatched CFN source types.
 pub fn embedded(cfn_source: &[u8]) -> Result<KindMap, KindMapError> {
     super::merge::compile(sources(), cfn_source)
 }

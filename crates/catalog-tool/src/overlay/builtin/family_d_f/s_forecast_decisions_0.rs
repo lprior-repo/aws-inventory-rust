@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/forecast/service/2018-06-26/forecast-2018-06-26.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateAutoPredictor",

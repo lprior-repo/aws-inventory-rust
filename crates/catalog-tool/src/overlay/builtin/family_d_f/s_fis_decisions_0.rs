@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/fis/service/2020-12-01/fis-2020-12-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateExperimentTemplate",

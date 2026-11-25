@@ -252,7 +252,6 @@ mod tests {
 
     #[test]
     fn compound_metadata_preserves_independent_context_and_selected_terms() -> TestResult {
-        // Given a parent identifier available only from bound input, and a selected queue identifier.
         let known = [CHILD, PARENT].into_iter().collect();
         let row = compound_row(COMPONENTS);
         let compiled = compile_compounds(&[row], &known)?;

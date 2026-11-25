@@ -1,5 +1,3 @@
-//! The reason stored beside a scope outcome.
-
 use super::*;
 use inventory_engine::inventory::WorkLease;
 
@@ -31,8 +29,6 @@ async fn lease(store: &BinaryStore, sweep: &str) -> TestResult<WorkLease> {
         .ok_or("missing lease")?)
 }
 
-// SQLiteSchemaUpgrade is the backend-specific fixture capability: PostgreSQL
-// schemas already include `detail` and do not have this migration.
 #[tokio::test]
 async fn given_sqlite_schema_without_detail_when_opened_then_reason_can_be_stored() -> TestResult {
     let (directory, store, _) = fixture().await?;

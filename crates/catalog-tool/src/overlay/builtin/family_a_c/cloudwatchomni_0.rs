@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudwatchomni/service/2025-01-01/cloudwatchomni-2025-01-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -178,7 +176,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires identifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the details of a single integration, identified by its identifier, Amazon Resource Name, or name.",
             ),
         ),
-        // Model: Retrieves the intelligence configuration for the calling account. Account is identified via FAS (caller identity). Returns the default configuration if none exists yet.
         (
             "GetIntelligenceConfiguration",
             OperationOverlay {
@@ -232,7 +229,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns AccessGrants, with optional filtering by domain, space, principal, or permission. A grant is returned only when it matches every filter supplied. With no filters, returns the grants for the…
         (
             "ListAccessGrants",
             OperationOverlay {
@@ -263,7 +259,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is items; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns organization-level domain access grants, with optional filtering by domain, principal, or permission. A grant is returned only when it matches every filter supplied. With no filters, returns the grants for the caller's…",
             ),
         ),
-        // Model: Returns the caller's domains: the account-scoped domain and the organization-scoped domain, if either exists. At most two domains are returned.
         (
             "ListDomains",
             OperationOverlay {
@@ -276,7 +271,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the integrations in the account, optionally filtered by type, status, or name. Results are paginated.
         (
             "ListIntegrations",
             OperationOverlay {
@@ -295,7 +289,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires spaceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the dashboards in a space, optionally filtered by name prefix.",
             ),
         ),
-        // Model: Returns the spaces in the account, optionally filtered by domain.
         (
             "ListSpaces",
             OperationOverlay {
@@ -326,7 +319,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is sessions; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists telemetry query sessions. Returns a list of telemetry query sessions owned by the caller.",
             ),
         ),
-        // Model: Lists the views in the caller's account and region. Returns a summary for each view, optionally filtered by view type. View definitions are not included — use GetView to retrieve them.
         (
             "ListViews",
             OperationOverlay {

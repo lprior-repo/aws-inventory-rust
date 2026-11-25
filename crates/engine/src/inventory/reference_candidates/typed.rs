@@ -6,7 +6,6 @@ use inventory_core::{
 };
 use std::collections::BTreeMap;
 
-// Zero cannot be a legacy FieldId, so the discriminator cannot shadow a V3 path.
 const PREFIX: &[u8] = b"\0\0\0\0RT4";
 
 pub(in crate::inventory) fn mode_code(mode: RelationTargetMode) -> u8 {
@@ -191,7 +190,6 @@ mod tests {
     fn given_every_target_mode_when_stored_and_decoded_then_mode_paths_and_all_conjuncts_survive()
     -> TestResult {
         use RelationTargetMode::*;
-        // Given every typed domain, including legacy selected fields and scalar roots.
         for mode in [
             SelectedFields,
             SelectedRootText,
@@ -221,7 +219,6 @@ mod tests {
                 } else {
                     vec![]
                 })?;
-                // When the same path payload used by both unresolved rows and facet codec round-trips.
                 let decoded = decode_target(
                     target.account().clone(),
                     target.region().clone(),
@@ -229,7 +226,6 @@ mod tests {
                     &stored_path(&target)?,
                     ResourceId::parse("value")?,
                 )?;
-                // Then no discriminator, path, value, or component can silently disappear.
                 assert_eq!(decoded, target);
             }
         }
@@ -239,12 +235,10 @@ mod tests {
     #[test]
     fn given_legacy_path_matching_old_marker_when_decoded_then_it_remains_a_field_path()
     -> TestResult {
-        // Given a legal V3 field ID whose bytes resemble a typed marker.
         let target = target(
             RelationTargetMode::SelectedFields,
             vec![FieldId::new(u32::from_be_bytes(*b"\0RT4"))?],
         )?;
-        // When legacy bytes are read by the new codec.
         let encoded = stored_path(&target)?;
         assert_eq!(encoded.as_slice(), b"\0RT4");
         let decoded = decode_target(
@@ -254,7 +248,6 @@ mod tests {
             &encoded,
             ResourceId::parse("value")?,
         )?;
-        // Then it must not be treated as a typed record.
         assert_eq!(decoded, target);
         Ok(())
     }
@@ -262,9 +255,7 @@ mod tests {
     #[test]
     fn given_typed_reference_when_redundant_primary_value_is_forged_then_decoding_rejects_it()
     -> TestResult {
-        // Given a canonical reference whose stored value is part of its typed witness.
         let target = target(RelationTargetMode::CanonicalId, vec![])?;
-        // When an unresolved row disagrees with the encoded primary term.
         let result = decode_target(
             target.account().clone(),
             target.region().clone(),
@@ -272,7 +263,6 @@ mod tests {
             &stored_path(&target)?,
             ResourceId::parse("forged")?,
         );
-        // Then the value cannot be replaced independently of its typed evidence.
         assert!(matches!(
             result,
             Err(StoreError::Invalid(

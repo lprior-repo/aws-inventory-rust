@@ -107,7 +107,6 @@ pub(super) async fn read_detail(
     key: &ResourceKey,
 ) -> Result<PgRow, ViewError> {
     let table = table_for(snapshot, key.kind.as_str()).await?;
-    // SqlName permits [a-z_][a-z0-9_]*; table_for caps the identifier at 63 bytes.
     let sql = format!(
         "SELECT record,content_hash FROM inventory.\"{}\" WHERE account=$1 AND region=$2 AND id=$3",
         table.as_str()
@@ -141,7 +140,6 @@ pub(super) async fn record_lengths(
     stream::iter(groups.into_iter().map(Ok))
         .try_fold((snapshot, BTreeMap::new()), |(snapshot, mut lengths), (kind, keys)| async move {
             let table = table_for(snapshot, &kind).await?;
-            // SqlName permits [a-z_][a-z0-9_]*; table_for caps the identifier at 63 bytes.
             let sql = format!("SELECT k.account,k.region,k.id,octet_length(k.record)::bigint AS bytes FROM inventory.\"{}\" k JOIN unnest($1::text[],$2::text[],$3::text[]) AS p(account,region,id) USING(account,region,id)", table.as_str());
             let accounts: Vec<&str> = keys.iter().map(|key| key.account.as_str()).collect();
             let regions: Vec<&str> = keys.iter().map(|key| key.region.as_str()).collect();

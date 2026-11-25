@@ -51,7 +51,6 @@ async fn assert_identity_isolation(path: &Path, expected: &[(&str, &str)]) -> Re
         tags(path, OTHER).await?,
         vec![("other".into(), "kept".into())]
     );
-    // New handles above intentionally cover persisted readers, not just a live in-memory cache.
     let pool = connect(path).await?;
     assert_eq!(
         sqlx::query_scalar::<_, i64>("SELECT count(*) FROM resources")
@@ -99,10 +98,8 @@ async fn given_signed_paginated_tags_when_collected_then_all_pages_replace_only_
 async fn given_malformed_absent_or_partial_tags_when_collected_then_previous_known_tags_are_not_replaced()
 -> Result<()> {
     for (map, mode, code, max_pages, expected_calls, outcome) in [
-        // Pair-level malformations (missing Key/Value) are skipped under ES-01: scope completes, known tags stay.
         (false, Mode::MissingKey, 0, 20, 1, None),
         (false, Mode::MissingValue, 0, 20, 1, None),
-        // Null elements/members and missing completion flags are rejected by the strict wire decoder.
         (false, Mode::NullEntry, 2, 20, 1, Some("failed")),
         (false, Mode::MixedNullEntry, 2, 20, 1, Some("failed")),
         (true, Mode::NullMap, 2, 20, 1, Some("failed")),
@@ -203,7 +200,6 @@ async fn given_checkpointed_partial_tags_when_process_restarts_then_pending_pair
     );
     pool.close().await;
     assert_identity_isolation(&fixture.database, &[("known", "old")]).await?;
-    // The killed run's leases are still live: resume must refuse without mutating work.
     let refused = fixture.collect(&peer, true, 20).await?;
     assert!(
         !refused.status.success(),
@@ -215,7 +211,6 @@ async fn given_checkpointed_partial_tags_when_process_restarts_then_pending_pair
         String::from_utf8_lossy(&refused.stderr)
     );
     assert_identity_isolation(&fixture.database, &[("known", "old")]).await?;
-    // Production leases last for the full executor budget; expire them instead of sleeping.
     let pool = connect(&fixture.database).await?;
     sqlx::query("UPDATE work_queue SET lease_until=0 WHERE state=1")
         .execute(&pool)

@@ -1,33 +1,25 @@
-// Pinned operation purposes: .local/aws-models/models/sagemaker/service/2017-07-24/sagemaker-2017-07-24.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an association between the source and the destination. A source can be associated with multiple destinations, and a destination can be associated with multiple sources. An association is a lineage tracking entity. For more information, see Amazon SageMaker ML Lineage Tracking .
     ("AddAssociation", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds or overwrites one or more tags for the specified SageMaker resource. You can add tags to notebook instances, training jobs, hyperparameter tuning jobs, batch transform jobs, models, labeling jobs, work teams, endpoint configurations, and endpoints. Each tag consists of a key and an optional value. Tag keys must be unique per resource. For more information about tags, see For more information,
     ("AddTags", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Associates a trial component with a trial. A trial component can be associated with multiple trials. To disassociate a trial component from a trial, call the DisassociateTrialComponent API.
     (
         "AssociateTrialComponent",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Attaches an elastic network interface (ENI) to a node in a HyperPod cluster. To use this operation, you must have the sagemaker:AttachClusterNodeNetworkInterface permission.
     (
         "AttachClusterNodeNetworkInterface",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Attaches your Amazon Elastic Block Store (Amazon EBS) volume to a node in your EKS orchestrated HyperPod cluster. This API works with the Amazon Elastic Block Store (Amazon EBS) Container Storage Interface (CSI) driver to manage the lifecycle of persistent storage in your HyperPod EKS clusters.
     (
         "AttachClusterNodeVolume",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds nodes to a HyperPod cluster by incrementing the target count for one or more instance groups. This operation returns a unique NodeLogicalId for each node being added, which can be used to track the provisioning status of the node. This API provides a safer alternative to UpdateCluster for scaling operations by avoiding unintended configuration changes. This API is only supported for clusters
     (
         "BatchAddClusterNodes",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes specific nodes within a SageMaker HyperPod cluster. BatchDeleteClusterNodes accepts a cluster name and a list of node IDs. To safeguard your work, back up your data to Amazon S3 or an FSx for Lustre file system before invoking the API on a worker node group. This will help prevent any potential data loss from the instance root volume. For more information about backup, see Use the backup s
     (
         "BatchDeleteClusterNodes",
         Decision::Denied(DenyReason::Mutating),
@@ -38,7 +30,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors ModelPackageArnList are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ModelPackageSummaries, BatchDescribeModelPackageErrorMap. Pinned purpose: This action batch describes a list of versioned model packages",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Reboots specific nodes within a SageMaker HyperPod cluster using a soft recovery mechanism. BatchRebootClusterNodes performs a graceful reboot of the specified nodes by calling the Amazon Elastic Compute Cloud RebootInstances API, which attempts to cleanly shut down the operating system before restarting the instance. This operation is useful for recovering from transient issues or applying certai
     (
         "BatchRebootClusterNodes",
         Decision::Denied(DenyReason::Mutating),
@@ -49,160 +40,115 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors ClusterName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Successful, Failed, FailedNodeLogicalIds, SuccessfulNodeLogicalIds. Pinned purpose: Replaces specific nodes within a SageMaker HyperPod cluster with new hardware. BatchReplaceClusterNodes terminates the specified instances and provisions new replacement instances with the same configuration but fresh hardware. The Amazon Machine Ima",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a benchmark job that runs performance benchmarks against inference infrastructure using a predefined AI workload configuration. The benchmark job measures metrics such as latency, throughput, and cost for your generative AI inference endpoints.
     (
         "CreateAIBenchmarkJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a recommendation job that generates intelligent optimization recommendations for generative AI inference deployments. The job analyzes your model, workload configuration, and performance targets to recommend optimal instance types, model optimization techniques (such as quantization and speculative decoding), and deployment configurations.
     (
         "CreateAIRecommendationJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a reusable AI workload configuration that defines datasets, data sources, and benchmark tool settings for consistent performance testing of generative AI inference deployments on Amazon SageMaker AI.
     (
         "CreateAIWorkloadConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an action . An action is a lineage tracking entity that represents an action or activity. For example, a model deployment or an HPO job. Generally, an action involves at least one input or output artifact. For more information, see Amazon SageMaker ML Lineage Tracking .
     ("CreateAction", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Create a machine learning algorithm that you can use in SageMaker and list in the Amazon Web Services Marketplace.
     ("CreateAlgorithm", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a running app for the specified UserProfile. This operation is automatically invoked by Amazon SageMaker AI upon access to the associated Domain, and when new kernel configurations are selected by the user. A user may have multiple Apps active simultaneously.
     ("CreateApp", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a configuration for running a SageMaker AI image as a KernelGateway app. The configuration specifies the Amazon Elastic File System storage volume on the image, and a list of the kernels in the image.
     (
         "CreateAppImageConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an artifact . An artifact is a lineage tracking entity that represents a URI addressable object or data. Some examples are the S3 URI of a dataset and the ECR registry path of an image. For more information, see Amazon SageMaker ML Lineage Tracking .
     ("CreateArtifact", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Autopilot job also referred to as Autopilot experiment or AutoML job. An AutoML job in SageMaker AI is a fully automated process that allows you to build machine learning models with minimal effort and machine learning expertise. When initiating an AutoML job, you provide your data and optionally specify parameters tailored to your use case. SageMaker AI then automates the entire model
     ("CreateAutoMLJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Autopilot job also referred to as Autopilot experiment or AutoML job V2. An AutoML job in SageMaker AI is a fully automated process that allows you to build machine learning models with minimal effort and machine learning expertise. When initiating an AutoML job, you provide your data and optionally specify parameters tailored to your use case. SageMaker AI then automates the entire mod
     ("CreateAutoMLJobV2", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon SageMaker HyperPod cluster. SageMaker HyperPod is a capability of SageMaker for creating and managing persistent clusters for developing large machine learning models, such as large language models (LLMs) and diffusion models. To learn more, see Amazon SageMaker HyperPod in the Amazon SageMaker Developer Guide .
     ("CreateCluster", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Installs an extension, such as sagemaker-observability , on a SageMaker HyperPod cluster orchestrated by Slurm. The cluster must have NodeProvisioningMode set to Continuous and can have only one extension with a given name. To track the installation, call DescribeClusterExtension .
     (
         "CreateClusterExtension",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Create cluster policy configuration. This policy is used for task prioritization and fair-share allocation of idle compute. This helps prioritize critical workloads and distributes idle compute across entities.
     (
         "CreateClusterSchedulerConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a Git repository as a resource in your SageMaker AI account. You can associate the repository with notebook instances so that you can use Git source control for the notebooks you create. The Git repository is a resource in your SageMaker AI account, so it can be associated with more than one notebook instance, and it persists independently from the lifecycle of any notebook instances it is
     (
         "CreateCodeRepository",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts a model compilation job. After the model has been compiled, Amazon SageMaker AI saves the resulting model artifacts to an Amazon Simple Storage Service (Amazon S3) bucket that you specify. If you choose to host your model using Amazon SageMaker AI hosting services, you can use the resulting model artifacts as part of the model. You can also use the artifacts with Amazon Web Services IoT Gre
     (
         "CreateCompilationJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Create compute allocation definition. This defines how compute is allocated, shared, and borrowed for specified entities. Specifically, how to lend and borrow idle compute and assign a fair-share weight to the specified entities.
     ("CreateComputeQuota", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a context . A context is a lineage tracking entity that represents a logical grouping of other tracking or experiment entities. Some examples are an endpoint and a model package. For more information, see Amazon SageMaker ML Lineage Tracking .
     ("CreateContext", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a definition for a job that monitors data quality and drift. For information about model monitor, see Amazon SageMaker AI Model Monitor .
     (
         "CreateDataQualityJobDefinition",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a device fleet.
     ("CreateDeviceFleet", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a Domain . A domain consists of an associated Amazon Elastic File System volume, a list of authorized users, and a variety of security, application, policy, and Amazon Virtual Private Cloud (VPC) configurations. Users within a domain can share notebook files and other artifacts with each other. EFS storage When a domain is created, an EFS volume is created for use by all of the users withi
     ("CreateDomain", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an edge deployment plan, consisting of multiple stages. Each stage may have a different deployment configuration and devices.
     (
         "CreateEdgeDeploymentPlan",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new stage in an existing edge deployment plan.
     (
         "CreateEdgeDeploymentStage",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts a SageMaker Edge Manager model packaging job. Edge Manager will use the model artifacts from the Amazon Simple Storage Service bucket that you specify. After the model has been packaged, Amazon SageMaker saves the resulting artifacts to an S3 bucket that you specify.
     (
         "CreateEdgePackagingJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an endpoint using the endpoint configuration specified in the request. SageMaker uses the endpoint to provision resources and deploy models. You create the endpoint configuration with the CreateEndpointConfig API. Use this API to deploy models using SageMaker hosting services. You must not delete an EndpointConfig that is in use by an endpoint that is live or while the UpdateEndpoint or Cr
     ("CreateEndpoint", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an endpoint configuration that SageMaker hosting services uses to deploy models. In the configuration, you identify one or more models, created using the CreateModel API, to deploy and the resources that you want SageMaker to provision. Then you call the CreateEndpoint API. Use this API if you want to use SageMaker hosting services to deploy models into production. In the request, you defi
     (
         "CreateEndpointConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a SageMaker experiment . An experiment is a collection of trials that are observed, compared and evaluated as a group. A trial is a set of steps, called trial components , that produce a machine learning model. In the Studio UI, trials are referred to as run groups and trial components are referred to as runs . The goal of an experiment is to determine the components that produce the best
     ("CreateExperiment", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Create a new FeatureGroup . A FeatureGroup is a group of Features defined in the FeatureStore to describe a Record . The FeatureGroup defines the schema and features contained in the FeatureGroup . A FeatureGroup definition is composed of a list of Features , a RecordIdentifierFeatureName , an EventTimeFeatureName and configurations for its OnlineStore and OfflineStore . Check Amazon Web Services
     ("CreateFeatureGroup", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a flow definition.
     (
         "CreateFlowDefinition",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Create a hub.
     ("CreateHub", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates presigned URLs for accessing hub content artifacts. This operation generates time-limited, secure URLs that allow direct download of model artifacts and associated files from Amazon SageMaker hub content, including gated models that require end-user license agreement acceptance.
     (
         "CreateHubContentPresignedUrls",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Create a hub content reference in order to add a model in the JumpStart public hub to a private hub.
     (
         "CreateHubContentReference",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Defines the settings you will use for the human review workflow user interface. Reviewers will see a three-panel interface with an instruction area, the item to review, and an input area.
     ("CreateHumanTaskUi", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts a hyperparameter tuning job. A hyperparameter tuning job finds the best version of a model by running many training jobs on your dataset using the algorithm you choose and values for hyperparameters within ranges that you specify. It then chooses the hyperparameter values that result in a model that performs the best, as measured by an objective metric that you choose. A hyperparameter tuni
     (
         "CreateHyperParameterTuningJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a custom SageMaker AI image. A SageMaker AI image is a set of image versions. Each image version represents a container image stored in Amazon ECR. For more information, see Bring your own SageMaker AI image .
     ("CreateImage", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a version of the SageMaker AI image specified by ImageName . The version represents the Amazon ECR container image specified by BaseImage .
     ("CreateImageVersion", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an inference component, which is a SageMaker AI hosting object that you can use to deploy a model to an endpoint. In the inference component settings, you specify the model, the endpoint, and how the model utilizes the resources that the endpoint hosts. You can optimize resource utilization by tailoring how the required CPU cores, accelerators, and memory are allocated. You can deploy mult
     (
         "CreateInferenceComponent",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an inference experiment using the configurations specified in the request. Use this API to setup and schedule an experiment to compare model variants on a Amazon SageMaker inference endpoint. For more information about inference experiments, see Shadow tests . Amazon SageMaker begins your experiment at the scheduled time and routes traffic to your endpoint's model variants based on your sp
     (
         "CreateInferenceExperiment",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts a recommendation job. You can create either an instance recommendation or load test job.
     (
         "CreateInferenceRecommendationsJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a model customization job in Amazon SageMaker. A job runs a workload based on the job category and configuration you provide. You specify the job category, a schema-versioned configuration document, and an IAM role that grants Amazon SageMaker permission to access resources on your behalf. Use the AgentRFT category to fine-tune a model using multi-turn reinforcement learning with reward si
     ("CreateJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a job that uses workers to label the data objects in your input dataset. You can use the labeled data to train machine learning models. You can select your workforce from one of three providers: A private workforce that you create. It can include employees, contractors, and outside experts. Use a private workforce when want the data to stay within your organization or when a specific set o
     ("CreateLabelingJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an MLflow Tracking Server using a general purpose Amazon S3 bucket as the artifact store.
     ("CreateMlflowApp", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an MLflow Tracking Server using a general purpose Amazon S3 bucket as the artifact store. For more information, see Create an MLflow Tracking Server .
     (
         "CreateMlflowTrackingServer",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a model in SageMaker. In the request, you name the model and describe a primary container. For the primary container, you specify the Docker image that contains inference code, artifacts (from prior training), and a custom environment map that the inference code uses when you deploy the model for predictions. Use this API to create a model if you want to use SageMaker hosting services or r
     ("CreateModel", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates the definition for a model bias job.
     (
         "CreateModelBiasJobDefinition",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon SageMaker Model Card. For information about how to use model cards, see Amazon SageMaker Model Card .
     ("CreateModelCard", Decision::Denied(DenyReason::Mutating)),
 ];

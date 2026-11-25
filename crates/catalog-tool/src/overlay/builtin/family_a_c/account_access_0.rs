@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/account-access/service/2018-05-10/account-access-2018-05-10.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -40,7 +38,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires applicationArn, entitlementId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves details about a specific entitlement for an account access manager application, including the principal, IAM role, and target account.",
             ),
         ),
-        // Model: Lists the account access manager applications in your account. Use pagination to ensure that the operation returns quickly and successfully.
         (
             "ListApplications",
             OperationOverlay {

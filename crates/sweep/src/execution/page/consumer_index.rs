@@ -10,12 +10,8 @@ use inventory_core::catalog::runtime::{
 };
 use std::collections::TryReserveError;
 
-// Runtime catalog schema limits: 65,536 plans, 4,096 bindings per base/branch,
-// 16 branches, and 64 tag parents. Wildcards avoid the producer × consumer product.
 const MAX_PLANS: usize = 65_536;
 const MAX_ENTRIES: usize = MAX_PLANS * 4096 * 17 * 8;
-// The compiled schema currently permits one transform. Bound traversal explicitly
-// rather than making recursive source inspection part of index construction.
 const MAX_SOURCE_DEPTH: usize = 16;
 
 #[derive(Debug, thiserror::Error)]
@@ -53,9 +49,6 @@ struct Entry<'a, 'catalog> {
     consumer: Consumer<'a, 'catalog>,
 }
 
-/// Immutable conservative fanout, built once per execution. Candidates retain
-/// catalog order and borrowed branch metadata; row/branch eligibility remains
-/// exclusively the responsibility of the existing production consumers.
 pub(crate) struct ConsumerIndex<'a, 'catalog> {
     skipped_parents: Vec<&'a CallablePlan<'catalog>>,
     entries: Vec<Entry<'a, 'catalog>>,
@@ -109,8 +102,6 @@ impl<'a, 'catalog> ConsumerIndex<'a, 'catalog> {
         self.candidates_for_branch(service, operation, None)
     }
 
-    /// Lookup allocates nothing and merges ordinary producers with the exact
-    /// stable source-stage key. Ordinary dependencies also accept inherited stages.
     pub(crate) fn candidates_for_branch(
         &self,
         service: &str,

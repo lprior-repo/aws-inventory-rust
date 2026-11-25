@@ -25,8 +25,6 @@ async fn given_standard_and_custom_accelerators_when_bound_child_pages_resume_th
             .seed(fixture::plan(&catalog, "global-accelerator", operation)?)
             .await?;
     }
-    // Two roots, two standard details, four tag refreshes, eight listener pages,
-    // and sixteen endpoint-group pages. Every child comes from production work().
     let mut requests = BTreeSet::new();
     for _ in 0..32 {
         let lease = scenario
@@ -120,7 +118,6 @@ fn response(operation: &str, wire: &Json, second: bool) -> TestResult<Json> {
                 text(wire, "AcceleratorArn")?,
                 page(second)
             );
-            // Native listener rows have no AcceleratorArn. The join must use the real request.
             paginated(json!({"Listeners":[{"ListenerArn":arn}]}), second)
         }
         "ListEndpointGroups" | "ListCustomRoutingEndpointGroups" => {
@@ -129,7 +126,6 @@ fn response(operation: &str, wire: &Json, second: bool) -> TestResult<Json> {
                 text(wire, "ListenerArn")?,
                 page(second)
             );
-            // Region describes endpoint placement, not request routing or resource scope.
             paginated(
                 json!({"EndpointGroups":[{"EndpointGroupArn":arn,"EndpointGroupRegion":"eu-west-1"}]}),
                 second,

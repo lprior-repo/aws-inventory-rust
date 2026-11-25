@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/sagemaker/service/2017-07-24/sagemaker-2017-07-24.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
@@ -45,22 +44,18 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors WorkteamName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Workteam. Pinned purpose: Gets information about a specific work team. You can see information such as the creation date, the last updated date, membership information, and the work team's Amazon Resource Name (ARN).",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Detaches your Amazon Elastic Block Store (Amazon EBS) volume from a node in your EKS orchestrated SageMaker HyperPod cluster. This API works with the Amazon Elastic Block Store (Amazon EBS) Container Storage Interface (CSI) driver to manage the lifecycle of persistent storage in your HyperPod EKS clusters.
     (
         "DetachClusterNodeVolume",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Disables using Service Catalog in SageMaker. Service Catalog is used to create SageMaker projects.
     (
         "DisableSagemakerServicecatalogPortfolio",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Disassociates a trial component from a trial. This doesn't effect other trials the component is associated with. Before you can delete a component, you must disassociate the component from all trials it is associated with. To associate a trial component with a trial, call the AssociateTrialComponent API. To get a list of the trials a component is associated with, use the Search API. Specify Experi
     (
         "DisassociateTrialComponent",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Enables using Service Catalog in SageMaker. Service Catalog is used to create SageMaker projects.
     (
         "EnableSagemakerServicecatalogPortfolio",
         Decision::Denied(DenyReason::Mutating),
@@ -95,7 +90,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members Status. Pinned request/ownership contract: Gets the status of Service Catalog in SageMaker. Service Catalog is used to create SageMaker projects.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts an Amazon SageMaker Inference Recommender autoscaling recommendation job. Returns recommendations for autoscaling policies that you can apply to your SageMaker endpoint.
     (
         "GetScalingConfigurationRecommendation",
         Decision::Denied(DenyReason::Mutating),
@@ -106,9 +100,7 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors Resource are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PropertyNameSuggestions. Pinned purpose: An auto-complete API for the search functionality in the SageMaker console. It returns suggestions of possible matches for the property name to use in Search queries. Provides suggestions for HyperParameters , Tags , and Metrics .",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Import hub content.
     ("ImportHubContent", Decision::Denied(DenyReason::Mutating)),
-    // JupyterLabAppImageConfig and CodeEditorAppImageConfig include ContainerEnvironmentVariables, unrestricted customer environment configuration that can contain secrets. Full response cannot be permitted by projecting only AppImageConfigArn.
     ("ListAppImageConfigs", Decision::Denied(DenyReason::Secret)),
     (
         "ListClusterExtensionVersions",
@@ -164,7 +156,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors WorkteamArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members LabelingJobSummaryList, NextToken. Pinned purpose: Gets a list of labeling jobs assigned to a specified work team.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: A list of lineage groups shared with your Amazon Web Services account. For more information, see Cross-Account Lineage Tracking in the Amazon SageMaker Developer Guide .
     (
         "ListLineageGroups",
         Decision::Denied(DenyReason::ReferenceData),
@@ -181,7 +172,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors ModelCardName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ModelCardVersionSummaryList, NextToken. Pinned purpose: List existing versions of an Amazon SageMaker Model Card.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists the domain, framework, task, and model name of standard machine learning models found in common model zoos.
     (
         "ListModelMetadata",
         Decision::Denied(DenyReason::ReferenceData),
@@ -234,7 +224,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors EdgeDeploymentPlanName, StageName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DeviceDeploymentSummaries, NextToken. Pinned purpose: Lists devices allocated to the stage, containing detailed device information and deployment status.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Gets a list of the work teams that you are subscribed to in the Amazon Web Services Marketplace. The list may be empty if no work team satisfies the filter specified in the NameContains parameter.
     (
         "ListSubscribedWorkteams",
         Decision::Denied(DenyReason::ReferenceData),
@@ -257,7 +246,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors ReservedCapacityArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members NextToken, UltraServers. Pinned purpose: Lists all UltraServers that are part of a specified reserved capacity.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds a resouce policy to control access to a model group. For information about resoure policies, see Identity-based policies and resource-based policies in the Amazon Web Services Identity and Access Management User Guide. .
     (
         "PutModelPackageGroupPolicy",
         Decision::Denied(DenyReason::Mutating),
@@ -268,6 +256,5 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members Vertices, Edges, NextToken. Pinned request/ownership contract: Use this action to inspect your lineage and discover relationships between entities. For more information, see Querying Lineage Entities in the Amazon SageMaker Developer Guide .",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Register devices.
     ("RegisterDevices", Decision::Denied(DenyReason::Mutating)),
 ];

@@ -264,13 +264,10 @@ async fn run_phase(
     Ok(())
 }
 
-/// Formats a per-second rate. A zero clock reading is reported as `unavailable`
-/// rather than as a rate or as a failure of an otherwise completed phase.
 pub(super) fn rate(count: u64, duration: Duration) -> BenchResult<String> {
     if duration.is_zero() {
         return Ok("unavailable".to_owned());
     }
-    // Every validated workload is below u32::MAX, so presentation is lossless.
     Ok(format!(
         "{:.3}",
         f64::from(u32::try_from(count)?) / duration.as_secs_f64()
@@ -286,7 +283,6 @@ async fn run_round(
     phase: Phase,
     page: usize,
 ) -> BenchResult<Vec<PageResult>> {
-    // Claim the bounded batch first: no scope can be scheduled twice in a round.
     let leases = stream::iter(0..workload.concurrency)
         .then(|_| async {
             let lease: BenchResult<WorkLease> = store
@@ -302,7 +298,6 @@ async fn run_round(
         .buffer_unordered(workload.concurrency)
         .collect::<Vec<_>>()
         .await;
-    // Drain every in-flight commit before returning any failure.
     results.into_iter().collect()
 }
 

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/partnercentral-account/service/2025-04-04/partnercentral-account-2025-04-04.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

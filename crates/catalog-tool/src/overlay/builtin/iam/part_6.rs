@@ -5,7 +5,6 @@ use crate::overlay::{
     OverlayClass, Paginator, Scope, TokenPair,
 };
 
-// Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
 ("ListSSHPublicKeys", OperationOverlay {
@@ -39,7 +38,6 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         fixed: [(path("AllUsers")?, FixedValue::Boolean(true))].into_iter().collect(),
         identity: Some(Identity::Key(vec![path("UserName")?, path("ServiceSpecificCredentialId")?])),
         queryable: vec![path("UserName")?, path("ServiceSpecificCredentialId")?],
-        // Explicit modeled pagination: the pinned operation omits the paginator trait.
         paginator: Some(Paginator::Tokens { pairs: vec![TokenPair { input: path("Marker")?, output: path("Marker")?, optional: false }], truncated: Some(path("IsTruncated")?) }),
         ..empty()
     }),

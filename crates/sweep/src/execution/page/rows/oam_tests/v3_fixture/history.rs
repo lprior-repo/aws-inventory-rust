@@ -5,7 +5,6 @@ pub(in super::super) fn historical_evidence(
 ) -> TestResult<([u8; 32], ResourceKey)> {
     let registry = SchemaRegistry::new(catalog.raw_bytes(), catalog.schemas().to_vec())?;
     let mut hash = Sha256::new();
-    // This is the historical source's literal domain, despite its V2 facet marker.
     hash.update(b"aws-inventory-reviewed-reference-v1");
     hash.update(registry.digest());
     for text in [
@@ -64,7 +63,7 @@ pub(in super::super) async fn old_image(
             return Err("facet reference tuple absent".into());
         };
         assert_eq!(tuple.len(), 8);
-        tuple.truncate(7); // The actual pre-V3 codec ended at the strict target pin.
+        tuple.truncate(7);
     }
     let old_relations = Record::encode(&Value::Map(BTreeMap::from([(
         Key::Field(FieldId::new(2)?),

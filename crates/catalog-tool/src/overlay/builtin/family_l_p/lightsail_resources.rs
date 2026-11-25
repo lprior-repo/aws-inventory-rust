@@ -2,7 +2,6 @@ use super::super::policy::{Id, Input, Resource};
 use crate::overlay::Scope;
 
 pub(super) const RESOURCES: &[Resource] = &[
-    // Returns information about all Amazon Lightsail virtual private servers, or instances .
     Resource {
         operation: "GetInstances",
         items: "instances",
@@ -24,7 +23,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about all block storage disks in your AWS account and region.
     Resource {
         operation: "GetDisks",
         items: "disks",
@@ -43,7 +41,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about all block storage disk snapshots in your AWS account and region.
     Resource {
         operation: "GetDiskSnapshots",
         items: "diskSnapshots",
@@ -64,7 +61,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns all instance snapshots for the user's account.
     Resource {
         operation: "GetInstanceSnapshots",
         items: "instanceSnapshots",
@@ -85,7 +81,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about all load balancers in an account.
     Resource {
         operation: "GetLoadBalancers",
         items: "loadBalancers",
@@ -105,7 +100,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about all of your database snapshots in Amazon Lightsail.
     Resource {
         operation: "GetRelationalDatabaseSnapshots",
         items: "relationalDatabaseSnapshots",
@@ -126,7 +120,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about all static IPs in the user's account.
     Resource {
         operation: "GetStaticIps",
         items: "staticIps",
@@ -138,7 +131,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of all domains in the user's account.
     Resource {
         operation: "GetDomains",
         items: "domains",
@@ -150,7 +142,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about one or more of your Amazon Lightsail content delivery network (CDN) distributions. The defaultRootObject and customErrorResponses values are returned only
     Resource {
         operation: "GetDistributions",
         items: "distributions",
@@ -171,7 +162,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about one or more Amazon Lightsail buckets. The information returned includes the synchronization status of the Amazon Simple Storage Service (Amazon S3) accoun
     Resource {
         operation: "GetBuckets",
         items: "buckets",
@@ -183,7 +173,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about one or more Amazon Lightsail SSL/TLS certificates. To get a summary of a certificate, omit includeCertificateDetails from your request. The response will
     Resource {
         operation: "GetCertificates",
         items: "certificates",
@@ -195,7 +184,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::Boolean("includeCertificateDetails", false)],
     },
-    // Returns information about the configured alarms. Specify an alarm name in your request to return information about a specific alarm, or specify a monitored resource name to return
     Resource {
         operation: "GetAlarms",
         items: "alarms",
@@ -207,7 +195,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetDisks; no content-bearing expansion.
     Resource {
         operation: "GetDisk",
         items: "disk",
@@ -226,7 +213,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[("diskName", "GetDisks", "name")],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetDiskSnapshots; no content-bearing expansion.
     Resource {
         operation: "GetDiskSnapshot",
         items: "diskSnapshot",
@@ -247,7 +233,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[("diskSnapshotName", "GetDiskSnapshots", "name")],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetDomains; no content-bearing expansion.
     Resource {
         operation: "GetDomain",
         items: "domain",
@@ -259,7 +244,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[("domainName", "GetDomains", "name")],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetInstances; no content-bearing expansion.
     Resource {
         operation: "GetInstance",
         items: "instance",
@@ -281,7 +265,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[("instanceName", "GetInstances", "name")],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetInstanceSnapshots; no content-bearing expansion.
     Resource {
         operation: "GetInstanceSnapshot",
         items: "instanceSnapshot",
@@ -302,7 +285,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[("instanceSnapshotName", "GetInstanceSnapshots", "name")],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetLoadBalancers; no content-bearing expansion.
     Resource {
         operation: "GetLoadBalancer",
         items: "loadBalancer",
@@ -322,7 +304,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         bindings: &[("loadBalancerName", "GetLoadBalancers", "name")],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetRelationalDatabaseSnapshots; no content-bearing expansion.
     Resource {
         operation: "GetRelationalDatabaseSnapshot",
         items: "relationalDatabaseSnapshot",
@@ -347,7 +328,6 @@ pub(super) const RESOURCES: &[Resource] = &[
         )],
         fixed: &[],
     },
-    // Same pinned response resource shape as GetStaticIps; no content-bearing expansion.
     Resource {
         operation: "GetStaticIp",
         items: "staticIp",

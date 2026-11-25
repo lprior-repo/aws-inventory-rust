@@ -4,8 +4,6 @@ use inventory_core::inventory::ScopeKey;
 use sqlx::{Row, Sqlite, Transaction};
 use std::collections::BTreeSet;
 
-/// A top-level scope an earlier sweep of the same account observed that the
-/// given sweep did not run. Its resources are untouched by that sweep.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UnobservedScope {
     pub scope: ScopeKey,
@@ -13,10 +11,6 @@ pub struct UnobservedScope {
     pub age_ms: i64,
 }
 
-/// Records, once a sweep has drained, every top-level scope that an earlier
-/// sweep completed and this one did not run (profile removed, region narrowed).
-/// `observed_at` of an `unobserved` row is the scope's last complete
-/// observation, so age is derived on read and never invented here.
 pub(super) async fn record(
     tx: &mut Transaction<'_, Sqlite>,
     sweep: &SweepId,

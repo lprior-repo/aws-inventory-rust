@@ -2,9 +2,6 @@ use super::{MAX_PAGE_LIMIT, ResourceTag, StoredTagObservation, ViewError};
 use inventory_core::inventory::TagCoverage;
 use sqlx::Row;
 
-/// Batched read of tags and observations for multiple resources in a single
-/// database round-trip each. Returns maps keyed by the full resource key
-/// tuple (account,region,kind,id).
 pub(super) async fn read_many(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     resources: &[(String, String, String, String)],
@@ -141,7 +138,6 @@ pub(super) struct StoredTags {
     pub observation: Option<StoredTagObservation>,
 }
 
-// Uses the caller's retained transaction: tags and record cannot mix revisions.
 pub(super) async fn read(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     [account, region, kind, id]: [&str; 4],

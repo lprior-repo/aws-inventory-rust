@@ -146,8 +146,6 @@ async fn commit_partial_observation(
         .claim(&SweepId::new(sweep.to_owned())?, at, 20)
         .await?
         .ok_or("lease missing")?;
-    // These are deliberately per-resource observations, not exhaustive root listings.
-    // Commit a real continuation page, then explicitly settle its scope as Partial.
     let next = at.checked_add(1).ok_or("time overflow")?;
     let mut page = page(lease, observations, false, Some(vec![1]), next);
     page.unresolved = references;
@@ -229,7 +227,6 @@ async fn assert_reopened_bound_reference(
 async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_names_do_not_affect_reopen_or_replay()
 -> TestResult {
     for source_first in [true, false] {
-        // Given a checked canonical-ID rule, not a selected-root or Name rule.
         let (directory, store) = fixture_for(rule(4, &[], vec![], None)?, false).await?;
         if !source_first {
             commit_partial_observation(
@@ -243,7 +240,6 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
             )
             .await?;
         }
-        // When the reference is committed before or after its real canonical target.
         commit_partial_observation(
             &store,
             "source",
@@ -276,7 +272,6 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
             None,
         )
         .await?;
-        // Then exact identity survives SQLite reopen and an identical source replay.
         assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
         commit_partial_observation(
             &reopened,
@@ -301,7 +296,6 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
 #[tokio::test]
 async fn given_bound_context_target_when_only_output_name_matches_then_only_the_persisted_checked_request_resolves()
 -> TestResult {
-    // Given output rows whose names cannot serve as validated request context.
     let (directory, store) = fixture_for(rule(2, &[3], vec![], None)?, false).await?;
     commit_partial_observation(
         &store,
@@ -329,7 +323,6 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
     )
     .await?;
     assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
-    // When the real target arrives under the matching checked request and SQLite is reopened.
     commit_partial_observation(
         &store,
         "right-context",
@@ -341,7 +334,6 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
     )
     .await?;
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    // Then output data never substitutes for request provenance.
     assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     Ok(())
 }
@@ -349,7 +341,6 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
 #[tokio::test]
 async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguity_retracts_until_one_witness_retires()
 -> TestResult {
-    // Given an unprojected request path and output names that differ from its value.
     let (directory, store) = fixture_for(rule(2, &[3], vec![], None)?, false).await?;
     commit_partial_observation(
         &store,
@@ -384,7 +375,6 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
         "resolved",
     )
     .await?;
-    // When another resource has the same checked context, the formerly unique edge disappears.
     commit_partial_observation(
         &store,
         "ambiguous",
@@ -397,7 +387,6 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
     .await?;
     assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
     assert_reopened_bound_reference(&directory, &[], EdgeSource::ReviewedRule, "ambiguous").await?;
-    // Then one complete miss retains ambiguity; only the second retires its witness.
     for (sweep, source_sweep, source_at, at, second_survives) in [
         ("first-miss", "source-before-first-miss", 390, 400, true),
         ("second-miss", "source-before-second-miss", 490, 500, false),
@@ -475,7 +464,6 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
 #[tokio::test]
 async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_then_only_the_pin_proves_its_edge()
 -> TestResult {
-    // Given the same bound tuple has both wildcard and exact-identity authority.
     let (directory, store) = fixture_for(model_bound_rule()?, false).await?;
     let source = EdgeSource::Model;
     let wildcard = || -> TestResult<_> {
@@ -503,7 +491,6 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
     .await?;
     assert_edges(&store, &["target"], source).await?;
     assert_reopened_bound_reference(&directory, &["target"], source, "resolved").await?;
-    // When another distinct matching target arrives, ambiguity cannot erase or redirect the pin.
     commit_partial_observation(
         &store,
         "another-match",
@@ -516,7 +503,6 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
     .await?;
     assert_edges(&store, &["target"], source).await?;
     assert_reopened_bound_reference(&directory, &["target"], source, "resolved").await?;
-    // Then replacing the source facet without its direct proof leaves only ambiguity.
     commit_partial_observation(
         &store,
         "remove-pin",
@@ -535,7 +521,6 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
 #[tokio::test]
 async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_or_change_then_all_terms_control_the_edge()
 -> TestResult {
-    // Given one conjunct over selected Name and another over the same target's request.
     let (directory, store) =
         fixture_for(rule(0, &[1], vec![bound_component()?], None)?, false).await?;
     commit_partial_observation(
@@ -575,7 +560,6 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
     )
     .await?;
     assert_edges(&store, &["target"], EdgeSource::ReviewedRule).await?;
-    // When a second complete match appears, then ambiguity retracts rather than guesses.
     commit_partial_observation(
         &store,
         "ambiguous",
@@ -623,7 +607,6 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         (4, path(&[2])),
         (5, Value::Int(2)),
     ])?;
-    // Given the target has two real facets: (left, wrong) and (wrong, right).
     let (directory, store) =
         fixture_for(rule(4, &[], vec![left, bound_component()?], None)?, false).await?;
     commit_partial_observation(
@@ -646,7 +629,6 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         None,
     )
     .await?;
-    // When a canonical target requires both bound terms on one checked facet.
     let mut reference = reference(RelationTargetMode::CanonicalId, &[], "target", None)?;
     reference.target = reference.target.with_components(vec![
         ReferenceComponent {
@@ -670,11 +652,9 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         None,
     )
     .await?;
-    // Then neither target facet alone proves the conjunction, even after reopen.
     assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     assert_edges(&reopened, &[], EdgeSource::ReviewedRule).await?;
-    // A new request witness must refresh matches even when output bytes are unchanged.
     commit_partial_observation(
         &reopened,
         "complete-facet",
@@ -692,7 +672,6 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
 #[tokio::test]
 async fn given_checked_canonical_rule_when_a_selected_field_mode_is_forged_then_the_whole_page_is_unchanged()
 -> TestResult {
-    // Given a real checked catalog and a claimed work lease.
     let (directory, store) = fixture_for(rule(4, &[], vec![], None)?, false).await?;
     let pool = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(1)
@@ -730,9 +709,7 @@ async fn given_checked_canonical_rule_when_a_selected_field_mode_is_forged_then_
         "target",
         None,
     )?);
-    // When tuple values match but typed target authority does not.
     let result = store.commit_page(page).await;
-    // Then neither resources, work completion, evidence nor projection may change.
     assert!(matches!(
         result,
         Err(StoreError::Invalid(
@@ -747,9 +724,7 @@ async fn given_checked_canonical_rule_when_a_selected_field_mode_is_forged_then_
 #[tokio::test]
 async fn given_canonical_rule_when_a_same_page_direct_edge_is_committed_then_its_pin_survives_reopen()
 -> TestResult {
-    // Given a direct reviewed edge whose target Name is deliberately not its ID.
     let (directory, store) = fixture_for(rule(4, &[], vec![], None)?, false).await?;
-    // When the exact canonical target and source are committed atomically.
     commit_partial_observation(
         &store,
         "direct",
@@ -763,7 +738,6 @@ async fn given_canonical_rule_when_a_same_page_direct_edge_is_committed_then_its
         Some(EdgeSource::ReviewedRule),
     )
     .await?;
-    // Then the direct pin is encoded, decoded, and projected as reviewed evidence.
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     Ok(())
@@ -777,7 +751,6 @@ async fn given_guarded_compound_rule_when_guard_or_component_is_forged_then_no_p
         ("disabled", "disabled", false),
         ("enabled", "forged", false),
     ] {
-        // Given a checked request guard and a second, independently typed target conjunct.
         let guard = map([
             (1, Value::Int(1)),
             (2, Value::Int(0)),
@@ -822,9 +795,7 @@ async fn given_guarded_compound_rule_when_guard_or_component_is_forged_then_no_p
             "target",
             Some(component),
         )?);
-        // When a correct reference, a false guard, or a forged component reaches the public commit API.
         let result = store.commit_page(page).await;
-        // Then only the complete, guarded conjunction can authorize durable evidence.
         if accepted {
             result?;
             let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
@@ -846,7 +817,6 @@ async fn given_guarded_compound_rule_when_guard_or_component_is_forged_then_no_p
 #[tokio::test]
 async fn given_v3_facets_without_request_column_when_opened_then_legacy_selected_evidence_is_preserved_without_inventing_context()
 -> TestResult {
-    // Given existing selected-field evidence using the unchanged V3 path/proof domain.
     let (directory, store) = fixture_for(rule(0, &[1], vec![], None)?, false).await?;
     commit_partial_observation(
         &store,
@@ -877,9 +847,7 @@ async fn given_v3_facets_without_request_column_when_opened_then_legacy_selected
     sqlx::query("ALTER TABLE resource_facets DROP COLUMN bound_request")
         .execute(&pool)
         .await?;
-    // When additive migration opens the older facet layout.
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    // Then existing resources and selected references survive, but old requests remain unknown.
     assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     let contexts: i64 =
         sqlx::query_scalar("SELECT count(*) FROM resource_facets WHERE bound_request IS NOT NULL")
@@ -897,7 +865,6 @@ async fn given_v3_facets_without_request_column_when_opened_then_legacy_selected
 #[tokio::test]
 async fn given_compound_reference_when_two_complete_sweeps_miss_only_target_then_source_survives_retirement_and_rearrival_restores_edge()
 -> TestResult {
-    // Given a selected-field AND checked-request relationship under a real root listing.
     let (directory, store) =
         fixture_for(rule(0, &[1], vec![bound_component()?], None)?, false).await?;
     for (sweep, at, includes_target, target_survives) in [
@@ -919,8 +886,6 @@ async fn given_compound_reference_when_two_complete_sweeps_miss_only_target_then
             .claim(&sweep_id, at, 20)
             .await?
             .ok_or("complete listing lease missing")?;
-        // Every complete listing retains the source and its exact typed reference;
-        // only the target's absence is certified, never the source's.
         let mut observations = vec![observation("source", "source-name")?];
         if includes_target {
             observations.push(observation("target", "shared-name")?);
@@ -934,8 +899,6 @@ async fn given_compound_reference_when_two_complete_sweeps_miss_only_target_then
         )?);
         store.commit_page(complete).await?;
         assert_eq!(store.sweep_summary(&sweep_id).await?.complete_scopes, 1);
-        // Then one miss keeps the target, two retire it, and re-arrival rematches
-        // both typed conjuncts, including after reopening the persisted store.
         let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
         assert!(
             reopened

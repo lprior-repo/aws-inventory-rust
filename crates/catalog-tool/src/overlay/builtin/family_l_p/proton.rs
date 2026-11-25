@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/proton/service/2020-07-20/proton-2020-07-20.json
 use super::super::{name, path};
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::{Binding, ContextSource, Emission, ExecutionBranch, FixedValue, Scope};
@@ -197,7 +196,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // List components with summary data. You can filter the result list by environment, service, or a single service instance. For more information about components, see Proton component
     Resource {
         operation: "ListComponents",
         items: "components",
@@ -218,7 +216,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List environment templates.
     Resource {
         operation: "ListEnvironmentTemplates",
         items: "templates",
@@ -230,7 +227,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List environments with detail data summaries.
     Resource {
         operation: "ListEnvironments",
         items: "environments",
@@ -253,7 +249,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List linked repositories with detail data.
     Resource {
         operation: "ListRepositories",
         items: "repositories",
@@ -265,7 +260,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List service instances with summary data. This action lists service instances of all services in the Amazon Web Services account.
     Resource {
         operation: "ListServiceInstances",
         items: "serviceInstances",
@@ -286,7 +280,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List service templates with detail data.
     Resource {
         operation: "ListServiceTemplates",
         items: "templates",
@@ -298,7 +291,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List services with summaries of detail data.
     Resource {
         operation: "ListServices",
         items: "services",
@@ -328,7 +320,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Major discovery feeds a finite minor stage; every returned minor uses its native version ARN.
     Resource {
         operation: "ListEnvironmentTemplateVersions",
         items: "templateVersions",

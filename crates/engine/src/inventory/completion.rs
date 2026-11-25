@@ -11,8 +11,6 @@ pub(super) async fn drain_sweep(
     sweep: &SweepId,
     at: i64,
 ) -> Result<ChangeStats, StoreError> {
-    // Child admission, terminal transition and this check share the writer
-    // transaction: no undiscovered execution may race a negative observation.
     let pending: bool = sqlx::query_scalar(
         "SELECT EXISTS(SELECT 1 FROM work_queue WHERE sweep_id=?1 AND state<>2)",
     )
@@ -209,8 +207,6 @@ async fn delete_tree(
     let mut pending = BTreeSet::from([root.clone()]);
     let mut deleted = BTreeSet::new();
     let mut stats = ChangeStats::default();
-    // The transaction inserts no resources; each original key is visited at
-    // most once, even if the parent graph contains shared paths or cycles.
     for _ in 0..count {
         let Some(key) = pending.pop_first() else {
             break;
@@ -260,8 +256,6 @@ async fn retire_children(
             .bind(&source).execute(&mut **tx).await?;
         super::legacy::retire_source(tx, &child, &source).await?;
         if live_owners(tx, &child).await? == 0 {
-            // The child is deleted after this parent; do not publish an empty
-            // intermediate canonical row or its outgoing relationships.
             super::facets::retire_source(&store.registry, tx, &child, &source).await?;
             children.push(child);
         } else {

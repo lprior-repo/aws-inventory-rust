@@ -1,8 +1,6 @@
 use super::{DenyList, Entry};
 use crate::classes::DenyReason;
 
-// Same fail-closed global and scoped rules reviewed against pinned AWS models.
-// Original positions remain stable identifiers for unmatched-policy diagnostics.
 pub(super) fn list() -> DenyList<'static> {
     DenyList(vec![
         Entry {

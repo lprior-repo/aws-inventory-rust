@@ -1,8 +1,6 @@
 use super::*;
 
 pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    // Pinned availability output is RedactedEwsAvailabilityProvider, never EwsPassword.
-    // PersonalAccessTokenSummary contains only IDs, audit times and scopes, not tokens.
     aliases_and_permissions(service)?;
     organization_children(service)?;
     rule_children(service)?;

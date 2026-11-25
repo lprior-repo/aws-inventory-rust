@@ -1,5 +1,3 @@
-//! Interval parsing for the serve command.
-
 use anyhow::{Context, Result};
 use std::time::Duration;
 

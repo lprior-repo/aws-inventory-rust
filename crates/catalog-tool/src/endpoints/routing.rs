@@ -3,7 +3,6 @@ use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
 impl RuleSet {
-    /// Resolve an operation's reviewed Smithy context, not the generic service probe.
     pub fn operation_endpoint(
         &self,
         region: &str,

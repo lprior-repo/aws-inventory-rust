@@ -93,7 +93,6 @@ impl ProcessFixture {
         } else {
             "exec 1>/dev/null;"
         };
-        // The handshake guarantees a live witness-owning descendant before the leader exits.
         let script = format!(
             "#!/bin/sh\n[ -z \"$FIXTURE_PROBE\" ] || exit 0\nif [ -e {descendant} ]; then {action}; fi\n({stdout} exec 3>{witness}; printf 'ready\\n' >&3; printf 'ready\\n' >{ready}; exec sleep 30) &\nprintf '%s\\n' \"$!\" >>{descendant}\nread -r ready <{ready}\n{action}\n",
             witness = quoted(&witness)?,
@@ -133,7 +132,6 @@ impl ProcessFixture {
         });
         let result = received.recv_timeout(Duration::from_secs(5));
         let closed = self.closed();
-        // Rescue omitted group cleanup or an unbounded pipe join before joining the test worker.
         let rescue = if matches!(&closed, Ok(true)) {
             Ok(())
         } else {

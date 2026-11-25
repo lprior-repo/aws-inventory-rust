@@ -73,17 +73,12 @@ pub(super) async fn children(
     Ok(())
 }
 
-/// Classification of the requested ARNs that one batch Describe response did not return.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub(super) struct Resolution {
-    /// Absent from the response with no reason, or with reason `MISSING`.
     pub(super) missing: Vec<String>,
-    /// Not described for another reason, paired with the reason and detail the service gave.
     pub(super) unavailable: Vec<(String, String)>,
 }
 
-/// Correlates by ARN, so order and duplicates in either input do not matter. Only a `MISSING`
-/// (or absent) reason counts as the resource being gone; any other reason is unresolved.
 pub(super) fn resolve(
     requested: &[String],
     returned: &BTreeSet<&str>,

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/medical-imaging/service/2023-07-19/medical-imaging-2023-07-19.json
 use super::super::{name, path};
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::{
@@ -53,7 +52,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Preserve the real ARN; only absent/null ARNs use the reviewed canonical construction.
     Resource {
         operation: "ListDatastores",
         items: "datastoreSummaries",
@@ -74,7 +72,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Metadata-only expansion uses the discovered datastoreId, never imaging content.
     Resource {
         operation: "GetDatastore",
         items: "datastoreProperties",

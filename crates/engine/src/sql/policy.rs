@@ -26,7 +26,6 @@ struct Lexer<'a> {
     dialect: Dialect,
 }
 
-/// Check a single PostgreSQL statement's size, quoting and read-query prefix.
 pub fn validate(sql: &str) -> Result<(), SqlError> {
     validate_with(sql, Dialect::Postgres)
 }
@@ -224,7 +223,6 @@ fn quoted_bytes(identifier: &[u8]) -> impl Iterator<Item = u8> + Clone {
     })
 }
 
-// SQL execution and remote-connection entry points denied by the reader policy.
 const SQL_EXECUTORS: &[&str] = &[
     "query_to_xml",
     "query_to_xmlschema",
@@ -344,7 +342,6 @@ fn validate_query_prefix(sql: &str, dialect: Dialect) -> Result<(), SqlError> {
         {
             return Some(index);
         }
-        // Before the first token, only whitespace and comments are visited.
         match lexer.step(sql.as_bytes(), index, byte) {
             Ok(()) => None,
             Err(_) => Some(index),

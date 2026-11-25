@@ -1,7 +1,5 @@
 use super::{FieldId, RecordError};
 
-/// Named response members omitted everywhere in one operation's output.
-/// IDs identify Smithy member names, not arbitrary JSON/map keys.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct MemberExclusions([Option<FieldId>; 8]);
 

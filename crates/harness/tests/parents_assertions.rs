@@ -1,5 +1,3 @@
-//! Negative controls for the parent architecture assertion oracle.
-
 use serde_json::json;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteConnection};
 use sqlx::{Connection, Executor};
@@ -21,7 +19,6 @@ fn has_failed_check(checks: &[serde_json::Value]) -> bool {
 
 #[test]
 fn fixture_loading_validates_byte_bound() -> TestResult {
-    // Load the real fixture and verify it's under the byte bound
     let path = root().join("crates/aws/tests/fixtures/cloudcontrol-parents.toml");
     let bytes = std::fs::read(&path)?;
     assert!(bytes.len() <= 1_048_576, "fixture exceeds 1 MiB byte bound");

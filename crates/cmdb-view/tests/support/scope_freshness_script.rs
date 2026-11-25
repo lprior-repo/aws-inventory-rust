@@ -1,6 +1,3 @@
-//! The scope outcomes the M7.3 agreement tests store, and what each scope's
-//! latest outcome must read back as. Written down independently of both readers.
-
 use cmdb_view::ScopeOutcome;
 use inventory_core::inventory::{
     AccountId, Kind, OperationId, Region, ResourceId, ResourceKey, ScopeKey, ServiceId,
@@ -13,10 +10,8 @@ pub type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 pub const KIND: &str = "AWS::Example::Thing";
 const LONG_OPERATION: &str = "ListEveryThingThatThisAccountHasEverCreatedInAnyAvailabilityZone";
 
-/// Identity of a scope: account, region, service, operation, parent flag.
 type Key = (&'static str, &'static str, &'static str, &'static str, bool);
 
-/// What the seeding script stored, written down independently of both readers.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Expected {
     pub account: &'static str,
@@ -31,7 +26,6 @@ pub struct Expected {
 }
 
 impl Expected {
-    /// Stalest first, then by scope, so ties have one fixed order.
     fn order_key(&self) -> (i64, &'static str, &'static str, &'static str, &'static str) {
         (
             self.observed_at_ms,
@@ -98,9 +92,6 @@ const LONG: (&str, &str, &str, &str) = (
 );
 const CHILD: (&str, &str, &str, &str) = ("111111111111", "us-east-1", "example", "ListThings");
 
-/// Two sweeps. After them: EAST is complete then partial, WEST partial then
-/// complete, OTHER_ACCOUNT failed twice, GLOBAL only inaccessible, LONG only
-/// unsupported, CHILD (a parented scope) complete.
 pub fn script() -> Vec<Attempt> {
     vec![
         attempt("sweep-1", EAST, false, ScopeOutcome::Complete, 1_000),
@@ -115,14 +106,12 @@ pub fn script() -> Vec<Attempt> {
     ]
 }
 
-/// The script in the order the sweeps observed it.
 pub fn ordered_script() -> Vec<Attempt> {
     let mut ordered = script();
     ordered.sort_by_key(|attempt| attempt.at);
     ordered
 }
 
-/// The latest stored outcome of every scope, stalest first.
 pub fn expected() -> Vec<Expected> {
     let mut by_scope: BTreeMap<Key, Expected> = BTreeMap::new();
     for attempt in ordered_script() {
@@ -154,8 +143,6 @@ pub fn expected() -> Vec<Expected> {
     rows
 }
 
-/// The synthetic test catalog models one service and one operation, so scopes
-/// for other services are written straight into `scope_outcomes`.
 pub fn modeled(attempt: &Attempt) -> bool {
     attempt.service == "example" && attempt.operation == "ListThings"
 }
@@ -184,8 +171,6 @@ pub fn scope(attempt: &Attempt) -> TestResult<ScopeKey> {
     )?)
 }
 
-/// Independent encoder for the documented key layout: four text fields, each a
-/// 4-byte big-endian length then the bytes, then a parent marker byte.
 pub fn raw_scope_key(attempt: &Attempt) -> TestResult<Vec<u8>> {
     let mut key = Vec::new();
     for text in [

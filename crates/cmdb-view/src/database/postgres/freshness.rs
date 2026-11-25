@@ -2,7 +2,6 @@ use super::*;
 use inventory_core::inventory::{AccountId, OperationId, Region, ScopeOutcome, ServiceId};
 
 const LATEST: &str = "WITH RECURSIVE latest AS (SELECT DISTINCT ON(scope_key) scope_key,sweep_id,outcome,observed_at FROM inventory.scope_outcomes ORDER BY scope_key,observed_at DESC,sweep_id COLLATE \"C\" DESC) ";
-// Hex preserves bytewise C ordering without asking SQL to decode untrusted UTF-8.
 const ORDERED: &str = r#",
 decoded AS (
     SELECT l.*,0 AS field,1 AS position,ARRAY[]::text[] COLLATE "C" AS names FROM latest l

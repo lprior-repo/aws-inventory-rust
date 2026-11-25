@@ -1,8 +1,3 @@
-//! Delivery verification harness.
-//!
-//! Checks every seeded snapshot's JSON export and real FalkorDB projection.
-//! Runs inside the owned fixture lifetime. Performs no AWS collection.
-
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -18,14 +13,12 @@ mod graph_diff;
 use crate::HarnessError;
 pub use expected_model::build_expected;
 
-/// Helper for safe JSON indexing with error reporting.
 fn get_field<'a>(value: &'a Value, path: &str) -> Result<&'a Value, HarnessError> {
     value
         .get(path)
         .ok_or_else(|| HarnessError::invalid(format!("field {path} missing")))
 }
 
-/// Helper for safe nested JSON indexing.
 fn get_nested<'a>(root: &'a Value, fields: &[&str]) -> Result<&'a Value, HarnessError> {
     let mut current = root;
     for field in fields {
@@ -34,13 +27,10 @@ fn get_nested<'a>(root: &'a Value, fields: &[&str]) -> Result<&'a Value, Harness
     Ok(current)
 }
 
-/// Maximum fixture rows.
 const MAX_FIXTURE_ROWS: usize = 10_000;
 
-/// Maximum artifact bytes.
 const MAX_ARTIFACT_BYTES: u64 = 67_108_864;
 
-/// Delivery verification result.
 #[derive(Debug, Clone)]
 pub struct VerificationResult {
     pub passed: bool,
@@ -48,7 +38,6 @@ pub struct VerificationResult {
     pub error: Option<String>,
 }
 
-/// Individual case result.
 #[derive(Debug, Clone)]
 pub struct CaseResult {
     pub scan_id: String,
@@ -160,11 +149,9 @@ pub async fn verify_inventory(
 
     let receipt_summary = verify_receipt_summary(inventory, model_scan, scan_id)?;
 
-    // Build expected records from SQLite
     let mut expected_records_vec = expected_sql_records(pool, scan_id, model_scan).await?;
     expected_records_vec.push(footer);
 
-    // Read and verify inventory file
     let file_content = read_inventory_text(&path, file_size)?;
     verify_record_lines(&expected_records_vec, &file_content)?;
 
@@ -426,7 +413,6 @@ pub fn verify_receipt_file(receipt: &Value, output: &Path) -> Result<Value, Harn
             .ok_or_else(|| HarnessError::invalid("receipt directory missing"))?,
     );
 
-    // Check directory is inside output
     let output_canonical = output.canonicalize()?;
     let directory_canonical = directory.canonicalize()?;
     if !directory_canonical.starts_with(&output_canonical) {
@@ -507,22 +493,12 @@ async fn verify_graph(
     }))
 }
 
-/// Outcome of comparing one SQLite snapshot generation with the graph.
 #[derive(Debug, PartialEq, Eq)]
 pub enum GraphComparison {
-    /// The graph is at this generation and every row, edge, tag-bearing property and count matches.
     Matched,
-    /// The graph is not provably at this generation (absent, other scan, other state, mid-write).
     Inconclusive(String),
 }
 
-/// Compares observed graph rows with the SQLite-derived model for one scan generation.
-///
-/// The generation is fenced before any content is compared: a missing marker, another scan
-/// id, or a marker state other than the model status is `Inconclusive`, never a pass. Once
-/// the generation matches, every node (with its projected properties and tag payload), every
-/// relation edge, and every HAS_TAG membership must equal the model; the first divergence is
-/// a hard error that names the node, edge or resource-tag it concerns.
 pub fn compare_graph_snapshot(
     model: &Value,
     node_rows: &Value,

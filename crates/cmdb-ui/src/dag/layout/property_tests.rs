@@ -1,20 +1,3 @@
-//! Layout property tests for DagLayout::compute.
-//!
-//! Uses proptest to generate random graphs and check layout invariants.
-//! All tests use a fixed RNG seed for deterministic execution.
-//!
-//! Properties checked:
-//!   1. Node accounting: every placed node has a rect; dropped count is correct.
-//!   2. Non-overlapping: no two placed rects overlap (touching allowed).
-//!   3. Bounds: every placed rect lies within the layout's width/height.
-//!   4. Determinism: compute is pure (same graph gives same layout).
-//!   5. Edge consistency: from != to for non-self-loops; back edges go
-//!      backward or same layer; forward edges go forward (or same layer when
-//!      clamped at MAX_LAYERS-1).
-//!   6. Layer bounds: layer index is < MAX_LAYERS for every placed node.
-//!   7. DAG-only graphs have no back edges.
-//!   8. Edge count matches graph edges; dropped/back counts are correct.
-
 use proptest::prelude::*;
 use proptest::test_runner::{Config, RngSeed};
 
@@ -64,12 +47,9 @@ fn graph_strategy(max_nodes: usize, max_edges: usize) -> impl Strategy<Value = G
     })
 }
 
-/// Strategy that generates DAG-only graphs: edges always go from lower to
-/// higher index, so no cycles and no back edges are expected.
 fn dag_strategy(max_nodes: usize, max_edges: usize) -> impl Strategy<Value = GraphSpec> {
     (0..=max_nodes).prop_flat_map(move |node_count| {
         let edge_limit = max_edges.min(node_count.saturating_mul(2));
-        // Generate two distinct indices and enforce from < to.
         let edge_pairs = (0..node_count)
             .prop_flat_map(move |a| (0..node_count).prop_map(move |b| (a, b)))
             .prop_filter_map("a != b", |(a, b)| if a == b { None } else { Some((a, b)) })
@@ -152,7 +132,6 @@ proptest! {
             }
         }
 
-        // Width should be max(right) + PADDING.
         prop_assert!(
             layout.width() >= max_right + super::PADDING - 0.001
                 && layout.width() <= max_right + super::PADDING + 0.001,
@@ -197,8 +176,6 @@ proptest! {
                         "back edge from {} (layer {}) to {} (layer {})",
                         edge.from, from_layer, edge.to, to_layer);
                 } else {
-                    // Forward edges must go to a higher layer, UNLESS the
-                    // target is clamped at MAX_LAYERS-1 (the bottom layer).
                     let clamped = to_layer == MAX_LAYERS.saturating_sub(1);
                     prop_assert!(from_layer < to_layer || clamped,
                         "forward edge from {} (layer {}) to {} (layer {})",
@@ -246,7 +223,6 @@ proptest! {
         let layout = DagLayout::compute(&graph);
 
         let node_count_actual = graph.nodes().len().min(MAX_LAYOUT_NODES);
-        // Edges touching dropped nodes are dropped edges.
         let dropped = graph.edges().iter().filter(|e| {
             e.from >= node_count_actual || e.to >= node_count_actual
         }).count();
@@ -277,9 +253,6 @@ fn empty_graph_layout_is_valid() {
 
 #[test]
 fn graph_at_node_cap_places_every_node() {
-    // DagGraph refuses nodes past MAX_NODES, which equals MAX_LAYOUT_NODES, so
-    // the drop path is unreachable from a DagGraph. Check the boundary instead:
-    // a graph filled to the cap places every node and drops none.
     let edges: Vec<(usize, usize)> = (0..99).map(|i| (i, i + 1)).collect();
     let graph = build_graph(MAX_LAYOUT_NODES, edges);
     let layout = DagLayout::compute(&graph);

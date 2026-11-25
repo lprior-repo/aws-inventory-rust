@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/kinesis-video/service/2017-09-30/kinesis-video-2017-09-30.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};

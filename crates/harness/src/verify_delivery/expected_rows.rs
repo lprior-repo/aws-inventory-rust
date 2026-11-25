@@ -1,17 +1,8 @@
-//! SQLite-derived expected graph rows, shaped exactly as the legacy writer stores them.
-//!
-//! The writer (`crates/engine/src/graph.rs` `RESOURCE_QUERY`/`EDGE_QUERY` fed by
-//! `graph/rows.rs`) stores each resource's properties and tags as serialized JSON text on the
-//! `Resource` node, and each edge as a `RELATES_TO` relationship carrying `kind`/`source`.
-//! Cells here are produced from the same core `Resource`/`Edge` types that were serialized
-//! into `scan_resources`/`scan_edges`, so the expectation cannot drift from the stored payload.
-
 use inventory_core::{Edge, Resource};
 use serde_json::{Value, json};
 
 use crate::HarnessError;
 
-/// Node row for a resource persisted in `scan_resources`, in `verify_graph` column order.
 pub(super) fn observed_node(
     scan_id: &str,
     row_id: &str,
@@ -47,8 +38,6 @@ pub(super) fn observed_node(
     ]))
 }
 
-/// Node row for an edge endpoint with no resource payload; the writer sets only key, id,
-/// scan_id and `unresolved`.
 pub(super) fn unresolved_node(scan_id: &str, id: &str) -> Value {
     json!([
         id,
@@ -68,7 +57,6 @@ pub(super) fn unresolved_node(scan_id: &str, id: &str) -> Value {
     ])
 }
 
-/// Relation row for an edge persisted in `scan_edges`, in `verify_graph` column order.
 pub(super) fn edge_row(
     scan_id: &str,
     row_relation: &str,

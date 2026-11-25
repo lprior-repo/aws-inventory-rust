@@ -80,7 +80,6 @@ pub struct ServiceOverlay {
     pub(super) origin: BTreeMap<OperationName, Origin>,
 }
 
-/// Evidence kinds are separate: a machine review never implies a human, fixture or emulator check.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ReviewEvidence {
     pub machine_reviewed: bool,
@@ -164,7 +163,6 @@ pub struct OperationOverlay {
     pub row_policy: super::RowPolicy,
     pub tag_endpoint: Option<super::TagEndpoint>,
     pub emission: super::Emission,
-    /// Distinguishes an explicit `emit: resources` from the default.
     pub emission_explicit: bool,
     pub projection: Option<super::ResourceProjection>,
     pub classification: Option<super::KindClassification>,
@@ -183,7 +181,6 @@ pub struct OperationOverlay {
 
     pub exclude_from_hash: Vec<MemberPath>,
     pub exclude_map_keys: Vec<super::MapKeyExclusion>,
-    /// Output-root paths validating member names dropped throughout this response.
     pub exclude_response_members: Vec<MemberPath>,
 
     pub skip: Vec<OperationName>,
@@ -233,21 +230,6 @@ pub struct TokenPair {
 
     pub output: MemberPath,
 
-    /// Only a typed boolean is accepted; textual and numeric flags cannot construct policy.
-    /// ```compile_fail
-    /// # use catalog_tool::overlay::{MemberPath, TokenPair};
-    /// # fn policy() -> Result<(), catalog_tool::overlay::NameError> {
-    /// let mut pair = TokenPair::new(MemberPath::new("Start")?, MemberPath::new("Next")?);
-    /// pair.optional = "true";
-    /// # Ok(()) }
-    /// ```
-    /// ```compile_fail
-    /// # use catalog_tool::overlay::{MemberPath, TokenPair};
-    /// # fn policy() -> Result<(), catalog_tool::overlay::NameError> {
-    /// let mut pair = TokenPair::new(MemberPath::new("Start")?, MemberPath::new("Next")?);
-    /// pair.optional = 1;
-    /// # Ok(()) }
-    /// ```
     pub optional: bool,
 }
 

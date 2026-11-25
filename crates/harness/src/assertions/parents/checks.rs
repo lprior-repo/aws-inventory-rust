@@ -1,5 +1,3 @@
-//! Parent child check execution.
-
 use serde_json::Value;
 
 use crate::assertions::helpers::check as add_check;

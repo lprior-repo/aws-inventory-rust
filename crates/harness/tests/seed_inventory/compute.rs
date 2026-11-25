@@ -17,9 +17,6 @@ const ECS_CLUSTER: &str = "inventory-seed-ecs";
 const ECS_SERVICE: &str = "inventory-seed-external-service";
 const EKS_TRUST: &str = r#"{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"eks.amazonaws.com"},"Action":"sts:AssumeRole"}]}"#;
 
-// Given an isolated local account, create only signing metadata: never function
-// code, signing jobs, certificates or key material. Opaque config IDs are observed;
-// the profile ARN is independently derived from caller-supplied account context.
 pub fn lambda(partition: &str, region: &str, account: &str) -> Result<SeedScenario, SeedError> {
     let profile = SeedStep::new(
         StepId::new(0),
@@ -75,9 +72,6 @@ pub fn lambda(partition: &str, region: &str, account: &str) -> Result<SeedScenar
     SeedScenario::new(vec![profile, config])
 }
 
-// Given two real zones and an in-account control-plane role, create a cluster
-// with actual EC2 subnet dependencies, but no node groups or workloads. Then the
-// oracle asserts both canonical subnet-to-VPC edges, not invented EKS mappings.
 pub fn eks(partition: &str, region: &str, account: &str) -> Result<SeedScenario, SeedError> {
     SeedScenario::with_relationships(
         vec![
@@ -208,9 +202,6 @@ fn eks_cluster(partition: &str, region: &str, account: &str) -> Result<SeedStep,
     ]))
 }
 
-// Given a cluster, EXTERNAL permits a metadata-only service with no task
-// definition, image, network or execution role. Then names, controller, zero
-// desired count and both independently constructed ARNs must match the response.
 pub fn ecs(partition: &str, region: &str, account: &str) -> Result<SeedScenario, SeedError> {
     let cluster = SeedStep::new(
         StepId::new(0),

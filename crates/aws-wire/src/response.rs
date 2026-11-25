@@ -59,22 +59,17 @@ impl DecodeLimits {
         self.depth
     }
 
-    /// Retains absent fields as absent instead of synthesizing SDK defaults.
-    /// Inventory snapshots require observed tag values and pagination evidence.
     pub fn preserve_field_presence(mut self) -> Self {
         self.preserve_fields = true;
         self
     }
 
-    /// Retains absent, null, and populated members distinctly for read-only comparisons.
-    /// Unlike inventory presence decoding, non-sparse modeled nulls remain explicit nulls.
     pub fn preserve_raw_values(mut self) -> Self {
         self.preserve_fields = true;
         self.raw_values = true;
         self
     }
 
-    /// Skip modeled member names before decoding values, including nested occurrences.
     pub fn excluding_members(mut self, members: inventory_core::record::MemberExclusions) -> Self {
         self.excluded_members = members;
         self

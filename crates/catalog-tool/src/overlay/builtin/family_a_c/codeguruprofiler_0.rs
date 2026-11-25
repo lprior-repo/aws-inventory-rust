@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codeguruprofiler/service/2019-07-18/codeguruprofiler-2019-07-18.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -34,7 +32,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires profilingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a profiling group.",
             ),
         ),
-        // Model: Returns a ProfilingGroupDescription object that contains information about the requested profiling group.
         (
             "DescribeProfilingGroup",
             OperationOverlay {
@@ -100,7 +97,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires profilingGroupName, startTime, endTime, period. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the start times of the available aggregated profiles of a profiling group for an aggregation period within the specified time range.",
             ),
         ),
-        // Model: Returns a list of profiling groups. The profiling groups are returned as ProfilingGroupDescription objects.
         (
             "ListProfilingGroups",
             OperationOverlay {

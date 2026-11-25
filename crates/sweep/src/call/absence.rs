@@ -29,8 +29,6 @@ pub(super) fn classify(
     }
 }
 
-// These codes identify an absent feature or singleton, not a missing caller-supplied ID.
-// Permission errors and generic ResourceNotFound errors must remain failures.
 pub(super) fn known(service: &str, operation: &str, code: Option<&str>) -> bool {
     match service {
         "iam" => operation == "GetLoginProfile" && code == Some("NoSuchEntity"),

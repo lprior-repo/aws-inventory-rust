@@ -13,8 +13,6 @@ use crate::{
 use std::sync::Arc;
 
 impl CallablePlan<'_> {
-    /// Whether this operation can supply the reviewed relation from its actual modeled namespace.
-    /// The emission that produces the relation's source kind is the namespace authority.
     pub fn supports_relationship(
         &self,
         relation: &RelationshipPlan,
@@ -240,7 +238,6 @@ fn validates_model_paths(plan: &CallablePlan<'_>) -> bool {
     }
 }
 
-/// Plan emissions and work-only items provide modeled paths for a kind.
 fn emitters<'p, 'a>(
     plans: &'p [CallablePlan<'a>],
     kind: &'p Kind,
@@ -269,7 +266,6 @@ fn validate_path(
             return Err(RuntimeCatalogError::Capability);
         }
         let item = tags::selected_item(plan.service(), plan.operation(), emission.items())?;
-        // The selected-scalar column is null for a structure producer of the same kind.
         if path.is_empty() && tags::target_kind(plan.service(), item)? == "structure" {
             continue;
         }
@@ -335,13 +331,11 @@ fn optional_target(
     path: &[FieldId],
 ) -> Result<Option<Target>, RuntimeCatalogError> {
     for id in path {
-        // A scalar producer of the same kind has no members; another producer must prove the path.
         match tags::target_kind(service, target)? {
             "string" | "enum" | "intEnum" | "boolean" | "byte" | "short" | "integer" | "long"
             | "float" | "double" | "bigInteger" | "bigDecimal" | "timestamp" | "blob" => {
                 return Ok(None);
             }
-            // A union decodes as a one-member map, so runtime path extraction walks it like a structure.
             "structure" | "union" => {}
             _ => return Err(RuntimeCatalogError::Capability),
         }

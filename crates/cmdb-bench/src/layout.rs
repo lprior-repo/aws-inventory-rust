@@ -25,7 +25,6 @@ pub(crate) fn run(args: &LayoutArgs) -> Result<(), String> {
         node_region: &fixture.regions,
         node_kind: &fixture.node_kinds,
     };
-    // Fixture construction and output are outside the measured pure layout call.
     println!(
         "synthetic seed=none nodes={} accounts=4 regions=12 services=2 kinds=3 account=(i/36)%4 region=(i/3)%12 kind=i%3",
         args.target
@@ -88,7 +87,6 @@ mod tests {
 
     #[test]
     fn hierarchy_benchmark_target() -> TestResult {
-        // Given a valid target, when parsing, then it is retained exactly.
         assert_eq!(
             parse(&mut ["250000".to_owned()].into_iter())?,
             LayoutArgs { target: 250_000 }
@@ -102,7 +100,6 @@ mod tests {
 
     #[test]
     fn hierarchy_benchmark_rejects_invalid_targets() -> TestResult {
-        // Given absent, zero, excessive, malformed or extra arguments, then the usage is exact.
         let cases = [
             vec![],
             vec!["0"],
@@ -121,7 +118,6 @@ mod tests {
 
     #[test]
     fn hierarchy_benchmark_uses_the_public_layout() -> TestResult {
-        // Given a complete synthetic distribution, when laid out, then all original nodes are retained.
         let fixture = fixture(144)?;
         let result = layout(HierarchyInput {
             kinds: &fixture.kinds,

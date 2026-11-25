@@ -135,7 +135,6 @@ fn given_owner_without_execute_when_other_class_can_execute_then_effective_ident
             retained.set_permissions(fs::Permissions::from_mode(mode))?;
             let result = executable(&retained);
             if retained.metadata()?.uid() == 0 {
-                // Root may execute any regular file with an execute bit in any class.
                 result?;
             } else {
                 assert_eq!(
@@ -302,7 +301,6 @@ fn given_unpublished_receipt_when_link_becomes_visible_then_first_observer_sees_
     let mut observations = Vec::new();
     super::write_receipt_observed(&source, &mut staged, &value, |phase| {
         phases.push(phase);
-        // The publisher cannot cross either boundary until this real reader joins.
         observations.push(std::thread::scope(|scope| {
             scope
                 .spawn(|| inspect_visibility(&layout.receipt, phase, identity, &expected))

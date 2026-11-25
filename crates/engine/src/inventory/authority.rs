@@ -64,8 +64,6 @@ async fn retain_unknown(
     key: &ResourceKey,
     scope: &[u8],
 ) -> Result<(), StoreError> {
-    // No alternate sweep is evidence of the missing last-positive request.
-    // Retain the exact old owner and make the incomplete attribution explicit.
     sqlx::query(
         "INSERT OR IGNORE INTO legacy_resources(account,region,kind,id) VALUES(?1,?2,?3,?4)",
     )

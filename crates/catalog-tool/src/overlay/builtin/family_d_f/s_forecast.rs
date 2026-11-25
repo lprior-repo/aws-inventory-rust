@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/forecast/service/2018-06-26/forecast-2018-06-26.json
 use super::support::{arn, inventory, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "forecast",
         vec![
-            // Returns a list of dataset groups created using the CreateDatasetGroup operation.
             queried(
                 inventory(
                     "ListDatasetGroups",
@@ -16,7 +14,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["DatasetGroupArn", "DatasetGroupName"],
             )?,
-            // Returns a list of dataset import jobs created using the CreateDatasetImportJob operation.
             queried(
                 inventory(
                     "ListDatasetImportJobs",
@@ -26,7 +23,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["DatasetImportJobArn", "DatasetImportJobName", "Status"],
             )?,
-            // Returns a list of datasets created using the CreateDataset operation.
             queried(
                 inventory(
                     "ListDatasets",
@@ -36,7 +32,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["DatasetArn", "DatasetName", "DatasetType"],
             )?,
-            // Returns a list of Explainability resources created using the CreateExplainability operation.
             queried(
                 inventory(
                     "ListExplainabilities",
@@ -46,7 +41,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ExplainabilityArn", "ExplainabilityName", "Status"],
             )?,
-            // Returns a list of Explainability exports created using the CreateExplainabilityExport operation.
             queried(
                 inventory(
                     "ListExplainabilityExports",
@@ -60,7 +54,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "Status",
                 ],
             )?,
-            // Returns a list of forecast export jobs created using the CreateForecastExportJob operation.
             queried(
                 inventory(
                     "ListForecastExportJobs",
@@ -70,7 +63,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ForecastExportJobArn", "ForecastExportJobName", "Status"],
             )?,
-            // Returns a list of forecasts created using the CreateForecast operation.
             queried(
                 inventory(
                     "ListForecasts",
@@ -86,7 +78,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "Status",
                 ],
             )?,
-            // Returns a list of monitors created with the CreateMonitor operation and CreateAutoPredictor operation.
             queried(
                 inventory(
                     "ListMonitors",
@@ -96,7 +87,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["MonitorArn", "MonitorName", "Status"],
             )?,
-            // Returns a list of predictor backtest export jobs created using the CreatePredictorBacktestExportJob operation.
             queried(
                 inventory(
                     "ListPredictorBacktestExportJobs",
@@ -110,7 +100,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "Status",
                 ],
             )?,
-            // Returns a list of predictors created using the CreateAutoPredictor or CreatePredictor operations.
             queried(
                 inventory(
                     "ListPredictors",
@@ -120,7 +109,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["PredictorArn", "DatasetGroupArn", "PredictorName", "Status"],
             )?,
-            // Returns a list of what-if analyses created using the CreateWhatIfAnalysis operation.
             queried(
                 inventory(
                     "ListWhatIfAnalyses",
@@ -135,7 +123,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "Status",
                 ],
             )?,
-            // Returns a list of what-if forecast exports created using the CreateWhatIfForecastExport operation.
             queried(
                 inventory(
                     "ListWhatIfForecastExports",
@@ -149,7 +136,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "Status",
                 ],
             )?,
-            // Returns a list of what-if forecasts created using the CreateWhatIfForecast operation.
             queried(
                 inventory(
                     "ListWhatIfForecasts",

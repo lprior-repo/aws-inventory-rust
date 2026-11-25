@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/datazone/service/2018-05-10/datazone-2018-05-10.json
 use super::support::{arn, bound, correlated, inventory, key, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "datazone",
         vec![
-            // Lists Amazon DataZone domains.
             queried(
                 inventory(
                     "ListDomains",
@@ -16,7 +14,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["arn", "id", "name", "managedAccountId", "status"],
             )?,
-            // Lists Amazon DataZone projects.
             queried(
                 bound(
                     inventory(
@@ -29,7 +26,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["domainId", "id", "name", "projectStatus", "domainUnitId"],
             )?,
-            // Lists Amazon DataZone environments.
             queried(
                 bound(
                     inventory(
@@ -55,7 +51,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "environmentConfigurationName",
                 ],
             )?,
-            // Lists Amazon DataZone environment profiles.
             queried(
                 bound(
                     inventory(
@@ -75,7 +70,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "projectId",
                 ],
             )?,
-            // Project-profile summaries exclude environment deployment configuration and scripts.
             queried(
                 bound(
                     inventory(
@@ -88,7 +82,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["domainId", "id", "name", "status", "domainUnitId"],
             )?,
-            // Lists data sources in Amazon DataZone.
             queried(
                 bound(
                     inventory(

@@ -85,7 +85,6 @@ fn given_glue_blueprint_names_when_the_policy_compiles_then_the_key_uses_the_blu
         )
     );
     assert!(catalog.lookup("glue", "GetBlueprint").is_none());
-    // GetBlueprint returns the name, not an ARN. The list key qualifies that name.
     let service = blueprints.service();
     let output = response_shape(service, "GetBlueprint")?;
     let blueprint_id = compiled

@@ -23,8 +23,6 @@ pub(super) fn field(
         {
             return Err(invalid(LENGTH));
         }
-        // A byte-unit bound measures encoded size, not the item or code-point
-        // count that fields 1 and 2 carry, so it is validated but never emitted.
         let counted = match object.get("unit").map(Json::as_str) {
             None => true,
             Some(Some("bytes")) => false,
@@ -168,12 +166,10 @@ mod tests {
 
     #[test]
     fn given_a_byte_unit_length_when_compiled_then_no_count_bound_is_emitted() -> TestResult {
-        // Given: the pinned verifiedpermissions EncryptionContext map trait.
         let traits = BTreeMap::from([(
             LENGTH.into(),
             serde_json::json!({"max":8192,"unit":"bytes"}),
         )]);
-        // When/Then: the size bound is not misreported as an entry count.
         assert_eq!(
             field(&traits, false)?,
             (CatalogKey::ValueConstraints, Value::Null)
@@ -233,7 +229,6 @@ mod tests {
     #[test]
     fn given_pinned_shape_constraints_when_deserialized_then_exact_metadata_is_compiled()
     -> TestResult {
-        // Given: the exact trait payloads on the rejecting pinned string shapes.
         let cases = [
             (
                 serde_json::json!({"min":12,"max":12}),
@@ -263,7 +258,6 @@ mod tests {
             if let Some(pattern) = pattern {
                 traits.insert(PATTERN, serde_json::json!(pattern));
             }
-            // When: the production Smithy deserializer and metadata compiler run.
             let shape: crate::smithy::model::Shape =
                 serde_json::from_value(serde_json::json!({"type":"string","traits":traits}))?;
             let mut expected = BTreeMap::new();
@@ -275,7 +269,6 @@ mod tests {
             if let Some(pattern) = pattern {
                 expected.insert(Key::Field(FieldId::new(3)?), Value::Text(pattern.into()));
             }
-            // Then: every explicit bound and pattern survives without invented bounds.
             assert_eq!(
                 field(&shape.traits, false)?,
                 (CatalogKey::ValueConstraints, Value::Map(expected))
@@ -287,14 +280,11 @@ mod tests {
     #[test]
     fn given_pinned_access_member_length_when_deserialized_then_its_one_sided_bound_survives()
     -> TestResult {
-        // Given: Access.actions and Access.resources both specify only max: 100.
         let member: crate::smithy::model::Member = serde_json::from_value(serde_json::json!({
             "target":"com.amazonaws.accessanalyzer#ActionsList",
             "traits":{"smithy.api#length":{"max":100}}
         }))?;
-        // When: deserialized member traits pass through the metadata compiler.
         let encoded = field(&member.traits, false)?;
-        // Then: the explicit maximum survives and no minimum is invented.
         assert_eq!(
             encoded,
             (
@@ -311,7 +301,6 @@ mod tests {
     #[test]
     fn given_malformed_serialized_constraints_when_compiled_then_traits_are_not_discarded()
     -> TestResult {
-        // Given: invalid types, bounds and unknown keys must survive parsing for rejection.
         let cases = [
             (LENGTH, serde_json::json!(null)),
             (LENGTH, serde_json::json!({"max":"100"})),
@@ -324,11 +313,9 @@ mod tests {
             (PATTERN, serde_json::json!(false)),
         ];
         for (name, payload) in cases {
-            // When: malformed traits take the same parse-to-compile path as pinned models.
             let shape: crate::smithy::model::Shape = serde_json::from_value(
                 serde_json::json!({"type":"string","traits":BTreeMap::from([(name, payload.clone())])}),
             )?;
-            // Then: the payload is retained faithfully and fails with the exact trait name.
             assert_eq!(shape.traits.get(name), Some(&payload));
             assert!(
                 matches!(field(&shape.traits, false), Err(CompileError::Trait(trait_name)) if trait_name == name)

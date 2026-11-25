@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/device-farm/service/2015-06-23/device-farm-2015-06-23.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateDevicePool",

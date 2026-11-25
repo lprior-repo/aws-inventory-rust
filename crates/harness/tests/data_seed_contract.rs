@@ -352,16 +352,13 @@ fn form(request: &[u8]) -> Result<BTreeMap<String, String>, Box<dyn Error>> {
 #[tokio::test]
 async fn given_named_map_and_list_outputs_when_executed_then_nested_requests_use_observed_values()
 -> TestResult {
-    // Given: auxiliary outputs differ from each other and from the eventual resource identity.
     let replies = vec![
         CALLER,
         "<DescribeAvailabilityZonesResponse xmlns=\"http://ec2.amazonaws.com/doc/2016-11-15/\"><availabilityZoneInfo><item><zoneName>us-west-2a</zoneName></item><item><zoneName>us-west-2c</zoneName></item></availabilityZoneInfo></DescribeAvailabilityZonesResponse>",
         "<GetTopicAttributesResponse xmlns=\"http://sns.amazonaws.com/doc/2010-03-31/\"><GetTopicAttributesResult><Attributes><entry><key>DisplayName</key><value>observed-topic-name</value></entry><entry><key>Owner</key><value>observed-owner-419</value></entry></Attributes></GetTopicAttributesResult></GetTopicAttributesResponse>",
         "<CreateTopicResponse xmlns=\"http://sns.amazonaws.com/doc/2010-03-31/\"><CreateTopicResult><TopicArn>arn:aws:sns:us-west-2:123456789012:server-selected-topic-id</TopicArn></CreateTopicResult></CreateTopicResponse>",
     ];
-    // When: execute the embedded Rust fixture through production codecs, signing, TLS and evaluation.
     let (result, requests) = execute(dependencies()?, replies).await?;
-    // Then: helpers produce no resources, but both helpers supply actual emitted request values.
     let oracle = result?;
     assert_eq!(requests.len(), 4);
     requests
@@ -398,11 +395,8 @@ async fn given_named_map_and_list_outputs_when_executed_then_nested_requests_use
 #[tokio::test]
 async fn given_account_scope_when_executed_then_oracle_is_global_but_signing_uses_transport_region()
 -> TestResult {
-    // Given: response identity is deliberately not derived from the requested name.
     let reply = "<CreateGroupResponse xmlns=\"https://iam.amazonaws.com/doc/2010-05-08/\"><CreateGroupResult><Group><Arn>arn:aws:iam::123456789012:group/observed-group-983</Arn></Group></CreateGroupResult></CreateGroupResponse>";
-    // When
     let (result, requests) = execute(group()?, vec![CALLER, reply]).await?;
-    // Then
     let oracle = result?;
     assert_eq!(requests.len(), 2);
     signed(requests.first().ok_or("missing caller request")?, "sts")?;
@@ -429,14 +423,11 @@ async fn given_account_scope_when_executed_then_oracle_is_global_but_signing_use
 #[tokio::test]
 async fn given_unit_response_when_request_identity_is_explicit_then_template_and_receipt_are_request_sourced()
 -> TestResult {
-    // Given: CreateAlias returns no identity at all.
-    // When
     let (result, requests) = execute(
         alias("arn:{partition}:kms:{region}:{account}:{value}")?,
         vec![CALLER, "{}"],
     )
     .await?;
-    // Then: only the explicitly selected request field supplies the identity.
     let oracle = result?;
     assert_eq!(requests.len(), 2);
     let request = requests.get(1).ok_or("missing CreateAlias request")?;
@@ -459,7 +450,6 @@ async fn given_unit_response_when_request_identity_is_explicit_then_template_and
 #[tokio::test]
 async fn given_missing_or_empty_response_identity_when_executed_then_exact_errors_replace_no_facts()
 -> TestResult {
-    // Given: the same successful HTTP operation omits identity or explicitly returns empty text.
     for (field, message) in [
         (
             "",
@@ -473,9 +463,7 @@ async fn given_missing_or_empty_response_identity_when_executed_then_exact_error
         let reply = format!(
             "<CreateGroupResponse><CreateGroupResult><Group>{field}</Group></CreateGroupResult></CreateGroupResponse>"
         );
-        // When
         let (result, requests) = execute(group()?, vec![CALLER, &reply]).await?;
-        // Then
         assert_eq!(requests.len(), 2);
         signed(requests.get(1).ok_or("missing CreateGroup request")?, "iam")?;
         let error = result.err().ok_or("missing identity was accepted")?;
@@ -497,7 +485,6 @@ async fn given_missing_or_empty_response_identity_when_executed_then_exact_error
 #[test]
 fn given_unsafe_identity_templates_when_constructed_then_exact_rejections_prevent_request_identity_fabrication()
 -> TestResult {
-    // Given: only value, observed caller account/partition, and configured region are permitted.
     for (template, message) in [
         (
             "fixed-identity",
@@ -513,11 +500,9 @@ fn given_unsafe_identity_templates_when_constructed_then_exact_rejections_preven
         ),
         ("{value}}", "identity template has an unmatched brace"),
     ] {
-        // When
         let error = alias(template)
             .err()
             .ok_or("invalid identity template was accepted")?;
-        // Then
         assert_eq!(
             error.to_string(),
             format!("invalid emulator seed configuration: {message}")
@@ -530,7 +515,6 @@ fn given_unsafe_identity_templates_when_constructed_then_exact_rejections_preven
 #[tokio::test]
 async fn given_nontext_request_identity_when_executed_then_modeled_type_rejects_it_before_network()
 -> TestResult {
-    // Given: a configured map input cannot be relabelled as a resource identifier.
     let scenario = SeedScenario::new(vec![SeedStep::new(
         StepId::new(0),
         "sqs".into(),
@@ -551,9 +535,7 @@ async fn given_nontext_request_identity_when_executed_then_modeled_type_rejects_
             ),
         ],
     )])?;
-    // When
     let (result, requests) = execute(scenario, vec![]).await?;
-    // Then
     assert_eq!(requests, Vec::<Vec<u8>>::new());
     let error = result
         .err()

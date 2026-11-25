@@ -78,7 +78,6 @@ fn compile_step(pid: Pid, deadline: Instant) -> Result<bool, HarnessError> {
 }
 
 pub(super) fn exited(pid: Pid) -> Result<bool, HarnessError> {
-    // Retain the unreaped leader until group signalling, preventing PID/PGID reuse.
     let flags = WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT;
     rustix::process::waitid(WaitId::Pid(pid), flags)
         .map(|status| status.is_some())
@@ -86,7 +85,6 @@ pub(super) fn exited(pid: Pid) -> Result<bool, HarnessError> {
 }
 
 pub(super) fn terminate_and_reap(child: &mut Child) -> Result<ExitStatus, HarnessError> {
-    // Always kill the owned group, including descendants that closed output.
     let killed = match rustix::process::kill_process_group(Pid::from_child(child), Signal::KILL) {
         Ok(()) | Err(rustix::io::Errno::SRCH) => Ok(()),
         Err(error) => Err(std::io::Error::from(error).into()),

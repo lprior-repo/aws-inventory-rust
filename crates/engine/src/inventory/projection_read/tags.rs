@@ -15,9 +15,6 @@ pub(super) async fn read(
         .map_err(|_| StoreError::Invalid("projection tag key bound overflow"))?;
     let value_bound = i64::try_from(MAX_TAG_VALUE_CHARS)
         .map_err(|_| StoreError::Invalid("projection tag value bound overflow"))?;
-    // Bound character length inside SQLite, before allocating legacy data in the reader.
-    // SQLite length() on TEXT returns the character count, not byte count.
-    // Exclude rows containing NUL bytes which length() would truncate.
     let rows = sqlx::query("SELECT tag_key,tag_value FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND (?5 IS NULL OR tag_key>?5) AND length(tag_key) BETWEEN 1 AND ?7 AND length(tag_value)<=?8 AND instr(tag_key,char(0))=0 AND instr(tag_value,char(0))=0 ORDER BY tags.tag_key LIMIT ?6")
         .bind(key.account.as_str())
         .bind(key.region.as_str())

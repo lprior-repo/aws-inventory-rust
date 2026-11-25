@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/snow-device-management/service/2021-08-04/snow-device-management-2021-08-04.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

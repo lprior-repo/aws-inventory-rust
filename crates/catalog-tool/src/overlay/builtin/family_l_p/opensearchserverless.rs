@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/opensearchserverless/service/2021-11-01/opensearchserverless-2021-11-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -108,7 +107,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists all OpenSearch Serverless collections. For more information, see Creating and managing Amazon OpenSearch Serverless collections . Make sure to include an empty request body {
     Resource {
         operation: "ListCollections",
         items: "collectionSummaries",
@@ -127,7 +125,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of collection groups. For more information, see Creating and managing Amazon OpenSearch Serverless collections .
     Resource {
         operation: "ListCollectionGroups",
         items: "collectionGroupSummaries",
@@ -139,7 +136,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns the OpenSearch Serverless-managed interface VPC endpoints associated with the current account. For more information, see Access Amazon OpenSearch Serverless using an interf
     Resource {
         operation: "ListVpcEndpoints",
         items: "vpcEndpointSummaries",

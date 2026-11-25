@@ -83,7 +83,6 @@ async fn pages(
             lattice::page(plan, &lease, &wire, reverse)?
         };
         apply(&store, catalog, plan, lease, &request, body).await?;
-        // Dropping and reopening after EVERY committed page exercises durable ancestry and cursor recovery.
     }
     let store = BinaryStore::open_with_catalog(path, catalog.raw_bytes()).await?;
     assert!(

@@ -46,7 +46,6 @@ fn artifact_for(service: &str, operation: &str, skip_field: Option<Value>) -> Te
     })
 }
 
-// Rebuilds the catalog with the named plan edited in place, or moved to the end of the plan list.
 fn carrier_artifact(
     base: &[u8],
     service: &str,
@@ -103,110 +102,80 @@ fn skips(names: impl IntoIterator<Item = &'static str>) -> Value {
 
 #[test]
 fn decoder_rejects_duplicate_skip_entries() -> TestResult {
-    // Given two references to the same valid operation.
     let bytes = artifact(Some(skips([CHILD, CHILD])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the duplicated metadata is refused.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_unknown_skip_operation() -> TestResult {
-    // Given a skip naming no operation in the catalog.
     let bytes = artifact(Some(skips(["DescribeMissingSkipTarget"])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the unresolved reference is refused.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_skip_operation_from_another_service() -> TestResult {
-    // Given a skip naming DynamoDB's DescribeTable in an Access Analyzer plan.
     let bytes = artifact(Some(skips(["DescribeTable"])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the cross-service reference is refused.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_known_same_service_operation_without_a_plan() -> TestResult {
-    // Given a modeled but deferred operation in the carrying plan's service.
     let bytes = artifact(Some(skips(["GetFinding"])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the operation without a callable plan is refused.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_bound_tag_endpoint_as_a_skip_target() -> TestResult {
-    // Given a tag endpoint bound to SNS ListTopics, not an enumeration child.
     let bytes = artifact_for("sns", "ListTopics", Some(skips(["ListTagsForResource"])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the endpoint cannot be suppressed by describe-skip metadata.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_skip_operation_referring_to_its_own_plan() -> TestResult {
-    // Given a skip naming the operation whose plan owns the skip field.
     let bytes = artifact(Some(skips([PLAN])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the self-reference is refused.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_more_than_64_skip_entries() -> TestResult {
-    // Given 65 entries, all bearing the name of a valid child.
     let bytes = artifact(Some(skips([CHILD; 65])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the skip-list limit is reported.
     assert!(matches!(result, Err(RuntimeCatalogError::Bounds)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_skip_field_that_is_not_a_list() -> TestResult {
-    // Given a text value in field 26 instead of a list.
     let bytes = artifact(Some(Value::Text(CHILD.into())))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the mistyped field is refused.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_rejects_skip_list_entry_that_is_not_text() -> TestResult {
-    // Given a skip list with an integer entry.
     let bytes = artifact(Some(Value::List(vec![Value::Int(1)])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the mistyped entry is refused.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_accepts_single_same_service_skip_operation() -> TestResult {
-    // Given one reference to a direct enumeration child in the same service.
     let bytes = artifact(Some(skips([CHILD])))?;
-    // When loading the catalog.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    // Then the carrying plan exposes the skip.
     let plan = catalog
         .lookup(SERVICE, PLAN)
         .ok_or("missing decoded plan")?;
@@ -216,11 +185,8 @@ fn decoder_accepts_single_same_service_skip_operation() -> TestResult {
 
 #[test]
 fn decoder_accepts_absent_skip_field_as_no_skips() -> TestResult {
-    // Given a plan without field 26.
     let bytes = artifact(None)?;
-    // When loading the catalog.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    // Then the carrying plan exposes no skips.
     let plan = catalog
         .lookup(SERVICE, PLAN)
         .ok_or("missing decoded plan")?;
@@ -230,25 +196,19 @@ fn decoder_accepts_absent_skip_field_as_no_skips() -> TestResult {
 
 #[test]
 fn decoder_rejects_case_variant_of_a_valid_skip_operation() -> TestResult {
-    // Given a skip naming GetAnalyzer with its first letter lower-cased.
     let bytes = artifact(Some(skips(["getanalyzer"])))?;
-    // When loading the catalog.
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the name is refused, since operation names match exactly.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
 
 #[test]
 fn decoder_accepts_skip_child_declared_before_its_carrier() -> TestResult {
-    // Given the carrying plan moved after its child, so the child is declared before its carrier.
     let bytes = carrier_artifact(base_catalog::base()?, SERVICE, PLAN, true, |plan| {
         plan.insert(key(26)?, skips([CHILD]));
         Ok(())
     })?;
-    // When loading the catalog.
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    // Then the carrying plan exposes the skip regardless of plan order.
     let plan = catalog
         .lookup(SERVICE, PLAN)
         .ok_or("missing decoded plan")?;
@@ -258,7 +218,6 @@ fn decoder_accepts_skip_child_declared_before_its_carrier() -> TestResult {
 
 #[test]
 fn decoder_rejects_skip_carried_by_a_non_enumeration_plan() -> TestResult {
-    // Given ListAnalyzers repurposed as an endpoint discovery plan, which lists no children.
     let endpoint_carrier = |skip_field: Option<Value>| {
         carrier_artifact(base_catalog::base()?, SERVICE, PLAN, false, |plan| {
             plan.insert(key(12)?, map_value(vec![(1, Value::Int(4))])?);
@@ -273,12 +232,9 @@ fn decoder_rejects_skip_carried_by_a_non_enumeration_plan() -> TestResult {
             Ok(())
         })
     };
-    // Given the same endpoint plan without skips loads, so only the skip is under test.
     RuntimeCatalog::from_bytes(&endpoint_carrier(None)?)?;
-    // When that plan also names GetAnalyzer as a skipped child.
     let bytes = endpoint_carrier(Some(skips([CHILD])))?;
     let result = RuntimeCatalog::from_bytes(&bytes);
-    // Then the skip is refused, because only an enumeration's list may replace a describe call.
     assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
     Ok(())
 }

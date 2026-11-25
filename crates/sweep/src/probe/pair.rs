@@ -6,7 +6,6 @@ use inventory_core::{
 };
 use inventory_engine::inventory::SweepId;
 
-/// Raw, unprojected items for an explicit equivalence probe; never persisted by sweep.
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ProbePage {
@@ -16,7 +15,6 @@ pub struct ProbePage {
     continuation: Option<Record>,
 }
 
-/// Bounded read-only probe transport reusing production routing and child bindings.
 pub struct ProbeSession<'a, 'catalog, C> {
     probe: Probe<'a, 'catalog, C>,
     parent_branch: Option<&'a ExecutionBranch>,
@@ -171,7 +169,6 @@ impl<'a, 'catalog, C: CredentialSource> ProbeSession<'a, 'catalog, C> {
             || child.service_name() != self.probe.plan.service_name()
             || !valid_branch(child, child_branch)
             || !child.has_exclusive_skip_bindings(self.probe.plan, child_branch)
-            // Unlike catalog validation, a probe has only one parent branch in context.
             || child.effective_bindings(child_branch).any(|binding| {
                 matches!(&binding.source, BindingSource::ContextFromBranch { branch, .. }
                     if Some(branch.as_ref()) != parent_branch)
@@ -290,8 +287,6 @@ impl<'a, 'catalog, C: CredentialSource> ProbeSession<'a, 'catalog, C> {
     }
 }
 
-/// Compares one seeded resource using raw selected values, not persisted projections.
-/// The list item is borrowed; the describe result is at most one MiB.
 pub async fn probe_pair<'row, 'catalog, C: CredentialSource>(
     session: &ProbeSession<'_, 'catalog, C>,
     child: &CallablePlan<'catalog>,

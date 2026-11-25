@@ -1,5 +1,3 @@
-//! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/gamelift/service.
-//! Review is source-only; no live service or emulator support claim.
 use super::policy;
 use crate::overlay::{FixedValue, NameError, OperationOverlay, ServiceOverlay};
 
@@ -38,11 +36,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["ScriptArn", "ScriptId", "StorageLocation"],
             )?,
         ),
-        // Pinned ListContainerFleets has no required filter: omitting ContainerGroupDefinitionName
-        // enumerates all owned fleets in their home request region. Full ContainerFleet closure
-        // contains configuration/ports/CIDRs, limits, status, deployment IDs and remote locations;
-        // IAM/container-definition ARNs and log bucket/group names are references, not credentials,
-        // definition bytes, logs or player/session content. Never follow these into detail reads.
         (
             "ListContainerFleets",
             policy::query(
@@ -150,8 +143,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     )
 }
 
-// Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
-// Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
     "DescribeCompute",
     "DescribeContainerFleet",
@@ -267,7 +258,6 @@ const CONTENT: &[&str] = &[
 ];
 
 const SECRET: &[&str] = &[
-    // Nested container environment values can contain customer credentials.
     "ListContainerGroupDefinitions",
     "GetComputeAccess",
     "GetComputeAuthToken",

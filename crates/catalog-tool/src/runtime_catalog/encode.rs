@@ -12,7 +12,6 @@ pub struct RelationsResult {
 }
 
 impl RelationsResult {
-    /// Formats live relation counts and pending declarations for publication.
     pub fn report(&self) -> Result<String, std::fmt::Error> {
         use std::fmt::Write;
         let mut text = format!(

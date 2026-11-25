@@ -14,7 +14,6 @@ async fn ga_request_parent_relations_reject_hostile_scope_and_type_without_selec
             "ListCustomRoutingListeners",
         ),
     ] {
-        // Given real compiled discovery, a durable root lease and actual bound request.
         let directory = tempfile::tempdir()?;
         let registry = SchemaRegistry::new(catalog.raw_bytes(), catalog.schemas().to_vec())?;
         let store = BinaryStore::create(&directory.path().join("inventory.db"), registry).await?;
@@ -79,7 +78,6 @@ async fn ga_request_parent_relations_reject_hostile_scope_and_type_without_selec
                 observed_at_ms: 1001,
             })
             .await?;
-        // Claim generated work, rather than exposing private WorkSpec binding/context fields.
         let lease = loop {
             let lease = store
                 .claim(&sweep, 1002, 100_000)
@@ -146,7 +144,6 @@ async fn ga_request_parent_relations_reject_hostile_scope_and_type_without_selec
                 Some(ValueRef::Text(value)) if value == parent_arn)
             );
         }
-        // When only the actual bound parent request is hostile, no selected output may rescue it.
         for hostile in [
             Value::Text("arn:aws:globalaccelerator::999999999999:accelerator/foreign".to_owned()),
             Value::Text(
@@ -179,7 +176,6 @@ async fn ga_request_parent_relations_reject_hostile_scope_and_type_without_selec
                 .is_err()
             );
         }
-        // Then the same valid reference survives checked persistence and resolves to the discovered parent.
         let key = observations
             .first()
             .ok_or("listener observation absent")?

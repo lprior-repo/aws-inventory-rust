@@ -30,8 +30,6 @@ async fn branch_fixture(
 ) -> TestResult<(tempfile::TempDir, BinaryStore, SqlitePool)> {
     let directory = tempfile::tempdir()?;
     let database = directory.path().join("inventory.sqlite");
-    // Decode the bounded, sealed synthetic catalog rather than injecting an
-    // unchecked in-memory permission map or fabricating an upstream receipt.
     let bytes = model_relation_catalog(branch_catalog_bytes(base_discovery)?)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog
@@ -195,7 +193,6 @@ async fn assert_exact_edge(store: &BinaryStore, source: &str) -> TestResult {
 #[tokio::test]
 async fn given_base_emits_but_exact_stage_is_discovery_when_metadata_is_submitted_then_every_table_is_unchanged()
 -> TestResult {
-    // Observations alone must not bypass the relationship permission boundary.
     for relationship in [0, 1, 2] {
         let (directory, store, pool) = branch_fixture(false).await?;
         let lease = stage_lease(&store, Some("DISCOVER"), Some("discovery-name")).await?;
@@ -255,8 +252,6 @@ async fn given_an_emitting_stage_when_request_uses_base_other_stage_or_missing_f
         for relationship in [0, 1, 2] {
             let (directory, store, pool) = branch_fixture(false).await?;
             let lease = stage_lease(&store, Some("EMIT"), binding).await?;
-            // Matching the forged request value must not make its relationship
-            // legitimate; the exact stage's reviewed fixed binding wins.
             assert_rejected(
                 &directory,
                 &store,
@@ -412,8 +407,6 @@ async fn assert_non_authoritative_completion(
 #[tokio::test]
 async fn given_a_claimed_invalid_stage_when_finished_failed_or_partial_then_it_settles_without_metadata_or_complete_authority()
 -> TestResult {
-    // Invalid collection authority must not trap a generation-valid worker in
-    // an active sweep: reporting failure is not claiming complete observation.
     for outcome in [ScopeOutcome::Failed, ScopeOutcome::Partial] {
         for (branch, binding) in [
             (None, Some("base-name")),

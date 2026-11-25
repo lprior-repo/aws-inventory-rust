@@ -19,7 +19,6 @@ pub(super) fn assert_summary(output: &Output, expected: Summary) -> Result<()> {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    // No slice budget is configured, so no work is left for a later slice.
     super::stdout::assert(std::str::from_utf8(&output.stdout)?, &expected)?;
     Ok(())
 }

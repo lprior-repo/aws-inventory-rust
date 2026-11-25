@@ -99,7 +99,6 @@ impl Default for WorkerConfig {
 
 #[derive(Debug)]
 pub enum WorkerEvent {
-    /// Connection/configuration status, independent of a selected resource.
     GraphStatus {
         error: Option<String>,
     },

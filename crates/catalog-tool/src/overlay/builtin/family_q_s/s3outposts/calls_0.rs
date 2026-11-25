@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/s3outposts/service/2017-07-25/s3outposts-2017-07-25.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

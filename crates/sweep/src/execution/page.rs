@@ -22,15 +22,12 @@ use settlement::{finalize, finish_error, summary};
 use super::{RuntimeContext, now_ms};
 use crate::{CredentialSource, ScopeOutcomes, SweepError, SweepSummary, call, input};
 
-/// One processed page: its summary and, when the scope has another page and
-/// the lease was kept, the lease for that page.
 pub(super) struct Paged {
     pub(super) summary: SweepSummary,
     pub(super) next: Option<WorkLease>,
 }
 
 impl Paged {
-    /// A page after which the lease is no longer held.
     fn last(summary: SweepSummary) -> Self {
         Self {
             summary,
@@ -39,8 +36,6 @@ impl Paged {
     }
 }
 
-/// Processes one page. With `keep`, a page that has a successor keeps the
-/// lease so the caller can fetch the next page without claiming again.
 pub(super) async fn process(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
@@ -69,7 +64,6 @@ async fn process_owned(
     process_lease(context, lease, keep).await
 }
 
-/// The result of a lease that was finished or released rather than paged on.
 fn settled(result: Result<SweepSummary, SweepError>) -> Result<Paged, SweepError> {
     result.map(Paged::last)
 }
@@ -104,7 +98,6 @@ async fn process_lease(
     commit_response(context, lease, keep, setup, response, request).await
 }
 
-/// The name of the operation's response shape, when the catalog models one.
 fn output_shape<'catalog>(plan: &CallablePlan<'catalog>) -> Option<&'catalog str> {
     match plan.operation().output() {
         Ok(Target::Shape(index)) => plan
@@ -302,7 +295,6 @@ async fn commit_page(
     }
 }
 
-/// Commits the page, keeping the lease for a successor page when `keep` is set.
 async fn store_commit(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     commit: PageCommit,

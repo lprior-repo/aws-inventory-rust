@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudwatch-events/service/2015-10-07/cloudwatch-events-2015-10-07.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -94,7 +92,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified rule. Before you can delete the rule, you must remove all targets, using RemoveTargets . When you delete a rule, incoming events might continue to match to the deleted rule. Allow a short period of time for…",
             ),
         ),
-        // Model: Retrieves details about an API destination.
         (
             "DescribeApiDestination",
             OperationOverlay {
@@ -117,7 +114,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves details about an archive.
         (
             "DescribeArchive",
             OperationOverlay {
@@ -140,9 +136,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves details about a connection.
         ("DescribeConnection", denied(DenyReason::Secret)),
-        // Model: Displays details about an event bus in your account. This can include the external Amazon Web Services accounts that are permitted to write events to your default event bus, and the associated…
         (
             "DescribeEventBus",
             OperationOverlay {
@@ -206,7 +200,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Enables the specified rule. If the rule does not exist, the operation fails. When you enable a rule, incoming events might not immediately start matching to a newly enabled rule. Allow a short period of time for changes to take…",
             ),
         ),
-        // Model: Retrieves a list of API destination in the account in the current Region.
         (
             "ListApiDestinations",
             OperationOverlay {
@@ -219,7 +212,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists your archives. You can either list all the archives or you can provide a prefix to match to the archive names. Filter parameters are exclusive.
         (
             "ListArchives",
             OperationOverlay {
@@ -232,7 +224,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list of connections from the account.
         (
             "ListConnections",
             OperationOverlay {
@@ -245,7 +236,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all the event buses in your account, including the default event bus, custom event buses, and partner event buses.
         (
             "ListEventBuses",
             OperationOverlay {
@@ -258,7 +248,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: You can use this to see all the partner event sources that have been shared with your Amazon Web Services account. For more information about partner event sources, see CreateEventBus .
         (
             "ListEventSources",
             OperationOverlay {
@@ -283,7 +272,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires NamePrefix. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: An SaaS partner can use this operation to list all the partner event source names that they have created. This operation is not used by Amazon Web Services customers.",
             ),
         ),
-        // Model: Lists your replays. You can either list all the replays or you can provide a prefix to match to the replay names. Filter parameters are exclusive.
         (
             "ListReplays",
             OperationOverlay {
@@ -302,7 +290,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires TargetArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the rules for the specified target. You can see which of the rules in Amazon EventBridge can invoke a specific target in your account.",
             ),
         ),
-        // Model: Lists your Amazon EventBridge rules. You can either list all the rules or you can provide a prefix to match to the rule names. ListRules does not list the targets of a rule. To see the targets…
         (
             "ListRules",
             OperationOverlay {

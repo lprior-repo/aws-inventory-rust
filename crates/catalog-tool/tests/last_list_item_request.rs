@@ -93,16 +93,13 @@ fn compile(input: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 #[test]
 fn last_list_item_checker_rejects_projected_list_and_map_request_paths_before_compilation()
 -> TestResult {
-    // Given collection-valued request ancestors whose elements have a text Cursor.
     ["Parents.Cursor", "ParentByName.Cursor"]
         .into_iter()
         .try_for_each(|input| -> TestResult {
-            // When using the public check-to-native-compile pipeline.
             let failure = match compile(input) {
                 Err(failure) => failure,
                 Ok(_) => return Err("collection-projected request cursor was authorized".into()),
             };
-            // Then rejection happens in the checker, not later in the native compiler.
             let errors = match failure.downcast_ref::<overlay::CheckError>() {
                 Some(overlay::CheckError::Violations(errors)) => errors,
                 _ => {
@@ -124,18 +121,15 @@ fn last_list_item_checker_rejects_projected_list_and_map_request_paths_before_co
 #[test]
 fn last_list_item_checker_preserves_scalar_request_cursors_through_native_compilation() -> TestResult
 {
-    // Given direct and structure-nested text request cursors, never collection projections.
     let fields = smithy::Registry::parse(REGISTRY)?;
     ["Cursor", "Parent.Cursor"]
         .into_iter()
         .try_for_each(|input| -> TestResult {
-            // When public review is followed by native compilation and catalog loading.
             let bytes = compile(input)?;
             let catalog = RuntimeCatalog::from_bytes(&bytes)?;
             let plan = catalog
                 .lookup("things", "ListThings")
                 .ok_or("callable plan missing")?;
-            // Then exact request destinations and last-list-item semantics survive all boundaries.
             let request = input
                 .split('.')
                 .map(|part| fields.id(part).ok_or("request field missing"))

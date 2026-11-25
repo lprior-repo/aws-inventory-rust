@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/detective/service/2018-10-26/detective-2018-10-26.json
 use super::support::{arn, bound, inventory, key, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "detective",
         vec![
-            // Returns the list of behavior graphs that the calling account is an administrator account of.
             queried(
                 inventory(
                     "ListGraphs",
@@ -16,7 +14,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn"],
             )?,
-            // Invitations are graph/account access metadata; no investigation or ingested graph data is retrieved.
             queried(
                 inventory(
                     "ListInvitations",
@@ -35,7 +32,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["AccountId", "GraphArn"],
             )?,
-            // AccountId alone is not a membership identity: the selected response also carries GraphArn.
             queried(
                 bound(
                     inventory(

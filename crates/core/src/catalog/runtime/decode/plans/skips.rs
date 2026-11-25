@@ -1,7 +1,6 @@
 use super::{CallablePlan, PlanPurpose, RuntimeCatalogError};
 use crate::record::{FieldId, MapRef, ValueRef};
 
-// Matches the overlay compiler's per-plan skip list limit.
 const MAX_SKIPS: usize = 64;
 
 pub(super) fn read(fields: MapRef<'_>) -> Result<Box<[Box<str>]>, RuntimeCatalogError> {
@@ -52,7 +51,6 @@ pub(super) fn validate(plans: &[CallablePlan<'_>]) -> Result<(), RuntimeCatalogE
         return Ok(());
     }
 
-    // Plan records need not be ordered; index them only when there are skip references.
     let mut indexed = Vec::new();
     indexed
         .try_reserve_exact(plans.len())
@@ -61,7 +59,6 @@ pub(super) fn validate(plans: &[CallablePlan<'_>]) -> Result<(), RuntimeCatalogE
     indexed.sort_unstable_by_key(|&plan| plan_key(plan));
 
     parents.try_for_each(|parent| {
-        // Only an enumeration's list response may stand in for its children's describe calls.
         if !matches!(parent.purpose(), PlanPurpose::Enumeration) {
             return Err(RuntimeCatalogError::Capability);
         }
@@ -99,7 +96,6 @@ fn validate_child(
 }
 
 fn bound_child(parent: &CallablePlan<'_>, child: &CallablePlan<'_>) -> bool {
-    // The skip names an operation, not a branch, so every scope must agree.
     child
         .branches()
         .iter()

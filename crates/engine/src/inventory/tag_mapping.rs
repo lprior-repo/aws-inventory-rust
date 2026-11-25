@@ -3,9 +3,6 @@ use inventory_core::inventory::{TagMapping, TagRole};
 
 const RESOURCE_ROLES_SQL: &str = include_str!("../../sql/inventory_resource_roles.sql");
 
-/// Creates the operator-owned mapping table and the derived `resource_roles` view.
-/// The table holds operator input and is created once; the view is derived data and
-/// is replaced on every open so a definition change reaches existing databases.
 pub(super) async fn create(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>) -> Result<(), StoreError> {
     sqlx::query("CREATE TABLE IF NOT EXISTS tag_mapping(role TEXT NOT NULL CHECK(role IN('owner','team','application')),position INTEGER NOT NULL CHECK(position>=0),tag_key TEXT NOT NULL,PRIMARY KEY(role,position),UNIQUE(role,tag_key)) WITHOUT ROWID")
         .execute(&mut **tx)
@@ -18,9 +15,6 @@ pub(super) async fn create(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>) -> Resu
 }
 
 impl BinaryStore {
-    /// Replaces the tag-key mapping. Touches only `tag_mapping`: no observed record,
-    /// tag, or work row changes, and no AWS call is made. Derived roles are read
-    /// through `resource_roles`, so they reflect the new mapping at once.
     pub async fn replace_tag_mapping(&self, mapping: &TagMapping) -> Result<(), StoreError> {
         let (_turn, mut tx) = self.begin_write().await?;
         sqlx::query("DELETE FROM tag_mapping")

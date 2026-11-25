@@ -1,5 +1,3 @@
--- Explicit account onboarding and per-scope coverage state for the continuous
--- CMDB control plane. These are control-plane rows, not inventory observations.
 CREATE TABLE IF NOT EXISTS accounts (
     account_id TEXT PRIMARY KEY,
     partition TEXT NOT NULL,

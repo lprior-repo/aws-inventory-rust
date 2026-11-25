@@ -1,16 +1,11 @@
-//! Read sweep completion history from the store.
-
 use super::{BinaryStore, StoreError};
 use sqlx::Row;
 
-/// The most recently completed sweep for an account, if any.
 pub struct LastSweep {
     pub sweep_id: String,
     pub ended_at_ms: i64,
 }
 
-/// Query the store for the most recently completed sweep for an account.
-/// Returns None when no completed sweep exists for that account.
 pub async fn last_completed_sweep(
     store: &BinaryStore,
     account: &str,

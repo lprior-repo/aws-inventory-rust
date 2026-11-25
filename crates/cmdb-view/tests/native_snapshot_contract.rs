@@ -1,9 +1,3 @@
-//! Real schema-15 writer/reader contracts. A retained DatabaseSnapshot pins table,
-//! detail, and one-hop edge reads to its opening SQLite transaction. The public
-//! API has no session revision token; record contents distinguish the two states.
-//! GraphConnection's native multi-hop traversal uses separate frontier queries
-//! and is currently NOT cross-hop snapshot-consistent. These tests do not claim it is.
-
 #[path = "support/modeled_catalog.rs"]
 mod modeled_catalog;
 use modeled_catalog::{Model, modeled_catalog};
@@ -180,7 +174,6 @@ fn filter(account: &str, region: &str) -> ResourceFilter {
 async fn given_retained_session_when_writer_commits_then_table_detail_and_edges_keep_opening_state()
 -> TestResult {
     tokio::time::timeout(Duration::from_secs(15), async {
-        // Given: pin before any consumer read, not merely before the second page.
         let (_directory, store, db) = fixture().await?;
         commit(
             &store,
@@ -196,7 +189,6 @@ async fn given_retained_session_when_writer_commits_then_table_detail_and_edges_
         )
         .await?;
         let mut retained = db.snapshot().await?;
-        // When: record and outgoing neighborhood change in one production commit.
         commit(
             &store,
             "update",
@@ -214,7 +206,6 @@ async fn given_retained_session_when_writer_commits_then_table_detail_and_edges_
             .detail(&node(ACCOUNT, REGION, "root"))
             .await?
             .ok_or("old root missing")?;
-        // Then: exact old table/record/edge sets, contrasted with a fresh session.
         assert_eq!(table.total_matching, 3);
         assert_eq!(
             table
@@ -261,7 +252,6 @@ async fn given_retained_session_when_writer_commits_then_table_detail_and_edges_
 async fn given_escaped_resource_ids_and_keyword_table_when_reading_then_filters_remain_literal()
 -> TestResult {
     tokio::time::timeout(Duration::from_secs(15), async {
-        // Given: SQL/Cypher-looking values are real identifiers, not query fragments.
         let (_directory, store, db) = fixture().await?;
         let hostile = "root'\\%_`) OR 1=1 --";
         commit(
@@ -277,7 +267,6 @@ async fn given_escaped_resource_ids_and_keyword_table_when_reading_then_filters_
             100,
         )
         .await?;
-        // When: wildcard-looking text and escaped identity reach the public readers.
         let mut literal = filter(ACCOUNT, REGION);
         literal.text = Some("mixed%_NEEDLE".into());
         let found = db.page(&literal, page(10)).await?;
@@ -288,7 +277,6 @@ async fn given_escaped_resource_ids_and_keyword_table_when_reading_then_filters_
         let neighborhood = db
             .edges_page(&node(ACCOUNT, REGION, hostile), edges(10))
             .await?;
-        // Then: literal substring semantics, exact identity/record, no expansion.
         assert_eq!(found.total_matching, 1);
         assert_eq!(
             found
@@ -316,7 +304,6 @@ async fn given_escaped_resource_ids_and_keyword_table_when_reading_then_filters_
 async fn given_shared_ids_in_three_scopes_when_reading_then_tables_details_and_edges_do_not_leak()
 -> TestResult {
     tokio::time::timeout(Duration::from_secs(15), async {
-        // Given: identical resource IDs, with different account/region and contents.
         let (_directory, store, db) = fixture().await?;
         commit(
             &store,
@@ -345,12 +332,10 @@ async fn given_shared_ids_in_three_scopes_when_reading_then_tables_details_and_e
             300,
         )
         .await?;
-        // When: select precisely one identity, including its incoming edges.
         let selected = node(ACCOUNT, "us-west-2", "shared");
         let table = db.page(&filter(ACCOUNT, "us-west-2"), page(10)).await?;
         let detail = db.detail(&selected).await?.ok_or("west resource missing")?;
         let neighborhood = db.edges_page(&selected, edges(10)).await?;
-        // Then: neither same-account other-region nor other-account same-region leaks.
         assert_eq!(table.total_matching, 2);
         assert_eq!(
             table
@@ -389,7 +374,6 @@ async fn given_shared_ids_in_three_scopes_when_reading_then_tables_details_and_e
 async fn given_unsorted_native_rows_when_limits_truncate_then_repeated_pages_have_exact_stable_prefixes()
 -> TestResult {
     tokio::time::timeout(Duration::from_secs(15), async {
-        // Given: input insertion order differs from full resource/edge identity order.
         let (_directory, store, db) = fixture().await?;
         commit(
             &store,
@@ -401,7 +385,6 @@ async fn given_unsorted_native_rows_when_limits_truncate_then_repeated_pages_hav
         )
         .await?;
         let mut retained = db.snapshot().await?;
-        // When: table and neighborhood are both truncated below their cardinality.
         let first = retained.page(&ResourceFilter::default(), page(2)).await?;
         let repeated = retained.page(&ResourceFilter::default(), page(2)).await?;
         let first_edges = retained
@@ -410,7 +393,6 @@ async fn given_unsorted_native_rows_when_limits_truncate_then_repeated_pages_hav
         let repeated_edges = retained
             .edges_page(&node(ACCOUNT, REGION, "root"), edges(2))
             .await?;
-        // Then: deterministic exact prefixes, real continuation, and exact tails.
         assert_eq!(first, repeated);
         assert_eq!(first.total_matching, 4);
         assert_eq!(

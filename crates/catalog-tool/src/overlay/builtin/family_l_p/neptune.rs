@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/neptune/service/2014-10-31/neptune-2014-10-31.json
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -130,7 +129,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns information about provisioned DB clusters, and supports pagination. This operation can also return information for Amazon RDS clusters and Amazon DocDB clusters.
     Resource {
         operation: "DescribeDBClusters",
         items: "DBClusters",
@@ -156,7 +154,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::Filter("Filters", "engine", &["neptune"])],
     },
-    // Endpoints share the RDS API; bind only clusters discovered by the Neptune engine filter.
     Resource {
         operation: "DescribeDBClusterEndpoints",
         items: "DBClusterEndpoints",
@@ -178,7 +175,6 @@ const RESOURCES: &[Resource] = &[
         )],
         fixed: &[],
     },
-    // Returns a list of DBClusterParameterGroup descriptions. If a DBClusterParameterGroupName parameter is specified, the list will contain only the description of the specified DB clus
     Resource {
         operation: "DescribeDBClusterParameterGroups",
         items: "DBClusterParameterGroups",
@@ -190,7 +186,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of DBParameterGroup descriptions. If a DBParameterGroupName is specified, the list will contain only the description of the specified DB parameter group.
     Resource {
         operation: "DescribeDBParameterGroups",
         items: "DBParameterGroups",
@@ -202,7 +197,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of DBSubnetGroup descriptions. If a DBSubnetGroupName is specified, the list will contain only the descriptions of the specified DBSubnetGroup. For an overview of CI
     Resource {
         operation: "DescribeDBSubnetGroups",
         items: "DBSubnetGroups",
@@ -219,7 +213,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about DB cluster snapshots. This API action supports pagination.
     Resource {
         operation: "DescribeDBClusterSnapshots",
         items: "DBClusterSnapshots",
@@ -240,7 +233,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all the subscription descriptions for a customer account. The description for a subscription includes SubscriptionName, SNSTopicARN, CustomerID, SourceType, SourceID, Creatio
     Resource {
         operation: "DescribeEventSubscriptions",
         items: "EventSubscriptionsList",
@@ -259,7 +251,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about Neptune global database clusters. This API supports pagination.
     Resource {
         operation: "DescribeGlobalClusters",
         items: "GlobalClusters",

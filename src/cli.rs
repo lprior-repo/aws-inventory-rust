@@ -17,9 +17,10 @@ pub enum Command {
     Catalog {
         #[arg(long)]
         models: bool,
-        /// Lists resource kinds that no tag source reaches, so their owner/team/application
-        /// roles cannot be derived from observed tags.
-        #[arg(long)]
+        #[arg(
+            long,
+            help = "Lists resource kinds that no tag source reaches, so their owner/team/application roles cannot be derived from observed tags"
+        )]
         tag_sources: bool,
     },
 
@@ -63,7 +64,7 @@ pub enum Command {
         limit: usize,
     },
 
-    /// Run one bounded, read-only PostgreSQL statement using a reader role.
+    #[command(about = "Run one bounded, read-only PostgreSQL statement using a reader role")]
     Sql(SqlArgs),
 
     #[command(flatten)]
@@ -101,7 +102,7 @@ pub enum Command {
         attempts: u32,
     },
 
-    /// Rebuild a FalkorDB graph from the stored inventory, with no AWS calls.
+    #[command(about = "Rebuild a FalkorDB graph from the stored inventory, with no AWS calls")]
     RebuildGraph {
         #[arg(long)]
         database: PathBuf,
@@ -189,8 +190,8 @@ pub enum InspectionCommand {
     },
 }
 
-/// A bounded PostgreSQL statement and its reader connection.
 #[derive(Args, Debug)]
+#[command(about = "A bounded PostgreSQL statement and its reader connection")]
 pub struct SqlArgs {
     #[arg(long)]
     pub database: String,

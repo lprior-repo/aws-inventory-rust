@@ -19,7 +19,6 @@ pub(crate) type Extra = Vec<(&'static str, Option<u64>)>;
 pub(super) fn seed_header() -> String {
     format!("{SEED:#x}")
 }
-/// A collection owns a fresh fault sequence and bucket, then drains its front.
 pub(super) async fn collect<T>(
     upstream: &str,
     ca: &Path,

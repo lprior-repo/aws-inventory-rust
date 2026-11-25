@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudhsm-v2/service/2017-04-28/cloudhsm-v2-2017-04-28.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -46,7 +44,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is ResourceArn, Policy; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Deletes an CloudHSM resource policy. Deleting a resource policy will result in the resource being unshared and removed from any RAM resource shares. Deleting the resource policy attached to a backup will not impact any clusters…",
             ),
         ),
-        // Model: Gets information about backups of CloudHSM clusters. Lists either the backups you own or the backups shared with you when the Shared parameter is true. This is a paginated operation, which means that…
         (
             "DescribeBackups",
             OperationOverlay {
@@ -60,7 +57,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets information about CloudHSM clusters. This is a paginated operation, which means that each response might contain only a subset of all the clusters. When the response contains only a subset of…
         ("DescribeClusters", denied(DenyReason::Secret)),
         (
             "GetResourcePolicy",

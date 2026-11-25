@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lambda-web/service/2025-03-07/lambda-web-2025-03-07.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -42,20 +41,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Lists web functions in your account. Use pagination to ensure that the operation returns quickly and successfully.
-    Resource {
-        operation: "ListWebFunctions",
-        items: "functions",
-        id: Id::Arn("functionArn"),
-        scope: Scope::Region,
-        tokens: Some(("nextToken", "nextToken")),
-        query: &["functionArn", "functionName", "state"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListWebFunctions",
+    items: "functions",
+    id: Id::Arn("functionArn"),
+    scope: Scope::Region,
+    tokens: Some(("nextToken", "nextToken")),
+    query: &["functionArn", "functionName", "state"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("lambda-web", GROUPS, RESOURCES)

@@ -1,7 +1,3 @@
-//! Integration test: retry-after headers are decoded from response headers
-//! into ServiceError.retry_after. Uses proper compiled Smithy catalog fixtures
-//! to prove the header decode path works with realistic service models.
-
 #[path = "../src/response/json/fixture_catalog.rs"]
 mod fixture_catalog;
 
@@ -184,7 +180,6 @@ fn throttle_error_class_with_retry_after_propagates_to_api_error() {
         retry_after: Some(Duration::from_secs(2)),
     };
     let message = error.to_string();
-    // Simulate classify_service logic from src/sweep_runtime/call.rs
     let api_error = match error.class {
         ErrorClass::Throttle => {
             if let Some(duration) = error.retry_after {

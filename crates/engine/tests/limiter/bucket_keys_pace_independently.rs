@@ -58,16 +58,13 @@ fn gaps(starts: &Mutex<Vec<Instant>>) -> Result<Vec<Duration>, ApiError> {
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_two_regions_of_one_service_when_both_are_called_then_each_is_paced_at_its_own_rate()
 -> TestResult {
-    // Given: two buckets for the same service in different regions.
     let executor = rising()?;
     let east_starts = Mutex::new(Vec::new());
     let west_starts = Mutex::new(Vec::new());
 
-    // When: each bucket is called three times.
     succeed(&executor, EAST, &east_starts, 3).await?;
     succeed(&executor, WEST, &west_starts, 3).await?;
 
-    // Then: each bucket paces itself at the start rate of 10 rps.
     let east_gaps = gaps(&east_starts)?;
     let west_gaps = gaps(&west_starts)?;
     assert_eq!(east_gaps.len(), 2);
@@ -89,17 +86,14 @@ pub(super) async fn given_two_regions_of_one_service_when_both_are_called_then_e
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_two_regions_of_one_service_when_one_is_throttled_then_the_other_keeps_its_rate()
 -> TestResult {
-    // Given: two buckets for the same service in different regions.
     let executor = rising()?;
     let east_starts = Mutex::new(Vec::new());
     let west_starts = Mutex::new(Vec::new());
 
-    // When: the east bucket is throttled while the west bucket is called.
     throttled_then_succeed(&executor, EAST, &east_starts).await?;
     succeed(&executor, EAST, &east_starts, 1).await?;
     succeed(&executor, WEST, &west_starts, 3).await?;
 
-    // Then: the east bucket is cut to 70% while the west bucket is untouched.
     let east_gaps = gaps(&east_starts)?;
     let west_gaps = gaps(&west_starts)?;
     assert_eq!(east_gaps.len(), 2);
