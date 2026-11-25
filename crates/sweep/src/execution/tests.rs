@@ -39,3 +39,10 @@ async fn cancelled_executor_rejects_unstarted_request() -> Result<(), Box<dyn st
     ));
     Ok(())
 }
+
+#[test]
+fn only_executor_cancellation_is_reported_as_cancelled() {
+    use inventory_engine::limiter::ApiError;
+    assert!(SweepError::Api(ApiError::Cancelled).is_cancelled());
+    assert!(!SweepError::Operation("no pending sweep to resume").is_cancelled());
+}

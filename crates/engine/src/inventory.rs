@@ -47,7 +47,7 @@ pub use projection_read::{
     ProjectionSnapshot, ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
 };
 pub use store_api::{InventoryStore, ProjectionDelivery, ProjectionSnapshotRead};
-pub use sweep_history::{LastSweep, last_completed_sweep};
+pub use sweep_history::{LastSweep, RunStart, decide_start, last_completed_sweep, plan_run};
 pub use unobserved::UnobservedScope;
 pub use work::{
     ChangeStats, CommitResult, PendingProjection, ProjectionAck, SweepId, SweepSummary, WorkLease,

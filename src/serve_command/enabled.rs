@@ -1,21 +1,23 @@
 use anyhow::Result;
 use inventory_aws::model_credentials::ProfileCredentials;
-use inventory_engine::cadence::{Environment, Millis, RunOutcome, Wake, serve};
-use inventory_engine::inventory::BinaryStore;
+use inventory_core::inventory::AccountId;
+use inventory_engine::cadence::{Environment, Millis, RunOutcome, Shutdown, Wake, serve};
+use inventory_engine::inventory::{BinaryStore, RunStart, last_completed_sweep, plan_run};
+use inventory_sweep::{SweepConfig, SweepControl, SweepError, SweepSummary};
 use std::process::ExitCode;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::{error, info};
 
 use super::config::ServeConfig;
 use super::store::{open_store, read_catalog};
 use crate::cli::ServeArgs;
-use inventory_sweep::SweepConfig;
+
+const EXIT_FAILED: u8 = 2;
+const EXIT_INTERRUPTED: u8 = 130;
 
 struct ProfileConfig {
     name: String,
     credentials: ProfileCredentials,
-    account_id: Arc<tokio::sync::Mutex<Option<String>>>,
+    account: tokio::sync::Mutex<Option<AccountId>>,
 }
 
 pub(super) async fn run(options: ServeArgs) -> Result<ExitCode> {
@@ -36,15 +38,26 @@ pub(super) async fn run(options: ServeArgs) -> Result<ExitCode> {
         "starting cadence scheduler"
     );
 
+    let shutdown = Shutdown::new();
+    let signal = tokio::spawn({
+        let shutdown = shutdown.clone();
+        async move {
+            match tokio::signal::ctrl_c().await {
+                Ok(()) => shutdown.request(),
+                Err(e) => error!(error = %e, "Ctrl-C handler unavailable"),
+            }
+        }
+    });
     let env = ServeEnv {
         catalog_bytes,
         store,
         profiles,
         sweep_config,
-        stop: Arc::new(AtomicBool::new(false)),
+        shutdown,
     };
 
     let result = serve(&env, interval, env.profiles.len()).await;
+    signal.abort();
     match result {
         Ok(report) => {
             info!(
@@ -55,15 +68,22 @@ pub(super) async fn run(options: ServeArgs) -> Result<ExitCode> {
                 interrupted = report.interrupted,
                 "cadence scheduler finished"
             );
-            if report.failed > 0 {
-                return Ok(ExitCode::from(2));
-            }
-            Ok(ExitCode::SUCCESS)
+            Ok(exit_code(report.interrupted, report.failed))
         }
         Err(e) => {
             error!(error = %e, "cadence scheduler error");
             anyhow::bail!("cadence scheduler failed: {e}")
         }
+    }
+}
+
+fn exit_code(interrupted: u64, failed: u64) -> ExitCode {
+    if interrupted > 0 {
+        ExitCode::from(EXIT_INTERRUPTED)
+    } else if failed > 0 {
+        ExitCode::from(EXIT_FAILED)
+    } else {
+        ExitCode::SUCCESS
     }
 }
 
@@ -88,7 +108,7 @@ async fn load_profiles(options: &ServeArgs) -> Result<Vec<ProfileConfig>> {
         profiles.push(ProfileConfig {
             name,
             credentials,
-            account_id: Arc::new(tokio::sync::Mutex::new(None)),
+            account: tokio::sync::Mutex::new(None),
         });
     }
     Ok(profiles)
@@ -99,7 +119,8 @@ fn sweep_config(options: &ServeArgs) -> SweepConfig {
         region: options.region.clone(),
         max_pages: options.max_pages,
         concurrency: options.concurrency,
-        resume: true,
+        // Resume-versus-new is resolved per run against the store (`plan_run`).
+        resume: false,
         endpoint: options.endpoint.clone(),
         ca_bundle: options.ca_bundle.clone(),
         idle_timeout: options
@@ -123,7 +144,7 @@ struct ServeEnv {
     store: BinaryStore,
     profiles: Vec<ProfileConfig>,
     sweep_config: SweepConfig,
-    stop: Arc<AtomicBool>,
+    shutdown: Shutdown,
 }
 
 impl ServeEnv {
@@ -134,12 +155,83 @@ impl ServeEnv {
             })
     }
 
-    async fn update_account_id(&self, profile_index: usize, account: &str) {
-        let Some(profile) = self.profiles.get(profile_index) else {
-            return;
+    /// Profile identity: resolved once from the credentials, then retained.
+    async fn account(&self, profile: &ProfileConfig) -> Result<AccountId, SweepError> {
+        let mut cached = profile.account.lock().await;
+        if let Some(account) = cached.as_ref() {
+            return Ok(account.clone());
+        }
+        let catalog = self.catalog();
+        let resolved = tokio::select! {
+            biased;
+            () = self.shutdown.requested() => {
+                return Err(inventory_engine::limiter::ApiError::Cancelled.into());
+            }
+            resolved = inventory_sweep::resolve_account(
+                &catalog,
+                &self.sweep_config,
+                &profile.credentials,
+            ) => resolved?,
         };
-        let mut account_id = profile.account_id.lock().await;
-        *account_id = Some(account.to_owned());
+        *cached = Some(resolved.clone());
+        Ok(resolved)
+    }
+
+    async fn freshness(&self, profile: &ProfileConfig) -> Option<Millis> {
+        let account = match self.account(profile).await {
+            Ok(account) => account,
+            Err(e) => {
+                error!(profile = profile.name, error = %e, "resolving profile account");
+                return None;
+            }
+        };
+        match last_completed_sweep(&self.store, account.as_str()).await {
+            Ok(Some(sweep)) => Some(Millis::new(u64::try_from(sweep.ended_at_ms).unwrap_or(0))),
+            Ok(None) => None,
+            Err(e) => {
+                error!(
+                    profile = profile.name,
+                    account = account.as_str(),
+                    error = %e,
+                    "querying last completed sweep"
+                );
+                None
+            }
+        }
+    }
+}
+
+fn classify(result: &Result<SweepSummary, SweepError>, profile: &str) -> RunOutcome {
+    match result {
+        Ok(summary) => {
+            let outcomes = &summary.outcomes;
+            if outcomes.failed > 0
+                || outcomes.partial > 0
+                || outcomes.inaccessible > 0
+                || outcomes.unsupported > 0
+            {
+                error!(
+                    profile,
+                    failed = outcomes.failed,
+                    partial = outcomes.partial,
+                    inaccessible = outcomes.inaccessible,
+                    unsupported = outcomes.unsupported,
+                    "sweep completed with issues"
+                );
+                RunOutcome::Failed
+            } else {
+                info!(profile, "sweep completed successfully");
+                RunOutcome::Completed
+            }
+        }
+        Err(e) if e.is_cancelled() => {
+            info!(profile, "sweep interrupted by shutdown");
+            RunOutcome::Interrupted
+        }
+        Err(e) => {
+            error!(profile, error = %e, "sweep failed");
+            RunOutcome::Failed
+        }
     }
 }
 
@@ -154,36 +246,16 @@ impl Environment for ServeEnv {
         Millis::new(millis_u64)
     }
 
-    async fn last_completed(&self, count: usize) -> Vec<Option<Millis>> {
-        let mut results = Vec::with_capacity(count);
+    async fn last_completed(&self, _count: usize) -> Vec<Option<Millis>> {
+        let mut results = Vec::with_capacity(self.profiles.len());
         for profile in &self.profiles {
-            let account_id = profile.account_id.lock().await;
-            let Some(account) = account_id.as_ref() else {
-                results.push(None);
-                continue;
-            };
-            match inventory_engine::inventory::last_completed_sweep(&self.store, account).await {
-                Ok(Some(sweep)) => {
-                    let millis = sweep.ended_at_ms.try_into().unwrap_or(0);
-                    results.push(Some(Millis::new(millis)));
-                }
-                Ok(None) => results.push(None),
-                Err(e) => {
-                    error!(
-                        profile = profile.name,
-                        account = account,
-                        error = %e,
-                        "querying last completed sweep"
-                    );
-                    results.push(None);
-                }
-            }
+            results.push(self.freshness(profile).await);
         }
         results
     }
 
     fn stop_requested(&self) -> bool {
-        self.stop.load(Ordering::Relaxed)
+        self.shutdown.is_requested()
     }
 
     async fn sleep_until(&self, until: Millis) -> Wake {
@@ -195,68 +267,62 @@ impl Environment for ServeEnv {
         let now_millis = u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX);
         let remaining = target_millis.saturating_sub(now_millis);
         tokio::select! {
-            _ = tokio::time::sleep(Duration::from_millis(remaining)) => Wake::Elapsed,
-            _ = tokio::signal::ctrl_c() => Wake::Stop,
+            () = tokio::time::sleep(Duration::from_millis(remaining)) => Wake::Elapsed,
+            () = self.shutdown.requested() => Wake::Stop,
         }
     }
 
     async fn run_profile(&self, profile_index: usize) -> RunOutcome {
-        let profile = self.profiles.get(profile_index);
-        let Some(profile) = profile else {
+        let Some(profile) = self.profiles.get(profile_index) else {
             return RunOutcome::Failed;
         };
-        info!(profile = profile.name, "starting sweep");
-        let catalog = self.catalog();
-        let result = crate::sweep_command::control::run(
-            &catalog,
-            &self.store,
-            self.sweep_config.clone(),
-            &profile.credentials,
-        )
-        .await;
-        match result {
-            Ok(summary) => {
-                let account = match self.store.discover_active_sweep().await {
-                    Ok(Some(id)) => match self.store.sweep_manifest_account(&id).await {
-                        Ok(Some(acc)) => Some(acc),
-                        Ok(None) => None,
-                        Err(e) => {
-                            error!(error = %e, "reading sweep manifest account");
-                            None
-                        }
-                    },
-                    Ok(None) => None,
-                    Err(e) => {
-                        error!(error = %e, "discovering active sweep");
-                        None
-                    }
-                };
-                if let Some(acc) = account {
-                    self.update_account_id(profile_index, &acc).await;
-                }
-                if summary.outcomes.failed > 0
-                    || summary.outcomes.partial > 0
-                    || summary.outcomes.inaccessible > 0
-                    || summary.outcomes.unsupported > 0
-                {
-                    error!(
-                        profile = profile.name,
-                        failed = summary.outcomes.failed,
-                        partial = summary.outcomes.partial,
-                        inaccessible = summary.outcomes.inaccessible,
-                        unsupported = summary.outcomes.unsupported,
-                        "sweep completed with issues"
-                    );
-                    RunOutcome::Failed
-                } else {
-                    info!(profile = profile.name, "sweep completed successfully");
-                    RunOutcome::Completed
-                }
+        if self.shutdown.is_requested() {
+            return RunOutcome::Interrupted;
+        }
+        let account = match self.account(profile).await {
+            Ok(account) => account,
+            Err(e) if e.is_cancelled() => return RunOutcome::Interrupted,
+            Err(e) => {
+                error!(profile = profile.name, error = %e, "resolving profile account");
+                return RunOutcome::Failed;
+            }
+        };
+        let resume = match plan_run(&self.store, &account).await {
+            Ok(RunStart::Resume(sweep)) => {
+                info!(
+                    profile = profile.name,
+                    sweep = sweep.as_str(),
+                    "resuming pending sweep"
+                );
+                true
+            }
+            Ok(RunStart::Fresh) => false,
+            Ok(RunStart::Blocked(sweep)) => {
+                info!(
+                    profile = profile.name,
+                    sweep = sweep.as_str(),
+                    "pending sweep belongs to another account; deferring"
+                );
+                return RunOutcome::NotOwner;
             }
             Err(e) => {
-                error!(profile = profile.name, error = %e, "sweep failed");
-                RunOutcome::Failed
+                error!(profile = profile.name, error = %e, "planning sweep start");
+                return RunOutcome::Failed;
             }
-        }
+        };
+        info!(profile = profile.name, resume, "starting sweep");
+        let catalog = self.catalog();
+        let config = SweepConfig {
+            resume,
+            ..self.sweep_config.clone()
+        };
+        let control = SweepControl {
+            cancel: self.shutdown.token(),
+            ..SweepControl::default()
+        };
+        let result =
+            inventory_sweep::run(&catalog, &self.store, config, &profile.credentials, control)
+                .await;
+        classify(&result, &profile.name)
     }
 }

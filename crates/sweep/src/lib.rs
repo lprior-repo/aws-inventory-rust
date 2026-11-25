@@ -38,7 +38,7 @@ mod test_cbor;
 
 pub use control::{ProgressEvent, SweepControl};
 pub use credentials::{CredentialFailure, CredentialSource};
-pub use execution::run;
+pub use execution::{resolve_account, run};
 pub use metrics::SweepMetrics;
 pub use probe::{
     ChildProbeOutcome, ChildProbeSamples, ProbeAnswer, ProbeChildren, ProbePage, ProbeScope,
@@ -145,4 +145,15 @@ pub enum SweepError {
     Absent(String),
     #[error("sweep operation failed: {0}")]
     Operation(&'static str),
+}
+
+impl SweepError {
+    /// True when the sweep stopped because its cancellation token fired, not because it failed.
+    #[must_use]
+    pub fn is_cancelled(&self) -> bool {
+        matches!(
+            self,
+            Self::Api(inventory_engine::limiter::ApiError::Cancelled)
+        )
+    }
 }
