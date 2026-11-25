@@ -38,6 +38,7 @@ fn root() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
         catalog.join("cloudcontrol-universal.json"),
         include_bytes!("../../../catalog/cloudcontrol-universal.json"),
     )?;
+    fs::write(root.path().join(catalog_tool::relations::ROWS_PATH), b"")?;
     Ok(root)
 }
 fn compile(source: &Path, root: &Path, flags: &[&str]) -> std::io::Result<Output> {

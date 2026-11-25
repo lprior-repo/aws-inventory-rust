@@ -6,6 +6,10 @@ use crate::{names::Exceptions, smithy::fields::publish::read_bytes};
 use std::{collections::BTreeSet, path::Path};
 
 pub fn load(root: &Path, cfn: &[u8]) -> Result<KindMap, KindMapError> {
+    super::generated_relations::load(root, load_base(root, cfn)?)
+}
+
+pub(crate) fn load_base(root: &Path, cfn: &[u8]) -> Result<KindMap, KindMapError> {
     let path = root.join("catalog/kinds.generated.tsv");
     let bytes = read_bytes(&path, 2_097_152)?;
     load_with_cfn(cfn, bytes.as_deref().map_or(&[], |bytes| bytes))

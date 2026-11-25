@@ -1,0 +1,1483 @@
+relations mapped_live=103 mapped_held=58 unmapped=807 total=968
+type	AWS::ACMPCA::CertificateAuthority	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::AccessAnalyzer::Analyzer	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::AccessAnalyzer::Analyzer	/AnalyzerConfiguration/InternalAccessConfiguration/InternalAccessAnalysisRule/Inclusions/*/ResourceArns/*	REFERENCES	aws_reference	arn	pointer segment AnalyzerConfiguration not in item shape
+type	AWS::AmazonMQ::Broker	mapped_live=1	mapped_held=2	unmapped=1
+unmapped	AWS::AmazonMQ::Broker	/ResourceShareArns/*	REFERENCES	aws_reference	arn	pointer segment ResourceShareArns not in item shape
+type	AWS::AmazonMQ::Configuration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::ApiKey	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::Authorizer	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ApiGateway::Authorizer	/ProviderARNs/*	REFERENCES	aws_reference	arn	pointer segment ProviderARNs not in item shape
+type	AWS::ApiGateway::ClientCertificate	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::Deployment	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::DocumentationVersion	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::DomainName	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::ApiGateway::DomainName	/CertificateArn	USES_CERTIFICATE	aws_certificate_manager_certificate	arn	pointer segment CertificateArn not in item shape
+unmapped	AWS::ApiGateway::DomainName	/OwnershipVerificationCertificateArn	USES_CERTIFICATE	aws_certificate_manager_certificate	arn	pointer segment OwnershipVerificationCertificateArn not in item shape
+unmapped	AWS::ApiGateway::DomainName	/RegionalCertificateArn	USES_CERTIFICATE	aws_certificate_manager_certificate	arn	pointer segment RegionalCertificateArn not in item shape
+type	AWS::ApiGateway::DomainNameAccessAssociation	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ApiGateway::DomainNameAccessAssociation	/DomainNameArn	REFERENCES	aws_reference	arn	pointer segment DomainNameArn not in item shape
+type	AWS::ApiGateway::DomainNameV2	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ApiGateway::DomainNameV2	/CertificateArn	USES_CERTIFICATE	aws_certificate_manager_certificate	arn	type not callable
+type	AWS::ApiGateway::GatewayResponse	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::Model	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::RequestValidator	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::Resource	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::RestApi	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::Stage	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ApiGateway::Stage	/AccessLogSetting/DestinationArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::ApiGateway::UsagePlan	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGateway::VpcLink	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ApiGateway::VpcLink	/TargetArns/*	REFERENCES	aws_reference	arn	pointer segment TargetArns not in item shape
+type	AWS::ApiGatewayV2::Api	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGatewayV2::Authorizer	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGatewayV2::Deployment	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGatewayV2::DomainName	mapped_live=0	mapped_held=2	unmapped=0
+type	AWS::ApiGatewayV2::Integration	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ApiGatewayV2::Integration	/CredentialsArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::ApiGatewayV2::Route	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ApiGatewayV2::Stage	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ApiGatewayV2::Stage	/AccessLogSettings/DestinationArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::ApiGatewayV2::VpcLink	mapped_live=0	mapped_held=2	unmapped=0
+type	AWS::AppConfig::Application	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::AppConfig::ConfigurationProfile	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::AppConfig::ConfigurationProfile	/RetrievalRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RetrievalRoleArn not in item shape
+type	AWS::AppConfig::DeploymentStrategy	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::AppConfig::Environment	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::AppConfig::Environment	/Monitors/*/AlarmArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::AppConfig::Environment	/Monitors/*/AlarmRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::AppConfig::ExperimentDefinition	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::AppRunner::AutoScalingConfiguration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::AppRunner::ObservabilityConfiguration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::AppRunner::Service	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::AppRunner::Service	/EncryptionConfiguration/KmsKey	REFERENCES	aws_reference	arn	pointer segment EncryptionConfiguration not in item shape
+unmapped	AWS::AppRunner::Service	/InstanceConfiguration/InstanceRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment InstanceConfiguration not in item shape
+unmapped	AWS::AppRunner::Service	/NetworkConfiguration/EgressConfiguration/VpcConnectorArn	REFERENCES	aws_reference	arn	pointer segment NetworkConfiguration not in item shape
+unmapped	AWS::AppRunner::Service	/ObservabilityConfiguration/ObservabilityConfigurationArn	REFERENCES	aws_reference	arn	pointer segment ObservabilityConfiguration not in item shape
+unmapped	AWS::AppRunner::Service	/SourceConfiguration/AuthenticationConfiguration/AccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment SourceConfiguration not in item shape
+unmapped	AWS::AppRunner::Service	/SourceConfiguration/AuthenticationConfiguration/ConnectionArn	REFERENCES	aws_reference	arn	pointer segment SourceConfiguration not in item shape
+type	AWS::AppRunner::VpcConnector	mapped_live=0	mapped_held=2	unmapped=0
+type	AWS::AppRunner::VpcIngressConnection	mapped_live=3	mapped_held=0	unmapped=0
+type	AWS::ApplicationAutoScaling::ScalableTarget	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Athena::CapacityReservation	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Athena::DataCatalog	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Athena::NamedQuery	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Athena::WorkGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Athena::WorkGroup	/WorkGroupConfiguration/ExecutionRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment WorkGroupConfiguration not in item shape
+type	AWS::AutoScaling::AutoScalingGroup	mapped_live=0	mapped_held=0	unmapped=10
+unmapped	AWS::AutoScaling::AutoScalingGroup	/CapacityReservationSpecification/CapacityReservationTarget/CapacityReservationResourceGroupArns/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::AutoScaling::AutoScalingGroup	/LifecycleHookSpecificationList/*/NotificationTargetARN	REFERENCES	aws_reference	arn	pointer segment LifecycleHookSpecificationList not in item shape
+unmapped	AWS::AutoScaling::AutoScalingGroup	/LifecycleHookSpecificationList/*/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment LifecycleHookSpecificationList not in item shape
+unmapped	AWS::AutoScaling::AutoScalingGroup	/MixedInstancesPolicy/LaunchTemplate/Overrides/*/ImageId	USES_IMAGE	aws_ec2_image	template	unresolved legacy target name
+unmapped	AWS::AutoScaling::AutoScalingGroup	/NotificationConfiguration/TopicARN	USES_TOPIC	aws_sns_topic	arn	pointer segment NotificationConfiguration not in item shape
+unmapped	AWS::AutoScaling::AutoScalingGroup	/NotificationConfiguration/TopicARN/*	USES_TOPIC	aws_sns_topic	arn	pointer segment NotificationConfiguration not in item shape
+unmapped	AWS::AutoScaling::AutoScalingGroup	/NotificationConfigurations/*/TopicARN	USES_TOPIC	aws_sns_topic	arn	pointer segment NotificationConfigurations not in item shape
+unmapped	AWS::AutoScaling::AutoScalingGroup	/NotificationConfigurations/*/TopicARN/*	USES_TOPIC	aws_sns_topic	arn	pointer segment NotificationConfigurations not in item shape
+unmapped	AWS::AutoScaling::AutoScalingGroup	/ServiceLinkedRoleARN	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::AutoScaling::AutoScalingGroup	/TargetGroupARNs/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::AutoScaling::LaunchConfiguration	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::AutoScaling::LaunchConfiguration	/BlockDeviceMappings/*/Ebs/SnapshotId	USES_SNAPSHOT	aws_ec2_snapshot	template	type not callable
+unmapped	AWS::AutoScaling::LaunchConfiguration	/ImageId	USES_IMAGE	aws_ec2_image	template	type not callable
+unmapped	AWS::AutoScaling::LaunchConfiguration	/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+type	AWS::AutoScaling::LifecycleHook	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::AutoScaling::LifecycleHook	/NotificationTargetARN	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::AutoScaling::LifecycleHook	/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+type	AWS::AutoScaling::ScalingPolicy	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::AutoScaling::ScheduledAction	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Backup::BackupPlan	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::Backup::BackupPlan	/BackupPlan/BackupPlanRule/*/CopyActions/*/DestinationBackupVaultArn	REFERENCES	aws_reference	arn	pointer segment BackupPlan not in item shape
+unmapped	AWS::Backup::BackupPlan	/BackupPlan/BackupPlanRule/*/TargetLogicallyAirGappedBackupVaultArn	REFERENCES	aws_reference	arn	pointer segment BackupPlan not in item shape
+unmapped	AWS::Backup::BackupPlan	/BackupPlan/ScanSettings/*/ScannerRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment BackupPlan not in item shape
+type	AWS::Backup::BackupSelection	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Backup::BackupSelection	/BackupSelection/IamRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment BackupSelection not in item shape
+type	AWS::Backup::BackupVault	mapped_live=1	mapped_held=0	unmapped=1
+unmapped	AWS::Backup::BackupVault	/Notifications/SNSTopicArn	USES_TOPIC	aws_sns_topic	arn	pointer segment Notifications not in item shape
+type	AWS::Backup::Framework	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Backup::LegalHold	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Backup::LogicallyAirGappedBackupVault	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::Backup::LogicallyAirGappedBackupVault	/EncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::Backup::LogicallyAirGappedBackupVault	/MpaApprovalTeamArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Backup::LogicallyAirGappedBackupVault	/Notifications/SNSTopicArn	USES_TOPIC	aws_sns_topic	arn	type not callable
+type	AWS::Backup::ReportPlan	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Backup::ReportPlan	/ReportSetting/FrameworkArns/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Backup::RestoreTestingPlan	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Batch::ComputeEnvironment	mapped_live=0	mapped_held=0	unmapped=10
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/ImageId	USES_IMAGE	aws_ec2_image	template	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/ManagedInstancesProvider/InfrastructureRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/ManagedInstancesProvider/InstanceLaunchTemplate/CapacityReservations/ReservationGroupArn	REFERENCES	aws_reference	arn	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/ManagedInstancesProvider/InstanceLaunchTemplate/Ec2InstanceProfileArn	REFERENCES	aws_reference	arn	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/ManagedInstancesProvider/InstanceLaunchTemplate/NetworkConfiguration/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/ManagedInstancesProvider/InstanceLaunchTemplate/NetworkConfiguration/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ComputeResources/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment ComputeResources not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/EksConfiguration/EksClusterArn	REFERENCES	aws_reference	arn	pointer segment EksConfiguration not in item shape
+unmapped	AWS::Batch::ComputeEnvironment	/ServiceRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ServiceRole not in item shape
+type	AWS::Batch::ConsumableResource	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Batch::JobDefinition	mapped_live=0	mapped_held=0	unmapped=18
+unmapped	AWS::Batch::JobDefinition	/ConsumableResourceProperties/ConsumableResourceList/*/ConsumableResource	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/ContainerProperties/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/ContainerProperties/JobRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/ContainerProperties/Volumes/*/S3FilesVolumeConfiguration/AccessPointArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/ContainerProperties/Volumes/*/S3FilesVolumeConfiguration/FileSystemArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/EcsProperties/TaskProperties/*/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/EcsProperties/TaskProperties/*/TaskRoleArn	USES_TASK_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/EcsProperties/TaskProperties/*/Volumes/*/S3FilesVolumeConfiguration/AccessPointArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/EcsProperties/TaskProperties/*/Volumes/*/S3FilesVolumeConfiguration/FileSystemArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/ConsumableResourceProperties/ConsumableResourceList/*/ConsumableResource	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/Container/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/Container/JobRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/Container/Volumes/*/S3FilesVolumeConfiguration/AccessPointArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/Container/Volumes/*/S3FilesVolumeConfiguration/FileSystemArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/EcsProperties/TaskProperties/*/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/EcsProperties/TaskProperties/*/TaskRoleArn	USES_TASK_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/EcsProperties/TaskProperties/*/Volumes/*/S3FilesVolumeConfiguration/AccessPointArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Batch::JobDefinition	/NodeProperties/NodeRangeProperties/*/EcsProperties/TaskProperties/*/Volumes/*/S3FilesVolumeConfiguration/FileSystemArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::Batch::JobQueue	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Batch::JobQueue	/SchedulingPolicyArn	REFERENCES	aws_reference	arn	pointer segment SchedulingPolicyArn not in item shape
+type	AWS::Batch::QuotaShare	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Batch::SchedulingPolicy	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Batch::ServiceEnvironment	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Bedrock::Agent	mapped_live=0	mapped_held=0	unmapped=7
+unmapped	AWS::Bedrock::Agent	/ActionGroups/*/ActionGroupExecutor/Lambda	REFERENCES	aws_reference	arn	pointer segment ActionGroups not in item shape
+unmapped	AWS::Bedrock::Agent	/AgentCollaborators/*/AgentDescriptor/AliasArn	REFERENCES	aws_reference	arn	pointer segment AgentCollaborators not in item shape
+unmapped	AWS::Bedrock::Agent	/AgentResourceRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment AgentResourceRoleArn not in item shape
+unmapped	AWS::Bedrock::Agent	/CustomOrchestration/Executor/Lambda	REFERENCES	aws_reference	arn	pointer segment CustomOrchestration not in item shape
+unmapped	AWS::Bedrock::Agent	/CustomerEncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment CustomerEncryptionKeyArn not in item shape
+unmapped	AWS::Bedrock::Agent	/FoundationModel	REFERENCES	aws_reference	arn	pointer segment FoundationModel not in item shape
+unmapped	AWS::Bedrock::Agent	/GuardrailConfiguration/GuardrailIdentifier	REFERENCES	aws_reference	arn	pointer segment GuardrailConfiguration not in item shape
+type	AWS::Bedrock::ApplicationInferenceProfile	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Bedrock::ApplicationInferenceProfile	/Models/*/ModelArn	REFERENCES	aws_reference	arn	pointer segment Models not in item shape
+type	AWS::Bedrock::AutomatedReasoningPolicy	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Bedrock::DataAutomationProject	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Bedrock::DataAutomationProject	/CustomOutputConfiguration/Blueprints/*/BlueprintArn	REFERENCES	aws_reference	arn	pointer segment CustomOutputConfiguration not in item shape
+unmapped	AWS::Bedrock::DataAutomationProject	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+type	AWS::Bedrock::Flow	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Bedrock::Flow	/CustomerEncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment CustomerEncryptionKeyArn not in item shape
+unmapped	AWS::Bedrock::Flow	/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	pointer segment ExecutionRoleArn not in item shape
+type	AWS::Bedrock::Guardrail	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::Bedrock::Guardrail	/AutomatedReasoningPolicyConfig/Policies/*	REFERENCES	aws_reference	arn	pointer segment AutomatedReasoningPolicyConfig not in item shape
+unmapped	AWS::Bedrock::Guardrail	/CrossRegionConfig/GuardrailProfileArn	REFERENCES	aws_reference	arn	pointer segment CrossRegionConfig not in item shape
+unmapped	AWS::Bedrock::Guardrail	/KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyArn not in item shape
+type	AWS::Bedrock::KnowledgeBase	mapped_live=0	mapped_held=0	unmapped=18
+unmapped	AWS::Bedrock::KnowledgeBase	/KnowledgeBaseConfiguration/KendraKnowledgeBaseConfiguration/KendraIndexArn	REFERENCES	aws_reference	arn	pointer segment KnowledgeBaseConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/KnowledgeBaseConfiguration/ManagedKnowledgeBaseConfiguration/EmbeddingModelArn	REFERENCES	aws_reference	arn	pointer segment KnowledgeBaseConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/KnowledgeBaseConfiguration/ManagedKnowledgeBaseConfiguration/ServerSideEncryptionConfiguration/KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KnowledgeBaseConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/KnowledgeBaseConfiguration/SqlKnowledgeBaseConfiguration/RedshiftConfiguration/QueryEngineConfiguration/ProvisionedConfiguration/AuthConfiguration/UsernamePasswordSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KnowledgeBaseConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/KnowledgeBaseConfiguration/SqlKnowledgeBaseConfiguration/RedshiftConfiguration/QueryEngineConfiguration/ServerlessConfiguration/AuthConfiguration/UsernamePasswordSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KnowledgeBaseConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/KnowledgeBaseConfiguration/SqlKnowledgeBaseConfiguration/RedshiftConfiguration/QueryEngineConfiguration/ServerlessConfiguration/WorkgroupArn	REFERENCES	aws_reference	arn	pointer segment KnowledgeBaseConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/KnowledgeBaseConfiguration/VectorKnowledgeBaseConfiguration/EmbeddingModelArn	REFERENCES	aws_reference	arn	pointer segment KnowledgeBaseConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/MongoDbAtlasConfiguration/CredentialsSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/MongoDbAtlasConfiguration/EndpointServiceName	REFERENCES	aws_reference	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/NeptuneAnalyticsConfiguration/GraphArn	REFERENCES	aws_reference	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/OpensearchManagedClusterConfiguration/DomainArn	REFERENCES	aws_reference	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/OpensearchServerlessConfiguration/CollectionArn	REFERENCES	aws_reference	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/PineconeConfiguration/CredentialsSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/RdsConfiguration/CredentialsSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/RdsConfiguration/ResourceArn	REFERENCES	aws_reference	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/S3VectorsConfiguration/IndexArn	REFERENCES	aws_reference	arn	pointer segment StorageConfiguration not in item shape
+unmapped	AWS::Bedrock::KnowledgeBase	/StorageConfiguration/S3VectorsConfiguration/VectorBucketArn	REFERENCES	aws_reference	arn	pointer segment StorageConfiguration not in item shape
+type	AWS::Bedrock::Prompt	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Bedrock::Prompt	/CustomerEncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment CustomerEncryptionKeyArn not in item shape
+type	AWS::CertificateManager::Certificate	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::CertificateManager::Certificate	/CertificateAuthorityArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::CloudFormation::Stack	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::CloudFormation::Stack	/NotificationARNs/*	REFERENCES	aws_reference	arn	pointer segment NotificationARNs not in item shape
+unmapped	AWS::CloudFormation::Stack	/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleARN not in item shape
+type	AWS::CloudTrail::Channel	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CloudTrail::EventDataStore	mapped_live=1	mapped_held=0	unmapped=1
+unmapped	AWS::CloudTrail::EventDataStore	/FederationRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::CloudTrail::Trail	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::CloudTrail::Trail	/CloudWatchLogsLogGroupArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::CloudTrail::Trail	/CloudWatchLogsRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::CloudTrail::Trail	/KMSKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KMSKeyId not in item shape
+type	AWS::CloudWatch::Alarm	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CloudWatch::CompositeAlarm	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CloudWatch::InsightRule	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CloudWatch::MetricStream	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::CloudWatch::MetricStream	/FirehoseArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::CloudWatch::MetricStream	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::CodeArtifact::Domain	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CodeArtifact::Repository	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CodeBuild::Fleet	mapped_live=0	mapped_held=0	unmapped=5
+unmapped	AWS::CodeBuild::Fleet	/FleetServiceRole	REFERENCES	aws_reference	arn	pointer segment FleetServiceRole not in item shape
+unmapped	AWS::CodeBuild::Fleet	/FleetVpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment FleetVpcConfig not in item shape
+unmapped	AWS::CodeBuild::Fleet	/FleetVpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment FleetVpcConfig not in item shape
+unmapped	AWS::CodeBuild::Fleet	/FleetVpcConfig/VpcId	IN_VPC	aws_vpc	template	pointer segment FleetVpcConfig not in item shape
+unmapped	AWS::CodeBuild::Fleet	/ImageId	USES_IMAGE	aws_ec2_image	template	pointer segment ImageId not in item shape
+type	AWS::CodeBuild::Project	mapped_live=0	mapped_held=0	unmapped=5
+unmapped	AWS::CodeBuild::Project	/BuildBatchConfig/ServiceRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment BuildBatchConfig not in item shape
+unmapped	AWS::CodeBuild::Project	/ServiceRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ServiceRole not in item shape
+unmapped	AWS::CodeBuild::Project	/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment VpcConfig not in item shape
+unmapped	AWS::CodeBuild::Project	/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment VpcConfig not in item shape
+unmapped	AWS::CodeBuild::Project	/VpcConfig/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcConfig not in item shape
+type	AWS::CodeBuild::ReportGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CodeCommit::Repository	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::CodeCommit::Repository	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+unmapped	AWS::CodeCommit::Repository	/Triggers/*/DestinationArn	REFERENCES	aws_reference	arn	pointer segment Triggers not in item shape
+type	AWS::CodeDeploy::Application	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CodeDeploy::DeploymentConfig	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CodePipeline::CustomActionType	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::CodePipeline::Pipeline	mapped_live=0	mapped_held=0	unmapped=5
+unmapped	AWS::CodePipeline::Pipeline	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+unmapped	AWS::CodePipeline::Pipeline	/Stages/*/Actions/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Stages not in item shape
+unmapped	AWS::CodePipeline::Pipeline	/Stages/*/BeforeEntry/Conditions/*/Rules/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Stages not in item shape
+unmapped	AWS::CodePipeline::Pipeline	/Stages/*/OnFailure/Conditions/*/Rules/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Stages not in item shape
+unmapped	AWS::CodePipeline::Pipeline	/Stages/*/OnSuccess/Conditions/*/Rules/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Stages not in item shape
+type	AWS::CodePipeline::Webhook	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Cognito::IdentityPool	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Cognito::IdentityPool	/OpenIdConnectProviderARNs/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Cognito::IdentityPool	/SamlProviderARNs/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Cognito::UserPool	mapped_live=1	mapped_held=0	unmapped=8
+unmapped	AWS::Cognito::UserPool	/EmailConfiguration/SourceArn	REFERENCES	aws_reference	arn	pointer segment EmailConfiguration not in item shape
+unmapped	AWS::Cognito::UserPool	/KeyConfiguration/KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KeyConfiguration not in item shape
+unmapped	AWS::Cognito::UserPool	/LambdaConfig/CustomEmailSender/LambdaArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Cognito::UserPool	/LambdaConfig/CustomSMSSender/LambdaArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Cognito::UserPool	/LambdaConfig/InboundFederation/LambdaArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Cognito::UserPool	/LambdaConfig/PreTokenGenerationConfig/LambdaArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Cognito::UserPool	/SmsConfiguration/EumsSms/CallerArn	REFERENCES	aws_reference	arn	pointer segment SmsConfiguration not in item shape
+unmapped	AWS::Cognito::UserPool	/SmsConfiguration/SnsCallerArn	REFERENCES	aws_reference	arn	pointer segment SmsConfiguration not in item shape
+type	AWS::Config::AggregationAuthorization	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Config::ConfigRule	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Config::ConfigurationAggregator	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Config::ConfigurationAggregator	/OrganizationAggregationSource/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::Config::ConfigurationRecorder	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Config::ConfigurationRecorder	/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleARN not in item shape
+type	AWS::Config::ConformancePack	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Config::DeliveryChannel	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Config::DeliveryChannel	/S3KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment S3KmsKeyArn not in item shape
+unmapped	AWS::Config::DeliveryChannel	/SnsTopicARN	USES_TOPIC	aws_sns_topic	arn	pointer segment SnsTopicARN not in item shape
+type	AWS::Config::OrganizationConfigRule	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::Config::OrganizationConformancePack	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Config::StoredQuery	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::DAX::Cluster	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::DAX::Cluster	/IAMRoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment IAMRoleARN not in item shape
+unmapped	AWS::DAX::Cluster	/NotificationTopicARN	USES_TOPIC	aws_sns_topic	arn	pointer segment NotificationTopicARN not in item shape
+unmapped	AWS::DAX::Cluster	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+type	AWS::DAX::ParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::DAX::SubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::DAX::SubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::DMS::Certificate	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::DMS::DataMigration	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::DMS::DataMigration	/ServiceAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+type	AWS::DMS::DataProvider	mapped_live=10	mapped_held=0	unmapped=4
+unmapped	AWS::DMS::DataProvider	/Settings/MicrosoftSqlServerSettings/S3AccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::DMS::DataProvider	/Settings/OracleSettings/S3AccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::DMS::DataProvider	/Settings/OracleSettings/SecretsManagerOracleAsmAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::DMS::DataProvider	/Settings/OracleSettings/SecretsManagerSecurityDbEncryptionAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::DMS::Endpoint	mapped_live=0	mapped_held=0	unmapped=24
+unmapped	AWS::DMS::Endpoint	/CertificateArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/DocDbSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/DynamoDbSettings/ServiceAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/ElasticsearchSettings/ServiceAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/GcpMySQLSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/IbmDb2Settings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/KafkaSettings/SslCaCertificateArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/KafkaSettings/SslClientCertificateArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/KafkaSettings/SslClientKeyArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/KinesisSettings/ServiceAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/KinesisSettings/StreamArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/MicrosoftSqlServerSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/MongoDbSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/MySqlSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/NeptuneSettings/ServiceAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/OracleSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/OracleSettings/SecretsManagerOracleAsmAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/PostgreSqlSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/RedisSettings/SslCaCertificateArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/RedshiftSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/RedshiftSettings/ServiceAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/S3Settings/ServiceAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::DMS::Endpoint	/SybaseSettings/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+type	AWS::DMS::EventSubscription	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::DMS::InstanceProfile	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::DMS::MigrationProject	mapped_live=0	mapped_held=2	unmapped=3
+unmapped	AWS::DMS::MigrationProject	/SchemaConversionApplicationAttributes/S3BucketRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::DMS::MigrationProject	/SourceDataProviderDescriptors/*/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::DMS::MigrationProject	/TargetDataProviderDescriptors/*/SecretsManagerAccessRoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::DMS::ReplicationConfig	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::DMS::ReplicationConfig	/ComputeConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::DMS::ReplicationConfig	/ComputeConfig/VpcSecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+unmapped	AWS::DMS::ReplicationConfig	/SourceEndpointArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::ReplicationConfig	/TargetEndpointArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::DMS::ReplicationSubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::DMS::ReplicationSubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::DMS::ReplicationTask	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::DMS::ReplicationTask	/ReplicationInstanceArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::DMS::ReplicationTask	/SourceEndpointArn	READS_FROM	aws_dms_endpoint	arn	type not callable
+unmapped	AWS::DMS::ReplicationTask	/TargetEndpointArn	DELIVERS_TO	aws_dms_endpoint	arn	type not callable
+type	AWS::DocDB::DBClusterParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::DocDB::DBSubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::DocDB::DBSubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::DocDB::EventSubscription	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::DynamoDB::Table	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::DynamoDB::Table	/KinesisStreamSpecification/StreamArn	REFERENCES	aws_reference	arn	pointer segment KinesisStreamSpecification not in item shape
+type	AWS::EC2::CapacityReservation	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::CapacityReservation	/OutPostArn	REFERENCES	aws_reference	arn	pointer segment OutPostArn not in item shape
+unmapped	AWS::EC2::CapacityReservation	/PlacementGroupArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::EC2::CarrierGateway	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::ClientVpnEndpoint	mapped_live=4	mapped_held=1	unmapped=3
+unmapped	AWS::EC2::ClientVpnEndpoint	/AuthenticationOptions/*/FederatedAuthentication/SAMLProviderArn	REFERENCES	aws_reference	arn	pointer segment SAMLProviderArn not in item shape
+unmapped	AWS::EC2::ClientVpnEndpoint	/AuthenticationOptions/*/FederatedAuthentication/SelfServiceSAMLProviderArn	REFERENCES	aws_reference	arn	pointer segment SelfServiceSAMLProviderArn not in item shape
+unmapped	AWS::EC2::ClientVpnEndpoint	/AuthenticationOptions/*/MutualAuthentication/ClientRootCertificateChainArn	REFERENCES	aws_reference	arn	pointer segment ClientRootCertificateChainArn not in item shape
+type	AWS::EC2::CustomerGateway	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::DHCPOptions	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::EC2Fleet	mapped_live=0	mapped_held=0	unmapped=7
+unmapped	AWS::EC2::EC2Fleet	/LaunchTemplateConfigs/*/Overrides/*/BlockDeviceMappings/*/Ebs/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::EC2::EC2Fleet	/LaunchTemplateConfigs/*/Overrides/*/BlockDeviceMappings/*/Ebs/SnapshotId	USES_SNAPSHOT	aws_ec2_snapshot	template	type not callable
+unmapped	AWS::EC2::EC2Fleet	/LaunchTemplateConfigs/*/Overrides/*/IamInstanceProfile/Arn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::EC2::EC2Fleet	/LaunchTemplateConfigs/*/Overrides/*/NetworkInterfaces/*/NetworkInterfaceId	USES_NETWORK_INTERFACE	aws_ec2_network_interface	template	type not callable
+unmapped	AWS::EC2::EC2Fleet	/LaunchTemplateConfigs/*/Overrides/*/NetworkInterfaces/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::EC2::EC2Fleet	/LaunchTemplateConfigs/*/Overrides/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::EC2::EC2Fleet	/ReservedCapacityOptions/CapacityReservationTarget/CapacityReservationResourceGroupArns/*	REFERENCES	aws_reference	arn	type not callable
+type	AWS::EC2::EIP	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::EIPAssociation	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::EC2::EIPAssociation	/AllocationId	USES_ELASTIC_IP	aws_ec2_eip	template	type not callable
+unmapped	AWS::EC2::EIPAssociation	/InstanceId	USES_INSTANCE	aws_ec2_instance	template	type not callable
+unmapped	AWS::EC2::EIPAssociation	/NetworkInterfaceId	USES_NETWORK_INTERFACE	aws_ec2_network_interface	template	type not callable
+type	AWS::EC2::EgressOnlyInternetGateway	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::EgressOnlyInternetGateway	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::EC2::FlowLog	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::FlowLog	/DeliverLogsPermissionArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::EC2::FpgaImage	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::Host	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::Instance	mapped_live=0	mapped_held=0	unmapped=11
+unmapped	AWS::EC2::Instance	/BlockDeviceMappings/*/Ebs/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment BlockDeviceMappings not in item shape
+unmapped	AWS::EC2::Instance	/BlockDeviceMappings/*/Ebs/SnapshotId	USES_SNAPSHOT	aws_ec2_snapshot	template	pointer segment BlockDeviceMappings not in item shape
+unmapped	AWS::EC2::Instance	/HostResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment HostResourceGroupArn not in item shape
+unmapped	AWS::EC2::Instance	/ImageId	USES_IMAGE	aws_ec2_image	template	pointer segment ImageId not in item shape
+unmapped	AWS::EC2::Instance	/LicenseSpecifications/*/LicenseConfigurationArn	REFERENCES	aws_reference	arn	pointer segment LicenseSpecifications not in item shape
+unmapped	AWS::EC2::Instance	/NetworkInterfaces/*/NetworkInterfaceId	USES_NETWORK_INTERFACE	aws_ec2_network_interface	template	pointer segment NetworkInterfaces not in item shape
+unmapped	AWS::EC2::Instance	/NetworkInterfaces/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment NetworkInterfaces not in item shape
+unmapped	AWS::EC2::Instance	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+unmapped	AWS::EC2::Instance	/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment SubnetId not in item shape
+unmapped	AWS::EC2::Instance	/Volumes/*/VolumeId	USES_VOLUME	aws_ebs_volume	template	pointer segment Volumes not in item shape
+unmapped	AWS::EC2::Instance	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::EC2::InstanceConnectEndpoint	mapped_live=2	mapped_held=1	unmapped=0
+type	AWS::EC2::InstanceEventWindow	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::InternetGateway	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::KeyPair	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::LaunchTemplate	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::LocalGatewayRoute	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::LocalGatewayRoute	/NetworkInterfaceId	USES_NETWORK_INTERFACE	aws_ec2_network_interface	template	type not callable
+type	AWS::EC2::LocalGatewayRouteTable	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::LocalGatewayRouteTableVPCAssociation	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::LocalGatewayRouteTableVirtualInterfaceGroupAssociation	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::LocalGatewayVirtualInterface	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::LocalGatewayVirtualInterfaceGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::NatGateway	mapped_live=3	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::NatGateway	/AllocationId	USES_ELASTIC_IP	aws_ec2_eip	template	pointer segment AllocationId not in item shape
+type	AWS::EC2::NetworkAcl	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::NetworkInsightsAccessScope	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::NetworkInsightsAccessScopeAnalysis	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::NetworkInsightsAnalysis	mapped_live=0	mapped_held=23	unmapped=116
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/AlternatePathHints/*/ComponentArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/Acl/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/AttachedTo/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/Component/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/CustomerGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/Destination/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/DestinationVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/ElasticLoadBalancerListener/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/IngressRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/InternetGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/LoadBalancerTarget/Instance/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/LoadBalancerTargetGroup/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/LoadBalancerTargetGroups/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/NatGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/NetworkInterface/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/PrefixList/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/RouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/RouteTableRoute/instanceId	USES_INSTANCE	aws_ec2_instance	template	pointer segment instanceId not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/SecurityGroup/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/SecurityGroups/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/SourceVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/Subnet/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/SubnetRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/TransitGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/TransitGatewayAttachment/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/TransitGatewayPolicyTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/TransitGatewayRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/Vpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/VpcPeeringConnection/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/VpnConnection/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/VpnGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/vpcEndpoint/Arn	REFERENCES	aws_reference	arn	pointer segment vpcEndpoint not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/FilterInArns/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/FilterOutArns/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/AdditionalDetails/*/Component/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/AdditionalDetails/*/LoadBalancers/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Component/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/DestinationVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/ElasticLoadBalancerListener/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/Acl/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/AttachedTo/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/Component/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/CustomerGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/Destination/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/DestinationVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/ElasticLoadBalancerListener/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/IngressRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/InternetGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/LoadBalancerTarget/Instance/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/LoadBalancerTargetGroup/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/LoadBalancerTargetGroups/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/NatGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/NetworkInterface/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/PrefixList/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/RouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/RouteTableRoute/instanceId	USES_INSTANCE	aws_ec2_instance	template	pointer segment instanceId not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/SecurityGroup/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/SecurityGroups/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/SourceVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/Subnet/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/SubnetRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/TransitGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/TransitGatewayAttachment/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/TransitGatewayPolicyTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/TransitGatewayRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/Vpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/VpcPeeringConnection/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/VpnConnection/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/VpnGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/vpcEndpoint/Arn	REFERENCES	aws_reference	arn	pointer segment vpcEndpoint not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/RouteTableRoute/instanceId	USES_INSTANCE	aws_ec2_instance	template	pointer segment instanceId not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/SourceVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Subnet/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/TransitGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Vpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/AdditionalDetails/*/Component/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/AdditionalDetails/*/LoadBalancers/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Component/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/DestinationVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/ElasticLoadBalancerListener/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/Acl/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/AttachedTo/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/Component/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/CustomerGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/Destination/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/DestinationVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/ElasticLoadBalancerListener/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/IngressRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/InternetGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/LoadBalancerTarget/Instance/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/LoadBalancerTargetGroup/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/LoadBalancerTargetGroups/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/NatGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/NetworkInterface/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/PrefixList/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/RouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/RouteTableRoute/instanceId	USES_INSTANCE	aws_ec2_instance	template	pointer segment instanceId not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/SecurityGroup/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/SecurityGroups/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/SourceVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/Subnet/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/SubnetRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/TransitGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/TransitGatewayAttachment/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/TransitGatewayPolicyTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/TransitGatewayRouteTable/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/Vpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/VpcPeeringConnection/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/VpnConnection/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/VpnGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/vpcEndpoint/Arn	REFERENCES	aws_reference	arn	pointer segment vpcEndpoint not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/RouteTableRoute/instanceId	USES_INSTANCE	aws_ec2_instance	template	pointer segment instanceId not in item shape
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/SourceVpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Subnet/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/TransitGateway/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Vpc/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+type	AWS::EC2::NetworkInsightsPath	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::NetworkInterface	mapped_live=2	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::NetworkInterface	/GroupSet/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment GroupSet not in item shape
+type	AWS::EC2::NetworkInterfaceAttachment	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::NetworkInterfaceAttachment	/InstanceId	USES_INSTANCE	aws_ec2_instance	template	type not callable
+unmapped	AWS::EC2::NetworkInterfaceAttachment	/NetworkInterfaceId	USES_NETWORK_INTERFACE	aws_ec2_network_interface	template	type not callable
+type	AWS::EC2::NetworkPerformanceMetricSubscription	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::PlacementGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::PrefixList	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::RouteTable	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::SecurityGroup	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::SecurityGroupEgress	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::SecurityGroupIngress	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::SecurityGroupVpcAssociation	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::Snapshot	mapped_live=2	mapped_held=0	unmapped=0
+type	AWS::EC2::SpotFleet	mapped_live=0	mapped_held=0	unmapped=8
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LaunchSpecifications/*/BlockDeviceMappings/*/Ebs/SnapshotId	USES_SNAPSHOT	aws_ec2_snapshot	template	type not callable
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LaunchSpecifications/*/IamInstanceProfile/Arn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LaunchSpecifications/*/ImageId	USES_IMAGE	aws_ec2_image	template	type not callable
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LaunchSpecifications/*/NetworkInterfaces/*/NetworkInterfaceId	USES_NETWORK_INTERFACE	aws_ec2_network_interface	template	type not callable
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LaunchSpecifications/*/NetworkInterfaces/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LaunchSpecifications/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LaunchTemplateConfigs/*/Overrides/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::EC2::SpotFleet	/SpotFleetRequestConfigData/LoadBalancersConfig/TargetGroupsConfig/TargetGroups/*/Arn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::EC2::Subnet	mapped_live=2	mapped_held=0	unmapped=0
+type	AWS::EC2::SubnetCidrBlock	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::SubnetCidrBlock	/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::EC2::SubnetNetworkAclAssociation	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::SubnetNetworkAclAssociation	/NetworkAclId	USES_NETWORK_ACL	aws_vpc_network_acl	template	type not callable
+unmapped	AWS::EC2::SubnetNetworkAclAssociation	/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::EC2::SubnetRouteTableAssociation	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::SubnetRouteTableAssociation	/RouteTableId	USES_ROUTE_TABLE	aws_vpc_route_table	template	type not callable
+unmapped	AWS::EC2::SubnetRouteTableAssociation	/SubnetId	IN_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::EC2::TrafficMirrorFilter	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::TrafficMirrorFilterRule	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::TrafficMirrorSession	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::TrafficMirrorTarget	mapped_live=2	mapped_held=0	unmapped=0
+type	AWS::EC2::TransitGateway	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::TransitGatewayAttachment	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::EC2::TransitGatewayAttachment	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::EC2::TransitGatewayAttachment	/TransitGatewayId	USES_TRANSIT_GATEWAY	aws_ec2_transit_gateway	template	type not callable
+unmapped	AWS::EC2::TransitGatewayAttachment	/VpcId	IN_VPC	aws_vpc	template	type not callable
+type	AWS::EC2::TransitGatewayConnect	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::TransitGatewayConnectPeer	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::TransitGatewayMulticastDomain	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::TransitGatewayPeeringAttachment	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::TransitGatewayPeeringAttachment	/TransitGatewayId	USES_TRANSIT_GATEWAY	aws_ec2_transit_gateway	template	pointer segment TransitGatewayId not in item shape
+type	AWS::EC2::TransitGatewayPolicyTable	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::TransitGatewayRouteTable	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::TransitGatewayVpcAttachment	mapped_live=2	mapped_held=1	unmapped=0
+type	AWS::EC2::VPC	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::VPC	/VpcEncryptionControl/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcEncryptionControl not in item shape
+type	AWS::EC2::VPCBlockPublicAccessExclusion	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::VPCBlockPublicAccessExclusion	/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment SubnetId not in item shape
+unmapped	AWS::EC2::VPCBlockPublicAccessExclusion	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::EC2::VPCDHCPOptionsAssociation	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::VPCDHCPOptionsAssociation	/DhcpOptionsId	USES_DHCP_OPTIONS	aws_ec2_dhcp_options	template	type not callable
+unmapped	AWS::EC2::VPCDHCPOptionsAssociation	/VpcId	IN_VPC	aws_vpc	template	type not callable
+type	AWS::EC2::VPCEndpoint	mapped_live=1	mapped_held=1	unmapped=3
+unmapped	AWS::EC2::VPCEndpoint	/ResourceConfigurationArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::VPCEndpoint	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+unmapped	AWS::EC2::VPCEndpoint	/ServiceNetworkArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::EC2::VPCEndpointConnectionNotification	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::VPCEndpointConnectionNotification	/ConnectionNotificationArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::VPCEndpointConnectionNotification	/VPCEndpointId	USES_VPC_ENDPOINT	aws_vpc_endpoint	template	pointer segment VPCEndpointId not in item shape
+type	AWS::EC2::VPCEndpointService	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::VPCEndpointService	/GatewayLoadBalancerArns/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::VPCEndpointService	/NetworkLoadBalancerArns/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::EC2::VPCEndpointServicePermissions	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::VPCGatewayAttachment	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::VPCGatewayAttachment	/InternetGatewayId	USES_INTERNET_GATEWAY	aws_vpc_internet_gateway	template	type not callable
+unmapped	AWS::EC2::VPCGatewayAttachment	/VpcId	IN_VPC	aws_vpc	template	type not callable
+type	AWS::EC2::VPCPeeringConnection	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::VPCPeeringConnection	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::EC2::VPNConnection	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::EC2::VPNConnection	/TransitGatewayId	USES_TRANSIT_GATEWAY	aws_ec2_transit_gateway	template	type not callable
+unmapped	AWS::EC2::VPNConnection	/VpnTunnelOptionsSpecifications/*/LogOptions/CloudwatchLogOptions/BgpLogGroupArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::EC2::VPNConnection	/VpnTunnelOptionsSpecifications/*/LogOptions/CloudwatchLogOptions/LogGroupArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::EC2::VPNConnectionRoute	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::VPNGateway	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::VerifiedAccessEndpoint	mapped_live=4	mapped_held=4	unmapped=3
+unmapped	AWS::EC2::VerifiedAccessEndpoint	/RdsOptions/RdsDbClusterArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::VerifiedAccessEndpoint	/RdsOptions/RdsDbInstanceArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::EC2::VerifiedAccessEndpoint	/RdsOptions/RdsDbProxyArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::EC2::VerifiedAccessGroup	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::EC2::VerifiedAccessInstance	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EC2::VerifiedAccessTrustProvider	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EC2::VerifiedAccessTrustProvider	/SseSpecification/KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+type	AWS::EC2::Volume	mapped_live=2	mapped_held=0	unmapped=0
+type	AWS::EC2::VolumeAttachment	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EC2::VolumeAttachment	/InstanceId	USES_INSTANCE	aws_ec2_instance	template	type not callable
+unmapped	AWS::EC2::VolumeAttachment	/VolumeId	USES_VOLUME	aws_ebs_volume	template	type not callable
+type	AWS::ECR::PullThroughCacheRule	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ECR::RegistryPolicy	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ECR::RegistryScanningConfiguration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ECR::ReplicationConfiguration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ECR::Repository	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ECR::RepositoryCreationTemplate	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ECR::RepositoryCreationTemplate	/CustomRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment CustomRoleArn not in item shape
+type	AWS::ECS::CapacityProvider	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::ECS::CapacityProvider	/AutoScalingGroupProvider/AutoScalingGroupArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::ECS::CapacityProvider	/ManagedInstancesProvider/InfrastructureRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::ECS::CapacityProvider	/ManagedInstancesProvider/InstanceLaunchTemplate/CapacityReservations/ReservationGroupArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::ECS::CapacityProvider	/ManagedInstancesProvider/InstanceLaunchTemplate/Ec2InstanceProfileArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::ECS::CapacityProvider	/ManagedInstancesProvider/InstanceLaunchTemplate/NetworkConfiguration/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+unmapped	AWS::ECS::CapacityProvider	/ManagedInstancesProvider/InstanceLaunchTemplate/NetworkConfiguration/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::ECS::Cluster	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::ECS::Cluster	/Configuration/ExecuteCommandConfiguration/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment Configuration not in item shape
+unmapped	AWS::ECS::Cluster	/Configuration/ManagedStorageConfiguration/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment Configuration not in item shape
+type	AWS::ECS::Service	mapped_live=0	mapped_held=0	unmapped=13
+unmapped	AWS::ECS::Service	/DeploymentConfiguration/LifecycleHooks/*/HookTargetArn	REFERENCES	aws_reference	arn	pointer segment DeploymentConfiguration not in item shape
+unmapped	AWS::ECS::Service	/DeploymentConfiguration/LifecycleHooks/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment DeploymentConfiguration not in item shape
+unmapped	AWS::ECS::Service	/LoadBalancers/*/AdvancedConfiguration/AlternateTargetGroupArn	USES_TARGET_GROUP	aws_elbv2_target_group	arn	pointer segment LoadBalancers not in item shape
+unmapped	AWS::ECS::Service	/LoadBalancers/*/AdvancedConfiguration/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment LoadBalancers not in item shape
+unmapped	AWS::ECS::Service	/LoadBalancers/*/TargetGroupArn	USES_TARGET_GROUP	aws_elbv2_target_group	arn	pointer segment LoadBalancers not in item shape
+unmapped	AWS::ECS::Service	/NetworkConfiguration/AwsvpcConfiguration/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment NetworkConfiguration not in item shape
+unmapped	AWS::ECS::Service	/NetworkConfiguration/AwsvpcConfiguration/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment NetworkConfiguration not in item shape
+unmapped	AWS::ECS::Service	/Role	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Role not in item shape
+unmapped	AWS::ECS::Service	/ServiceRegistries/*/RegistryArn	REFERENCES	aws_reference	arn	pointer segment ServiceRegistries not in item shape
+unmapped	AWS::ECS::Service	/TaskDefinition	USES_TASK_DEFINITION	aws_ecs_task_definition	arn	pointer segment TaskDefinition not in item shape
+unmapped	AWS::ECS::Service	/VpcLatticeConfigurations/*/AdvancedConfiguration/AlternateTargetGroupArn	USES_TARGET_GROUP	aws_vpc_lattice_target_group	arn	pointer segment VpcLatticeConfigurations not in item shape
+unmapped	AWS::ECS::Service	/VpcLatticeConfigurations/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment VpcLatticeConfigurations not in item shape
+unmapped	AWS::ECS::Service	/VpcLatticeConfigurations/*/TargetGroupArn	USES_TARGET_GROUP	aws_vpc_lattice_target_group	arn	pointer segment VpcLatticeConfigurations not in item shape
+type	AWS::ECS::TaskDefinition	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::ECS::TaskDefinition	/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::ECS::TaskDefinition	/TaskRoleArn	USES_TASK_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::ECS::TaskDefinition	/Volumes/*/S3FilesVolumeConfiguration/AccessPointArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::ECS::TaskDefinition	/Volumes/*/S3FilesVolumeConfiguration/FileSystemArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::EFS::AccessPoint	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EFS::FileSystem	mapped_live=1	mapped_held=0	unmapped=2
+unmapped	AWS::EFS::FileSystem	/ReplicationConfiguration/Destinations/*/FileSystemId	REFERENCES	aws_reference	arn	pointer segment ReplicationConfiguration not in item shape
+unmapped	AWS::EFS::FileSystem	/ReplicationConfiguration/Destinations/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ReplicationConfiguration not in item shape
+type	AWS::EKS::AccessEntry	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EKS::AccessEntry	/AccessPolicies/*/PolicyArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::EKS::Addon	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EKS::Addon	/ServiceAccountRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+type	AWS::EKS::Cluster	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::EKS::Cluster	/ComputeConfig/NodeRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ComputeConfig not in item shape
+unmapped	AWS::EKS::Cluster	/EncryptionConfig/*/Provider/KeyArn	REFERENCES	aws_reference	arn	pointer segment EncryptionConfig not in item shape
+unmapped	AWS::EKS::Cluster	/OutpostConfig/OutpostArns/*	REFERENCES	aws_reference	arn	pointer segment OutpostConfig not in item shape
+unmapped	AWS::EKS::Cluster	/ResourcesVpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment ResourcesVpcConfig not in item shape
+unmapped	AWS::EKS::Cluster	/ResourcesVpcConfig/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment ResourcesVpcConfig not in item shape
+unmapped	AWS::EKS::Cluster	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::EKS::FargateProfile	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EKS::FargateProfile	/PodExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::EKS::FargateProfile	/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::EKS::Nodegroup	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EKS::Nodegroup	/NodeRole	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::EKS::Nodegroup	/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::EKS::PodIdentityAssociation	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::EKS::PodIdentityAssociation	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+unmapped	AWS::EKS::PodIdentityAssociation	/TargetRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment TargetRoleArn not in item shape
+type	AWS::EMR::Cluster	mapped_live=0	mapped_held=0	unmapped=8
+unmapped	AWS::EMR::Cluster	/Instances/CoreInstanceFleet/LaunchSpecifications/OnDemandSpecification/CapacityReservationOptions/CapacityReservationResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment Instances not in item shape
+unmapped	AWS::EMR::Cluster	/Instances/CoreInstanceFleet/ResizeSpecifications/OnDemandResizeSpecification/CapacityReservationOptions/CapacityReservationResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment Instances not in item shape
+unmapped	AWS::EMR::Cluster	/Instances/MasterInstanceFleet/LaunchSpecifications/OnDemandSpecification/CapacityReservationOptions/CapacityReservationResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment Instances not in item shape
+unmapped	AWS::EMR::Cluster	/Instances/MasterInstanceFleet/ResizeSpecifications/OnDemandResizeSpecification/CapacityReservationOptions/CapacityReservationResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment Instances not in item shape
+unmapped	AWS::EMR::Cluster	/Instances/TaskInstanceFleets/*/LaunchSpecifications/OnDemandSpecification/CapacityReservationOptions/CapacityReservationResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment Instances not in item shape
+unmapped	AWS::EMR::Cluster	/Instances/TaskInstanceFleets/*/ResizeSpecifications/OnDemandResizeSpecification/CapacityReservationOptions/CapacityReservationResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment Instances not in item shape
+unmapped	AWS::EMR::Cluster	/MonitoringConfiguration/CloudWatchLogConfiguration/EncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment MonitoringConfiguration not in item shape
+unmapped	AWS::EMR::Cluster	/ServiceRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ServiceRole not in item shape
+type	AWS::EMR::SecurityConfiguration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EMR::Studio	mapped_live=1	mapped_held=0	unmapped=5
+unmapped	AWS::EMR::Studio	/EncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment EncryptionKeyArn not in item shape
+unmapped	AWS::EMR::Studio	/IdcInstanceArn	REFERENCES	aws_reference	arn	pointer segment IdcInstanceArn not in item shape
+unmapped	AWS::EMR::Studio	/ServiceRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ServiceRole not in item shape
+unmapped	AWS::EMR::Studio	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+unmapped	AWS::EMR::Studio	/UserRole	REFERENCES	aws_reference	arn	pointer segment UserRole not in item shape
+type	AWS::EMRContainers::VirtualCluster	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::EMRServerless::Application	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::EMRServerless::Application	/IdentityCenterConfiguration/IdentityCenterInstanceArn	REFERENCES	aws_reference	arn	pointer segment IdentityCenterConfiguration not in item shape
+unmapped	AWS::EMRServerless::Application	/MonitoringConfiguration/CloudWatchLoggingConfiguration/EncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment MonitoringConfiguration not in item shape
+unmapped	AWS::EMRServerless::Application	/MonitoringConfiguration/ManagedPersistenceMonitoringConfiguration/EncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment MonitoringConfiguration not in item shape
+unmapped	AWS::EMRServerless::Application	/MonitoringConfiguration/S3MonitoringConfiguration/EncryptionKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment MonitoringConfiguration not in item shape
+unmapped	AWS::EMRServerless::Application	/NetworkConfiguration/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment NetworkConfiguration not in item shape
+unmapped	AWS::EMRServerless::Application	/NetworkConfiguration/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment NetworkConfiguration not in item shape
+type	AWS::ElastiCache::CacheCluster	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::ElastiCache::CacheCluster	/NotificationTopicArn	USES_TOPIC	aws_sns_topic	arn	pointer segment NotificationTopicArn not in item shape
+unmapped	AWS::ElastiCache::CacheCluster	/VpcSecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment VpcSecurityGroupIds not in item shape
+type	AWS::ElastiCache::ParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ElastiCache::ReplicationGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ElastiCache::ServerlessCache	mapped_live=1	mapped_held=2	unmapped=0
+type	AWS::ElastiCache::ServerlessCacheSnapshot	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ElastiCache::ServerlessCacheSnapshot	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+type	AWS::ElastiCache::Snapshot	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::ElastiCache::Snapshot	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::ElastiCache::Snapshot	/VpcId	IN_VPC	aws_vpc	template	type not callable
+type	AWS::ElastiCache::SubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ElastiCache::SubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::ElastiCache::User	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ElastiCache::UserGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ElasticBeanstalk::Application	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ElasticBeanstalk::Application	/ResourceLifecycleConfig/ServiceRole	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::ElasticBeanstalk::Environment	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::ElasticBeanstalk::Environment	/PlatformArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::ElasticLoadBalancingV2::Listener	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::ElasticLoadBalancingV2::Listener	/Certificates/*/CertificateArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::ElasticLoadBalancingV2::Listener	/DefaultActions/*/AuthenticateCognitoConfig/UserPoolArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::ElasticLoadBalancingV2::Listener	/DefaultActions/*/ForwardConfig/TargetGroups/*/TargetGroupArn	USES_TARGET_GROUP	aws_elbv2_target_group	arn	type not callable
+unmapped	AWS::ElasticLoadBalancingV2::Listener	/DefaultActions/*/TargetGroupArn	USES_TARGET_GROUP	aws_elbv2_target_group	arn	type not callable
+unmapped	AWS::ElasticLoadBalancingV2::Listener	/LoadBalancerArn	USES_LOAD_BALANCER	aws_elbv2_load_balancer	arn	type not callable
+unmapped	AWS::ElasticLoadBalancingV2::Listener	/MutualAuthentication/TrustStoreArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::ElasticLoadBalancingV2::LoadBalancer	mapped_live=0	mapped_held=1	unmapped=3
+unmapped	AWS::ElasticLoadBalancingV2::LoadBalancer	/SubnetMappings/*/AllocationId	USES_ELASTIC_IP	aws_ec2_eip	template	pointer segment SubnetMappings not in item shape
+unmapped	AWS::ElasticLoadBalancingV2::LoadBalancer	/SubnetMappings/*/SubnetId	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetMappings not in item shape
+unmapped	AWS::ElasticLoadBalancingV2::LoadBalancer	/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment Subnets not in item shape
+type	AWS::ElasticLoadBalancingV2::TargetGroup	mapped_live=1	mapped_held=1	unmapped=0
+type	AWS::EventSchemas::Discoverer	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::EventSchemas::Discoverer	/SourceArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::EventSchemas::Registry	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Events::ApiDestination	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Events::ApiDestination	/ConnectionArn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+type	AWS::Events::Archive	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Events::Archive	/SourceArn	REFERENCES	aws_reference	arn	pointer segment SourceArn not in item shape
+type	AWS::Events::Connection	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::Events::Connection	/InvocationConnectivityParameters/ResourceParameters/ResourceAssociationArn	REFERENCES	aws_reference	arn	pointer segment InvocationConnectivityParameters not in item shape
+unmapped	AWS::Events::Connection	/InvocationConnectivityParameters/ResourceParameters/ResourceConfigurationArn	REFERENCES	aws_reference	arn	pointer segment InvocationConnectivityParameters not in item shape
+unmapped	AWS::Events::Connection	/SecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment SecretArn not in item shape
+type	AWS::Events::EventBus	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Events::EventBus	/DeadLetterConfig/Arn	REFERENCES	aws_reference	arn	pointer segment DeadLetterConfig not in item shape
+type	AWS::Events::Rule	mapped_live=0	mapped_held=0	unmapped=8
+unmapped	AWS::Events::Rule	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::Events::Rule	/Targets/*/Arn	DELIVERS_TO	aws_reference	arn	pointer segment Targets not in item shape
+unmapped	AWS::Events::Rule	/Targets/*/DeadLetterConfig/Arn	REFERENCES	aws_reference	arn	pointer segment Targets not in item shape
+unmapped	AWS::Events::Rule	/Targets/*/EcsParameters/NetworkConfiguration/AwsVpcConfiguration/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment Targets not in item shape
+unmapped	AWS::Events::Rule	/Targets/*/EcsParameters/NetworkConfiguration/AwsVpcConfiguration/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment Targets not in item shape
+unmapped	AWS::Events::Rule	/Targets/*/EcsParameters/TaskDefinitionArn	REFERENCES	aws_reference	arn	pointer segment Targets not in item shape
+unmapped	AWS::Events::Rule	/Targets/*/RedshiftDataParameters/SecretManagerArn	REFERENCES	aws_reference	arn	pointer segment Targets not in item shape
+unmapped	AWS::Events::Rule	/Targets/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Targets not in item shape
+type	AWS::FSx::Backup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::FSx::DataRepositoryAssociation	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::FSx::FileCache	mapped_live=2	mapped_held=1	unmapped=0
+type	AWS::FSx::Snapshot	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::FSx::StorageVirtualMachine	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::FSx::StorageVirtualMachine	/ActiveDirectoryConfiguration/SelfManagedActiveDirectoryConfiguration/DomainJoinServiceAccountSecret	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::FSx::Volume	mapped_live=1	mapped_held=0	unmapped=1
+unmapped	AWS::FSx::Volume	/OpenZFSConfiguration/OriginSnapshot/SnapshotARN	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Glue::Blueprint	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Glue::Catalog	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Glue::Catalog	/TargetRedshiftCatalog/CatalogArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::Glue::Classifier	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Glue::Crawler	mapped_live=0	mapped_held=0	unmapped=5
+unmapped	AWS::Glue::Crawler	/Role	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Role not in item shape
+unmapped	AWS::Glue::Crawler	/Targets/CatalogTargets/*/DlqEventQueueArn	USES_QUEUE	aws_sqs_queue	arn	pointer segment Targets not in item shape
+unmapped	AWS::Glue::Crawler	/Targets/CatalogTargets/*/EventQueueArn	USES_QUEUE	aws_sqs_queue	arn	pointer segment Targets not in item shape
+unmapped	AWS::Glue::Crawler	/Targets/S3Targets/*/DlqEventQueueArn	USES_QUEUE	aws_sqs_queue	arn	pointer segment Targets not in item shape
+unmapped	AWS::Glue::Crawler	/Targets/S3Targets/*/EventQueueArn	USES_QUEUE	aws_sqs_queue	arn	pointer segment Targets not in item shape
+type	AWS::Glue::CustomEntityType	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Glue::DataQualityRuleset	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Glue::Database	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Glue::Integration	mapped_live=1	mapped_held=0	unmapped=2
+unmapped	AWS::Glue::Integration	/SourceArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Glue::Integration	/TargetArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Glue::Job	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Glue::Job	/Role	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Role not in item shape
+type	AWS::Glue::MLTransform	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Glue::MLTransform	/Role	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Role not in item shape
+unmapped	AWS::Glue::MLTransform	/TransformEncryption/MLUserDataEncryption/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment TransformEncryption not in item shape
+type	AWS::Glue::Registry	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Glue::Schema	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Glue::Schema	/Registry/Arn	REFERENCES	aws_reference	arn	pointer segment Registry not in item shape
+type	AWS::Glue::SecurityConfiguration	mapped_live=2	mapped_held=0	unmapped=1
+unmapped	AWS::Glue::SecurityConfiguration	/EncryptionConfiguration/S3Encryptions/*/KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment S3Encryptions not in item shape
+type	AWS::Glue::Trigger	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Glue::Workflow	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::GuardDuty::Detector	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ImageBuilder::DistributionConfiguration	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::ImageBuilder::DistributionConfiguration	/Distributions/*/AmiDistributionConfiguration/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment Distributions not in item shape
+unmapped	AWS::ImageBuilder::DistributionConfiguration	/Distributions/*/AmiDistributionConfiguration/LaunchPermissionConfiguration/OrganizationArns/*	REFERENCES	aws_reference	arn	pointer segment Distributions not in item shape
+unmapped	AWS::ImageBuilder::DistributionConfiguration	/Distributions/*/AmiDistributionConfiguration/LaunchPermissionConfiguration/OrganizationalUnitArns/*	REFERENCES	aws_reference	arn	pointer segment Distributions not in item shape
+unmapped	AWS::ImageBuilder::DistributionConfiguration	/Distributions/*/LicenseConfigurationArns/*	REFERENCES	aws_reference	arn	pointer segment Distributions not in item shape
+type	AWS::ImageBuilder::ImagePipeline	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::ImageBuilder::ImagePipeline	/ContainerRecipeArn	REFERENCES	aws_reference	arn	pointer segment ContainerRecipeArn not in item shape
+unmapped	AWS::ImageBuilder::ImagePipeline	/DistributionConfigurationArn	REFERENCES	aws_reference	arn	pointer segment DistributionConfigurationArn not in item shape
+unmapped	AWS::ImageBuilder::ImagePipeline	/ExecutionRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ExecutionRole not in item shape
+unmapped	AWS::ImageBuilder::ImagePipeline	/ImageRecipeArn	REFERENCES	aws_reference	arn	pointer segment ImageRecipeArn not in item shape
+unmapped	AWS::ImageBuilder::ImagePipeline	/InfrastructureConfigurationArn	REFERENCES	aws_reference	arn	pointer segment InfrastructureConfigurationArn not in item shape
+unmapped	AWS::ImageBuilder::ImagePipeline	/Workflows/*/WorkflowArn	REFERENCES	aws_reference	arn	pointer segment Workflows not in item shape
+type	AWS::ImageBuilder::InfrastructureConfiguration	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::ImageBuilder::InfrastructureConfiguration	/Placement/HostResourceGroupArn	REFERENCES	aws_reference	arn	pointer segment Placement not in item shape
+unmapped	AWS::ImageBuilder::InfrastructureConfiguration	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+unmapped	AWS::ImageBuilder::InfrastructureConfiguration	/SnsTopicArn	USES_TOPIC	aws_sns_topic	arn	pointer segment SnsTopicArn not in item shape
+unmapped	AWS::ImageBuilder::InfrastructureConfiguration	/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment SubnetId not in item shape
+type	AWS::KMS::Alias	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::KMS::Key	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Kinesis::Stream	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Kinesis::StreamConsumer	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Kinesis::StreamConsumer	/StreamARN	REFERENCES	aws_reference	arn	pointer segment StreamARN not in item shape
+type	AWS::KinesisAnalyticsV2::Application	mapped_live=0	mapped_held=0	unmapped=7
+unmapped	AWS::KinesisAnalyticsV2::Application	/ApplicationConfiguration/ApplicationEncryptionConfiguration/KeyId	REFERENCES	aws_reference	arn	pointer segment ApplicationConfiguration not in item shape
+unmapped	AWS::KinesisAnalyticsV2::Application	/ApplicationConfiguration/VpcConfigurations/*/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment ApplicationConfiguration not in item shape
+unmapped	AWS::KinesisAnalyticsV2::Application	/ApplicationConfiguration/VpcConfigurations/*/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment ApplicationConfiguration not in item shape
+unmapped	AWS::KinesisAnalyticsV2::Application	/ApplicationConfiguration/ZeppelinApplicationConfiguration/CatalogConfiguration/GlueDataCatalogConfiguration/DatabaseARN	REFERENCES	aws_reference	arn	pointer segment ApplicationConfiguration not in item shape
+unmapped	AWS::KinesisAnalyticsV2::Application	/ApplicationConfiguration/ZeppelinApplicationConfiguration/CustomArtifactsConfiguration/*/S3ContentLocation/BucketARN	REFERENCES	aws_reference	arn	pointer segment ApplicationConfiguration not in item shape
+unmapped	AWS::KinesisAnalyticsV2::Application	/ApplicationConfiguration/ZeppelinApplicationConfiguration/DeployAsApplicationConfiguration/S3ContentLocation/BucketARN	REFERENCES	aws_reference	arn	pointer segment ApplicationConfiguration not in item shape
+unmapped	AWS::KinesisAnalyticsV2::Application	/ServiceExecutionRole	REFERENCES	aws_reference	arn	pointer segment ServiceExecutionRole not in item shape
+type	AWS::KinesisFirehose::DeliveryStream	mapped_live=0	mapped_held=0	unmapped=19
+unmapped	AWS::KinesisFirehose::DeliveryStream	/DeliveryStreamEncryptionConfigurationInput/KeyARN	REFERENCES	aws_reference	arn	pointer segment DeliveryStreamEncryptionConfigurationInput not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/ExtendedS3DestinationConfiguration/BucketARN	REFERENCES	aws_reference	arn	pointer segment ExtendedS3DestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/ExtendedS3DestinationConfiguration/DataFormatConversionConfiguration/SchemaConfiguration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ExtendedS3DestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/ExtendedS3DestinationConfiguration/EncryptionConfiguration/KMSEncryptionConfig/AWSKMSKeyARN	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ExtendedS3DestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/ExtendedS3DestinationConfiguration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ExtendedS3DestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/ExtendedS3DestinationConfiguration/S3BackupConfiguration/BucketARN	REFERENCES	aws_reference	arn	pointer segment ExtendedS3DestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/ExtendedS3DestinationConfiguration/S3BackupConfiguration/EncryptionConfiguration/KMSEncryptionConfig/AWSKMSKeyARN	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ExtendedS3DestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/ExtendedS3DestinationConfiguration/S3BackupConfiguration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ExtendedS3DestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/HttpEndpointDestinationConfiguration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment HttpEndpointDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/HttpEndpointDestinationConfiguration/S3Configuration/BucketARN	REFERENCES	aws_reference	arn	pointer segment HttpEndpointDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/HttpEndpointDestinationConfiguration/S3Configuration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment HttpEndpointDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/RedshiftDestinationConfiguration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RedshiftDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/RedshiftDestinationConfiguration/S3BackupConfiguration/BucketARN	REFERENCES	aws_reference	arn	pointer segment RedshiftDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/RedshiftDestinationConfiguration/S3BackupConfiguration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RedshiftDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/RedshiftDestinationConfiguration/S3Configuration/BucketARN	REFERENCES	aws_reference	arn	pointer segment RedshiftDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/RedshiftDestinationConfiguration/S3Configuration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RedshiftDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/SplunkDestinationConfiguration/S3Configuration/BucketARN	REFERENCES	aws_reference	arn	pointer segment SplunkDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/SplunkDestinationConfiguration/S3Configuration/EncryptionConfiguration/KMSEncryptionConfig/AWSKMSKeyARN	ENCRYPTED_BY	aws_kms_key	arn	pointer segment SplunkDestinationConfiguration not in item shape
+unmapped	AWS::KinesisFirehose::DeliveryStream	/SplunkDestinationConfiguration/S3Configuration/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment SplunkDestinationConfiguration not in item shape
+type	AWS::Lambda::CodeSigningConfig	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Lambda::CodeSigningConfig	/AllowedPublishers/SigningProfileVersionArns/*	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Lambda::EventSourceMapping	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::Lambda::EventSourceMapping	/AmazonManagedKafkaEventSourceConfig/SchemaRegistryConfig/AccessConfigs/*/URI	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Lambda::EventSourceMapping	/DestinationConfig/OnFailure/Destination	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Lambda::EventSourceMapping	/EventSourceArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Lambda::EventSourceMapping	/FunctionName	REFERENCES	aws_reference	arn	pointer segment FunctionName not in item shape
+unmapped	AWS::Lambda::EventSourceMapping	/KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyArn not in item shape
+unmapped	AWS::Lambda::EventSourceMapping	/SelfManagedKafkaEventSourceConfig/SchemaRegistryConfig/AccessConfigs/*/URI	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Lambda::Function	mapped_live=2	mapped_held=2	unmapped=6
+unmapped	AWS::Lambda::Function	/CodeSigningConfigArn	REFERENCES	aws_reference	arn	pointer segment CodeSigningConfigArn not in item shape
+unmapped	AWS::Lambda::Function	/DeadLetterConfig/TargetArn	DELIVERS_TO	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Lambda::Function	/FileSystemConfigs/*/Arn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+unmapped	AWS::Lambda::Function	/KmsKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyArn not in item shape
+unmapped	AWS::Lambda::Function	/Role	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::Lambda::Function	/RuntimeManagementConfig/RuntimeVersionArn	REFERENCES	aws_reference	arn	pointer segment RuntimeManagementConfig not in item shape
+type	AWS::Logs::Delivery	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Logs::Delivery	/DeliveryDestinationArn	REFERENCES	aws_reference	arn	pointer segment DeliveryDestinationArn not in item shape
+type	AWS::Logs::DeliveryDestination	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Logs::DeliveryDestination	/DestinationResourceArn	REFERENCES	aws_reference	arn	pointer segment DestinationResourceArn not in item shape
+type	AWS::Logs::DeliverySource	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Logs::DeliverySource	/ResourceArns/*	REFERENCES	aws_reference	arn	pointer segment ResourceArns not in item shape
+type	AWS::Logs::Destination	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Logs::Destination	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+unmapped	AWS::Logs::Destination	/TargetArn	DELIVERS_TO	aws_reference	arn	pointer segment TargetArn not in item shape
+type	AWS::Logs::Integration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Logs::LogAnomalyDetector	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Logs::LogAnomalyDetector	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+type	AWS::Logs::LogGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Logs::LogGroup	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+type	AWS::Logs::LogStream	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Logs::MetricFilter	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Logs::QueryDefinition	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Logs::ResourcePolicy	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Logs::ScheduledQuery	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Logs::ScheduledQuery	/DestinationConfiguration/S3Configuration/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment DestinationConfiguration not in item shape
+unmapped	AWS::Logs::ScheduledQuery	/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	pointer segment ExecutionRoleArn not in item shape
+type	AWS::Logs::SubscriptionFilter	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Logs::SubscriptionFilter	/DestinationArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Logs::SubscriptionFilter	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+type	AWS::MSK::Cluster	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::MSK::Cluster	/BrokerNodeGroupInfo/ClientSubnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment BrokerNodeGroupInfo not in item shape
+unmapped	AWS::MSK::Cluster	/BrokerNodeGroupInfo/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment BrokerNodeGroupInfo not in item shape
+unmapped	AWS::MSK::Cluster	/ConfigurationInfo/Arn	REFERENCES	aws_reference	arn	pointer segment ConfigurationInfo not in item shape
+type	AWS::MSK::Configuration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::MSK::Replicator	mapped_live=0	mapped_held=0	unmapped=12
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/AmazonMskCluster/MskClusterArn	REFERENCES	aws_reference	arn	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/ClientAuthentication/MTLS/SecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/ClientAuthentication/SaslOAuthBearer/ClientCredentials/TokenRequestSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/ClientAuthentication/SaslOAuthBearer/ClientCredentialsAssertion/TokenRequestSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/ClientAuthentication/SaslOAuthBearer/IamJwtBearer/TokenRequestSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/ClientAuthentication/SaslOAuthBearer/TokenEndpointTlsCertificateArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/ClientAuthentication/SaslScram/SecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/KafkaClusters/*/VpcConfig/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment KafkaClusters not in item shape
+unmapped	AWS::MSK::Replicator	/ReplicationInfoList/*/SourceKafkaClusterArn	REFERENCES	aws_reference	arn	pointer segment ReplicationInfoList not in item shape
+unmapped	AWS::MSK::Replicator	/ReplicationInfoList/*/TargetKafkaClusterArn	REFERENCES	aws_reference	arn	pointer segment ReplicationInfoList not in item shape
+unmapped	AWS::MSK::Replicator	/ServiceExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	pointer segment ServiceExecutionRoleArn not in item shape
+type	AWS::MSK::ServerlessCluster	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::MSK::ServerlessCluster	/VpcConfigs/*/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+unmapped	AWS::MSK::ServerlessCluster	/VpcConfigs/*/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::MSK::VpcConnection	mapped_live=1	mapped_held=0	unmapped=2
+unmapped	AWS::MSK::VpcConnection	/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroups not in item shape
+unmapped	AWS::MSK::VpcConnection	/TargetClusterArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::MemoryDB::ACL	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::MemoryDB::Cluster	mapped_live=2	mapped_held=0	unmapped=1
+unmapped	AWS::MemoryDB::Cluster	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+type	AWS::MemoryDB::ParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::MemoryDB::Snapshot	mapped_live=3	mapped_held=0	unmapped=0
+type	AWS::MemoryDB::SubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::MemoryDB::SubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::MemoryDB::User	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Neptune::DBCluster	mapped_live=1	mapped_held=0	unmapped=2
+unmapped	AWS::Neptune::DBCluster	/AssociatedRoles/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+unmapped	AWS::Neptune::DBCluster	/VpcSecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment VpcSecurityGroupIds not in item shape
+type	AWS::Neptune::DBClusterParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Neptune::DBInstance	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Neptune::DBParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Neptune::DBSubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Neptune::DBSubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::Neptune::EventSubscription	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::NetworkFirewall::ContainerAssociation	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::NetworkFirewall::ContainerAssociation	/ContainerMonitoringConfigurations/*/ClusterArn	REFERENCES	aws_reference	arn	pointer segment ContainerMonitoringConfigurations not in item shape
+type	AWS::NetworkFirewall::Firewall	mapped_live=0	mapped_held=0	unmapped=7
+unmapped	AWS::NetworkFirewall::Firewall	/FirewallPolicyArn	USES_FIREWALL_POLICY	aws_network_firewall_firewall_policy	arn	pointer segment FirewallPolicyArn not in item shape
+unmapped	AWS::NetworkFirewall::Firewall	/NatGatewayMappings/*/NatGatewayId	USES_NAT_GATEWAY	aws_vpc_nat_gateway	template	pointer segment NatGatewayMappings not in item shape
+unmapped	AWS::NetworkFirewall::Firewall	/SubnetMappings/*/SubnetId	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetMappings not in item shape
+unmapped	AWS::NetworkFirewall::Firewall	/TransitGatewayId	USES_TRANSIT_GATEWAY	aws_ec2_transit_gateway	template	pointer segment TransitGatewayId not in item shape
+unmapped	AWS::NetworkFirewall::Firewall	/VpcEndpoint/SubnetMappings/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment VpcEndpoint not in item shape
+unmapped	AWS::NetworkFirewall::Firewall	/VpcEndpoint/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcEndpoint not in item shape
+unmapped	AWS::NetworkFirewall::Firewall	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::NetworkFirewall::FirewallPolicy	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::NetworkFirewall::FirewallPolicy	/FirewallPolicy/StatefulRuleGroupReferences/*/ResourceArn	REFERENCES	aws_reference	arn	pointer segment FirewallPolicy not in item shape
+unmapped	AWS::NetworkFirewall::FirewallPolicy	/FirewallPolicy/StatelessRuleGroupReferences/*/ResourceArn	REFERENCES	aws_reference	arn	pointer segment FirewallPolicy not in item shape
+unmapped	AWS::NetworkFirewall::FirewallPolicy	/FirewallPolicy/TLSInspectionConfigurationArn	REFERENCES	aws_reference	arn	pointer segment FirewallPolicy not in item shape
+type	AWS::NetworkFirewall::RuleGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::NetworkFirewall::TLSInspectionConfiguration	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::NetworkFirewall::TLSInspectionConfiguration	/TLSInspectionConfiguration/ServerCertificateConfigurations/*/CertificateAuthorityArn	REFERENCES	aws_reference	arn	pointer segment TLSInspectionConfiguration not in item shape
+unmapped	AWS::NetworkFirewall::TLSInspectionConfiguration	/TLSInspectionConfiguration/ServerCertificateConfigurations/*/ServerCertificates/*/ResourceArn	REFERENCES	aws_reference	arn	pointer segment TLSInspectionConfiguration not in item shape
+type	AWS::NetworkFirewall::VpcEndpointAssociation	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::NetworkFirewall::VpcEndpointAssociation	/FirewallArn	REFERENCES	aws_reference	arn	pointer segment FirewallArn not in item shape
+unmapped	AWS::NetworkFirewall::VpcEndpointAssociation	/SubnetMapping/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment SubnetMapping not in item shape
+unmapped	AWS::NetworkFirewall::VpcEndpointAssociation	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::OpenSearchServerless::Collection	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::OpenSearchServerless::VpcEndpoint	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::OpenSearchServerless::VpcEndpoint	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+unmapped	AWS::OpenSearchServerless::VpcEndpoint	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+unmapped	AWS::OpenSearchServerless::VpcEndpoint	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::Pipes::Pipe	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::Pipes::Pipe	/Enrichment	ENRICHED_BY	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Pipes::Pipe	/LogConfiguration/CloudwatchLogsLogDestination/LogGroupArn	REFERENCES	aws_reference	arn	pointer segment LogConfiguration not in item shape
+unmapped	AWS::Pipes::Pipe	/LogConfiguration/FirehoseLogDestination/DeliveryStreamArn	REFERENCES	aws_reference	arn	pointer segment LogConfiguration not in item shape
+unmapped	AWS::Pipes::Pipe	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+unmapped	AWS::Pipes::Pipe	/Source	READS_FROM	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Pipes::Pipe	/Target	DELIVERS_TO	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::RAM::ResourceShare	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::RDS::ClusterSnapshot	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::RDS::CustomDBEngineVersion	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::RDS::CustomDBEngineVersion	/ImageId	USES_IMAGE	aws_ec2_image	template	type not callable
+unmapped	AWS::RDS::CustomDBEngineVersion	/KMSKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+type	AWS::RDS::DBCluster	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::RDS::DBCluster	/AssociatedRoles/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::RDS::DBCluster	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::RDS::DBCluster	/MasterUserSecret/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::RDS::DBCluster	/MasterUserSecret/SecretArn	USES_SECRET	aws_secrets_manager_secret	arn	type not callable
+unmapped	AWS::RDS::DBCluster	/MonitoringRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::RDS::DBCluster	/VpcSecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+type	AWS::RDS::DBClusterEndpoint	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::RDS::DBClusterParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::RDS::DBInstance	mapped_live=0	mapped_held=0	unmapped=7
+unmapped	AWS::RDS::DBInstance	/AssociatedRoles/*/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::RDS::DBInstance	/DomainAuthSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	type not callable
+unmapped	AWS::RDS::DBInstance	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::RDS::DBInstance	/MasterUserSecret/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	type not callable
+unmapped	AWS::RDS::DBInstance	/MasterUserSecret/SecretArn	USES_SECRET	aws_secrets_manager_secret	arn	type not callable
+unmapped	AWS::RDS::DBInstance	/MonitoringRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::RDS::DBInstance	/TdeCredentialArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::RDS::DBParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::RDS::DBProxy	mapped_live=1	mapped_held=3	unmapped=1
+unmapped	AWS::RDS::DBProxy	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::RDS::DBProxyEndpoint	mapped_live=1	mapped_held=2	unmapped=0
+type	AWS::RDS::DBShardGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::RDS::DBSnapshot	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::RDS::DBSubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::RDS::DBSubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::RDS::EventSubscription	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::RDS::Integration	mapped_live=1	mapped_held=0	unmapped=2
+unmapped	AWS::RDS::Integration	/SourceArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::RDS::Integration	/TargetArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::RDS::OptionGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Redshift::Cluster	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::Redshift::Cluster	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+unmapped	AWS::Redshift::Cluster	/VpcSecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment VpcSecurityGroupIds not in item shape
+type	AWS::Redshift::ClusterParameterGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Redshift::ClusterSubnetGroup	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Redshift::ClusterSubnetGroup	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::Redshift::EndpointAccess	mapped_live=2	mapped_held=2	unmapped=1
+unmapped	AWS::Redshift::EndpointAccess	/VpcSecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment VpcSecurityGroupIds not in item shape
+type	AWS::Redshift::EndpointAuthorization	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Redshift::EventSubscription	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::Redshift::Integration	mapped_live=1	mapped_held=0	unmapped=2
+unmapped	AWS::Redshift::Integration	/SourceArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::Redshift::Integration	/TargetArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Redshift::QEV2IdcApplication	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Redshift::QEV2IdcApplication	/IdcInstanceArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::Redshift::RedshiftIdcApplication	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::Redshift::RedshiftIdcApplication	/AuthorizedTokenIssuerList/*/TrustedTokenIssuerArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::Redshift::RedshiftIdcApplication	/IamRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::Redshift::RedshiftIdcApplication	/IdcInstanceArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::Redshift::ScheduledAction	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Redshift::ScheduledAction	/IamRole	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::Redshift::Snapshot	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Redshift::Snapshot	/VpcId	IN_VPC	aws_vpc	template	type not callable
+type	AWS::Redshift::SnapshotCopyGrant	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Redshift::SnapshotSchedule	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Redshift::UsageLimit	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::RedshiftServerless::Namespace	mapped_live=0	mapped_held=0	unmapped=6
+unmapped	AWS::RedshiftServerless::Namespace	/DefaultIamRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment DefaultIamRoleArn not in item shape
+unmapped	AWS::RedshiftServerless::Namespace	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+unmapped	AWS::RedshiftServerless::Namespace	/Namespace/AdminPasswordSecretArn	USES_SECRET	aws_secrets_manager_secret	arn	pointer segment Namespace not in item shape
+unmapped	AWS::RedshiftServerless::Namespace	/Namespace/DefaultIamRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment Namespace not in item shape
+unmapped	AWS::RedshiftServerless::Namespace	/Namespace/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment Namespace not in item shape
+unmapped	AWS::RedshiftServerless::Namespace	/Namespace/NamespaceArn	REFERENCES	aws_reference	arn	pointer segment Namespace not in item shape
+type	AWS::RedshiftServerless::Workgroup	mapped_live=0	mapped_held=0	unmapped=7
+unmapped	AWS::RedshiftServerless::Workgroup	/Workgroup/Endpoint/VpcEndpoints/*/NetworkInterfaces/*/NetworkInterfaceId	USES_NETWORK_INTERFACE	aws_ec2_network_interface	template	pointer segment Workgroup not in item shape
+unmapped	AWS::RedshiftServerless::Workgroup	/Workgroup/Endpoint/VpcEndpoints/*/NetworkInterfaces/*/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment Workgroup not in item shape
+unmapped	AWS::RedshiftServerless::Workgroup	/Workgroup/Endpoint/VpcEndpoints/*/VpcEndpointId	USES_VPC_ENDPOINT	aws_vpc_endpoint	template	pointer segment Workgroup not in item shape
+unmapped	AWS::RedshiftServerless::Workgroup	/Workgroup/Endpoint/VpcEndpoints/*/VpcId	IN_VPC	aws_vpc	template	pointer segment Workgroup not in item shape
+unmapped	AWS::RedshiftServerless::Workgroup	/Workgroup/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment Workgroup not in item shape
+unmapped	AWS::RedshiftServerless::Workgroup	/Workgroup/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment Workgroup not in item shape
+unmapped	AWS::RedshiftServerless::Workgroup	/Workgroup/WorkgroupArn	REFERENCES	aws_reference	arn	pointer segment Workgroup not in item shape
+type	AWS::Route53Resolver::FirewallConfig	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::FirewallDomainList	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::FirewallRuleGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::FirewallRuleGroupAssociation	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::OutpostResolver	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Route53Resolver::OutpostResolver	/OutpostArn	REFERENCES	aws_reference	arn	type not callable
+type	AWS::Route53Resolver::ResolverConfig	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::ResolverDNSSECConfig	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::ResolverEndpoint	mapped_live=1	mapped_held=1	unmapped=1
+unmapped	AWS::Route53Resolver::ResolverEndpoint	/IpAddresses/*/SubnetId	USES_SUBNET	aws_vpc_subnet	template	pointer segment IpAddresses not in item shape
+type	AWS::Route53Resolver::ResolverQueryLoggingConfig	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::Route53Resolver::ResolverQueryLoggingConfig	/DestinationArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::Route53Resolver::ResolverQueryLoggingConfigAssociation	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::ResolverRule	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::Route53Resolver::ResolverRuleAssociation	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::S3::AccessGrantsInstance	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::S3::AccessGrantsInstance	/IdentityCenterArn	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+type	AWS::S3::AccessGrantsLocation	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::S3::AccessGrantsLocation	/IamRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment IamRoleArn not in item shape
+type	AWS::S3::AccessPoint	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::S3Express::DirectoryBucket	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::S3Express::DirectoryBucket	/InventoryConfigurations/*/Destination/BucketArn	REFERENCES	aws_reference	arn	pointer segment InventoryConfigurations not in item shape
+unmapped	AWS::S3Express::DirectoryBucket	/MetricsConfigurations/*/AccessPointArn	REFERENCES	aws_reference	arn	pointer segment MetricsConfigurations not in item shape
+type	AWS::S3Tables::TableBucket	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::S3Tables::TableBucket	/EncryptionConfiguration/KMSKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment EncryptionConfiguration not in item shape
+unmapped	AWS::S3Tables::TableBucket	/ReplicationConfiguration/Role	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ReplicationConfiguration not in item shape
+unmapped	AWS::S3Tables::TableBucket	/ReplicationConfiguration/Rules/*/Destinations/*/DestinationTableBucketARN	REFERENCES	aws_reference	arn	pointer segment ReplicationConfiguration not in item shape
+type	AWS::SES::ConfigurationSet	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SES::ConfigurationSet	/ArchivingOptions/ArchiveArn	REFERENCES	aws_reference	arn	pointer segment ArchivingOptions not in item shape
+type	AWS::SES::ContactList	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SES::DedicatedIpPool	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SES::EmailIdentity	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SES::MailManagerIngressPoint	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SES::MailManagerIngressPoint	/NetworkConfiguration/PrivateNetworkConfiguration/VpcEndpointId	USES_VPC_ENDPOINT	aws_vpc_endpoint	template	pointer segment NetworkConfiguration not in item shape
+type	AWS::SES::ReceiptRuleSet	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SES::Template	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SNS::Subscription	mapped_live=1	mapped_held=0	unmapped=1
+unmapped	AWS::SNS::Subscription	/SubscriptionRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment SubscriptionRoleArn not in item shape
+type	AWS::SNS::Topic	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::SNS::Topic	/DeliveryStatusLogging/*/FailureFeedbackRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment DeliveryStatusLogging not in item shape
+unmapped	AWS::SNS::Topic	/DeliveryStatusLogging/*/SuccessFeedbackRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment DeliveryStatusLogging not in item shape
+type	AWS::SQS::Queue	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SSM::Association	mapped_live=1	mapped_held=0	unmapped=1
+unmapped	AWS::SSM::Association	/AssociationDispatchAssumeRole	REFERENCES	aws_reference	arn	pointer segment AssociationDispatchAssumeRole not in item shape
+type	AWS::SSM::DefaultHostManagementConfiguration	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SSM::DefaultHostManagementConfiguration	/CustomerManagedRoleArn	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+type	AWS::SSM::Document	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SSM::MaintenanceWindow	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SSM::OpsItem	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SSM::Parameter	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SSM::PatchBaseline	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SSM::ResourceDataSync	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::SSM::ResourceDataSync	/KMSKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KMSKeyArn not in item shape
+unmapped	AWS::SSM::ResourceDataSync	/S3Destination/KMSKeyArn	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KMSKeyArn not in item shape
+type	AWS::SageMaker::AppImageConfig	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SageMaker::Cluster	mapped_live=0	mapped_held=0	unmapped=14
+unmapped	AWS::SageMaker::Cluster	/ClusterRole	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::SageMaker::Cluster	/InstanceGroups/*/ExecutionRole	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::SageMaker::Cluster	/InstanceGroups/*/ImageId	USES_IMAGE	aws_ec2_image	template	type not callable
+unmapped	AWS::SageMaker::Cluster	/InstanceGroups/*/OverrideVpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+unmapped	AWS::SageMaker::Cluster	/InstanceGroups/*/OverrideVpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::SageMaker::Cluster	/InstanceGroups/*/TrainingPlanArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::SageMaker::Cluster	/Orchestrator/Eks/ClusterArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::SageMaker::Cluster	/Orchestrator/Slurm/AccountingDatabase/SecretArn	USES_SECRET	aws_secrets_manager_secret	arn	type not callable
+unmapped	AWS::SageMaker::Cluster	/RestrictedInstanceGroups/*/ExecutionRole	ASSUMES_ROLE	aws_iam_role	arn	type not callable
+unmapped	AWS::SageMaker::Cluster	/RestrictedInstanceGroups/*/OverrideVpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+unmapped	AWS::SageMaker::Cluster	/RestrictedInstanceGroups/*/OverrideVpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+unmapped	AWS::SageMaker::Cluster	/RestrictedInstanceGroups/*/TrainingPlanArn	REFERENCES	aws_reference	arn	type not callable
+unmapped	AWS::SageMaker::Cluster	/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	type not callable
+unmapped	AWS::SageMaker::Cluster	/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	type not callable
+type	AWS::SageMaker::CodeRepository	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::SageMaker::DataQualityJobDefinition	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::SageMaker::DataQualityJobDefinition	/DataQualityJobOutputConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment DataQualityJobOutputConfig not in item shape
+unmapped	AWS::SageMaker::DataQualityJobDefinition	/NetworkConfig/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::DataQualityJobDefinition	/NetworkConfig/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::DataQualityJobDefinition	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::SageMaker::Domain	mapped_live=0	mapped_held=0	unmapped=55
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/ExecutionRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterLabAppSettings/BuiltInLifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterLabAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterLabAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterLabAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterLabAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterLabAppSettings/LifecycleConfigArns/*	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterServerAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterServerAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterServerAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterServerAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/JupyterServerAppSettings/LifecycleConfigArns/*	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/KernelGatewayAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/KernelGatewayAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/KernelGatewayAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/KernelGatewayAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/KernelGatewayAppSettings/LifecycleConfigArns/*	REFERENCES	aws_reference	arn	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultSpaceSettings/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment DefaultSpaceSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/CodeEditorAppSettings/BuiltInLifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/CodeEditorAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/CodeEditorAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/CodeEditorAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/CodeEditorAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/CodeEditorAppSettings/LifecycleConfigArns/*	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/ExecutionRole	ASSUMES_ROLE	aws_iam_role	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterLabAppSettings/BuiltInLifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterLabAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterLabAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterLabAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterLabAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterLabAppSettings/LifecycleConfigArns/*	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterServerAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterServerAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterServerAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterServerAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/JupyterServerAppSettings/LifecycleConfigArns/*	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/KernelGatewayAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/KernelGatewayAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/KernelGatewayAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/KernelGatewayAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/KernelGatewayAppSettings/LifecycleConfigArns/*	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/RSessionAppSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/RSessionAppSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/RSessionAppSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/RSessionAppSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DefaultUserSettings/SecurityGroups/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment DefaultUserSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DomainSettings/RStudioServerProDomainSettings/DefaultResourceSpec/LifecycleConfigArn	REFERENCES	aws_reference	arn	pointer segment DomainSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DomainSettings/RStudioServerProDomainSettings/DefaultResourceSpec/SageMakerImageArn	REFERENCES	aws_reference	arn	pointer segment DomainSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DomainSettings/RStudioServerProDomainSettings/DefaultResourceSpec/SageMakerImageVersionArn	REFERENCES	aws_reference	arn	pointer segment DomainSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DomainSettings/RStudioServerProDomainSettings/DefaultResourceSpec/TrainingPlanArn	REFERENCES	aws_reference	arn	pointer segment DomainSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DomainSettings/RStudioServerProDomainSettings/DomainExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	pointer segment DomainSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/DomainSettings/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment DomainSettings not in item shape
+unmapped	AWS::SageMaker::Domain	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+unmapped	AWS::SageMaker::Domain	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+unmapped	AWS::SageMaker::Domain	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::SageMaker::Endpoint	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SageMaker::EndpointConfig	mapped_live=0	mapped_held=0	unmapped=10
+unmapped	AWS::SageMaker::EndpointConfig	/AsyncInferenceConfig/OutputConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment AsyncInferenceConfig not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/DataCaptureConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment DataCaptureConfig not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	pointer segment ExecutionRoleArn not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/ProductionVariants/*/CapacityReservationConfig/MlReservationArn	REFERENCES	aws_reference	arn	pointer segment ProductionVariants not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/ProductionVariants/*/CoreDumpConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ProductionVariants not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/ShadowProductionVariants/*/CapacityReservationConfig/MlReservationArn	REFERENCES	aws_reference	arn	pointer segment ShadowProductionVariants not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/ShadowProductionVariants/*/CoreDumpConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ShadowProductionVariants not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment VpcConfig not in item shape
+unmapped	AWS::SageMaker::EndpointConfig	/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment VpcConfig not in item shape
+type	AWS::SageMaker::FeatureGroup	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::SageMaker::FeatureGroup	/OfflineStoreConfig/S3StorageConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment OfflineStoreConfig not in item shape
+unmapped	AWS::SageMaker::FeatureGroup	/OnlineStoreConfig/SecurityConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment OnlineStoreConfig not in item shape
+unmapped	AWS::SageMaker::FeatureGroup	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::SageMaker::Image	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SageMaker::Image	/ImageRoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment ImageRoleArn not in item shape
+type	AWS::SageMaker::InferenceComponent	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SageMaker::InferenceComponent	/EndpointArn	REFERENCES	aws_reference	arn	identifier matches multiple enumerated kinds
+type	AWS::SageMaker::MlflowTrackingServer	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SageMaker::MlflowTrackingServer	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::SageMaker::Model	mapped_live=0	mapped_held=0	unmapped=7
+unmapped	AWS::SageMaker::Model	/Containers/*/ImageConfig/RepositoryAuthConfig/RepositoryCredentialsProviderArn	REFERENCES	aws_reference	arn	pointer segment Containers not in item shape
+unmapped	AWS::SageMaker::Model	/Containers/*/ModelDataSource/S3DataSource/HubAccessConfig/HubContentArn	REFERENCES	aws_reference	arn	pointer segment Containers not in item shape
+unmapped	AWS::SageMaker::Model	/ExecutionRoleArn	USES_EXECUTION_ROLE	aws_iam_role	arn	pointer segment ExecutionRoleArn not in item shape
+unmapped	AWS::SageMaker::Model	/PrimaryContainer/ImageConfig/RepositoryAuthConfig/RepositoryCredentialsProviderArn	REFERENCES	aws_reference	arn	pointer segment PrimaryContainer not in item shape
+unmapped	AWS::SageMaker::Model	/PrimaryContainer/ModelDataSource/S3DataSource/HubAccessConfig/HubContentArn	REFERENCES	aws_reference	arn	pointer segment PrimaryContainer not in item shape
+unmapped	AWS::SageMaker::Model	/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment VpcConfig not in item shape
+unmapped	AWS::SageMaker::Model	/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment VpcConfig not in item shape
+type	AWS::SageMaker::ModelBiasJobDefinition	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::SageMaker::ModelBiasJobDefinition	/ModelBiasJobOutputConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ModelBiasJobOutputConfig not in item shape
+unmapped	AWS::SageMaker::ModelBiasJobDefinition	/NetworkConfig/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::ModelBiasJobDefinition	/NetworkConfig/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::ModelBiasJobDefinition	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::SageMaker::ModelCard	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::SageMaker::ModelCard	/CreatedBy/UserProfileArn	REFERENCES	aws_reference	arn	pointer segment CreatedBy not in item shape
+unmapped	AWS::SageMaker::ModelCard	/LastModifiedBy/UserProfileArn	REFERENCES	aws_reference	arn	pointer segment LastModifiedBy not in item shape
+unmapped	AWS::SageMaker::ModelCard	/SecurityConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment SecurityConfig not in item shape
+type	AWS::SageMaker::ModelExplainabilityJobDefinition	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::SageMaker::ModelExplainabilityJobDefinition	/ModelExplainabilityJobOutputConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ModelExplainabilityJobOutputConfig not in item shape
+unmapped	AWS::SageMaker::ModelExplainabilityJobDefinition	/NetworkConfig/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::ModelExplainabilityJobDefinition	/NetworkConfig/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::ModelExplainabilityJobDefinition	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::SageMaker::ModelPackage	mapped_live=0	mapped_held=0	unmapped=5
+unmapped	AWS::SageMaker::ModelPackage	/ModelPackageGroupName	REFERENCES	aws_reference	arn	no enumerated kind has this identifier
+unmapped	AWS::SageMaker::ModelPackage	/SecurityConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment SecurityConfig not in item shape
+unmapped	AWS::SageMaker::ModelPackage	/SourceAlgorithmSpecification/SourceAlgorithms/*/AlgorithmName	REFERENCES	aws_reference	arn	pointer segment SourceAlgorithmSpecification not in item shape
+unmapped	AWS::SageMaker::ModelPackage	/ValidationSpecification/ValidationProfiles/*/TransformJobDefinition/TransformOutput/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ValidationSpecification not in item shape
+unmapped	AWS::SageMaker::ModelPackage	/ValidationSpecification/ValidationRole	REFERENCES	aws_reference	arn	pointer segment ValidationSpecification not in item shape
+type	AWS::SageMaker::ModelPackageGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SageMaker::ModelQualityJobDefinition	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::SageMaker::ModelQualityJobDefinition	/ModelQualityJobOutputConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ModelQualityJobOutputConfig not in item shape
+unmapped	AWS::SageMaker::ModelQualityJobDefinition	/NetworkConfig/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::ModelQualityJobDefinition	/NetworkConfig/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment NetworkConfig not in item shape
+unmapped	AWS::SageMaker::ModelQualityJobDefinition	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::SageMaker::MonitoringSchedule	mapped_live=0	mapped_held=0	unmapped=5
+unmapped	AWS::SageMaker::MonitoringSchedule	/LastMonitoringExecutionSummary/ProcessingJobArn	REFERENCES	aws_reference	arn	pointer segment LastMonitoringExecutionSummary not in item shape
+unmapped	AWS::SageMaker::MonitoringSchedule	/MonitoringScheduleConfig/MonitoringJobDefinition/MonitoringOutputConfig/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment MonitoringScheduleConfig not in item shape
+unmapped	AWS::SageMaker::MonitoringSchedule	/MonitoringScheduleConfig/MonitoringJobDefinition/NetworkConfig/VpcConfig/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment MonitoringScheduleConfig not in item shape
+unmapped	AWS::SageMaker::MonitoringSchedule	/MonitoringScheduleConfig/MonitoringJobDefinition/NetworkConfig/VpcConfig/Subnets/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment MonitoringScheduleConfig not in item shape
+unmapped	AWS::SageMaker::MonitoringSchedule	/MonitoringScheduleConfig/MonitoringJobDefinition/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment MonitoringScheduleConfig not in item shape
+type	AWS::SageMaker::NotebookInstance	mapped_live=0	mapped_held=0	unmapped=4
+unmapped	AWS::SageMaker::NotebookInstance	/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment KmsKeyId not in item shape
+unmapped	AWS::SageMaker::NotebookInstance	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+unmapped	AWS::SageMaker::NotebookInstance	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+unmapped	AWS::SageMaker::NotebookInstance	/SubnetId	IN_SUBNET	aws_vpc_subnet	template	pointer segment SubnetId not in item shape
+type	AWS::SageMaker::NotebookInstanceLifecycleConfig	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SageMaker::Pipeline	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SageMaker::Pipeline	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	unresolved legacy target name
+type	AWS::SageMaker::Project	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::SageMaker::Project	/TemplateProviderDetails/*/CfnTemplateProviderDetail/RoleARN	ASSUMES_ROLE	aws_iam_role	arn	pointer segment TemplateProviderDetails not in item shape
+type	AWS::SageMaker::Workforce	mapped_live=1	mapped_held=2	unmapped=0
+type	AWS::SageMaker::Workteam	mapped_live=1	mapped_held=0	unmapped=0
+type	AWS::Scheduler::ScheduleGroup	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::SecretsManager::Secret	mapped_live=1	mapped_held=0	unmapped=1
+unmapped	AWS::SecretsManager::Secret	/ReplicaRegions/*/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment ReplicaRegions not in item shape
+type	AWS::SecurityHub::Hub	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ServiceDiscovery::HttpNamespace	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ServiceDiscovery::PrivateDnsNamespace	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ServiceDiscovery::PublicDnsNamespace	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::ServiceDiscovery::Service	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::StepFunctions::Activity	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::StepFunctions::Activity	/EncryptionConfiguration/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment EncryptionConfiguration not in item shape
+type	AWS::StepFunctions::StateMachine	mapped_live=0	mapped_held=0	unmapped=3
+unmapped	AWS::StepFunctions::StateMachine	/EncryptionConfiguration/KmsKeyId	ENCRYPTED_BY	aws_kms_key	arn	pointer segment EncryptionConfiguration not in item shape
+unmapped	AWS::StepFunctions::StateMachine	/LoggingConfiguration/Destinations/*/CloudWatchLogsLogGroup/LogGroupArn	REFERENCES	aws_reference	arn	pointer segment LoggingConfiguration not in item shape
+unmapped	AWS::StepFunctions::StateMachine	/RoleArn	ASSUMES_ROLE	aws_iam_role	arn	pointer segment RoleArn not in item shape
+type	AWS::VpcLattice::ResourceConfiguration	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::VpcLattice::ResourceGateway	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::VpcLattice::ResourceGateway	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+unmapped	AWS::VpcLattice::ResourceGateway	/SubnetIds/*	USES_SUBNET	aws_vpc_subnet	template	pointer segment SubnetIds not in item shape
+type	AWS::VpcLattice::Service	mapped_live=0	mapped_held=0	unmapped=1
+unmapped	AWS::VpcLattice::Service	/CertificateArn	USES_CERTIFICATE	aws_certificate_manager_certificate	arn	pointer segment CertificateArn not in item shape
+type	AWS::VpcLattice::ServiceNetwork	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::VpcLattice::ServiceNetworkServiceAssociation	mapped_live=0	mapped_held=0	unmapped=0
+type	AWS::VpcLattice::ServiceNetworkVpcAssociation	mapped_live=0	mapped_held=0	unmapped=2
+unmapped	AWS::VpcLattice::ServiceNetworkVpcAssociation	/SecurityGroupIds/*	USES_SECURITY_GROUP	aws_vpc_security_group	template	pointer segment SecurityGroupIds not in item shape
+unmapped	AWS::VpcLattice::ServiceNetworkVpcAssociation	/VpcId	IN_VPC	aws_vpc	template	pointer segment VpcId not in item shape
+type	AWS::VpcLattice::TargetGroup	mapped_live=0	mapped_held=0	unmapped=0
+mapped, held: path crosses a list (needs E2.2) count=58
+unmapped_reason	identifier matches multiple enumerated kinds	108
+unmapped_reason	no enumerated kind has this identifier	49
+unmapped_reason	pointer segment ActionGroups not in item shape	1
+unmapped_reason	pointer segment AgentCollaborators not in item shape	1
+unmapped_reason	pointer segment AgentResourceRoleArn not in item shape	1
+unmapped_reason	pointer segment AllocationId not in item shape	1
+unmapped_reason	pointer segment AnalyzerConfiguration not in item shape	1
+unmapped_reason	pointer segment ApplicationConfiguration not in item shape	6
+unmapped_reason	pointer segment ArchivingOptions not in item shape	1
+unmapped_reason	pointer segment AssociationDispatchAssumeRole not in item shape	1
+unmapped_reason	pointer segment AsyncInferenceConfig not in item shape	1
+unmapped_reason	pointer segment AutomatedReasoningPolicyConfig not in item shape	1
+unmapped_reason	pointer segment BackupPlan not in item shape	3
+unmapped_reason	pointer segment BackupSelection not in item shape	1
+unmapped_reason	pointer segment BlockDeviceMappings not in item shape	2
+unmapped_reason	pointer segment BrokerNodeGroupInfo not in item shape	2
+unmapped_reason	pointer segment BuildBatchConfig not in item shape	1
+unmapped_reason	pointer segment CertificateArn not in item shape	2
+unmapped_reason	pointer segment ClientRootCertificateChainArn not in item shape	1
+unmapped_reason	pointer segment CodeSigningConfigArn not in item shape	1
+unmapped_reason	pointer segment ComputeConfig not in item shape	1
+unmapped_reason	pointer segment ComputeResources not in item shape	8
+unmapped_reason	pointer segment Configuration not in item shape	2
+unmapped_reason	pointer segment ConfigurationInfo not in item shape	1
+unmapped_reason	pointer segment ContainerMonitoringConfigurations not in item shape	1
+unmapped_reason	pointer segment ContainerRecipeArn not in item shape	1
+unmapped_reason	pointer segment Containers not in item shape	2
+unmapped_reason	pointer segment CreatedBy not in item shape	1
+unmapped_reason	pointer segment CrossRegionConfig not in item shape	1
+unmapped_reason	pointer segment CustomOrchestration not in item shape	1
+unmapped_reason	pointer segment CustomOutputConfiguration not in item shape	1
+unmapped_reason	pointer segment CustomRoleArn not in item shape	1
+unmapped_reason	pointer segment CustomerEncryptionKeyArn not in item shape	3
+unmapped_reason	pointer segment DataCaptureConfig not in item shape	1
+unmapped_reason	pointer segment DataQualityJobOutputConfig not in item shape	1
+unmapped_reason	pointer segment DeadLetterConfig not in item shape	1
+unmapped_reason	pointer segment DefaultIamRoleArn not in item shape	1
+unmapped_reason	pointer segment DefaultSpaceSettings not in item shape	18
+unmapped_reason	pointer segment DefaultUserSettings not in item shape	28
+unmapped_reason	pointer segment DeliveryDestinationArn not in item shape	1
+unmapped_reason	pointer segment DeliveryStatusLogging not in item shape	2
+unmapped_reason	pointer segment DeliveryStreamEncryptionConfigurationInput not in item shape	1
+unmapped_reason	pointer segment DeploymentConfiguration not in item shape	2
+unmapped_reason	pointer segment DestinationConfiguration not in item shape	1
+unmapped_reason	pointer segment DestinationResourceArn not in item shape	1
+unmapped_reason	pointer segment DistributionConfigurationArn not in item shape	1
+unmapped_reason	pointer segment Distributions not in item shape	4
+unmapped_reason	pointer segment DomainNameArn not in item shape	1
+unmapped_reason	pointer segment DomainSettings not in item shape	6
+unmapped_reason	pointer segment EksConfiguration not in item shape	1
+unmapped_reason	pointer segment EmailConfiguration not in item shape	1
+unmapped_reason	pointer segment EncryptionConfig not in item shape	1
+unmapped_reason	pointer segment EncryptionConfiguration not in item shape	4
+unmapped_reason	pointer segment EncryptionKeyArn not in item shape	1
+unmapped_reason	pointer segment ExecutionRole not in item shape	1
+unmapped_reason	pointer segment ExecutionRoleArn not in item shape	4
+unmapped_reason	pointer segment ExtendedS3DestinationConfiguration not in item shape	7
+unmapped_reason	pointer segment FirewallArn not in item shape	1
+unmapped_reason	pointer segment FirewallPolicy not in item shape	3
+unmapped_reason	pointer segment FirewallPolicyArn not in item shape	1
+unmapped_reason	pointer segment FleetServiceRole not in item shape	1
+unmapped_reason	pointer segment FleetVpcConfig not in item shape	3
+unmapped_reason	pointer segment FoundationModel not in item shape	1
+unmapped_reason	pointer segment FunctionName not in item shape	1
+unmapped_reason	pointer segment GroupSet not in item shape	1
+unmapped_reason	pointer segment GuardrailConfiguration not in item shape	1
+unmapped_reason	pointer segment HostResourceGroupArn not in item shape	1
+unmapped_reason	pointer segment HttpEndpointDestinationConfiguration not in item shape	3
+unmapped_reason	pointer segment IAMRoleARN not in item shape	1
+unmapped_reason	pointer segment IamRoleArn not in item shape	1
+unmapped_reason	pointer segment IdcInstanceArn not in item shape	1
+unmapped_reason	pointer segment IdentityCenterConfiguration not in item shape	1
+unmapped_reason	pointer segment ImageId not in item shape	2
+unmapped_reason	pointer segment ImageRecipeArn not in item shape	1
+unmapped_reason	pointer segment ImageRoleArn not in item shape	1
+unmapped_reason	pointer segment InfrastructureConfigurationArn not in item shape	1
+unmapped_reason	pointer segment InstanceConfiguration not in item shape	1
+unmapped_reason	pointer segment Instances not in item shape	6
+unmapped_reason	pointer segment InventoryConfigurations not in item shape	1
+unmapped_reason	pointer segment InvocationConnectivityParameters not in item shape	2
+unmapped_reason	pointer segment IpAddresses not in item shape	1
+unmapped_reason	pointer segment KMSKeyArn not in item shape	2
+unmapped_reason	pointer segment KMSKeyId not in item shape	1
+unmapped_reason	pointer segment KafkaClusters not in item shape	9
+unmapped_reason	pointer segment KeyConfiguration not in item shape	1
+unmapped_reason	pointer segment KinesisStreamSpecification not in item shape	1
+unmapped_reason	pointer segment KmsKeyArn not in item shape	3
+unmapped_reason	pointer segment KmsKeyId not in item shape	9
+unmapped_reason	pointer segment KnowledgeBaseConfiguration not in item shape	7
+unmapped_reason	pointer segment LastModifiedBy not in item shape	1
+unmapped_reason	pointer segment LastMonitoringExecutionSummary not in item shape	1
+unmapped_reason	pointer segment LicenseSpecifications not in item shape	1
+unmapped_reason	pointer segment LifecycleHookSpecificationList not in item shape	2
+unmapped_reason	pointer segment LoadBalancers not in item shape	3
+unmapped_reason	pointer segment LogConfiguration not in item shape	2
+unmapped_reason	pointer segment LoggingConfiguration not in item shape	1
+unmapped_reason	pointer segment MetricsConfigurations not in item shape	1
+unmapped_reason	pointer segment ModelBiasJobOutputConfig not in item shape	1
+unmapped_reason	pointer segment ModelExplainabilityJobOutputConfig not in item shape	1
+unmapped_reason	pointer segment ModelQualityJobOutputConfig not in item shape	1
+unmapped_reason	pointer segment Models not in item shape	1
+unmapped_reason	pointer segment MonitoringConfiguration not in item shape	4
+unmapped_reason	pointer segment MonitoringScheduleConfig not in item shape	4
+unmapped_reason	pointer segment Namespace not in item shape	4
+unmapped_reason	pointer segment NatGatewayMappings not in item shape	1
+unmapped_reason	pointer segment NetworkConfig not in item shape	8
+unmapped_reason	pointer segment NetworkConfiguration not in item shape	6
+unmapped_reason	pointer segment NetworkInterfaces not in item shape	2
+unmapped_reason	pointer segment NotificationARNs not in item shape	1
+unmapped_reason	pointer segment NotificationConfiguration not in item shape	2
+unmapped_reason	pointer segment NotificationConfigurations not in item shape	2
+unmapped_reason	pointer segment NotificationTopicARN not in item shape	1
+unmapped_reason	pointer segment NotificationTopicArn not in item shape	1
+unmapped_reason	pointer segment Notifications not in item shape	1
+unmapped_reason	pointer segment ObservabilityConfiguration not in item shape	1
+unmapped_reason	pointer segment OfflineStoreConfig not in item shape	1
+unmapped_reason	pointer segment OnlineStoreConfig not in item shape	1
+unmapped_reason	pointer segment OutPostArn not in item shape	1
+unmapped_reason	pointer segment OutpostConfig not in item shape	1
+unmapped_reason	pointer segment OwnershipVerificationCertificateArn not in item shape	1
+unmapped_reason	pointer segment Placement not in item shape	1
+unmapped_reason	pointer segment PrimaryContainer not in item shape	2
+unmapped_reason	pointer segment ProductionVariants not in item shape	2
+unmapped_reason	pointer segment ProviderARNs not in item shape	1
+unmapped_reason	pointer segment RedshiftDestinationConfiguration not in item shape	5
+unmapped_reason	pointer segment RegionalCertificateArn not in item shape	1
+unmapped_reason	pointer segment Registry not in item shape	1
+unmapped_reason	pointer segment ReplicaRegions not in item shape	1
+unmapped_reason	pointer segment ReplicationConfiguration not in item shape	4
+unmapped_reason	pointer segment ReplicationInfoList not in item shape	2
+unmapped_reason	pointer segment ResourceArns not in item shape	1
+unmapped_reason	pointer segment ResourceShareArns not in item shape	1
+unmapped_reason	pointer segment ResourcesVpcConfig not in item shape	2
+unmapped_reason	pointer segment RetrievalRoleArn not in item shape	1
+unmapped_reason	pointer segment Role not in item shape	4
+unmapped_reason	pointer segment RoleARN not in item shape	2
+unmapped_reason	pointer segment RoleArn not in item shape	14
+unmapped_reason	pointer segment RuntimeManagementConfig not in item shape	1
+unmapped_reason	pointer segment S3Encryptions not in item shape	1
+unmapped_reason	pointer segment S3KmsKeyArn not in item shape	1
+unmapped_reason	pointer segment SAMLProviderArn not in item shape	1
+unmapped_reason	pointer segment SchedulingPolicyArn not in item shape	1
+unmapped_reason	pointer segment SecretArn not in item shape	1
+unmapped_reason	pointer segment SecurityConfig not in item shape	2
+unmapped_reason	pointer segment SecurityGroupIds not in item shape	9
+unmapped_reason	pointer segment SecurityGroups not in item shape	1
+unmapped_reason	pointer segment SelfServiceSAMLProviderArn not in item shape	1
+unmapped_reason	pointer segment ServiceExecutionRole not in item shape	1
+unmapped_reason	pointer segment ServiceExecutionRoleArn not in item shape	1
+unmapped_reason	pointer segment ServiceRegistries not in item shape	1
+unmapped_reason	pointer segment ServiceRole not in item shape	4
+unmapped_reason	pointer segment ShadowProductionVariants not in item shape	2
+unmapped_reason	pointer segment SmsConfiguration not in item shape	2
+unmapped_reason	pointer segment SnsTopicARN not in item shape	1
+unmapped_reason	pointer segment SnsTopicArn not in item shape	1
+unmapped_reason	pointer segment SourceAlgorithmSpecification not in item shape	1
+unmapped_reason	pointer segment SourceArn not in item shape	1
+unmapped_reason	pointer segment SourceConfiguration not in item shape	2
+unmapped_reason	pointer segment SplunkDestinationConfiguration not in item shape	3
+unmapped_reason	pointer segment Stages not in item shape	4
+unmapped_reason	pointer segment StorageConfiguration not in item shape	10
+unmapped_reason	pointer segment StreamARN not in item shape	1
+unmapped_reason	pointer segment SubnetId not in item shape	4
+unmapped_reason	pointer segment SubnetIds not in item shape	12
+unmapped_reason	pointer segment SubnetMapping not in item shape	1
+unmapped_reason	pointer segment SubnetMappings not in item shape	3
+unmapped_reason	pointer segment Subnets not in item shape	1
+unmapped_reason	pointer segment SubscriptionRoleArn not in item shape	1
+unmapped_reason	pointer segment TLSInspectionConfiguration not in item shape	2
+unmapped_reason	pointer segment TargetArn not in item shape	1
+unmapped_reason	pointer segment TargetArns not in item shape	1
+unmapped_reason	pointer segment TargetRoleArn not in item shape	1
+unmapped_reason	pointer segment Targets not in item shape	11
+unmapped_reason	pointer segment TaskDefinition not in item shape	1
+unmapped_reason	pointer segment TemplateProviderDetails not in item shape	1
+unmapped_reason	pointer segment TransformEncryption not in item shape	1
+unmapped_reason	pointer segment TransitGatewayId not in item shape	2
+unmapped_reason	pointer segment Triggers not in item shape	1
+unmapped_reason	pointer segment UserRole not in item shape	1
+unmapped_reason	pointer segment VPCEndpointId not in item shape	1
+unmapped_reason	pointer segment ValidationSpecification not in item shape	2
+unmapped_reason	pointer segment Volumes not in item shape	1
+unmapped_reason	pointer segment VpcConfig not in item shape	7
+unmapped_reason	pointer segment VpcEncryptionControl not in item shape	1
+unmapped_reason	pointer segment VpcEndpoint not in item shape	2
+unmapped_reason	pointer segment VpcId not in item shape	9
+unmapped_reason	pointer segment VpcLatticeConfigurations not in item shape	3
+unmapped_reason	pointer segment VpcSecurityGroupIds not in item shape	4
+unmapped_reason	pointer segment WorkGroupConfiguration not in item shape	1
+unmapped_reason	pointer segment Workflows not in item shape	1
+unmapped_reason	pointer segment Workgroup not in item shape	7
+unmapped_reason	pointer segment instanceId not in item shape	5
+unmapped_reason	pointer segment vpcEndpoint not in item shape	3
+unmapped_reason	type not callable	167
+unmapped_reason	unresolved legacy target name	21
+held	AWS::AmazonMQ::Broker	/SecurityGroups/*	SecurityGroups	AWS::EC2::SecurityGroup	GroupId
+held	AWS::AmazonMQ::Broker	/SubnetIds/*	SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::ApiGatewayV2::DomainName	/DomainNameConfigurations/*/CertificateArn	DomainNameConfigurations.CertificateArn	AWS::CertificateManager::Certificate	CertificateArn
+held	AWS::ApiGatewayV2::DomainName	/DomainNameConfigurations/*/OwnershipVerificationCertificateArn	DomainNameConfigurations.OwnershipVerificationCertificateArn	AWS::CertificateManager::Certificate	CertificateArn
+held	AWS::ApiGatewayV2::VpcLink	/SecurityGroupIds/*	SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::ApiGatewayV2::VpcLink	/SubnetIds/*	SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::AppRunner::VpcConnector	/SecurityGroups/*	SecurityGroups	AWS::EC2::SecurityGroup	GroupId
+held	AWS::AppRunner::VpcConnector	/Subnets/*	Subnets	AWS::EC2::Subnet	SubnetId
+held	AWS::DMS::MigrationProject	/SourceDataProviderDescriptors/*/DataProviderArn	SourceDataProviderDescriptors.DataProviderArn	AWS::DMS::DataProvider	DataProviderArn
+held	AWS::DMS::MigrationProject	/TargetDataProviderDescriptors/*/DataProviderArn	TargetDataProviderDescriptors.DataProviderArn	AWS::DMS::DataProvider	DataProviderArn
+held	AWS::EC2::ClientVpnEndpoint	/SecurityGroupIds/*	SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::EC2::InstanceConnectEndpoint	/SecurityGroupIds/*	SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/LoadBalancerArn	Explanations.LoadBalancerArn	AWS::ElasticLoadBalancingV2::LoadBalancer	LoadBalancerArn
+held	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/RouteTableRoute/NatGatewayId	Explanations.RouteTableRoute.NatGatewayId	AWS::EC2::NatGateway	NatGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/RouteTableRoute/NetworkInterfaceId	Explanations.RouteTableRoute.NetworkInterfaceId	AWS::EC2::NetworkInterface	NetworkInterfaceId
+held	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/RouteTableRoute/TransitGatewayId	Explanations.RouteTableRoute.TransitGatewayId	AWS::EC2::TransitGateway	TransitGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/Explanations/*/SecurityGroupRule/SecurityGroupId	Explanations.SecurityGroupRule.SecurityGroupId	AWS::EC2::SecurityGroup	GroupId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/LoadBalancerArn	ForwardPathComponents.Explanations.LoadBalancerArn	AWS::ElasticLoadBalancingV2::LoadBalancer	LoadBalancerArn
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/RouteTableRoute/NatGatewayId	ForwardPathComponents.Explanations.RouteTableRoute.NatGatewayId	AWS::EC2::NatGateway	NatGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/RouteTableRoute/NetworkInterfaceId	ForwardPathComponents.Explanations.RouteTableRoute.NetworkInterfaceId	AWS::EC2::NetworkInterface	NetworkInterfaceId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/RouteTableRoute/TransitGatewayId	ForwardPathComponents.Explanations.RouteTableRoute.TransitGatewayId	AWS::EC2::TransitGateway	TransitGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/Explanations/*/SecurityGroupRule/SecurityGroupId	ForwardPathComponents.Explanations.SecurityGroupRule.SecurityGroupId	AWS::EC2::SecurityGroup	GroupId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/RouteTableRoute/NatGatewayId	ForwardPathComponents.RouteTableRoute.NatGatewayId	AWS::EC2::NatGateway	NatGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/RouteTableRoute/NetworkInterfaceId	ForwardPathComponents.RouteTableRoute.NetworkInterfaceId	AWS::EC2::NetworkInterface	NetworkInterfaceId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/RouteTableRoute/TransitGatewayId	ForwardPathComponents.RouteTableRoute.TransitGatewayId	AWS::EC2::TransitGateway	TransitGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ForwardPathComponents/*/SecurityGroupRule/SecurityGroupId	ForwardPathComponents.SecurityGroupRule.SecurityGroupId	AWS::EC2::SecurityGroup	GroupId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/LoadBalancerArn	ReturnPathComponents.Explanations.LoadBalancerArn	AWS::ElasticLoadBalancingV2::LoadBalancer	LoadBalancerArn
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/RouteTableRoute/NatGatewayId	ReturnPathComponents.Explanations.RouteTableRoute.NatGatewayId	AWS::EC2::NatGateway	NatGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/RouteTableRoute/NetworkInterfaceId	ReturnPathComponents.Explanations.RouteTableRoute.NetworkInterfaceId	AWS::EC2::NetworkInterface	NetworkInterfaceId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/RouteTableRoute/TransitGatewayId	ReturnPathComponents.Explanations.RouteTableRoute.TransitGatewayId	AWS::EC2::TransitGateway	TransitGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/Explanations/*/SecurityGroupRule/SecurityGroupId	ReturnPathComponents.Explanations.SecurityGroupRule.SecurityGroupId	AWS::EC2::SecurityGroup	GroupId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/RouteTableRoute/NatGatewayId	ReturnPathComponents.RouteTableRoute.NatGatewayId	AWS::EC2::NatGateway	NatGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/RouteTableRoute/NetworkInterfaceId	ReturnPathComponents.RouteTableRoute.NetworkInterfaceId	AWS::EC2::NetworkInterface	NetworkInterfaceId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/RouteTableRoute/TransitGatewayId	ReturnPathComponents.RouteTableRoute.TransitGatewayId	AWS::EC2::TransitGateway	TransitGatewayId
+held	AWS::EC2::NetworkInsightsAnalysis	/ReturnPathComponents/*/SecurityGroupRule/SecurityGroupId	ReturnPathComponents.SecurityGroupRule.SecurityGroupId	AWS::EC2::SecurityGroup	GroupId
+held	AWS::EC2::TransitGatewayVpcAttachment	/SubnetIds/*	SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::EC2::VPCEndpoint	/SubnetIds/*	SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::EC2::VerifiedAccessEndpoint	/CidrOptions/SubnetIds/*	CidrOptions.SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::EC2::VerifiedAccessEndpoint	/LoadBalancerOptions/SubnetIds/*	LoadBalancerOptions.SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::EC2::VerifiedAccessEndpoint	/RdsOptions/SubnetIds/*	RdsOptions.SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::EC2::VerifiedAccessEndpoint	/SecurityGroupIds/*	SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::ElastiCache::ServerlessCache	/SecurityGroupIds/*	SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::ElastiCache::ServerlessCache	/SubnetIds/*	SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::ElasticLoadBalancingV2::LoadBalancer	/SecurityGroups/*	SecurityGroups	AWS::EC2::SecurityGroup	GroupId
+held	AWS::ElasticLoadBalancingV2::TargetGroup	/LoadBalancerArns/*	LoadBalancerArns	AWS::ElasticLoadBalancingV2::LoadBalancer	LoadBalancerArn
+held	AWS::FSx::FileCache	/SubnetIds/*	SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::Lambda::Function	/VpcConfig/SecurityGroupIds/*	VpcConfig.SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::Lambda::Function	/VpcConfig/SubnetIds/*	VpcConfig.SubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::RDS::DBProxy	/Auth/*/SecretArn	Auth.SecretArn	AWS::SecretsManager::Secret	ARN
+held	AWS::RDS::DBProxy	/VpcSecurityGroupIds/*	VpcSecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::RDS::DBProxy	/VpcSubnetIds/*	VpcSubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::RDS::DBProxyEndpoint	/VpcSecurityGroupIds/*	VpcSecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::RDS::DBProxyEndpoint	/VpcSubnetIds/*	VpcSubnetIds	AWS::EC2::Subnet	SubnetId
+held	AWS::Redshift::EndpointAccess	/VpcEndpoint/NetworkInterfaces/*/NetworkInterfaceId	VpcEndpoint.NetworkInterfaces.NetworkInterfaceId	AWS::EC2::NetworkInterface	NetworkInterfaceId
+held	AWS::Redshift::EndpointAccess	/VpcEndpoint/NetworkInterfaces/*/SubnetId	VpcEndpoint.NetworkInterfaces.SubnetId	AWS::EC2::Subnet	SubnetId
+held	AWS::Route53Resolver::ResolverEndpoint	/SecurityGroupIds/*	SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::SageMaker::Workforce	/WorkforceVpcConfig/SecurityGroupIds/*	WorkforceVpcConfig.SecurityGroupIds	AWS::EC2::SecurityGroup	GroupId
+held	AWS::SageMaker::Workforce	/WorkforceVpcConfig/Subnets/*	WorkforceVpcConfig.Subnets	AWS::EC2::Subnet	SubnetId

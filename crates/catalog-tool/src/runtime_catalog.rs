@@ -6,7 +6,7 @@ mod plans;
 mod provenance;
 mod relations;
 mod schemas;
-mod selection;
+pub(crate) mod selection;
 pub use provenance::CatalogSources;
 
 use inventory_core::catalog::MAX_CATALOG_BYTES;
@@ -70,7 +70,7 @@ pub(super) struct ServiceIndex<'a> {
 }
 
 impl<'a> ServiceIndex<'a> {
-    fn build(
+    pub(crate) fn build(
         catalog: inventory_core::catalog::Catalog<'a>,
     ) -> Result<Self, RuntimeCatalogCompileError> {
         let (by_name, field_ids) = catalog.services()?.try_fold(

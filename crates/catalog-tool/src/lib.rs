@@ -12,5 +12,6 @@ pub mod names;
 pub mod overlay;
 pub mod package;
 pub mod plans;
+pub mod relations;
 pub mod runtime_catalog;
 pub mod smithy;

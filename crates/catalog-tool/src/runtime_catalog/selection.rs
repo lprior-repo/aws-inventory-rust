@@ -4,7 +4,7 @@ use crate::overlay::{ItemSelector, SelectionKind};
 pub(super) use identity::validate as validate_identity;
 use inventory_core::catalog::{Service, Target};
 
-pub(super) fn target(
+pub(crate) fn target(
     service: Service<'_>,
     output: Target,
     selector: Option<&ItemSelector>,

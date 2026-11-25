@@ -1,4 +1,4 @@
-relations live=468 pending=35 declared=122 reviewed=346
+relations live=528 pending=35 declared=121 reviewed=407
 declared thin=0
 pending AWS::APS::AnomalyDetector arn AnomalyDetector - REFERENCES (target kind not callable)	target kind not callable
 pending AWS::APS::RuleGroupsNamespace arn RuleGroupsNamespace - REFERENCES (target kind not callable)	target kind not callable

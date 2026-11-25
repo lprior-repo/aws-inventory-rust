@@ -72,6 +72,25 @@
   describe work. SQLite and PostgreSQL retire a describe scope after two
   complete enumerations omit its member. A still-listed member from another
   enumeration keeps the describe scope alive.
+- Concurrent sweeps into SQLite no longer fail with a connection pool timeout.
+  The store has one writer connection; writers now queue for it in arrival
+  order before the five-second checkout deadline starts, and the scheduler
+  keeps polling in-flight pages while it claims more work, so a page that
+  holds the writer can finish. Any `--concurrency` in the allowed range is
+  safe, including the default of 16.
+- EKS clusters are stored under their full ARN instead of their name. Existing
+  databases are not rekeyed in place; collect into a fresh database with the
+  regenerated catalog.
+- `catalog-tool relations remap --write` generates exact API-member relation
+  rows and a per-type mapped/unmapped report from the reviewed CloudFormation
+  rules; live relations rise from 468 to 528. Reviewed typed relation sources
+  take precedence over generated rows. List-crossing mappings are written as
+  `relation-held` rows that the kind loader excludes for now. Generic
+  references are inferred only when the terminal API member name matches
+  exactly one enumerated target kind's identifier; missing and ambiguous
+  candidates are reported with a reason.
+- The native Organizations seed test reads the emulator's existing
+  organization instead of trying to create one.
 - `catalog-tool iam-policy` derives one read-only IAM action per callable
   runtime plan and writes the policy, the cross-account role template and a
   gap report. Must-deny findings and broad aliases are reported; write-named

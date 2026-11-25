@@ -3,6 +3,8 @@ mod construct;
 mod fingerprint;
 pub mod generate;
 mod generated;
+mod generated_relations;
+pub(crate) use generated::load_base;
 mod merge;
 pub use generated::{load, load_with_cfn};
 mod relation_targets;
@@ -46,6 +48,8 @@ pub enum KindMapError {
     TooManyRows,
     #[error(transparent)]
     GeneratedFile(#[from] crate::smithy::Error),
+    #[error("catalog/relations.generated.tsv is missing; run catalog-tool relations remap --write")]
+    MissingGeneratedRelations,
     #[error("invalid typed kind mapping entry {line}: {reason}")]
     InvalidRow { line: usize, reason: &'static str },
     #[error("duplicate kind map entry: {0}")]

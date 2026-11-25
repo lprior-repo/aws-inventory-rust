@@ -9,7 +9,7 @@ use catalog_tool::{
     ReportMode, classes, coverage, endpoints, iam_policy, manifest, package, plans, smithy,
 };
 
-const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool manifest [--root <dir>] [--check | --write]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlays generate [--service <name>]... [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool kinds generate [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool iam-policy [--root <dir>] [--check | --write]\n  catalog-tool iam-reference --date YYYY-MM-DD [--root <dir>]\n  catalog-tool coverage [--root <dir>] [--check | --write]";
+const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool manifest [--root <dir>] [--check | --write]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlays generate [--service <name>]... [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool kinds generate [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool relations remap [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool iam-policy [--root <dir>] [--check | --write]\n  catalog-tool iam-reference --date YYYY-MM-DD [--root <dir>]\n  catalog-tool coverage [--root <dir>] [--check | --write]";
 
 fn main() -> ExitCode {
     match run(std::env::args().skip(1).collect()) {
@@ -33,6 +33,7 @@ fn run(arguments: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         Some("overlay") => cli_overlay::overlay(&mut arguments),
         Some("overlays") => cli_overlay::overlays(&mut arguments),
         Some("kinds") => cli_kinds::kinds(&mut arguments),
+        Some("relations") => relations_arguments(&mut arguments),
         Some("iam-policy") => iam_policy_arguments(&mut arguments),
         Some("iam-reference") => iam_reference_arguments(&mut arguments),
         Some("coverage") => coverage_arguments(&mut arguments),
@@ -180,6 +181,20 @@ fn plans_arguments(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let inputs = report_inputs(arguments)?;
     Ok(plans::run(&inputs.root, &inputs.source, inputs.mode)?)
+}
+
+fn relations_arguments(
+    arguments: &mut std::slice::Iter<'_, String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if arguments.next().map(String::as_str) != Some("remap") {
+        return Err(format!("expected 'remap' subcommand; {USAGE}").into());
+    }
+    let inputs = report_inputs(arguments)?;
+    Ok(catalog_tool::relations::run(
+        &inputs.root,
+        &inputs.source,
+        inputs.mode,
+    )?)
 }
 
 struct ReportInputs {
