@@ -58,7 +58,7 @@ fn given_real_seeds_when_known_input_gaps_are_removed_then_remaining_kinds_are_a
         .ok_or("expected unmapped CFN kind error")?;
     assert_eq!(
         error.to_string(),
-        "Cloud Control seeded kinds have no mapped target: [\"AWS::CloudWatch::Alarm\", \"AWS::ControlTower::LandingZone\", \"AWS::Glue::Table\"]"
+        "Cloud Control seeded kinds have no mapped target: [\"AWS::CloudWatch::Alarm\", \"AWS::ControlTower::LandingZone\", \"AWS::ECS::TaskDefinition\", \"AWS::Glue::Table\"]"
     );
     let HarnessError::CloudControl(CloudControlError::UnmappedKinds { kinds }) = error else {
         return Err("expected typed unmapped CFN kind error".into());
@@ -66,6 +66,7 @@ fn given_real_seeds_when_known_input_gaps_are_removed_then_remaining_kinds_are_a
     let gaps = [
         "AWS::CloudWatch::Alarm",
         "AWS::ControlTower::LandingZone",
+        "AWS::ECS::TaskDefinition",
         "AWS::Glue::Table",
     ];
     assert_eq!(kinds, gaps);

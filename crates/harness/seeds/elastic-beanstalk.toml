@@ -8,3 +8,13 @@ kind = "AWS::ElasticBeanstalk::Application"
 identity = "Application.ApplicationArn"
 [step.input]
 "ApplicationName" = "inventory-thin-elastic-beanstalk"
+[[step]]
+id = "createapplicationversion"
+operation = "CreateApplicationVersion"
+kind = "AWS::ElasticBeanstalk::ApplicationVersion"
+identity = "ApplicationVersion.ApplicationVersionArn"
+scope = "region"
+
+[step.input]
+ApplicationName = "inventory-thin-elastic-beanstalk"
+VersionLabel = "inventory-thin-version"

@@ -9,3 +9,17 @@ identity = "DelegationSet.Id"
 scope = "account"
 [step.input]
 "CallerReference" = "inventory-thin-route-53"
+
+[[step]]
+id = "createhealthcheck"
+operation = "CreateHealthCheck"
+kind = "AWS::Route53::HealthCheck"
+identity = "HealthCheck.Id"
+scope = "account"
+
+[step.input]
+CallerReference = "inv-createhealthcheck-{n}"
+
+[step.input.HealthCheckConfig]
+Type = "CALCULATED"
+

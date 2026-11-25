@@ -8,3 +8,25 @@ kind = "AWS::ApiOnly::CloudFormationGeneratedTemplate"
 identity = "GeneratedTemplateId"
 [step.input]
 "GeneratedTemplateName" = "inventory-thin-cloudformation"
+
+[[step]]
+id = "createstack"
+operation = "CreateStack"
+kind = "AWS::CloudFormation::Stack"
+identity = "StackId"
+scope = "region"
+
+[step.input]
+StackName = "inv-createstack-{n}"
+TemplateBody = "{}"
+
+[[step]]
+id = "createstackset"
+operation = "CreateStackSet"
+kind = "AWS::CloudFormation::StackSet"
+identity = "StackSetId"
+scope = "region"
+
+[step.input]
+StackSetName = "inv-createstackset-{n}"
+TemplateBody = "{}"

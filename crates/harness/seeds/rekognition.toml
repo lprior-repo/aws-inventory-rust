@@ -8,3 +8,12 @@ kind = "AWS::Rekognition::Collection"
 identity = { input = "CollectionId" }
 [step.input]
 "CollectionId" = "inventory-thin-rekognition"
+[[step]]
+id = "createproject"
+operation = "CreateProject"
+kind = "AWS::Rekognition::Project"
+identity = "ProjectArn"
+scope = "region"
+
+[step.input]
+ProjectName = "inventory-thin-project"

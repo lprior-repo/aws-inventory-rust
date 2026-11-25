@@ -8,3 +8,15 @@ kind = "AWS::SES::ReceiptRuleSet"
 identity = { input = "RuleSetName" }
 [step.input]
 "RuleSetName" = "inventory-thin-ses"
+
+[[step]]
+id = "createconfigurationset"
+operation = "CreateConfigurationSet"
+kind = "AWS::SES::ConfigurationSet"
+scope = "region"
+
+[step.identity]
+input = "ConfigurationSet.Name"
+
+[step.input.ConfigurationSet]
+Name = "inv-createconfigurationset-{n}"

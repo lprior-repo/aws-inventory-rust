@@ -26,3 +26,13 @@ kind = "AWS::Config::ConfigurationRecorder"
 identity = "ConfigurationRecorders.0.arn"
 [step.input]
 ConfigurationRecorderNames = ["inventory-thin-config-service"]
+
+[[step]]
+id = "retention"
+operation = "PutRetentionConfiguration"
+kind = "AWS::ApiOnly::ConfigRetentionConfiguration"
+identity = "RetentionConfiguration.Name"
+scope = "region"
+[step.input]
+RetentionPeriodInDays = 30
+

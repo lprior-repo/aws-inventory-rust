@@ -8,3 +8,11 @@ kind = "AWS::AppStream::Stack"
 identity = "Stack.Arn"
 [step.input]
 "Name" = "inventory-thin-appstream"
+[[step]]
+id = "createusagereportsubscription"
+operation = "CreateUsageReportSubscription"
+kind = "AWS::ApiOnly::AppStreamUsageReportSubscription"
+identity = "S3BucketName"
+scope = "region"
+
+[step.input]

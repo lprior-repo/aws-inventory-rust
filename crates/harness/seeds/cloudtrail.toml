@@ -8,3 +8,12 @@ kind = "AWS::CloudTrail::Dashboard"
 identity = "DashboardArn"
 [step.input]
 "Name" = "inventory-thin-cloudtrail"
+
+[[step]]
+id = "event_data_store"
+operation = "CreateEventDataStore"
+kind = "AWS::CloudTrail::EventDataStore"
+identity = "EventDataStoreArn"
+scope = "region"
+[step.input]
+Name = "inventory-seed-event-store"

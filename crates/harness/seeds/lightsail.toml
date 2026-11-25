@@ -18,3 +18,14 @@ scope = "account"
 repeat = 2
 [step.input]
 domainName = "inventory-seed-{n}.example.com"
+
+[[step]]
+id = "createcertificate"
+operation = "CreateCertificate"
+kind = "AWS::Lightsail::Certificate"
+identity = "certificate.certificateArn"
+scope = "region"
+
+[step.input]
+certificateName = "inv-createcertificate-{n}"
+domainName = "inv-createcertificate-{n}.example.com"

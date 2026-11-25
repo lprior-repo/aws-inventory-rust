@@ -8,3 +8,12 @@ kind = "AWS::MediaLive::Cluster"
 identity = "Arn"
 [step.input]
 "Name" = "inventory-thin-medialive"
+[[step]]
+id = "createeventbridgeruletemplategroup"
+operation = "CreateEventBridgeRuleTemplateGroup"
+kind = "AWS::MediaLive::EventBridgeRuleTemplateGroup"
+identity = "Arn"
+scope = "region"
+
+[step.input]
+Name = "inv-event-template-group"

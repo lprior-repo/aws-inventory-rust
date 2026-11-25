@@ -9,3 +9,13 @@ identity = "api.apiArn"
 [step.input]
 "name" = "inventory-thin-appsync"
 "eventConfig" = { "authProviders" = [{ "authType" = "API_KEY" }], "connectionAuthModes" = [{ "authType" = "API_KEY" }], "defaultPublishAuthModes" = [{ "authType" = "API_KEY" }], "defaultSubscribeAuthModes" = [{ "authType" = "API_KEY" }] }
+
+[[step]]
+id = "graphql_api"
+operation = "CreateGraphqlApi"
+kind = "AWS::AppSync::GraphQLApi"
+identity = "graphqlApi.arn"
+scope = "region"
+[step.input]
+authenticationType = "API_KEY"
+name = "inventory-seed-graphql-api"

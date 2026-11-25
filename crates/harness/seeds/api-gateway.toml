@@ -8,3 +8,19 @@ kind = "AWS::ApiGateway::ApiKey"
 identity = "id"
 [step.input]
 "name" = "inventory-thin-api-gateway"
+
+[[step]]
+id = "rest_api"
+operation = "CreateRestApi"
+kind = "AWS::ApiGateway::RestApi"
+identity = "id"
+[step.input]
+name = "inventory-seed-rest-api"
+
+[[step]]
+id = "usage_plan"
+operation = "CreateUsagePlan"
+kind = "AWS::ApiGateway::UsagePlan"
+identity = "id"
+[step.input]
+name = "inventory-seed-usage-plan"

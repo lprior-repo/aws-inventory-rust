@@ -8,3 +8,12 @@ kind = "AWS::KinesisVideo::SignalingChannel"
 identity = "ChannelARN"
 [step.input]
 "ChannelName" = "inventory-thin-kinesis-video"
+
+[[step]]
+id = "stream"
+operation = "CreateStream"
+kind = "AWS::KinesisVideo::Stream"
+identity = "StreamARN"
+scope = "region"
+[step.input]
+StreamName = "inventory-seed-stream"

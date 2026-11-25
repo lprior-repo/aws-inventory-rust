@@ -31,3 +31,12 @@ repeat = 2
 [step.input]
 RoleName = { from = "role", path = "Role.RoleName" }
 PolicyArn = { from = "policy", path = "Policy.Arn" }
+
+[[step]]
+id = "instance_profile"
+operation = "CreateInstanceProfile"
+kind = "AWS::IAM::InstanceProfile"
+identity = "InstanceProfile.Arn"
+scope = "account"
+[step.input]
+InstanceProfileName = "inventory-seed-profile"

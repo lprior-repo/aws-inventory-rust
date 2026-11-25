@@ -8,3 +8,25 @@ kind = "AWS::StepFunctions::Activity"
 identity = "activityArn"
 [step.input]
 "name" = "inventory-thin-sfn"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-sfn-role"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"states.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "state_machine"
+operation = "CreateStateMachine"
+kind = "AWS::StepFunctions::StateMachine"
+identity = "stateMachineArn"
+scope = "region"
+[step.input]
+name = "inventory-seed-state-machine"
+definition = "{\"StartAt\":\"Pass\",\"States\":{\"Pass\":{\"Type\":\"Pass\",\"End\":true}}}"
+roleArn = { from = "role", path = "Role.Arn" }

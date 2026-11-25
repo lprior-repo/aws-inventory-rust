@@ -8,3 +8,12 @@ kind = "AWS::ApiOnly::SageMakerCluster"
 identity = "ClusterArn"
 [step.input]
 "ClusterName" = "inventory-thin-sagemaker"
+[[step]]
+id = "createmodelpackage"
+operation = "CreateModelPackage"
+kind = "AWS::SageMaker::ModelPackage"
+identity = "ModelPackageArn"
+scope = "region"
+
+[step.input]
+"ModelPackageName" = "inventory-thin-package"

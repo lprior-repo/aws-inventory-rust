@@ -8,3 +8,14 @@ kind = "AWS::Neptune::GlobalCluster"
 identity = "GlobalCluster.GlobalClusterArn"
 [step.input]
 "GlobalClusterIdentifier" = "inventory-thin-neptune"
+
+[[step]]
+id = "createdbcluster"
+operation = "CreateDBCluster"
+kind = "AWS::Neptune::DBCluster"
+identity = "DBCluster.DBClusterArn"
+scope = "region"
+
+[step.input]
+DBClusterIdentifier = "inv-createdbcluster-{n}"
+Engine = "neptune"

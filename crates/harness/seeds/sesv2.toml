@@ -9,3 +9,38 @@ identity = { input = "ConfigurationSetName", template = "arn:{partition}:ses:{re
 repeat = 2
 [step.input]
 ConfigurationSetName = "inventory-thin-sesv2-config-{n}"
+[[step]]
+id = "createcontactlist"
+operation = "CreateContactList"
+kind = "AWS::SES::ContactList"
+scope = "region"
+
+[step.identity]
+input = "ContactListName"
+
+[step.input]
+ContactListName = "inv-createcontactlist-{n}"
+
+[[step]]
+id = "creatededicatedippool"
+operation = "CreateDedicatedIpPool"
+kind = "AWS::SES::DedicatedIpPool"
+scope = "region"
+
+[step.identity]
+input = "PoolName"
+
+[step.input]
+PoolName = "inv-creatededicatedippool-{n}"
+
+[[step]]
+id = "createemailidentity"
+operation = "CreateEmailIdentity"
+kind = "AWS::SES::EmailIdentityCertificate"
+scope = "region"
+
+[step.identity]
+input = "EmailIdentity"
+
+[step.input]
+EmailIdentity = "inv-createemailidentity-{n}"

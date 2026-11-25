@@ -8,3 +8,13 @@ kind = "AWS::ECS::Cluster"
 identity = "cluster.clusterArn"
 [step.input]
 "clusterName" = "inventory-thin-ecs"
+
+[[step]]
+id = "task_definition"
+operation = "RegisterTaskDefinition"
+kind = "AWS::ECS::TaskDefinition"
+identity = "taskDefinition.taskDefinitionArn"
+scope = "region"
+[step.input]
+family = "inventory-seed-task"
+containerDefinitions = [{ name = "container", image = "public.ecr.aws/docker/library/busybox:latest", essential = true, memory = 32 }]

@@ -24,6 +24,30 @@ CidrBlock = "10.88.{n}.0/24"
 [step.check]
 "Subnet.VpcId" = "VpcId"
 "Subnet.CidrBlock" = "CidrBlock"
+[[step]]
+id = "security_group"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+repeat = 1
+[step.input]
+Description = "seed security group {n}"
+GroupName = "seed-security-group-{n}"
+
+[[step]]
+id = "internet_gateway"
+operation = "CreateInternetGateway"
+kind = "AWS::EC2::InternetGateway"
+identity = "InternetGateway.InternetGatewayId"
+
+[[step]]
+id = "key_pair"
+operation = "CreateKeyPair"
+kind = "AWS::EC2::KeyPair"
+identity = "KeyPairId"
+[step.input]
+KeyName = "seed-key-pair"
+
 
 [[relationship]]
 source = "subnet"

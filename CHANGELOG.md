@@ -2,6 +2,11 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Seed recipes for 23 services create more resources before the emulator
+  probe. The regenerated reports record 390 accepted seed steps with none
+  rejected and 335 list operations returning items, out of 2,237 probed.
+  `securityagent ListSecurityRequirementPacks` now reads empty, and seeded ECS
+  task definitions join the kinds with no Cloud Control target.
 - `cmdb-bench` measures cold and warm sweeps in owned stacks, compares benchmark
   results, and times catalog opens. The proxy profile adds latency and request
   pacing; reports retain run provenance and distinguish incomplete runs.

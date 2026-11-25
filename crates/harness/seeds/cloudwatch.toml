@@ -17,3 +17,14 @@ Period = 60
 EvaluationPeriods = 1
 Threshold = 80.0
 ComparisonOperator = "GreaterThanThreshold"
+[[step]]
+id = "putanomalydetector"
+operation = "PutAnomalyDetector"
+kind = "AWS::CloudWatch::AnomalyDetector"
+identity = "AnomalyDetectorId"
+scope = "region"
+
+[step.input]
+Namespace = "AWS/EC2"
+MetricName = "CPUUtilization"
+Stat = "Average"

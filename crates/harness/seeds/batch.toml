@@ -8,3 +8,12 @@ kind = "AWS::Batch::ConsumableResource"
 identity = "consumableResourceArn"
 [step.input]
 "consumableResourceName" = "inventory-thin-batch"
+[[step]]
+id = "createschedulingpolicy"
+operation = "CreateSchedulingPolicy"
+kind = "AWS::Batch::SchedulingPolicy"
+identity = "arn"
+scope = "region"
+
+[step.input]
+name = "inv-createschedulingpolicy-{n}"
