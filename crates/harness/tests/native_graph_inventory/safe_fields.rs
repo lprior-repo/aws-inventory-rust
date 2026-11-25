@@ -144,7 +144,13 @@ fn fields(step: &SeedStep, key: &ResourceKey) -> TestResult<BTreeMap<String, Val
         }
         "AWS::StepFunctions::Activity" => &[("name", "name")],
         "AWS::StepFunctions::StateMachine" => &[("name", "name"), ("type", "type")],
-        "AWS::Organizations::Organization" => &[("FeatureSet", "FeatureSet")],
+        // The fixture reads the emulator's existing organization and root, so
+        // it supplies no configured literal. Only the identity receipt, which
+        // the oracle checks against account and partition, is asserted.
+        "AWS::Organizations::Organization" | "AWS::ApiOnly::OrganizationsRoot" => {
+            expected.insert("Arn".into(), Value::Text(key.id.as_str().into()));
+            &[]
+        }
         "AWS::Route53::HostedZone" => &[("Name", "Name"), ("CallerReference", "CallerReference")],
         "AWS::CloudFront::OriginAccessControl" => &[
             ("OriginAccessControlConfig.Name", "Name"),

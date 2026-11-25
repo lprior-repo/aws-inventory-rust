@@ -41,11 +41,23 @@ const TREE_2: &[(&str, Shape)] = &[
     ("OriginAccessControlOriginType", Shape::Text),
 ];
 
+const TREE_3: &[(&str, Shape)] = &[
+    ("", Shape::Map),
+    ("Id", Shape::Text),
+    ("Arn", Shape::Text),
+    ("Name", Shape::Text),
+    ("PolicyTypes", Shape::List),
+    ("PolicyTypes.*", Shape::Map),
+    ("PolicyTypes.*.Type", Shape::Text),
+    ("PolicyTypes.*.Status", Shape::Text),
+];
+
 pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
     match kind {
         "AWS::Organizations::Organization" => Some(TREE_0),
         "AWS::Route53::HostedZone" => Some(TREE_1),
         "AWS::CloudFront::OriginAccessControl" => Some(TREE_2),
+        "AWS::ApiOnly::OrganizationsRoot" => Some(TREE_3),
         _ => None,
     }
 }
