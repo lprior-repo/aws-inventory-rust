@@ -175,7 +175,7 @@ fn show_details(ui: &WidgetRef, cx: &mut Cx, row: Row) {
     );
     let hash = row.content_hash.as_deref().map_or_else(
         || "not loaded".to_owned(),
-        |value| format!("SHA-256 {value}"),
+        |value| format!("BLAKE3 {value}"),
     );
     detail.label(cx, ids!(detail_record)).set_text(cx, &record);
     detail.label(cx, ids!(detail_hash)).set_text(cx, &hash);

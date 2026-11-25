@@ -189,3 +189,51 @@ fn given_cleared_selection_when_old_graph_completes_then_the_graph_stays_empty()
     assert!(data.visual_graph().nodes.is_empty());
     assert!(data.visual_graph().tag_affiliations.is_empty());
 }
+
+fn placeholder(of: &Row) -> Row {
+    Row {
+        record_bytes: None,
+        content_hash: None,
+        tags: Vec::new(),
+        ..of.clone()
+    }
+}
+
+#[test]
+fn given_loaded_selection_when_fresh_graph_arrives_then_name_hash_and_tags_update() {
+    let mut data = Data::default();
+    let old = row("a");
+    data.replace_page(vec![old.clone()], 1);
+    let mut fresh = old.clone();
+    fresh.name = "renamed".to_owned();
+    fresh.content_hash = Some("new-hash".to_owned());
+    fresh
+        .tags
+        .iter_mut()
+        .for_each(|tag| tag.value = "prod".to_owned());
+    assert!(apply_graph_data(&mut data, graph(&fresh), None));
+    assert_eq!(data.selected_row(), Some(&fresh));
+}
+
+#[test]
+fn given_placeholder_selection_when_loaded_graph_arrives_then_selection_becomes_loaded() {
+    let mut data = Data::default();
+    let loaded = row("a");
+    data.replace_page(vec![placeholder(&loaded)], 1);
+    assert!(apply_graph_data(&mut data, graph(&loaded), None));
+    assert_eq!(data.selected_row(), Some(&loaded));
+}
+
+#[test]
+fn given_loaded_selection_when_placeholder_graph_row_arrives_then_loaded_metadata_is_kept() {
+    let mut data = Data::default();
+    let loaded = row("a");
+    data.replace_page(vec![loaded.clone()], 1);
+    assert!(apply_graph_data(
+        &mut data,
+        graph(&placeholder(&loaded)),
+        None
+    ));
+    assert_eq!(data.selected_row(), Some(&loaded));
+    assert_eq!(data.row_for_key(&loaded.key), Some(&loaded));
+}

@@ -98,6 +98,25 @@ impl Data {
         self.graph_error = error;
     }
 
+    /// Reconciles the selected row with the authoritative loaded row after an
+    /// accepted graph. A placeholder (`record_bytes == None`) never replaces
+    /// loaded metadata; the graph node is repaired to match instead.
+    pub fn reconcile_selected_with_graph(&mut self) {
+        let Some(selected) = self.selected.as_ref() else {
+            return;
+        };
+        let key = selected.key.clone();
+        let selected_loaded = selected.record_bytes.is_some();
+        let Some(node) = self.graph.nodes.iter_mut().find(|node| node.key == key) else {
+            return;
+        };
+        if node.record_bytes.is_some() {
+            self.selected = Some(node.clone());
+        } else if let Some(selected) = self.selected.as_ref().filter(|_| selected_loaded) {
+            *node = selected.clone();
+        }
+    }
+
     pub fn set_graph_error(&mut self, error: Option<String>) {
         self.graph_error = error;
     }
