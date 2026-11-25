@@ -3,6 +3,7 @@ use inventory_core::catalog::runtime::RuntimeProtocol;
 use std::{
     collections::BTreeMap,
     fmt::{self, Write},
+    sync::Arc,
 };
 
 pub(super) enum Outcome {
@@ -10,8 +11,15 @@ pub(super) enum Outcome {
     Empty,
     EmptyReason(String),
     Unsupported(String),
-    Failed { class: &'static str, detail: String },
-    SkippedChild,
+    Failed {
+        class: &'static str,
+        detail: String,
+    },
+    FailedPlan(Arc<str>),
+    SkippedChild {
+        reason: &'static str,
+        detail: Option<String>,
+    },
 }
 
 pub(super) struct Row<'a> {
@@ -64,7 +72,14 @@ impl Row<'_> {
             Outcome::EmptyReason(reason) => writeln!(report, "empty {reason}"),
             Outcome::Unsupported(detail) => writeln!(report, "unsupported {detail}"),
             Outcome::Failed { class, detail } => writeln!(report, "failed {class} {detail}"),
-            Outcome::SkippedChild => writeln!(report, "skipped child"),
+            Outcome::FailedPlan(detail) => writeln!(report, "failed plan {detail}"),
+            Outcome::SkippedChild { reason, detail } => {
+                write!(report, "skipped child {reason}")?;
+                if let Some(detail) = detail {
+                    write!(report, ": {detail}")?;
+                }
+                writeln!(report)
+            }
         }
     }
 }
@@ -84,8 +99,8 @@ impl Totals {
             Outcome::Items(_) => &mut self.items,
             Outcome::Empty | Outcome::EmptyReason(_) => &mut self.empty,
             Outcome::Unsupported(_) => &mut self.unsupported,
-            Outcome::Failed { .. } => &mut self.failed,
-            Outcome::SkippedChild => &mut self.skipped,
+            Outcome::Failed { .. } | Outcome::FailedPlan(_) => &mut self.failed,
+            Outcome::SkippedChild { .. } => &mut self.skipped,
         };
         *total = total.checked_add(1).ok_or(ProbeError::TotalOverflow)?;
         Ok(())

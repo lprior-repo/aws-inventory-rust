@@ -1,8 +1,7 @@
 use crate::consumer_fixture as native;
+use crate::test_bindings as synthetic;
 mod native_pages;
 mod persistence;
-#[path = "../../../../../catalog-tool/tests/support/bindings.rs"]
-mod synthetic;
 
 use super::*;
 use crate::{execution::routing, record::policy_dfgk_tests::fixture::decode};

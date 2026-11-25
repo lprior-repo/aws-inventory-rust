@@ -4,7 +4,8 @@ pub(super) use trust::trust_references;
 use super::{SweepError, record};
 use inventory_core::{
     catalog::runtime::{
-        CallablePlan, ReferenceOwnerRule, RelationScope, RelationshipPlan, ResourceProjectionPlan,
+        CallablePlan, ExecutionBranch, ReferenceOwnerRule, RelationScope, RelationshipPlan,
+        ResourceProjectionPlan,
     },
     inventory::{AccountId, Kind, Region, RegionId},
     record::{FieldId, Key, MapRef, Record, Value, ValueRef},
@@ -32,6 +33,22 @@ pub(super) fn project(plan: &CallablePlan<'_>, row: &Record) -> Result<Record, S
         return Ok(row.clone());
     };
     project_with(projection, row)
+}
+
+pub(super) fn select_item(
+    plan: &CallablePlan<'_>,
+    branch: Option<&ExecutionBranch>,
+    row: Record,
+    request: &Record,
+    response: &Record,
+) -> Result<Option<Record>, SweepError> {
+    if !crate::row_policy::selected(plan, branch, &row, request, response)? {
+        return Ok(None);
+    }
+    match plan.projection() {
+        Some(projection) => project_with(projection, &row).map(Some),
+        None => Ok(Some(row)),
+    }
 }
 
 pub(super) fn project_with(

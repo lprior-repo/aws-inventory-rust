@@ -1,4 +1,5 @@
 use super::super::ProbeError;
+use inventory_sweep::ChildProbeSamples;
 use std::{net::IpAddr, path::PathBuf};
 
 pub(super) struct Args {
@@ -8,15 +9,16 @@ pub(super) struct Args {
     pub region: String,
     pub report: PathBuf,
     pub services: Vec<String>,
+    pub child_samples: ChildProbeSamples,
     pub pairs: Vec<String>,
     pub compared_at: Option<String>,
 }
 
 impl Args {
     pub(super) fn parse(arguments: &[String]) -> Result<Self, ProbeError> {
-        if arguments.len() < 10 || arguments.len() > 522 || !arguments.len().is_multiple_of(2) {
+        if arguments.len() < 10 || arguments.len() > 524 || !arguments.len().is_multiple_of(2) {
             return Err(ProbeError::Invalid(
-                "probe requires five option-value pairs and optional service pairs",
+                "probe requires five option-value pairs plus optional service, sample, or comparison pairs",
             ));
         }
         let options = arguments.as_chunks::<2>().0.iter().try_fold(
@@ -37,6 +39,7 @@ struct Options<'a> {
     ca_bundle: Option<&'a str>,
     region: Option<&'a str>,
     report: Option<&'a str>,
+    child_samples: Option<&'a str>,
     services: Vec<&'a str>,
     pairs: Vec<&'a str>,
     compared_at: Option<&'a str>,
@@ -55,6 +58,11 @@ impl<'a> Options<'a> {
             return Ok(());
         }
         if name == "--service" {
+            if self.services.len() == 256 {
+                return Err(ProbeError::Invalid(
+                    "probe accepts at most 256 service options",
+                ));
+            }
             self.services.try_reserve(1)?;
             self.services.push(value);
             return Ok(());
@@ -65,6 +73,7 @@ impl<'a> Options<'a> {
             "--ca-bundle" => &mut self.ca_bundle,
             "--region" => &mut self.region,
             "--report" => &mut self.report,
+            "--child-samples" => &mut self.child_samples,
             "--compared-at" => &mut self.compared_at,
             _ => return Err(ProbeError::Invalid("unknown probe option")),
         };
@@ -80,6 +89,11 @@ impl<'a> Options<'a> {
                 "--service cannot be combined with --compare-pair",
             ));
         }
+        if self.child_samples.is_some() && !self.pairs.is_empty() {
+            return Err(ProbeError::Invalid(
+                "--child-samples cannot be combined with --compare-pair",
+            ));
+        }
         let args = Args {
             catalog: required(self.catalog)?.into(),
             endpoint: required(self.endpoint)?.into(),
@@ -87,6 +101,18 @@ impl<'a> Options<'a> {
             region: required(self.region)?.into(),
             report: required(self.report)?.into(),
             services: self.services.into_iter().map(str::to_owned).collect(),
+            child_samples: self.child_samples.map_or_else(
+                || Ok(ChildProbeSamples::default()),
+                |value| {
+                    value
+                        .parse::<usize>()
+                        .ok()
+                        .and_then(ChildProbeSamples::new)
+                        .ok_or(ProbeError::Invalid(
+                            "--child-samples requires a count from 1 through 64",
+                        ))
+                },
+            )?,
             pairs: self.pairs.into_iter().map(str::to_owned).collect(),
             compared_at: self.compared_at.map(str::to_owned),
         };

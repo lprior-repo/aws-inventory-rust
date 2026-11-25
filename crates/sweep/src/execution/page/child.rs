@@ -6,12 +6,14 @@ mod contexts;
 mod eligibility;
 mod enumeration;
 mod work;
-pub(crate) use binding::resolve_binding;
 #[cfg(test)]
 use binding::row_value;
+pub(crate) use binding::{consumes_current, resolve_binding};
+pub(crate) use contexts::project_frame;
 pub(super) use contexts::*;
 #[cfg(test)]
-use enumeration::{child_for_row, child_region, empty_record};
+use enumeration::child_for_row;
+pub(crate) use enumeration::{FieldResolution, child_region, eligible, empty_record, fields};
 pub(super) use work::{WorkBatch, work, work_with_row_children};
 #[cfg(test)]
 pub(crate) mod policy_dfgk_tests;
@@ -64,11 +66,45 @@ impl<'a, 'catalog> Context<'a, 'catalog> {
     }
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct BindingContext<'a, 'catalog> {
+    pub parent_plan: &'a CallablePlan<'catalog>,
+    pub account: Option<&'a AccountId>,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct BindingRow<'a> {
+    pub row: &'a Record,
+    pub region: &'a Region,
+    pub branch: Option<&'a str>,
+    pub ancestry: &'a DiscoveryContext,
+}
+
 pub(crate) struct RowContext<'a> {
     pub row: &'a Record,
     pub parent: Option<&'a ResourceKey>,
     pub scope: &'a ScopeKey,
     pub ancestry: &'a DiscoveryContext,
+}
+
+impl RowContext<'_> {
+    fn bindings(&self) -> BindingRow<'_> {
+        BindingRow {
+            row: self.row,
+            region: self.scope.region(),
+            branch: self.scope.branch(),
+            ancestry: self.ancestry,
+        }
+    }
+}
+
+impl<'catalog> Context<'_, 'catalog> {
+    fn bindings(&self) -> BindingContext<'_, 'catalog> {
+        BindingContext {
+            parent_plan: self.parent_plan,
+            account: Some(self.account),
+        }
+    }
 }
 
 #[cfg(test)]

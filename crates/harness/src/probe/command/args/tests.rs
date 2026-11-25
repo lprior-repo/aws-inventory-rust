@@ -40,7 +40,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
         assert!(matches!(
             Args::parse(&args),
             Err(ProbeError::Invalid(
-                "probe requires five option-value pairs and optional service pairs"
+                "probe requires five option-value pairs plus optional service, sample, or comparison pairs"
             ))
         ));
     }
@@ -49,7 +49,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
     assert!(matches!(
         Args::parse(&args),
         Err(ProbeError::Invalid(
-            "probe requires five option-value pairs and optional service pairs"
+            "probe requires five option-value pairs plus optional service, sample, or comparison pairs"
         ))
     ));
 }
@@ -145,7 +145,7 @@ fn given_too_many_services_when_parsed_then_argument_bound_is_enforced() {
     assert!(matches!(
         Args::parse(&args),
         Err(ProbeError::Invalid(
-            "probe requires five option-value pairs and optional service pairs"
+            "probe accepts at most 256 service options"
         ))
     ));
 }
@@ -187,4 +187,50 @@ fn given_service_and_compare_pair_when_parsed_then_conflicting_flags_are_named()
             "--service cannot be combined with --compare-pair"
         ))
     ));
+}
+
+#[test]
+fn given_child_samples_and_compare_pair_when_parsed_then_conflicting_flags_are_named() {
+    let mut args = arguments();
+    args.extend(
+        [
+            "--child-samples",
+            "2",
+            "--compare-pair",
+            "bindings/ListParents0/ListChildren",
+            "--compared-at",
+            "2026-11-24",
+        ]
+        .map(str::to_owned),
+    );
+    assert!(matches!(
+        Args::parse(&args),
+        Err(ProbeError::Invalid(
+            "--child-samples cannot be combined with --compare-pair"
+        ))
+    ));
+}
+
+#[test]
+fn given_out_of_range_child_samples_when_parsed_then_the_bound_is_reported() {
+    for count in ["0", "65", "negative"] {
+        let mut args = arguments();
+        args.extend(["--child-samples", count].map(str::to_owned));
+        assert!(matches!(
+            Args::parse(&args),
+            Err(ProbeError::Invalid(
+                "--child-samples requires a count from 1 through 64"
+            ))
+        ));
+    }
+}
+
+#[test]
+fn given_child_sample_range_endpoints_when_parsed_then_both_are_accepted() -> TestResult {
+    for count in ["1", "64"] {
+        let mut args = arguments();
+        args.extend(["--child-samples", count].map(str::to_owned));
+        Args::parse(&args)?;
+    }
+    Ok(())
 }

@@ -31,6 +31,8 @@ pub enum ProbeError {
     Report(#[from] std::fmt::Error),
     #[error("probe total overflow")]
     TotalOverflow,
+    #[error("probe child scheduling failed: {0}")]
+    ChildSchedule(#[source] inventory_sweep::SweepError),
     #[error("comparison call failed: {0}")]
     Sweep(#[from] inventory_sweep::SweepError),
     #[error("comparison record is invalid: {0}")]

@@ -44,12 +44,12 @@ impl<'catalog, C: CredentialSource> Probe<'_, 'catalog, C> {
         if let Some(duplicate) = pairs.iter().find(|pair| !distinct.insert(pair.as_str())) {
             return Err(ProbeError::DuplicatePair(duplicate.clone()));
         }
-        let (_, account) = self.bootstrap().await;
-        let account = account.ok_or(ProbeError::Invalid(
+        let identity = self.bootstrap().await;
+        let account = identity_account(identity.as_ref()).ok_or(ProbeError::Invalid(
             "comparison requires successful account identity probe",
         ))?;
         let (report, evidence) = stream::iter(pairs)
-            .then(|pair| self.compare_pair(pair, &account))
+            .then(|pair| self.compare_pair(pair, account))
             .try_fold(
                 (String::new(), Vec::new()),
                 |(mut report, mut evidence), (row, result)| async move {

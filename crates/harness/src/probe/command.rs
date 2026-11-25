@@ -8,7 +8,7 @@ use args::Args;
 use credentials::EnvironmentCredentials;
 use inventory_core::{catalog::runtime::RuntimeCatalog, inventory::RegionId};
 use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};
-use std::process::ExitCode;
+use std::{process::ExitCode, time::Instant};
 
 pub async fn command(arguments: &[String]) -> ExitCode {
     match execute(arguments).await {
@@ -28,30 +28,31 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
         tokio::task::spawn_blocking(move || load::load(&args.catalog, &args.ca_bundle)).await??;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let executor = executor()?;
+    let probe = super::Probe {
+        catalog: &catalog,
+        credentials: &credentials,
+        client: &client,
+        executor: &executor,
+        region: &region,
+        endpoint: &args.endpoint,
+        services: &args.services,
+    };
     if let Some(when) = &args.compared_at {
-        let probe = super::Probe {
-            catalog: &catalog,
-            credentials: &credentials,
-            client: &client,
-            executor: &executor,
-            region: &region,
-            endpoint: &args.endpoint,
-            services: &args.services,
-        };
         let (report, overlays) = probe.compare(&args.pairs, when).await?;
         return receipt::publish(args.report, report, Some(overlays)).await;
     }
-    let text = super::run(
-        &catalog,
-        &credentials,
-        &client,
-        &executor,
-        &region,
-        &args.endpoint,
-        &args.services,
-    )
-    .await?;
-    receipt::publish(args.report, text, None).await
+    let started = Instant::now();
+    let report = probe.run(args.child_samples).await?;
+    receipt::publish(args.report, report.text, None).await?;
+    eprintln!(
+        "probe wall time: roots {:.3}s, full {:.3}s",
+        report.root_wall.as_secs_f64(),
+        started.elapsed().as_secs_f64(),
+    );
+    if let Some(error) = report.child_error {
+        return Err(ProbeError::ChildSchedule(error));
+    }
+    Ok(())
 }
 
 fn executor() -> Result<ApiExecutor, ProbeError> {

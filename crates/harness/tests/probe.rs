@@ -1,3 +1,5 @@
+#[path = "probe/children.rs"]
+mod children;
 #[path = "probe/cli.rs"]
 mod cli;
 #[path = "probe/comparison.rs"]
@@ -10,6 +12,8 @@ mod fixture;
 mod pair;
 #[path = "probe/proof.rs"]
 mod proof;
+#[path = "probe/rest.rs"]
+mod rest;
 #[path = "probe/scoped.rs"]
 mod scoped;
 #[path = "probe/server.rs"]
@@ -23,12 +27,12 @@ use inventory_core::catalog::runtime::RuntimeCatalog;
 use server::{Server, TestResult};
 
 const FIRST_ROWS: [&str; 3] = [
-    "bindings ListChildren awsJson1_1 skipped child",
+    "bindings ListChildren awsJson1_1 items 1",
     "bindings ListParents0 awsJson1_1 items 2",
     "bindings ListParents1 awsJson1_1 empty",
 ];
 const PROTOCOL_TOTAL: &str =
-    "protocol awsJson1_1 items 1 empty 1 unsupported 1 failed 1 skipped-child 1";
+    "protocol awsJson1_1 items 2 empty 1 unsupported 1 failed 1 skipped-child 0";
 
 #[tokio::test]
 async fn given_four_outcomes_when_probed_twice_then_rows_and_totals_are_stable() -> TestResult {
@@ -36,10 +40,16 @@ async fn given_four_outcomes_when_probed_twice_then_rows_and_totals_are_stable()
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (report, requests) = proof::twice(&catalog).await?;
     assert_eq!(report.lines().take(3).collect::<Vec<_>>(), FIRST_ROWS);
-    assert!(report.contains("ListParents2 awsJson1_1 unsupported "));
-    assert!(report.contains("ListParents3 awsJson1_1 failed decode shape="));
+    children::assert_row(
+        &report,
+        "bindings ListParents2 awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (UnsupportedOperation)",
+    );
+    children::assert_row(
+        &report,
+        "bindings ListParents3 awsJson1_1 failed decode shape=Output AWS wire response error: invalid response: JSON syntax",
+    );
     assert_eq!(report.lines().last(), Some(PROTOCOL_TOTAL));
-    assert_eq!(requests.len(), 8);
+    assert_eq!(requests.len(), 10);
     Ok(())
 }
 
@@ -51,7 +61,13 @@ async fn given_next_token_when_calling_once_then_only_first_page_and_http_versio
     let (answer, requests) = proof::once(&catalog).await?;
     assert_eq!(answer.items, 2);
     assert_eq!(answer.http_version, http::Version::HTTP_11);
-    assert_eq!(requests.len(), 1);
+    assert_eq!(
+        requests
+            .iter()
+            .map(|request| server::target(request))
+            .collect::<TestResult<Vec<_>>>()?,
+        ["ListParents0"]
+    );
     Ok(())
 }
 
@@ -75,7 +91,8 @@ async fn given_child_plan_when_calling_once_then_root_contract_rejects_before_tr
 async fn given_no_python_when_probe_cli_runs_then_report_contains_every_enumeration() -> TestResult
 {
     let bytes = fixture::compiled(4, |_| {})?;
-    let report = cli::report(&bytes, &[]).await?;
+    let (report, requests) = cli::run(&bytes, &[], server::response).await?;
+    assert_eq!(requests.len(), 5);
     assert_eq!(
         report
             .lines()
@@ -85,9 +102,13 @@ async fn given_no_python_when_probe_cli_runs_then_report_contains_every_enumerat
     );
     assert_eq!(
         report.lines().next(),
-        Some("bindings ListChildren awsJson1_1 skipped child")
+        Some("bindings ListChildren awsJson1_1 items 1")
     );
-    assert!(report.contains("bindings ListParents0 awsJson1_1 items 2"));
+    assert!(
+        report
+            .lines()
+            .any(|line| line == "bindings ListParents0 awsJson1_1 items 2")
+    );
     Ok(())
 }
 

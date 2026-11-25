@@ -434,7 +434,8 @@ async fn given_duplicate_pair_when_compare_runs_then_rejected_before_any_request
 }
 
 #[tokio::test]
-async fn given_existing_root_probe_when_run_then_first_page_contract_is_unchanged() -> TestResult {
+async fn given_root_and_child_tokens_when_probed_then_only_first_pages_are_requested() -> TestResult
+{
     let bytes = fixture::compiled(1, |_| {})?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let server = Server::new().await?;
@@ -448,28 +449,26 @@ async fn given_existing_root_probe_when_run_then_first_page_contract_is_unchange
     })?;
     let region = RegionId::parse("us-east-1")?;
     let endpoint = server.endpoint()?;
-    let (report, requests) = tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::try_join!(
-            async {
-                Ok::<_, Box<dyn std::error::Error>>(
-                    crate::probe::run(
-                        &catalog,
-                        &TestCredentials,
-                        &client,
-                        &executor,
-                        &region,
-                        &endpoint,
-                        &[],
-                    )
-                    .await?,
-                )
-            },
-            server.serve(1)
+    let probe = async {
+        Ok(crate::probe::run(
+            &catalog,
+            &TestCredentials,
+            &client,
+            &executor,
+            &region,
+            &endpoint,
+            &[],
         )
-    })
-    .await??;
+        .await?)
+    };
+    let (report, requests) = server.capture_with(probe, server::response).await?;
+    let targets = requests
+        .iter()
+        .map(|request| server::target(request))
+        .collect::<TestResult<Vec<_>>>()?;
+    assert_eq!(targets, ["ListParents0", "ListChildren"]);
     assert!(report.contains("bindings ListParents0 awsJson1_1 items 2"));
-    assert_eq!(requests.len(), 1);
+    assert!(report.contains("bindings ListChildren awsJson1_1 items 1"));
     Ok(())
 }
 

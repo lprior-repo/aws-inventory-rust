@@ -1,10 +1,15 @@
 use super::{
     Server, TestResult,
+    server::target,
     skip_runtime::{self, Case},
 };
-use aws_wire::sign::Credentials;
-use inventory_core::catalog::runtime::RuntimeCatalog;
+use aws_wire::{
+    sign::Credentials,
+    transport::{Client, Config},
+};
+use inventory_core::{catalog::runtime::RuntimeCatalog, inventory::RegionId};
 use inventory_engine::inventory::{BinaryStore, SchemaRegistry};
+use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};
 use inventory_sweep::{CredentialFailure, CredentialSource, SweepConfig, SweepControl};
 use std::time::Duration;
 struct TestCredentials;
@@ -100,6 +105,63 @@ async fn given_reviewed_skip_when_full_sweep_runs_then_no_child_call_and_kind_ro
     assert_eq!((ordinary.outcomes.failed, skipped.outcomes.failed), (0, 0));
     assert_eq!(kinds, ["AWS::ApiOnly::SkipThing"]);
     assert_eq!(skipped.rows, 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_reviewed_skip_when_probing_then_child_is_called_with_the_listed_identifier()
+-> TestResult {
+    let bytes = skip_runtime::catalog(Case::Skipped)?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let server = Server::new().await?;
+    let client = Client::new(Config {
+        extra_ca_bundle: Some(server.ca.clone()),
+        ..Config::default()
+    })?;
+    let executor = ApiExecutor::new(ExecutorConfig {
+        max_attempts: 1,
+        ..ExecutorConfig::default()
+    })?;
+    let region = RegionId::parse("us-east-1")?;
+    let endpoint = server.endpoint()?;
+    let (report, requests) = server
+        .capture_with(
+            async {
+                Ok(inventory_harness::probe::run(
+                    &catalog,
+                    &TestCredentials,
+                    &client,
+                    &executor,
+                    &region,
+                    &endpoint,
+                    &[],
+                )
+                .await?)
+            },
+            |request| match target(request)? {
+                "GetCallerIdentity" => Ok((200, r#"{"Account":"123456789012"}"#)),
+                "DescribeRegions" => Ok((200, r#"{"Regions":[{"RegionName":"us-east-1"}]}"#)),
+                "ListThings" | "DescribeThing" => {
+                    Ok((200, r#"{"Items":[{"Id":"one","Count":7}]}"#))
+                }
+                _ => Err("unexpected probe operation".into()),
+            },
+        )
+        .await?;
+    let mut describes = requests
+        .iter()
+        .filter(|request| request.contains(".DescribeThing"));
+    let request = describes.next().ok_or("probe never sent DescribeThing")?;
+    assert_eq!(describes.next(), None);
+    let (_, body) = request
+        .split_once("\r\n\r\n")
+        .ok_or("missing request body")?;
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(body)?,
+        serde_json::json!({"Id":"one"})
+    );
+    let expected = "skipruntime DescribeThing awsJson1_1 items 1";
+    assert!(report.lines().any(|line| line == expected), "{report}");
     Ok(())
 }
 

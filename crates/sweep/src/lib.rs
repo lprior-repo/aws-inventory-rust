@@ -30,6 +30,9 @@ mod request;
 mod resource_projection;
 mod row_policy;
 #[cfg(test)]
+#[path = "../../catalog-tool/tests/support/bindings.rs"]
+mod test_bindings;
+#[cfg(test)]
 #[path = "tests/cbor.rs"]
 mod test_cbor;
 
@@ -37,7 +40,10 @@ pub use control::{ProgressEvent, SweepControl};
 pub use credentials::{CredentialFailure, CredentialSource};
 pub use execution::run;
 pub use metrics::SweepMetrics;
-pub use probe::{ProbeAnswer, ProbePage, ProbeScope, ProbeSession, call_once, probe_pair};
+pub use probe::{
+    ChildProbeOutcome, ChildProbeSamples, ProbeAnswer, ProbeChildren, ProbePage, ProbeScope,
+    ProbeSession, call_once, probe_children, probe_pair,
+};
 
 #[derive(Clone, Debug)]
 pub struct SweepConfig {

@@ -108,10 +108,6 @@ impl<'a, 'catalog> ConsumerIndex<'a, 'catalog> {
         operation: &str,
         branch: Option<&str>,
     ) -> impl Iterator<Item = &'a CallablePlan<'catalog>> + '_ {
-        let exact = self.entries_for(service, operation, None);
-        let staged = branch.map_or(&[][..], |branch| {
-            self.entries_for(service, operation, Some(branch))
-        });
         let parent = self
             .skipped_parents
             .binary_search_by_key(&(service, operation), |plan| {
@@ -120,20 +116,33 @@ impl<'a, 'catalog> ConsumerIndex<'a, 'catalog> {
             .ok()
             .and_then(|index| self.skipped_parents.get(index))
             .copied();
+        self.binding_candidates_for_branch(service, operation, branch)
+            .filter(move |child| {
+                !parent.is_some_and(|parent| {
+                    child.service_name() == parent.service_name()
+                        && parent
+                            .skips()
+                            .iter()
+                            .any(|name| name.as_ref() == child.operation_name())
+                })
+            })
+    }
+
+    pub(crate) fn binding_candidates_for_branch(
+        &self,
+        service: &str,
+        operation: &str,
+        branch: Option<&str>,
+    ) -> impl Iterator<Item = &'a CallablePlan<'catalog>> + '_ {
+        let exact = self.entries_for(service, operation, None);
+        let staged = branch.map_or(&[][..], |branch| {
+            self.entries_for(service, operation, Some(branch))
+        });
         Candidates {
             exact: exact.iter(),
             staged: staged.iter(),
             wildcards: self.wildcards.iter(),
         }
-        .filter(move |child| {
-            !parent.is_some_and(|parent| {
-                child.service_name() == parent.service_name()
-                    && parent
-                        .skips()
-                        .iter()
-                        .any(|name| name.as_ref() == child.operation_name())
-            })
-        })
     }
 
     fn entries_for(

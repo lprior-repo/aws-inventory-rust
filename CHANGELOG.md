@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The emulator probe now calls parent-bound operations using the sweep's binding
+  and wire code, sampling one parent item by default (`--child-samples 1..64`)
+  and reporting why unbound children are skipped.
 - Sweeps no longer store a resource's own identifier as a reference to itself.
   The next sweep removes those edges; deliberate self-relationships, such as an
   IAM role that trusts itself, are unchanged.
