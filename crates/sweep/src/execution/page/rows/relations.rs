@@ -2,10 +2,10 @@ mod target;
 
 use crate::{SweepError, record, resource_projection};
 use inventory_core::{
-    catalog::runtime::{ReferenceOwnerRule, RelationSource, RelationshipPlan},
+    catalog::runtime::{CallablePlan, ReferenceOwnerRule, RelationSource, RelationshipPlan},
     inventory::{
-        Observation, ReferenceComponent, ReferenceTarget, RegionId, ResourceId, ResourceKey,
-        UnresolvedReference,
+        EdgeSource, Observation, ReferenceComponent, ReferenceTarget, RegionId, ResourceId,
+        ResourceKey, UnresolvedReference,
     },
     record::{FieldId, Record, ValueRef},
 };
@@ -23,17 +23,45 @@ impl<T: AsRef<ResourceKey>> Context<'_, T> {
     pub(super) fn append_plan(
         &self,
         catalog: &inventory_core::catalog::runtime::RuntimeCatalog<'_>,
-        plan: &inventory_core::catalog::runtime::CallablePlan<'_>,
+        plan: &CallablePlan<'_>,
         output: &mut Vec<UnresolvedReference>,
         limit: usize,
     ) -> Result<(), SweepError> {
         for relation in catalog.relationships_from(&self.observation.as_ref().kind) {
-            if !plan.supports_relationship(relation)? {
+            if !plan.supports_relationship(relation)? || self.is_identity_member(plan, relation)? {
                 continue;
             }
             self.append(relation, output, limit)?;
         }
         Ok(())
+    }
+
+    fn is_identity_member(
+        &self,
+        plan: &CallablePlan<'_>,
+        relation: &RelationshipPlan,
+    ) -> Result<bool, SweepError> {
+        if relation.edge_source != EdgeSource::Model
+            || relation.source != RelationSource::SelectedOutput
+            || relation.target_kinds.as_ref() != std::slice::from_ref(&relation.source_kind)
+            || !relation.components.is_empty()
+            || relation.target_path != relation.source_path
+        {
+            return Ok(false);
+        }
+        let Some(emission) = plan
+            .resource_emissions()
+            .iter()
+            .find(|emission| emission.emits_kind(&relation.source_kind))
+        else {
+            return Ok(false);
+        };
+        record::is_identity_member(
+            self.row,
+            self.request,
+            emission.identity(),
+            &relation.source_path,
+        )
     }
 
     pub(super) fn append(

@@ -39,7 +39,7 @@ fn given_single_typed_resource_when_validated_then_no_ec2_relationship_is_requir
 fn given_embedded_default_when_validated_then_all_six_response_dependencies_survive() -> TestResult
 {
     let scenario = default_scenario()?;
-    assert_eq!(scenario.steps().len(), 12);
+    assert_eq!(scenario.steps().len(), 15);
     assert_eq!(scenario.relationships().len(), 6);
     scenario
         .relationships()

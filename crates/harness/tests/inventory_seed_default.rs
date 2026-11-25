@@ -5,19 +5,37 @@ use inventory_harness::inventory_seed::{
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+const VPC_IDS: [u16; 6] = [0, 5, 7, 9, 11, 13];
+const SINGLE_STEPS: [(usize, &str); 3] = [
+    (2, "CreateSecurityGroup"),
+    (3, "CreateInternetGateway"),
+    (4, "CreateKeyPair"),
+];
+
 #[test]
 fn inventory_seed_embedded_default_matches_every_legacy_descriptor() -> TestResult {
     let scenario = default_scenario()?;
-    assert_eq!(scenario.steps().len(), 12);
+    let steps = scenario.steps();
+    assert_eq!(steps.len(), 15);
     assert_eq!(scenario.relationships().len(), 6);
-    scenario
-        .steps()
-        .as_chunks::<2>()
-        .0
+    SINGLE_STEPS.iter().try_for_each(|(position, operation)| {
+        let step = steps.get(*position).ok_or("missing single step")?;
+        assert_eq!(step.id, StepId::new(u16::try_from(*position)?));
+        assert_eq!(step.operation, *operation);
+        TestResult::Ok(())
+    })?;
+    VPC_IDS
         .iter()
         .enumerate()
         .zip(scenario.relationships())
-        .try_for_each(|((index, steps), edge)| pair(index, steps, edge))
+        .try_for_each(|((index, vpc_id), edge)| {
+            let position = usize::from(*vpc_id);
+            let vpc = steps.get(position).ok_or("missing vpc step")?;
+            let subnet = steps
+                .get(position.checked_add(1).ok_or("position overflow")?)
+                .ok_or("missing subnet step")?;
+            pair(index, *vpc_id, vpc, subnet, edge)
+        })
 }
 
 fn common(step: &SeedStep, id: u16, operation: &str, kind: &str, identity: &[&str]) -> TestResult {
@@ -85,11 +103,17 @@ fn relationship(edge: &SeedRelationship, source: u16, target: u16) -> TestResult
     Ok(())
 }
 
-fn pair(index: usize, [vpc, subnet]: &[SeedStep; 2], edge: &SeedRelationship) -> TestResult {
-    let ordinal = u16::try_from(index)?;
-    let vpc_id = ordinal.checked_mul(2).ok_or("id overflow")?;
+fn pair(
+    index: usize,
+    vpc_id: u16,
+    vpc: &SeedStep,
+    subnet: &SeedStep,
+    edge: &SeedRelationship,
+) -> TestResult {
     let subnet_id = vpc_id.checked_add(1).ok_or("id overflow")?;
-    let n = ordinal.checked_add(1).ok_or("index overflow")?;
+    let n = u16::try_from(index)?
+        .checked_add(1)
+        .ok_or("index overflow")?;
     vpc_descriptor(vpc, vpc_id)?;
     subnet_descriptor(subnet, subnet_id, vpc_id, n)?;
     relationship(edge, subnet_id, vpc_id)

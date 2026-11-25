@@ -1,32 +1,13 @@
 use super::*;
 use crate::plans::model::{ShapeRef, shape_type, target};
 use serde_json::Value;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) fn validate(
     service: &str,
     operation: &str,
     item: &OperationOverlay,
     model: &Model<'_>,
-    violations: &mut Vec<Violation>,
-) {
-    check_paths(
-        service,
-        operation,
-        "exclude_response_members",
-        &item.exclude_response_members,
-        model,
-        root_selection(model, operation).as_ref(),
-        violations,
-    );
-    check_count(service, operation, item, violations);
-    check_safety(service, operation, item, model, violations);
-}
-
-fn check_count(
-    service: &str,
-    operation: &str,
-    item: &OperationOverlay,
     violations: &mut Vec<Violation>,
 ) {
     if item.exclude_response_members.len() > 8 {
@@ -38,6 +19,16 @@ fn check_count(
             ViolationRule::InvalidPath,
         ));
     }
+    check_paths(
+        service,
+        operation,
+        "exclude_response_members",
+        &item.exclude_response_members,
+        model,
+        root_selection(model, operation).as_ref(),
+        violations,
+    );
+    check_safety(service, operation, item, model, violations);
 }
 
 fn check_safety(
@@ -50,26 +41,49 @@ fn check_safety(
     let Some(root) = root_selection(model, operation) else {
         return;
     };
-    for path in &item.exclude_response_members {
-        let path_str = path.as_str();
-        if let Err(reason) = path_walk(model, root, path_str) {
-            violations.push(violation(
-                service,
-                operation,
-                "exclude_response_members",
-                &format!("{path_str}: {reason}"),
-                ViolationRule::InvalidPath,
-            ));
-        } else if let Err(reason) = unique_struct_member(model, root, path_str) {
-            violations.push(violation(
-                service,
-                operation,
-                "exclude_response_members",
-                &format!("{path_str}: {reason}"),
-                ViolationRule::InvalidPath,
-            ));
+    let reviewed = item
+        .exclude_response_members
+        .iter()
+        .filter_map(|path| {
+            let path = path.as_str();
+            match path_walk(model, root, path) {
+                Ok(()) => Some(path),
+                Err(reason) => {
+                    report_site_error(service, operation, path, reason, violations);
+                    None
+                }
+            }
+        })
+        .collect::<BTreeSet<_>>();
+    let site_counts = reviewed
+        .into_iter()
+        .fold(BTreeMap::new(), |mut counts, path| {
+            let name = path.rsplit_once('.').map_or(path, |(_, name)| name);
+            let count = counts.entry(name).or_insert(0usize);
+            *count = count.saturating_add(1);
+            counts
+        });
+    site_counts.into_iter().for_each(|(name, approved)| {
+        if let Err(reason) = validate_sites(model, root, name, approved) {
+            report_site_error(service, operation, name, reason, violations);
         }
-    }
+    });
+}
+
+fn report_site_error(
+    service: &str,
+    operation: &str,
+    path: &str,
+    reason: &str,
+    violations: &mut Vec<Violation>,
+) {
+    violations.push(violation(
+        service,
+        operation,
+        "exclude_response_members",
+        &format!("{path}: {reason}"),
+        ViolationRule::InvalidPath,
+    ));
 }
 
 fn path_walk<'a>(model: &Model<'a>, root: ShapeRef<'a>, path: &str) -> Result<(), &'static str> {
@@ -116,30 +130,36 @@ fn step_lists<'a>(model: &Model<'a>, shape: ShapeRef<'a>) -> Result<ShapeRef<'a>
     Ok(current)
 }
 
-fn unique_struct_member<'a>(
+fn validate_sites<'a>(
     model: &Model<'a>,
     root: ShapeRef<'a>,
-    path: &str,
+    name: &str,
+    approved: usize,
 ) -> Result<(), &'static str> {
-    let name = path.rsplit('.').next().ok_or("empty path")?;
     let mut pending = vec![root];
     let mut visits = BTreeMap::new();
-    let mut sites = 0;
+    let mut sites = 0usize;
     while let Some(shape) = pending.pop() {
-        let seen = visits.entry(shape.id).or_insert(0u8);
-        if *seen == 2 {
+        let seen = visits.entry(shape.id).or_insert(0usize);
+        if *seen > approved {
             continue;
         }
         *seen = seen.saturating_add(1);
-        sites = check_site(shape, name, sites)?;
+        sites = sites.saturating_add(usize::from(is_struct_site(shape, name)?));
+        if sites > approved {
+            return Err("terminal member name occurs at multiple output sites not all reviewed");
+        }
         enqueue_children(model, shape, &mut pending)?;
+    }
+    if sites != approved {
+        return Err("reviewed response paths do not match modeled output sites");
     }
     Ok(())
 }
 
-fn check_site(shape: ShapeRef<'_>, name: &str, sites: u8) -> Result<u8, &'static str> {
+fn is_struct_site(shape: ShapeRef<'_>, name: &str) -> Result<bool, &'static str> {
     if !matches!(shape_type(shape.value), Some("structure" | "union")) {
-        return Ok(sites);
+        return Ok(false);
     }
     if shape
         .value
@@ -147,15 +167,12 @@ fn check_site(shape: ShapeRef<'_>, name: &str, sites: u8) -> Result<u8, &'static
         .and_then(|members| members.get(name))
         .is_none()
     {
-        return Ok(sites);
+        return Ok(false);
     }
     if shape_type(shape.value) == Some("union") {
         return Err("excluded member has a union parent");
     }
-    if sites != 0 {
-        return Err("terminal member name occurs at multiple output sites");
-    }
-    Ok(1)
+    Ok(true)
 }
 
 fn enqueue_children<'a>(

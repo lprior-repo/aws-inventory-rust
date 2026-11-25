@@ -7,11 +7,12 @@ pub(super) fn output_value(
     step: super::super::StepId,
     path: &[Selector],
 ) -> Result<Value, SeedError> {
-    let output = state
-        .outputs
-        .get(usize::from(step.0))
-        .filter(|output| output.step == step)
-        .ok_or(SeedError::Invalid("seed binding output is not available"))?;
+    let output = state.accepted_output(step).ok_or_else(|| {
+        SeedError::Message(format!(
+            "seed binding output from step {} is not available",
+            step.0
+        ))
+    })?;
     Ok(value_path(output.record.root(), path)?.to_value()?)
 }
 

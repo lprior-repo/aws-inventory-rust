@@ -94,8 +94,8 @@ async fn given_unknown_seed_kinds_when_command_runs_then_sorted_error_precedes_r
 }
 
 #[tokio::test]
-async fn given_cfn_kinds_without_targets_when_command_runs_then_fails_before_network() -> TestResult
-{
+async fn given_mapped_and_unmapped_cfn_kinds_when_command_runs_then_only_unmapped_kinds_block_network()
+-> TestResult {
     let fixture = Fixture::new(
         &[],
         "list",
@@ -110,7 +110,7 @@ async fn given_cfn_kinds_without_targets_when_command_runs_then_fails_before_net
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         String::from_utf8(output.stderr)?,
-        "Cloud Control seeded kinds have no mapped target: [\"AWS::CloudWatch::Alarm\", \"AWS::ControlTower::LandingZone\", \"AWS::Glue::Table\"]\n"
+        "Cloud Control seeded kinds have no mapped target: [\"AWS::ControlTower::LandingZone\", \"AWS::Glue::Table\"]\n"
     );
     assert_eq!(output.stdout, Vec::<u8>::new());
     assert!(!fixture.report.try_exists()?);

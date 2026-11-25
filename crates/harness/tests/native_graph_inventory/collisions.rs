@@ -8,10 +8,7 @@ use super::{
 use cmdb_view::{Database, GraphConnection, GraphLimits, PageRequest, ResourceFilter, TagFilter};
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
-    inventory::{
-        AccountId, Kind, Observation, OperationId, Region, ResourceId, ResourceKey, ScopeKey,
-        ServiceId, TagCoverage,
-    },
+    inventory::{AccountId, Kind, Observation, Region, ResourceId, ResourceKey, TagCoverage},
     record::{Exclusions, Record, Value},
 };
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkSpec};
@@ -35,11 +32,7 @@ pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &P
     let store = create_store(&database).await?;
     let keys = keys()?;
     let resources = keys.iter().cloned().collect();
-    let expected = Expected {
-        resources,
-        edges: BTreeSet::new(),
-        safe_records: BTreeMap::new(),
-    };
+    let expected = Expected::new(resources, BTreeSet::new(), BTreeMap::new());
     let pairs = baseline(&keys)?;
     let (same_scope, single_scopes) = keys.split_at_checked(2).ok_or("first scope missing")?;
     let groups = std::iter::once(same_scope).chain(single_scopes.chunks(1));
@@ -192,25 +185,14 @@ pub(super) async fn insert(
 ) -> TestResult {
     let mut keys = keys.into_iter();
     let first = keys.next().ok_or("empty resource scope")??;
-    let (service, operation) = if first.region == Region::Global {
-        ("s3", "ListBuckets")
-    } else {
-        ("ec2", "DescribeVpcs")
-    };
-    let scope = ScopeKey::new(
-        first.account.clone(),
-        first.region.clone(),
-        ServiceId::parse(service)?,
-        OperationId::parse(operation)?,
-        None,
-    )?;
+    let (scope, bindings) = tags::tag_commit::fixture_work(&first, None)?;
     let record = Record::encode(&Value::Map(BTreeMap::new()))?;
     store
         .seed_work(WorkSpec::new(
             sweep.clone(),
             scope,
             None,
-            record.as_bytes().to_vec(),
+            bindings.as_bytes().to_vec(),
         )?)
         .await?;
     let lease = store

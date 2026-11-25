@@ -5,6 +5,8 @@ mod identity_choice;
 mod identity_tests;
 mod identity_validation;
 #[cfg(test)]
+mod organizations_email_tests;
+#[cfg(test)]
 mod policy_ac_tests;
 #[cfg(test)]
 pub(crate) mod policy_dfgk_tests;
@@ -27,6 +29,7 @@ mod selection;
 mod selection_tests;
 mod tags;
 pub(crate) mod trusted_arn;
+pub(super) use identity_choice::is_identity_member;
 pub(super) use identity_validation::IdentityTextValidation;
 pub(super) use tags::tag_observation;
 #[cfg(test)]

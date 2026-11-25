@@ -13,7 +13,6 @@ ViewName = "all-resources"
 id = "view"
 operation = "ListViews"
 kind = "AWS::ResourceExplorer2::View"
-# A fresh setup creates exactly one default all-resources view.
 identity = "Views.0"
 [step.input]
 MaxResults = 50

@@ -1,11 +1,18 @@
-use crate::{CredentialSource, SweepError, call, execution::routing, input, metrics, record};
+use crate::{
+    CredentialSource, SweepError, call,
+    execution::{discovery, routing},
+    input, metrics, record,
+};
 use aws_wire::transport::Client;
 use inventory_core::{
-    catalog::runtime::{CallablePlan, PlanPurpose, PlanScope, ResolvedEndpoint, RuntimeCatalog},
+    catalog::runtime::{
+        CallablePlan, PlanPurpose, PlanScope, RequestRouting, ResolvedEndpoint, RuntimeCatalog,
+    },
     inventory::{AccountId, Region, RegionId},
     record::Record,
 };
 use inventory_engine::limiter::ApiExecutor;
+use std::borrow::Cow;
 
 #[cfg(test)]
 mod tests;
@@ -68,7 +75,11 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
         let endpoint = routing::resolve(self.plan, &region)?;
         let base =
             input::root_bindings_branch(self.plan, branch, self.scope.account, Some(&scope))?;
-        let response = self.request(&endpoint, &base, &scope).await?;
+        let url = self.discover_endpoint(&endpoint).await?;
+        let fields = first_page_fields(self.plan);
+        let response = self
+            .request(self.plan, &endpoint, url.as_ref(), &base, &fields, &scope)
+            .await?;
         let (count, _) = record::item_selection(&response.record, self.plan.items())?;
         Ok(ProbeAnswer {
             items: u64::try_from(count)
@@ -111,26 +122,45 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
         }
     }
 
+    async fn discover_endpoint<'a>(
+        &self,
+        endpoint: &'a ResolvedEndpoint,
+    ) -> Result<Cow<'a, str>, SweepError> {
+        let RequestRouting::Discovered { operation, .. } = self.plan.routing() else {
+            return Ok(Cow::Borrowed(&endpoint.url));
+        };
+        let plan = discovery::lookup(self.catalog, self.plan, operation)?;
+        let region = RegionId::parse(&endpoint.signing_region)?;
+        let bootstrap = routing::resolve(plan, &region)?;
+        let scope = Region::Regional(region);
+        let base = input::root_bindings(plan, self.scope.account, Some(&scope))?;
+        let response = self
+            .request(plan, &bootstrap, &bootstrap.url, &base, &[], &scope)
+            .await?;
+        let (url, _) =
+            discovery::endpoint_lease(self.plan, &response.record, &endpoint.signing_region)?;
+        Ok(Cow::Owned(url))
+    }
+
     async fn request(
         &self,
+        plan: &CallablePlan<'_>,
         endpoint: &ResolvedEndpoint,
+        url: &str,
         base: &Record,
+        fields: &[input::InputField],
         scope: &Region,
     ) -> Result<call::DecodedResponse, SweepError> {
-        let fields = first_page_fields(self.plan);
         let metrics = metrics::Accumulators::default();
         call::Call {
             client: self.client,
             executor: self.executor,
             credentials: self.credentials,
-            plan: self.plan,
+            plan,
             endpoint,
-            url: self
-                .scope
-                .endpoint_override
-                .map_or(endpoint.url.as_str(), |url| url),
+            url: self.scope.endpoint_override.map_or(url, |url| url),
             base,
-            fields: &fields,
+            fields,
             metrics: &metrics,
             account: self
                 .scope

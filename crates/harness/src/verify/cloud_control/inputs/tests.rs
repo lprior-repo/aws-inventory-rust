@@ -58,13 +58,12 @@ fn given_real_seeds_when_known_input_gaps_are_removed_then_remaining_kinds_are_a
         .ok_or("expected unmapped CFN kind error")?;
     assert_eq!(
         error.to_string(),
-        "Cloud Control seeded kinds have no mapped target: [\"AWS::CloudWatch::Alarm\", \"AWS::ControlTower::LandingZone\", \"AWS::ECS::TaskDefinition\", \"AWS::Glue::Table\"]"
+        "Cloud Control seeded kinds have no mapped target: [\"AWS::ControlTower::LandingZone\", \"AWS::ECS::TaskDefinition\", \"AWS::Glue::Table\"]"
     );
     let HarnessError::CloudControl(CloudControlError::UnmappedKinds { kinds }) = error else {
         return Err("expected typed unmapped CFN kind error".into());
     };
     let gaps = [
-        "AWS::CloudWatch::Alarm",
         "AWS::ControlTower::LandingZone",
         "AWS::ECS::TaskDefinition",
         "AWS::Glue::Table",
@@ -79,6 +78,14 @@ fn given_real_seeds_when_known_input_gaps_are_removed_then_remaining_kinds_are_a
     assert!(section.contains("AWS::ApiOnly::SSMActivation\tno CloudFormation type\n"));
     assert!(!inputs.seeded.contains("AWS::ApiOnly::SSMActivation"));
     assert!(inputs.seeded.contains("AWS::SNS::Topic"));
+    assert!(inputs.seeded.contains("AWS::CloudWatch::Alarm"));
+    let alarm = inputs
+        .targets
+        .iter()
+        .find(|target| target.kind == "AWS::CloudWatch::Alarm")
+        .ok_or("missing Cloud Control alarm target")?;
+    assert_eq!(alarm.type_name, "AWS::CloudWatch::Alarm");
+    assert!(alarm.listable);
     Ok(())
 }
 

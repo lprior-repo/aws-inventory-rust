@@ -3,7 +3,7 @@ accessanalyzer GetArchiveRule restJson1 skipped child
 accessanalyzer ListAnalyzers restJson1 items 1
 accessanalyzer ListArchiveRules restJson1 skipped child
 account GetAccountInformation restJson1 items 1
-account GetGovCloudAccountInformation restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (ResourceNotFoundException)
+account GetGovCloudAccountInformation restJson1 empty inventory feature or singleton absent: AWS service failure: Fatal (ResourceNotFoundException)
 account ListRegions restJson1 items 32
 account-access ListApplications restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 acm DescribeCertificate awsJson1_1 skipped child
@@ -229,10 +229,10 @@ bedrock-data-automation ListDataAutomationLibraries restJson1 empty
 bedrock-data-automation ListDataAutomationProjects restJson1 items 1
 bedrock-runtime ListAsyncInvokes restJson1 empty
 billing ListBillingViews awsJson1_0 items 1
-billingconductor ListBillingGroups restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-billingconductor ListCustomLineItems restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-billingconductor ListPricingPlans restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-billingconductor ListPricingRules restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
+billingconductor ListBillingGroups restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
+billingconductor ListCustomLineItems restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
+billingconductor ListPricingPlans restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
+billingconductor ListPricingRules restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
 budgets DescribeBudgets awsJson1_1 empty
 chatbot DescribeChimeWebhookConfigurations restJson1 empty
 chatbot DescribeSlackChannelConfigurations restJson1 empty
@@ -247,7 +247,7 @@ chime-sdk-voice GetSipMediaApplication restJson1 skipped child
 chime-sdk-voice GetSipRule restJson1 skipped child
 chime-sdk-voice GetVoiceConnector restJson1 skipped child
 chime-sdk-voice GetVoiceConnectorGroup restJson1 skipped child
-chime-sdk-voice ListPhoneNumbers restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (BadRequestException)
+chime-sdk-voice ListPhoneNumbers restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 chime-sdk-voice ListSipMediaApplications restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 chime-sdk-voice ListSipRules restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 chime-sdk-voice ListVoiceConnectorGroups restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -321,6 +321,7 @@ cloudtrail ListChannels awsJson1_1 empty
 cloudtrail ListDashboards awsJson1_1 items 1
 cloudtrail ListEventDataStores awsJson1_1 items 1
 cloudtrail ListImports awsJson1_1 empty
+cloudwatch DescribeAlarms rpcv2Cbor items 2
 cloudwatch DescribeAnomalyDetectors rpcv2Cbor items 1
 cloudwatch DescribeInsightRules rpcv2Cbor empty
 cloudwatch GetDashboard rpcv2Cbor skipped child
@@ -809,7 +810,7 @@ elastic-load-balancing-v2 DescribeTargetGroups awsQuery items 1
 elastic-load-balancing-v2 DescribeTrustStores awsQuery empty
 elasticache DescribeCacheClusters awsQuery items 1
 elasticache DescribeCacheParameterGroups awsQuery items 21
-elasticache DescribeCacheSecurityGroups awsQuery failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValue)
+elasticache DescribeCacheSecurityGroups awsQuery empty inventory feature or singleton absent: AWS service failure: Fatal (InvalidParameterValue)
 elasticache DescribeCacheSubnetGroups awsQuery empty
 elasticache DescribeGlobalReplicationGroups awsQuery empty
 elasticache DescribeReplicationGroups awsQuery items 1
@@ -871,12 +872,12 @@ fis ListExperimentTargetAccountConfigurations restJson1 skipped child
 fis ListExperimentTemplates restJson1 items 1
 fis ListExperiments restJson1 empty
 fis ListTargetAccountConfigurations restJson1 skipped child
-fms GetNotificationChannel rpcv2Cbor failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-fms ListAppsLists rpcv2Cbor failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-fms ListPolicies rpcv2Cbor failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
-fms ListProtocolsLists rpcv2Cbor failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
+fms GetNotificationChannel rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
+fms ListAppsLists rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
+fms ListPolicies rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
+fms ListProtocolsLists rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
 fms ListResourceSetResources rpcv2Cbor skipped child
-fms ListResourceSets rpcv2Cbor failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
+fms ListResourceSets rpcv2Cbor empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
 forecast DescribeDatasetGroup awsJson1_1 skipped child
 forecast DescribeForecast awsJson1_1 skipped child
 forecast DescribeWhatIfForecastExport awsJson1_1 skipped child
@@ -1012,17 +1013,17 @@ iam ListUsers awsQuery items 1
 identitystore DescribeIdentityStore awsJson1_1 skipped child
 identitystore ListGroups awsJson1_1 skipped child
 identitystore ListIdentityStores awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-imagebuilder ListComponentBuildVersions restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListComponents restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListContainerRecipes restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListDistributionConfigurations restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListImagePipelines restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListImageRecipes restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListImages restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListInfrastructureConfigurations restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListLifecyclePolicies restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListWorkflowBuildVersions restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
-imagebuilder ListWorkflows restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValueException)
+imagebuilder ListComponentBuildVersions restJson1 empty
+imagebuilder ListComponents restJson1 empty
+imagebuilder ListContainerRecipes restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListDistributionConfigurations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListImagePipelines restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListImageRecipes restJson1 empty
+imagebuilder ListImages restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListInfrastructureConfigurations restJson1 empty
+imagebuilder ListLifecyclePolicies restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListWorkflowBuildVersions restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
+imagebuilder ListWorkflows restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 inspector ListAssessmentTargets awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 inspector ListAssessmentTemplates awsJson1_1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 inspector2 ListCisScanConfigurations restJson1 empty
@@ -1251,9 +1252,9 @@ machine-learning DescribeMLModels awsJson1_1 empty
 macie2 ListAllowLists restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 macie2 ListClassificationJobs restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 macie2 ListClassificationScopes restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-macie2 ListCustomDataIdentifiers restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
+macie2 ListCustomDataIdentifiers restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
 macie2 ListFindingsFilters restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-macie2 ListMembers restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
+macie2 ListMembers restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
 macie2 ListSensitivityInspectionTemplates restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 mailmanager GetArchive rpcv2Cbor skipped child
 mailmanager ListAddonInstances rpcv2Cbor unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1302,7 +1303,7 @@ medialive ListNetworks restJson1 empty
 medialive ListNodes restJson1 skipped child
 medialive ListSdiSources restJson1 empty
 medialive ListSignalMaps restJson1 empty
-mediapackage ListOriginEndpoints restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (UnprocessableEntityException)
+mediapackage ListOriginEndpoints restJson1 empty
 mediapackage-vod ListAssets restJson1 empty
 mediapackage-vod ListPackagingConfigurations restJson1 empty
 mediapackage-vod ListPackagingGroups restJson1 items 1
@@ -1576,7 +1577,7 @@ rds DescribePendingMaintenanceActions awsQuery empty
 rds DescribeReservedDBInstances awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 redshift DescribeClusterDbRevisions awsQuery empty
 redshift DescribeClusterParameterGroups awsQuery items 2
-redshift DescribeClusterSecurityGroups awsQuery failed api API executor error: permanent API failure: AWS service failure: Fatal (InvalidParameterValue)
+redshift DescribeClusterSecurityGroups awsQuery empty inventory feature or singleton absent: AWS service failure: Fatal (InvalidParameterValue)
 redshift DescribeClusterSnapshots awsQuery empty
 redshift DescribeClusterSubnetGroups awsQuery items 1
 redshift DescribeDataSharesForProducer awsQuery unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1701,12 +1702,12 @@ rum ListAppMonitors restJson1 items 1
 s3 ListBuckets restXml items 11
 s3 ListDirectoryBuckets restXml empty
 s3-control GetAccessGrant restXml skipped child
-s3-control GetAccessGrantsInstance restXml failed api API executor error: permanent API failure: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
+s3-control GetAccessGrantsInstance restXml empty inventory feature or singleton absent: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
 s3-control GetAccessGrantsLocation restXml skipped child
 s3-control GetStorageLensGroup restXml skipped child
-s3-control ListAccessGrants restXml failed api API executor error: permanent API failure: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
+s3-control ListAccessGrants restXml empty inventory feature or singleton absent: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
 s3-control ListAccessGrantsInstances restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-s3-control ListAccessGrantsLocations restXml failed api API executor error: permanent API failure: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
+s3-control ListAccessGrantsLocations restXml empty inventory feature or singleton absent: AWS service failure: Fatal (AccessGrantsInstanceNotExistsError)
 s3-control ListAccessPoints restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 s3-control ListAccessPointsForDirectoryBuckets restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (UnknownService)
 s3-control ListAccessPointsForObjectLambda restXml unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
@@ -1820,26 +1821,26 @@ securityagent ListIntegrations restJson1 unsupported API executor error: provide
 securityagent ListPrivateConnections restJson1 empty
 securityagent ListSecurityRequirementPacks restJson1 empty
 securityagent ListTargetDomains restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-securityhub DescribeActionTargets restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (InvalidAccessException)
-securityhub DescribeHub restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (InvalidAccessException)
-securityhub GetEnabledStandards restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (InvalidAccessException)
+securityhub DescribeActionTargets restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (InvalidAccessException)
+securityhub DescribeHub restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (InvalidAccessException)
+securityhub GetEnabledStandards restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (InvalidAccessException)
 securityhub GetInsights restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListAggregatorsV2 restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-securityhub ListAutomationRules restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (InvalidAccessException)
+securityhub ListAutomationRules restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (InvalidAccessException)
 securityhub ListAutomationRulesV2 restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListConfigurationPolicies restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListConnectors restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListConnectorsV2 restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListEnabledProductsForImport restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListExportJobsV2 restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-securityhub ListFindingAggregators restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (InvalidAccessException)
+securityhub ListFindingAggregators restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (InvalidAccessException)
 securityhub ListFreeTrialStatusesV2 restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListInvitations restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-securityhub ListMembers restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (InvalidAccessException)
+securityhub ListMembers restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (InvalidAccessException)
 securityhub ListOrganizationAdminAccounts restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 securityhub ListTagsForResource restJson1 skipped child
 securitylake ListDataLakes restJson1 empty
-securitylake ListSubscribers restJson1 failed api API executor error: permanent API failure: AWS service failure: Fatal (ResourceNotFoundException)
+securitylake ListSubscribers restJson1 empty inventory feature or singleton absent: AWS service failure: Fatal (ResourceNotFoundException)
 securitylake ListTagsForResource restJson1 skipped child
 serverlessapplicationrepository ListApplications restJson1 items 1
 service-catalog ListConstraintsForPortfolio rpcv2Cbor skipped child
@@ -1890,7 +1891,7 @@ shield ListTagsForResource rpcv2Cbor skipped child
 signer ListSigningJobs restJson1 empty
 signer ListSigningProfiles restJson1 items 3
 signer ListTagsForResource restJson1 skipped child
-snow-device-management ListDevices restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
+snow-device-management ListDevices restJson1 empty inventory feature or singleton absent: AWS service failure: AccessDenied (AccessDeniedException)
 snow-device-management ListTagsForResource restJson1 skipped child
 snow-device-management ListTasks restJson1 failed denied API executor error: access denied: AWS service failure: AccessDenied (AccessDeniedException)
 snowball ListClusters rpcv2Cbor empty
@@ -1982,15 +1983,15 @@ timestream-influxdb ListDbInstances awsJson1_0 empty
 timestream-influxdb ListDbInstancesForCluster awsJson1_0 skipped child
 timestream-influxdb ListDbParameterGroups awsJson1_0 items 22
 timestream-influxdb ListTagsForResource awsJson1_0 skipped child
-timestream-query DescribeEndpoints awsJson1_0 failed api API executor error: API execution budget exhausted: transient: AWS service failure: Retryable (AmbiguousService)
-timestream-query ListScheduledQueries awsJson1_0 items 1
+timestream-query DescribeEndpoints awsJson1_0 failed api API executor error: permanent API failure: AWS service failure: Fatal (AmbiguousService)
+timestream-query ListScheduledQueries awsJson1_0 failed api API executor error: permanent API failure: AWS service failure: Fatal (AmbiguousService)
 timestream-query ListTagsForResource awsJson1_0 skipped child
 timestream-write DescribeBatchLoadTask awsJson1_0 skipped child
 timestream-write DescribeDatabase awsJson1_0 skipped child
-timestream-write DescribeEndpoints awsJson1_0 failed api API executor error: API execution budget exhausted: transient: AWS service failure: Retryable (AmbiguousService)
+timestream-write DescribeEndpoints awsJson1_0 failed api API executor error: permanent API failure: AWS service failure: Fatal (AmbiguousService)
 timestream-write DescribeTable awsJson1_0 skipped child
-timestream-write ListBatchLoadTasks awsJson1_0 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
-timestream-write ListDatabases awsJson1_0 items 1
+timestream-write ListBatchLoadTasks awsJson1_0 failed api API executor error: permanent API failure: AWS service failure: Fatal (AmbiguousService)
+timestream-write ListDatabases awsJson1_0 failed api API executor error: permanent API failure: AWS service failure: Fatal (AmbiguousService)
 timestream-write ListTables awsJson1_0 skipped child
 timestream-write ListTagsForResource awsJson1_0 skipped child
 transcribe DescribeLanguageModel rpcv2Cbor skipped child
@@ -2223,15 +2224,15 @@ xray GetIndexingRules restJson1 items 1
 xray GetSamplingRules restJson1 items 1
 xray ListResourcePolicies restJson1 unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (NotImplemented)
 xray ListTagsForResource restJson1 skipped child
-total items 335
-total empty 573
-total unsupported 521
-total failed 122
+total items 334
+total empty 603
+total unsupported 528
+total failed 87
 total skipped-child 674
-protocol awsJson1_0 items 22 empty 28 unsupported 45 failed 3 skipped-child 60
+protocol awsJson1_0 items 20 empty 28 unsupported 44 failed 6 skipped-child 60
 protocol awsJson1_1 items 65 empty 128 unsupported 175 failed 1 skipped-child 166
-protocol awsQuery items 38 empty 58 unsupported 8 failed 2 skipped-child 22
+protocol awsQuery items 38 empty 60 unsupported 8 failed 0 skipped-child 22
 protocol ec2Query items 22 empty 100 unsupported 22 failed 1 skipped-child 20
-protocol restJson1 items 158 empty 217 unsupported 227 failed 30 skipped-child 336
-protocol restXml items 11 empty 17 unsupported 8 failed 3 skipped-child 18
-protocol rpcv2Cbor items 19 empty 25 unsupported 36 failed 82 skipped-child 52
+protocol restJson1 items 158 empty 237 unsupported 235 failed 2 skipped-child 336
+protocol restXml items 11 empty 20 unsupported 8 failed 0 skipped-child 18
+protocol rpcv2Cbor items 20 empty 30 unsupported 36 failed 77 skipped-child 52

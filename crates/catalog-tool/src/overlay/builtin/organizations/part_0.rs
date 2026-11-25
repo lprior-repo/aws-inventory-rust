@@ -13,6 +13,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         identity: Some(Identity::Arn(path("Arn")?)),
         bind: [(path("AccountId")?, Binding::From { operation: name("ListAccounts")?, path: path("Id")? })].into_iter().collect(),
         paginator: Some(Paginator::None),
+        exclude_response_members: vec![path("Account.Email")?],
         ..empty()
     }),
 ("DescribeCreateAccountStatus", OperationOverlay {
@@ -30,6 +31,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         items: Some(ItemSelector::parse("Organization")?),
         identity: Some(Identity::Arn(path("Arn")?)),
         paginator: Some(Paginator::None),
+        exclude_response_members: vec![path("Organization.MasterAccountEmail")?],
         ..empty()
     }),
 ("DescribeResourcePolicy", OperationOverlay {
@@ -56,6 +58,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         page_size: Some(20),
         identity: Some(Identity::Arn(path("Arn")?)),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
+        exclude_response_members: vec![path("Accounts.Email")?],
         ..empty()
     }),
 ("ListCreateAccountStatus", OperationOverlay {
@@ -74,6 +77,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         page_size: Some(20),
         identity: Some(Identity::Arn(path("Arn")?)),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
+        exclude_response_members: vec![path("DelegatedAdministrators.Email")?],
         ..empty()
     }),
 ("ListInboundResponsibilityTransfers", OperationOverlay {
@@ -83,6 +87,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         identity: Some(Identity::Arn(path("Arn")?)),
         fixed: [(path("Type")?, FixedValue::String("BILLING".to_owned())), (path("MaxResults")?, FixedValue::Integer(20))].into_iter().collect(),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
+        exclude_response_members: vec![path("ResponsibilityTransfers.Source.ManagementAccountEmail")?, path("ResponsibilityTransfers.Target.ManagementAccountEmail")?],
         ..empty()
     }),
 ("ListOutboundResponsibilityTransfers", OperationOverlay {
@@ -92,6 +97,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         identity: Some(Identity::Arn(path("Arn")?)),
         fixed: [(path("Type")?, FixedValue::String("BILLING".to_owned())), (path("MaxResults")?, FixedValue::Integer(20))].into_iter().collect(),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
+        exclude_response_members: vec![path("ResponsibilityTransfers.Source.ManagementAccountEmail")?, path("ResponsibilityTransfers.Target.ManagementAccountEmail")?],
         ..empty()
     }),
 ("ListRoots", OperationOverlay {

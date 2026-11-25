@@ -1,4 +1,5 @@
 use super::super::{DecodeError, DecodeLimits};
+use super::Field;
 use minicbor::{Decoder, data::Type};
 mod value;
 
@@ -19,13 +20,17 @@ enum Action {
     Pop,
 }
 
-pub(super) fn code(body: &[u8], limits: DecodeLimits) -> Result<Option<String>, DecodeError> {
+pub(super) fn scan(
+    body: &[u8],
+    limits: DecodeLimits,
+    field: Field,
+) -> Result<Option<String>, DecodeError> {
     if body.is_empty() {
         return Ok(None);
     }
     let mut decoder = Decoder::new(body);
     check_root(&mut decoder)?;
-    let mut scanner = Scanner::new(decoder.map().map_err(syntax)?, limits)?;
+    let mut scanner = Scanner::new(decoder.map().map_err(syntax)?, limits, field)?;
     while !scanner.frames.is_empty() {
         scanner.step(&mut decoder)?;
     }
@@ -40,10 +45,15 @@ struct Scanner {
     nodes: usize,
     found: Option<String>,
     limits: DecodeLimits,
+    field: Field,
 }
 
 impl Scanner {
-    fn new(remaining: Option<u64>, limits: DecodeLimits) -> Result<Self, DecodeError> {
+    fn new(
+        remaining: Option<u64>,
+        limits: DecodeLimits,
+        field: Field,
+    ) -> Result<Self, DecodeError> {
         nodes_check(1, limits)?;
         let mut frames = Vec::new();
         frames.try_reserve(1)?;
@@ -57,6 +67,7 @@ impl Scanner {
             nodes: 1,
             found: None,
             limits,
+            field,
         })
     }
 
@@ -81,7 +92,8 @@ impl Scanner {
                 "service error CBOR map key is not text",
             ));
         }
-        let candidate = root && error_key(decoder.str().map_err(syntax)?);
+        let key = decoder.str().map_err(syntax)?;
+        let candidate = root && self.field.matches(key);
         let Some(Frame::Map { pending, .. }) = self.frames.last_mut() else {
             return Err(DecodeError::Invalid("CBOR error parser state"));
         };
@@ -136,10 +148,6 @@ fn check_root(decoder: &mut Decoder<'_>) -> Result<(), DecodeError> {
         return Err(DecodeError::Invalid("service error CBOR is not a map"));
     }
     Ok(())
-}
-
-fn error_key(key: &str) -> bool {
-    matches!(key, "__type" | "code" | "Code")
 }
 
 fn decrement_array(frames: &mut [Frame]) -> Result<(), DecodeError> {

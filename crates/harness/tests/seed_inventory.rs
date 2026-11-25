@@ -15,7 +15,7 @@ mod runtime;
 #[path = "seed_inventory/storage.rs"]
 mod storage;
 
-use inventory_harness::inventory_seed::{ScenarioSeedOracle, SeedError, SeedScenario};
+use inventory_harness::inventory_seed::{ScenarioSeedOracle, SeedError, SeedScenario, load};
 use runtime::{NATIVE_SLOT, NativeRuntime};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -241,6 +241,8 @@ async fn given_all_native_seed_oracles_when_collector_sweeps_then_sqlite_contain
     for fixture in FIXTURES {
         oracles.push(seed_checked(&native, fixture).await?);
     }
+    let landing_zone = load(include_str!("../seeds/controltower.toml"))?;
+    native.seed(landing_zone).await?;
     collection::compare(&native, &oracles).await?;
     native.stop()
 }

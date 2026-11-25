@@ -116,11 +116,7 @@ async fn given_both_proton_connection_roles_when_native_pages_overlap_then_indep
             format!("arn:aws:proton:us-east-1:123456789012:environment-account-connection/{id}")
         })
         .collect::<BTreeSet<_>>();
-    let edges = expected
-        .iter()
-        .map(|id| (id.clone(), id.clone(), "REFERENCES".to_owned()))
-        .collect();
-    assert_eq!(scenario.stored(kind).await?, (expected, edges));
+    assert_eq!(scenario.stored(kind).await?, (expected, BTreeSet::new()));
     Ok(())
 }
 
@@ -171,6 +167,14 @@ async fn given_code_signing_configs_when_scalar_function_arn_pages_resume_then_l
     assert_eq!(
         scenario.stored("AWS::Lambda::Function").await?,
         (expected, BTreeSet::new())
+    );
+    let configs = ["11111111111111111", "22222222222222222"]
+        .into_iter()
+        .map(|id| format!("arn:aws:lambda:us-east-1:123456789012:code-signing-config:csc-{id}"))
+        .collect();
+    assert_eq!(
+        scenario.stored("AWS::Lambda::CodeSigningConfig").await?,
+        (configs, BTreeSet::new())
     );
     Ok(())
 }
