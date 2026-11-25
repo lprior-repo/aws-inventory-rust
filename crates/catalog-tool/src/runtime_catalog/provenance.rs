@@ -36,7 +36,9 @@ impl CatalogSources {
         if let ModelSourceProvenance::Repository { commit, .. } = &self.models
             && (commit != catalog.models_commit()? || self.cfn_sha256.is_none())
         {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::Path {
+                path: "provenance validation".to_owned(),
+            });
         }
         Ok(())
     }

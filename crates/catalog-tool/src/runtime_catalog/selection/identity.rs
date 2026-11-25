@@ -19,7 +19,9 @@ pub(in crate::runtime_catalog) fn validate(
             if matches!(resource_kind, crate::overlay::ArnResourceKind::SqsQueue)
                 != request_url.is_some()
             {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             }
             request_url.as_ref().map_or(Ok(()), |path| {
                 text(service, target(service, operation.input()?, path.as_str())?)
@@ -29,7 +31,9 @@ pub(in crate::runtime_catalog) fn validate(
         Identity::Choice(choice) => {
             choice
                 .validate()
-                .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+                .map_err(|_| RuntimeCatalogCompileError::Path {
+                    path: "identity choice validation".to_owned(),
+                })?;
             match choice {
                 IdentityChoice::PreferArn { path, fallback, .. } => {
                     text(service, target(service, item, path.as_str())?)?;
@@ -51,7 +55,9 @@ pub(in crate::runtime_catalog) fn validate(
                 }),
             }
         }
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "identity".to_owned(),
+        }),
     }
 }
 fn leaf(
@@ -77,7 +83,9 @@ fn validate_fields(
     fields: &[IdentityField],
 ) -> Result<(), RuntimeCatalogCompileError> {
     if fields.is_empty() || fields.len() > 64 {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "identity fields".to_owned(),
+        });
     }
     fields.iter().try_for_each(|field| match field {
         IdentityField::Selected(path) => scalar(service, target(service, item, path.as_str())?),
@@ -117,22 +125,32 @@ fn validate_fields(
             max_item_bytes,
         } => {
             if !(1..=64).contains(max_items) || !(1..=4096).contains(max_item_bytes) {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             }
             let Target::Shape(index) = target(service, item, path.as_str())? else {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             };
             let shape = service
                 .shape(index)?
-                .ok_or(RuntimeCatalogCompileError::Capability)?;
+                .ok_or(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                })?;
             if shape.kind()? != "list" {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             }
             text(
                 service,
                 shape
                     .element()?
-                    .ok_or(RuntimeCatalogCompileError::Capability)?,
+                    .ok_or(RuntimeCatalogCompileError::Path {
+                        path: path.as_str().to_owned(),
+                    })?,
             )
         }
         IdentityField::MapValue { path, .. } => text_map(service, item, path.as_str()),
@@ -157,42 +175,58 @@ fn text_map(
     path: &str,
 ) -> Result<(), RuntimeCatalogCompileError> {
     let Target::Shape(index) = target(service, root, path)? else {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: format!("text_map target {path}"),
+        });
     };
     let shape = service
         .shape(index)?
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: format!("text_map shape {path}"),
+        })?;
     if shape.kind()? != "map" {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: format!("text_map kind {path}"),
+        });
     }
     text(
         service,
         shape
-            .map_key()?
-            .ok_or(RuntimeCatalogCompileError::Capability)?,
+            .map_key()
+            ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: format!("text_map key {path}"),
+            })?,
     )?;
     text(
         service,
         shape
-            .map_value()?
-            .ok_or(RuntimeCatalogCompileError::Capability)?,
+            .map_value()
+            ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: format!("text_map value {path}"),
+            })?,
     )
 }
 fn text(service: Service<'_>, target: Target) -> Result<(), RuntimeCatalogCompileError> {
-    if matches!(model_path::kind(service, target)?, "string" | "enum") {
+    let kind = model_path::kind(service, target)?;
+    if matches!(kind, "string" | "enum") {
         Ok(())
     } else {
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path {
+            path: format!("text kind {kind}"),
+        })
     }
 }
 fn scalar(service: Service<'_>, target: Target) -> Result<(), RuntimeCatalogCompileError> {
+    let kind = model_path::kind(service, target)?;
     if matches!(
-        model_path::kind(service, target)?,
+        kind,
         "string" | "enum" | "boolean" | "byte" | "short" | "integer" | "long"
     ) {
         Ok(())
     } else {
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path {
+            path: format!("scalar kind {kind}"),
+        })
     }
 }
 
@@ -202,23 +236,31 @@ fn integral(
     minimum: i64,
     maximum: i64,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    let (low, high) = match model_path::kind(service, target)? {
+    let kind = model_path::kind(service, target)?;
+    let (low, high) = match kind {
         "byte" => (i64::from(i8::MIN), i64::from(i8::MAX)),
         "short" => (i64::from(i16::MIN), i64::from(i16::MAX)),
         "integer" => (i64::from(i32::MIN), i64::from(i32::MAX)),
         "long" => (i64::MIN, i64::MAX),
-        _ => return Err(RuntimeCatalogCompileError::Capability),
+        _ => {
+            return Err(RuntimeCatalogCompileError::Path {
+                path: format!("integral kind {kind}"),
+            })
+        }
     };
     if minimum <= maximum && minimum >= low && maximum <= high {
         Ok(())
     } else {
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path {
+            path: "integral range".to_owned(),
+        })
     }
 }
 
 fn digest_target(service: Service<'_>, target: Target) -> Result<(), RuntimeCatalogCompileError> {
+    let kind = model_path::kind(service, target)?;
     if matches!(
-        model_path::kind(service, target)?,
+        kind,
         "string"
             | "enum"
             | "intEnum"
@@ -240,6 +282,8 @@ fn digest_target(service: Service<'_>, target: Target) -> Result<(), RuntimeCata
     ) {
         Ok(())
     } else {
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path {
+            path: format!("digest_target kind {kind}"),
+        })
     }
 }

@@ -8,12 +8,12 @@ https://github.com/awslabs/aws-c-auth/tree/v0.9.0/tests/aws-signing-test-suite
 The two `double-*` cases were added by smithy-rs. Amazon's Apache-2.0
 license is copied unchanged as `LICENSE`; these fixture bytes are not relicensed.
 
-Only `request.txt`, `header-signed-request.txt`, `header-canonical-request.txt`,
-and (where upstream supplies one) `context.json` are copied. Query-signing files
+Only `request.txt`, `header-signed-request.txt`, and `header-canonical-request.txt`
+are copied. Query-signing files
 are not copied because this module deliberately supports only header signing.
 `sign_vectors.rs` exercises every copied case through `aws_wire::sign::sign`,
 comparing the entire Authorization value from `header-signed-request.txt`.
-The canonical files and context files preserve reviewable upstream evidence;
+The canonical files preserve reviewable upstream evidence;
 they are not generated expectations. No fixture execution is claimed here.
 
 ## Fixed context
@@ -26,7 +26,7 @@ Ordinary cases use:
 - Signing service: `service`
 - Time: `2015-08-30T12:36:00Z` (Unix second 1440938160)
 - Session token: absent, except the two copied token cases, whose exact tokens
-  are in their unchanged `context.json` files.
+  are the `X-Amz-Security-Token` values in their request files.
 
 The historical `double-encode-path` case instead uses the AWS credential crate's
 published test values `ANOTREAL` / `notrealrnrELgWzOk3IfjzDKtFBhDby` (as in

@@ -2,8 +2,22 @@
 
 > Status: Record of an actual run on 2026-11-15, on a 2-CPU Linux x86_64
 > machine with 8 GB of memory and a 6 GiB process limit, from the `main`
-> archive of this repository (no git history). Emulator evidence only. Nothing
-> here touched real AWS.
+> archive of this repository. Emulator evidence only. Nothing here touched real AWS.
+
+Commit: `0c1c68d34240381e7f839406894a6576bdcfd77d`
+
+All seven catalog checks pass at this commit:
+- `models report --check`: pass
+- `models fields --check`: pass
+- `models endpoints --check`: pass
+- `classes --check`: pass
+- `plans --check`: pass
+- `overlay --source .local/aws-models --root . --check`: pass
+- `models compile --check`: pass
+
+The `catalog/kinds.tsv` is no longer part of the workflow; kinds and relations are reviewed Rust tables in `crates/catalog-tool/src/kind_map/`. The original compile failure at this commit has been resolved (A0.1).
+
+Five Rust files are over 300 lines, so `check-source-size.sh` fails at this commit. Four files have functions over 25 lines, so `check-function-size.sh` fails. Steps A0.1 and A0.4 address the largest of these.
 
 ## One command
 

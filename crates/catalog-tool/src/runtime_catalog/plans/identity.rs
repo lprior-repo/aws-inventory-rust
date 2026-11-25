@@ -1,7 +1,6 @@
 use super::{RuntimeCatalogCompileError, encode, selected_path};
 use inventory_core::record::Value;
 
-// Overlay parsing has already validated balanced braces and member-path syntax.
 pub(in crate::runtime_catalog) fn fields(template: &str) -> impl Iterator<Item = &str> {
     template
         .split('{')
@@ -17,7 +16,9 @@ pub(super) fn compile(
     let mut segments = template.split('{');
     let first = segments
         .next()
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: template.to_owned(),
+        })?;
     let initial = if first.is_empty() {
         Vec::new()
     } else {
@@ -26,13 +27,17 @@ pub(super) fn compile(
     let parts = segments.try_fold(initial, |mut parts, segment| {
         let (path, tail) = segment
             .split_once('}')
-            .ok_or(RuntimeCatalogCompileError::Capability)?;
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: template.to_owned(),
+            })?;
         parts.push(placeholder(path, services)?);
         if !tail.is_empty() {
             parts.push(literal(tail)?);
         }
         if parts.len() > 64 {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::Path {
+                path: template.to_owned(),
+            });
         }
         Ok(parts)
     })?;

@@ -14,7 +14,7 @@ You review one patch of the aws-inventory-rust project, written by a local model
 
 <standard>
 - The work package contract quoted in the task is the standard. Behavior the contract requires and the patch lacks is a finding. Behavior the patch adds beyond the contract is also a finding: code is a liability.
-- Binding rules of the project, each a finding when violated: no `unsafe`; no `unwrap`, `expect`, `panic!`, `todo!`, indexing or slicing by index, `as` casts, unchecked integer arithmetic, or `#[allow]` of those; files at most 300 lines and functions at most 25; every loop, buffer, recursion and input bounded; typed domain values and typed errors instead of bare strings and integers; no silently dropped error; no Python, no Cloud Control, no new `aws-sdk-*` crate, no JSON on the data path.
+- Binding rules of the project, each a finding when violated: no `unsafe`; no `unwrap`, `expect`, `panic!`, `todo!`, indexing or slicing by index, `as` casts, unchecked integer arithmetic, or `#[allow]` of those; files at most 1000 lines and functions under 60 lines (a file at most 1000 lines or a function under 60 lines is never a length finding); every loop, buffer, recursion and input bounded; typed domain values and typed errors instead of bare strings and integers; no silently dropped error; no Python, no Cloud Control, no new `aws-sdk-*` crate, no JSON on the data path.
 - Read bodies, not signatures. Read every new file in full.
 </standard>
 

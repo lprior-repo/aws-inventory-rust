@@ -18,7 +18,9 @@ pub(super) fn compile(
     if value_type != super::token_type(model_path::kind(inputs.service, element)?)?
         || !matches!(response.1.wire()?.binding()?, HttpBinding::Document | HttpBinding::Payload)
     {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: input.as_str().to_owned(),
+        });
     }
     encode::map([
         (1, encode::path(inputs.services, input.as_str())?),
@@ -42,5 +44,11 @@ fn validate_descriptor(
                 path == output.as_str() || path.strip_suffix("[-1]") == Some(output.as_str())
             })
     });
-    if valid { Ok(()) } else { Err(RuntimeCatalogCompileError::Capability) }
+    if valid {
+        Ok(())
+    } else {
+        Err(RuntimeCatalogCompileError::Path {
+            path: "page last_list_item descriptor".to_owned(),
+        })
+    }
 }

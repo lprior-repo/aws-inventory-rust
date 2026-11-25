@@ -17,7 +17,9 @@ pub(super) fn encode(
                 .any(|prior| prior.operation == alternative.operation)
         })
     {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "binding alternatives count".to_owned(),
+        });
     }
     let entries = alternatives
         .iter()

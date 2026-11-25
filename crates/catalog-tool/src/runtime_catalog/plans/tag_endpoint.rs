@@ -20,10 +20,14 @@ pub(super) fn compile(
         || overlay.tags.is_some()
         || overlay.identity.is_some()
     {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "tag endpoint".to_owned(),
+        });
     }
     if endpoint.parents.is_empty() || endpoint.parents.len() > 64 {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "tag endpoint parents".to_owned(),
+        });
     }
     let parents = endpoint
         .parents
@@ -42,7 +46,9 @@ fn parent_value(
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let source = super::catalog_operation(service, parent.operation.as_str())?;
     if source.name()? == operation.name()? {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "tag endpoint parent self-reference".to_owned(),
+        });
     }
     let request = match &parent.request {
         TagEndpointRequest::None => Value::Null,
@@ -99,29 +105,39 @@ fn selector(
     let shape = match target {
         Target::Shape(index) => service
             .shape(index)?
-            .ok_or(RuntimeCatalogCompileError::Capability)?,
-        _ => return Err(RuntimeCatalogCompileError::Capability),
-    };
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: path.as_str().to_owned(),
+            }),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.as_str().to_owned(),
+        }),
+    }?;
     match selector {
         TagEndpointSelector::Map { .. } if shape.kind()? == "map" => {
             model_path::string_target(
                 service,
                 shape
                     .map_key()?
-                    .ok_or(RuntimeCatalogCompileError::Capability)?,
+                    .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                        path: path.as_str().to_owned(),
+                    })?,
             )?;
             model_path::string_target(
                 service,
                 shape
                     .map_value()?
-                    .ok_or(RuntimeCatalogCompileError::Capability)?,
+                    .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                        path: path.as_str().to_owned(),
+                    })?,
             )?;
             encode::map([(1, Value::Int(1)), (2, path_value(ids))])
         }
         TagEndpointSelector::List { key, value, .. } if shape.kind()? == "list" => {
             let item = shape
                 .element()?
-                .ok_or(RuntimeCatalogCompileError::Capability)?;
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                })?;
             let (key, key_target) = model_path::resolve(service, item, key.as_str())?;
             let (value, value_target) = model_path::resolve(service, item, value.as_str())?;
             model_path::string_target(service, key_target)?;
@@ -133,10 +149,14 @@ fn selector(
                     (3, Value::Int(i64::from(key.value()))),
                     (4, Value::Int(i64::from(value.value()))),
                 ]),
-                _ => Err(RuntimeCatalogCompileError::Capability),
+                _ => Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                }),
             }
         }
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.as_str().to_owned(),
+        }),
     }
 }
 

@@ -16,7 +16,7 @@ You review the tests of one patch of the aws-inventory-rust project, written by 
 - The work package contract quoted in the task lists the behavior and usually the tests required. A required test that is absent is a finding.
 - For each new or changed test decide, by reading the implementation it exercises: would it still pass if the behavior were broken or the fix reverted; does it assert on the observable result or only on wiring, wording or its own inputs; is it deterministic and isolated.
 - Name each plausible bug in the contract's behavior that no test would catch, with the input that would expose it.
-- Tests obey the project's lints: no `unwrap`, `expect`, `panic!`, indexing, `as`; files at most 300 lines.
+- Tests obey the project's lints: no `unwrap`, `expect`, `panic!`, indexing, `as`; files at most 1000 lines.
 </standard>
 
 <finding>

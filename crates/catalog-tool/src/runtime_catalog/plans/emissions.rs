@@ -36,7 +36,9 @@ pub(super) fn compile(
         operation,
     } = callable;
     if overlay.additional_resources.len() >= MAX_RESOURCE_EMISSIONS {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "additional resources count".to_owned(),
+        });
     }
     let primary_kinds = std::iter::once(primary_kind)
         .chain(
@@ -59,11 +61,15 @@ pub(super) fn compile(
                     })
                     || !keys.insert(emission.key.as_str())
                 {
-                    return Err(RuntimeCatalogCompileError::Capability);
+                    return Err(RuntimeCatalogCompileError::Path {
+                        path: format!("emission key {}", emission.key),
+                    });
                 }
                 let kind = kinds
                     .additional_emission_kind(service_name, operation_name, &emission.key)
-                    .ok_or(RuntimeCatalogCompileError::Capability)?;
+                    .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                        path: format!("emission kind {}", emission.key),
+                    })?;
                 let emitted = std::iter::once(kind)
                     .chain(emission.classification.as_ref().into_iter().flat_map(
                         |classification| classification.variants.values().map(String::as_str),
@@ -73,7 +79,9 @@ pub(super) fn compile(
                     if seen_kinds.insert(kind) {
                         Ok(())
                     } else {
-                        Err(RuntimeCatalogCompileError::Capability)
+                        Err(RuntimeCatalogCompileError::Path {
+                            path: format!("duplicate emission kind {kind}"),
+                        })
                     }
                 })?;
                 values.push(descriptor(
@@ -94,7 +102,9 @@ pub(super) fn compile(
         .filter(|row| row.service == service_name && row.operation == operation_name)
         .count();
     if reviewed != overlay.additional_resources.len() {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "reviewed additional resources count".to_owned(),
+        });
     }
     Ok(Value::List(values))
 }

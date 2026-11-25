@@ -22,19 +22,25 @@ pub(super) fn compile(
         .as_ref()
         .map(|classification| {
             if classification.variants.is_empty() || classification.variants.len() > 64 {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: "classification variants count".to_owned(),
+                });
             }
-            let (fields, target) =
-                model_path::resolve(service, item, classification.field.as_str())?;
+            let field_path = classification.field.as_str();
+            let (fields, target) = model_path::resolve(service, item, field_path)?;
             model_path::string_target(service, target)?;
             let variants = classification
                 .variants
                 .iter()
                 .map(|(value, kind)| {
                     if value.is_empty() || value.len() > 256 || !value.is_ascii() {
-                        return Err(RuntimeCatalogCompileError::Capability);
+                        return Err(RuntimeCatalogCompileError::Path {
+                            path: "classification variant value".to_owned(),
+                        });
                     }
-                    Kind::parse(kind).map_err(|_| RuntimeCatalogCompileError::Capability)?;
+                    Kind::parse(kind).map_err(|_| RuntimeCatalogCompileError::Path {
+                        path: format!("classification kind {kind}"),
+                    })?;
                     encode::map([
                         (1, Value::Text(value.clone())),
                         (2, Value::Text(kind.clone())),
@@ -62,22 +68,32 @@ fn compile_projection(
     let extra = match projection {
         ResourceProjection::SensitiveMapDigest { key, .. } => {
             if key.is_empty() || key.len() > 256 {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: "projection key length".to_owned(),
+                });
             }
             let Target::Shape(index) = target else {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             };
             let shape = service
                 .shape(index)?
-                .ok_or(RuntimeCatalogCompileError::Capability)?;
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                })?;
             if shape.kind()? != "map" {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             }
             model_path::string_target(
                 service,
                 shape
                     .map_value()?
-                    .ok_or(RuntimeCatalogCompileError::Capability)?,
+                    .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                        path: path.as_str().to_owned(),
+                    })?,
             )?;
             Some((3, Value::Text(key.clone())))
         }

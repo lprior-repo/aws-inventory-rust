@@ -1,14 +1,6 @@
 use super::projection::row_from_row;
 use super::*;
 
-// Each UI read opens its own short-lived SQLite snapshot and closes it
-// immediately. No read transaction is held across user idle time or between
-// unrelated requests, so a continuous writer can checkpoint without waiting
-// for a stale reader. Consistency tradeoff: a single page read sees one
-// consistent snapshot, but two consecutive reads may observe different states.
-// That is acceptable for an inventory view; strong snapshot isolation across
-// the entire session would block WAL checkpointing indefinitely.
-
 /// Enriches graph node details from a short-lived snapshot. Each call opens
 /// its own snapshot; the caller is responsible for closing it.
 async fn enrich_graph(
@@ -45,7 +37,6 @@ pub(super) async fn refresh_page(database: &Database, filter: Filter) -> WorkerE
         tag: filter.tag,
     };
     let result = tokio::time::timeout(Duration::from_secs(10), async {
-        // Open a short-lived snapshot for this page read only.
         let mut snapshot = database
             .snapshot()
             .await
@@ -60,7 +51,6 @@ pub(super) async fn refresh_page(database: &Database, filter: Filter) -> WorkerE
             )
             .await
             .map_err(|error| error.to_string())?;
-        // Compute counts within the same snapshot to ensure consistency.
         let snapshot_counts = snapshot.counts().await.map_err(|error| error.to_string())?;
         let rows = page
             .rows
@@ -95,7 +85,6 @@ pub(super) async fn query_graph(state: &mut WorkerState, node: Option<GraphNode>
     else {
         return event;
     };
-    // Open a short-lived snapshot for enrichment.
     let snapshot = match state.database.snapshot().await {
         Ok(s) => s,
         Err(error) => {

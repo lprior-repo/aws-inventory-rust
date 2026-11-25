@@ -19,7 +19,9 @@ pub(in crate::runtime_catalog) fn validate_resource(
         match model_path::kind(service, target)? {
             "boolean" | "byte" | "short" | "integer" | "long" | "float" | "double" | "string"
             | "enum" | "blob" | "timestamp" => Ok(()),
-            _ => Err(RuntimeCatalogCompileError::Capability),
+            kind => Err(RuntimeCatalogCompileError::Path {
+                path: format!("queryable path kind {kind}"),
+            }),
         }
     })
 }

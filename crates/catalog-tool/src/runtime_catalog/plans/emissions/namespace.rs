@@ -21,7 +21,9 @@ pub(super) fn validate(
         _ => false,
     };
     if ambiguous {
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path {
+            path: "identity ambiguous correlation".to_owned(),
+        })
     } else {
         Ok(())
     }

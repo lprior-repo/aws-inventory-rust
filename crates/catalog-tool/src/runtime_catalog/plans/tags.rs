@@ -14,10 +14,11 @@ pub(super) fn compile(
         return Ok(None);
     };
     let item = selected_item(service, operation, overlay.items.as_ref())?;
-    let (fields, target) = if path.as_str() == "$" {
+    let path_str = path.as_str();
+    let (fields, target) = if path_str == "$" {
         (Vec::new(), item)
     } else {
-        resolve(service, item, path.as_str())?
+        resolve(service, item, path_str)?
     };
     let path = Value::List(fields.into_iter().map(field_value).collect());
     let shape = shape(service, target)?;
@@ -28,7 +29,9 @@ pub(super) fn compile(
             string(service, shape.map_value()?)?;
             encode::map([(1, Value::Int(1)), (2, path)]).map(Some)
         }
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path_str.to_owned(),
+        }),
     }
 }
 
@@ -49,7 +52,9 @@ fn resolve(
     fields.iter().try_fold(target, |target, id| {
         let parent = shape(service, target)?;
         if parent.kind()? != "structure" {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::Path {
+                path: path.to_owned(),
+            });
         }
         parent
             .members()?
@@ -61,7 +66,9 @@ fn resolve(
                     found
                 })
             })?
-            .ok_or(RuntimeCatalogCompileError::Capability)
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: path.to_owned(),
+            })
     })?;
     Ok((fields, terminal))
 }
@@ -74,10 +81,14 @@ fn list(
     let element = shape(
         service,
         tags.element()?
-            .ok_or(RuntimeCatalogCompileError::Capability)?,
+            .ok_or(RuntimeCatalogCompileError::Path {
+                path: "tags list element".to_owned(),
+            })?,
     )?;
     if element.kind()? != "structure" {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "tags list element".to_owned(),
+        });
     }
     let key = tag_member(element, &["Key", "key", "TagKey", "tagKey"])?;
     let value = tag_member(element, &["Value", "value", "TagValue", "tagValue"])?;
@@ -103,17 +114,23 @@ fn tag_member<'a>(
                 return Ok(found);
             }
             if found.is_some() {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: "tag member duplicate".to_owned(),
+                });
             }
             Ok(Some(member))
         })?
-        .ok_or(RuntimeCatalogCompileError::Capability)
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "tag member".to_owned(),
+        })
 }
 
 fn string(service: Service<'_>, target: Option<Target>) -> Result<(), RuntimeCatalogCompileError> {
     model_path::string_target(
         service,
-        target.ok_or(RuntimeCatalogCompileError::Capability)?,
+        target.ok_or(RuntimeCatalogCompileError::Path {
+            path: "tags string target".to_owned(),
+        })?,
     )
 }
 
@@ -124,8 +141,12 @@ fn shape<'a>(
     match target {
         Target::Shape(index) => service
             .shape(index)?
-            .ok_or(RuntimeCatalogCompileError::Capability),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+            .ok_or(RuntimeCatalogCompileError::Path {
+                path: "tags shape".to_owned(),
+            }),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "tags shape".to_owned(),
+        }),
     }
 }
 

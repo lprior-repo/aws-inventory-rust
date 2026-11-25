@@ -29,7 +29,9 @@ fn scope(value: Option<Scope>) -> Result<i64, RuntimeCatalogCompileError> {
         Some(Scope::Region) => Ok(0),
         Some(Scope::Account) => Ok(1),
         Some(Scope::HomeRegion) => Ok(2),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "scope".to_owned(),
+        }),
     }
 }
 
@@ -44,7 +46,9 @@ fn item_value(
             (2, encode::path(services, &path.to_string())?),
         ]),
         Some(ItemSelector::Explicit { path, kind }) => selection::item(path, *kind, services),
-        None => Err(RuntimeCatalogCompileError::Capability),
+        None => Err(RuntimeCatalogCompileError::Path {
+            path: "item selector".to_owned(),
+        }),
     }
 }
 
@@ -74,7 +78,9 @@ fn identity_value(
         Some(
             value @ (Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. }),
         ) => selection::identity(value, service, services),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "identity value".to_owned(),
+        }),
     }
 }
 
@@ -101,9 +107,13 @@ fn endpoint_value(
         signing_region,
     } = endpoint
         .operation_endpoint(operation)
-        .ok_or(RuntimeCatalogCompileError::Capability)?
+        .ok_or(RuntimeCatalogCompileError::Path {
+            path: "endpoint resolution".to_owned(),
+        })?
     else {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "endpoint derivation".to_owned(),
+        });
     };
     let class = match class {
         ServiceClass::Global => 0,
@@ -185,7 +195,9 @@ fn region_purpose(
         opt_in_status_path,
     } = purpose
     else {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "region purpose".to_owned(),
+        });
     };
     let mut fields = vec![
         (1, Value::Int(2)),
@@ -213,7 +225,9 @@ fn protocol(
     ]
     .into_iter()
     .find_map(|(name, code)| protocols.contains(&name).then_some(code))
-    .ok_or(RuntimeCatalogCompileError::Capability)
+    .ok_or(RuntimeCatalogCompileError::Path {
+        path: "protocol".to_owned(),
+    })
 }
 fn binding_values(
     service: &str,
@@ -226,23 +240,23 @@ fn binding_values(
         .iter()
         .map(|(path, binding)| binding_value(service, path, binding, services))
         .chain(overlay.fixed.iter().map(|(path, value)| {
+            let path_str = path.as_str();
+            let resolved = super::model_path::resolve(
+                catalog_service(services, service)?,
+                operation.input()?,
+                path_str,
+            )?
+            .1;
+            let compiled = fixed_input::compile(
+                catalog_service(services, service)?,
+                resolved,
+                value,
+                path_str,
+            )?;
             binding_record(
                 path,
                 2,
-                (
-                    fixed_input::compile(
-                        catalog_service(services, service)?,
-                        super::model_path::resolve(
-                            catalog_service(services, service)?,
-                            operation.input()?,
-                            path.as_str(),
-                        )?
-                        .1,
-                        value,
-                    )?,
-                    Value::Null,
-                    Value::Null,
-                ),
+                (compiled, Value::Null, Value::Null),
                 services,
             )
         }))
@@ -272,7 +286,9 @@ fn binding_value(
                     | Binding::FromService { .. }
             )
         {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::Path {
+                path: path.as_str().to_owned(),
+            });
         }
         return encode::map([
             (1, encode::path(services, path.as_str())?),
@@ -398,7 +414,11 @@ fn plain_binding_value(
                 (6, Value::Int(kind)),
             ]);
         }
-        Binding::Transformed { .. } => return Err(RuntimeCatalogCompileError::Capability),
+        Binding::Transformed { .. } => {
+            return Err(RuntimeCatalogCompileError::Path {
+                path: path.as_str().to_owned(),
+            });
+        }
     };
     binding_record(path, source, values, services)
 }
@@ -443,7 +463,9 @@ fn branch_binding(
     services: &super::ServiceIndex<'_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     if !routing::valid_branch_name(branch) {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: branch.to_owned(),
+        });
     }
     encode::map([
         (1, encode::path(services, target.as_str())?),

@@ -18,7 +18,9 @@ pub(super) fn compile(
     services: &ServiceIndex<'_>,
 ) -> Result<Option<(u32, Value)>, RuntimeCatalogCompileError> {
     if policy.assertions.len() > 8 {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "row policy assertions count".to_owned(),
+        });
     }
     if policy.owned.is_none() && policy.assertions.is_empty() && policy.child.is_none() {
         return Ok(None);
@@ -48,7 +50,9 @@ pub(super) fn compile(
                 .filter(|review| review.service() == service_name)
                 .flat_map(|review| review.callable())
                 .find(|parent| parent.operation() == child.operation.as_str())
-                .ok_or(RuntimeCatalogCompileError::Capability)?;
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: child.operation.as_str().to_owned(),
+                })?;
             let parent_operation = super::catalog_operation(service, child.operation.as_str())?;
             let selected = super::super::selection::target(
                 service,
@@ -99,7 +103,9 @@ fn predicate_value(
         ]),
         RowPredicate::BooleanEquals { operand, value } => {
             if operand.value_type != RowValueType::Boolean {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: operand.path.as_str().to_owned(),
+                });
             }
             encode::map([
                 (1, Value::Int(1)),
@@ -117,7 +123,9 @@ fn predicate_value(
             missing,
         } => {
             if *value_type != RowValueType::String {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             }
             validate(service, selected, path.as_str(), *value_type)?;
             validate(service, operation.input()?, request.as_str(), *value_type)?;
@@ -174,7 +182,9 @@ fn validate(
         (RowValueType::String, "string" | "enum")
         | (RowValueType::Boolean, "boolean")
         | (RowValueType::Structure, "structure" | "union") => Ok(()),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        }),
     }
 }
 

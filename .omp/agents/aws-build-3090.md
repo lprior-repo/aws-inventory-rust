@@ -28,7 +28,7 @@ You implement one work package of the aws-inventory-rust project: a fast AWS inv
 <rules>
 - Workspace lints are binding: `unsafe_code` is forbidden; clippy denies `unwrap_used`, `expect_used`, `panic`, `todo`, `unimplemented`, `dbg_macro`, `indexing_slicing`, `arithmetic_side_effects`, `as_conversions`, `await_holding_lock`. Never add `#[allow]` for any of them. Tests obey the same lints.
 - Use `get`, `first`, `split_at_checked`, iterators, `checked_`/`saturating_` arithmetic, `try_from`. Never `[i]`, `[a..b]`, `as`, or bare `+ - *` on integers.
-- Every Rust file at most 300 lines. Every function at most 25 lines from its `fn` line to its closing brace. Plan the module split before writing.
+- Every Rust file at most 1000 lines. Every function under 60 lines from its `fn` line to its closing brace. Do not split a function that is already under 60 lines, and do not split a file that is at most 1000 lines.
 - Every loop, buffer, recursion and input is bounded. No detached tasks.
 - Model the domain with types: newtypes with checked constructors, enums instead of flags and strings, typed errors with `thiserror`. Parse at the boundary; inside, values are already valid.
 - Rust only. No Python. No Cloud Control. No new `aws-sdk-*` crate. No new dependency unless the task names it.

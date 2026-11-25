@@ -78,13 +78,20 @@ fn contextual_plan(
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let service = callable.service().to_owned();
     let operation = callable.operation().to_owned();
-    let path = context_path(callable.plan());
+    let default_path = context_path(callable.plan());
     plan(review, callable, context).map_err(|error| match error {
         RuntimeCatalogCompileError::Capability => RuntimeCatalogCompileError::CapabilityContext {
             service,
             operation,
-            path,
+            path: default_path,
         },
+        RuntimeCatalogCompileError::Path { path } => {
+            RuntimeCatalogCompileError::CapabilityContext {
+                service,
+                operation,
+                path,
+            }
+        }
         error => error,
     })
 }
@@ -129,7 +136,9 @@ fn prepare_plan<'p, 'a>(
         service_name: service.name()?.to_owned(),
         service,
         operation,
-        endpoint: endpoint.ok_or(RuntimeCatalogCompileError::Capability)?,
+        endpoint: endpoint.ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: callable.service().to_owned(),
+        })?,
         protocol: protocol(service)?,
     })
 }
@@ -150,8 +159,12 @@ fn operation_kind<'p>(
         let parent = endpoint
             .parents
             .first()
-            .ok_or(RuntimeCatalogCompileError::Capability)?;
-        return mapped(parent.operation.as_str()).ok_or(RuntimeCatalogCompileError::Capability);
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: callable.service().to_owned(),
+            })?;
+        return mapped(parent.operation.as_str()).ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: parent.operation.as_str().to_owned(),
+        });
     }
     if callable.plan().endpoint_discovery {
         return context
@@ -166,9 +179,13 @@ fn operation_kind<'p>(
                     && !candidate.plan().endpoint_discovery
             })
             .find_map(|candidate| mapped(candidate.operation()))
-            .ok_or(RuntimeCatalogCompileError::Capability);
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: callable.service().to_owned(),
+            });
     }
-    mapped(callable.operation()).ok_or(RuntimeCatalogCompileError::Capability)
+    mapped(callable.operation()).ok_or_else(|| RuntimeCatalogCompileError::Path {
+        path: callable.operation().to_owned(),
+    })
 }
 
 fn encode_plan(

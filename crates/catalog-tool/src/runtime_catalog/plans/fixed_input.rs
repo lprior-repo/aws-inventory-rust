@@ -28,62 +28,81 @@ pub(super) fn compile(
     service: Service<'_>,
     target: Target,
     value: &FixedValue,
+    path: &str,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    let mut work = vec![Work::Read(value, target, 0)];
-    let mut output = Vec::new();
-    let mut budget = Budget { nodes: 0, bytes: 0 };
-    let outcome = (0..BindingValue::MAX_NODES.saturating_mul(2)).try_for_each(|_| {
-        let Some(next) = work.pop() else {
-            return ControlFlow::Break(Ok(()));
-        };
-        let result = (|| {
-            match next {
-                Work::Read(value, target, depth) => {
-                    budget.nodes = budget
-                        .nodes
-                        .checked_add(1)
-                        .ok_or(RuntimeCatalogCompileError::Capability)?;
-                    if budget.nodes > BindingValue::MAX_NODES || depth > BindingValue::MAX_DEPTH {
-                        return Err(RuntimeCatalogCompileError::Capability);
+    fn inner(
+        service: Service<'_>,
+        target: Target,
+        value: &FixedValue,
+        path: &str,
+    ) -> Result<Value, RuntimeCatalogCompileError> {
+        let mut work = vec![Work::Read(value, target, 0)];
+        let mut output = Vec::new();
+        let mut budget = Budget { nodes: 0, bytes: 0 };
+        let outcome = (0..BindingValue::MAX_NODES.saturating_mul(2)).try_for_each(|_| {
+            let Some(next) = work.pop() else {
+                return ControlFlow::Break(Ok(()));
+            };
+            let result = (|| {
+                match next {
+                    Work::Read(value, target, depth) => {
+                        budget.nodes = budget
+                            .nodes
+                            .checked_add(1)
+                            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                                path: path.to_owned(),
+                            })?;
+                        if budget.nodes > BindingValue::MAX_NODES || depth > BindingValue::MAX_DEPTH {
+                            return Err(RuntimeCatalogCompileError::Path {
+                                path: path.to_owned(),
+                            });
+                        }
+                        read(
+                            service,
+                            target,
+                            value,
+                            depth,
+                            &mut State {
+                                work: &mut work,
+                                output: &mut output,
+                                budget: &mut budget,
+                            },
+                        )?;
                     }
-                    read(
-                        service,
-                        target,
-                        value,
-                        depth,
-                        &mut State {
-                            work: &mut work,
-                            output: &mut output,
-                            budget: &mut budget,
-                        },
-                    )?;
+                    Work::List(length) => {
+                        let children = split(&mut output, length, path)?;
+                        output.push(Value::List(children));
+                    }
+                    Work::Object(keys) => {
+                        let children = split(&mut output, keys.len(), path)?;
+                        output.push(Value::Map(keys.into_iter().zip(children).collect()));
+                    }
                 }
-                Work::List(length) => {
-                    let children = split(&mut output, length)?;
-                    output.push(Value::List(children));
+                if work.len().saturating_add(budget.nodes) > BindingValue::MAX_NODES.saturating_mul(2) {
+                    return Err(RuntimeCatalogCompileError::Path {
+                        path: path.to_owned(),
+                    });
                 }
-                Work::Object(keys) => {
-                    let children = split(&mut output, keys.len())?;
-                    output.push(Value::Map(keys.into_iter().zip(children).collect()));
-                }
+                Ok(())
+            })();
+            match result {
+                Ok(()) => ControlFlow::Continue(()),
+                Err(error) => ControlFlow::Break(Err(error)),
             }
-            if work.len().saturating_add(budget.nodes) > BindingValue::MAX_NODES.saturating_mul(2) {
-                return Err(RuntimeCatalogCompileError::Capability);
-            }
-            Ok(())
-        })();
-        match result {
-            Ok(()) => ControlFlow::Continue(()),
-            Err(error) => ControlFlow::Break(Err(error)),
+        });
+        if let ControlFlow::Break(result) = outcome {
+            result?;
         }
-    });
-    if let ControlFlow::Break(result) = outcome {
-        result?;
+        if !work.is_empty() || output.len() != 1 {
+            return Err(RuntimeCatalogCompileError::Path {
+                path: path.to_owned(),
+            });
+        }
+        output.pop().ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        })
     }
-    if !work.is_empty() || output.len() != 1 {
-        return Err(RuntimeCatalogCompileError::Capability);
-    }
-    output.pop().ok_or(RuntimeCatalogCompileError::Capability)
+    inner(service, target, value, path)
 }
 
 fn read<'a>(
@@ -153,7 +172,9 @@ fn scalar(
             Ok(Value::Bytes(value.clone()))
         }
         FixedValue::Timestamp(value) if kind == "timestamp" => Ok(Value::Time(*value)),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input scalar type".to_owned(),
+        }),
     }
 }
 fn strings(
@@ -165,22 +186,30 @@ fn strings(
 ) -> Result<Value, RuntimeCatalogCompileError> {
     collection(values.len())?;
     let child = shape(service, target)?
-        .element()?
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .element()
+        ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "fixed_input strings element".to_owned(),
+        })?;
     if !matches!(
         super::super::model_path::kind(service, child)?,
         "string" | "enum"
     ) || (depth >= BindingValue::MAX_DEPTH && !values.is_empty())
     {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input strings kind".to_owned(),
+        });
     }
     state.budget.nodes = state
         .budget
         .nodes
         .checked_add(values.len())
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "fixed_input strings nodes".to_owned(),
+        })?;
     if state.budget.nodes > BindingValue::MAX_NODES {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input strings node count".to_owned(),
+        });
     }
     Ok(Value::List(
         values
@@ -202,8 +231,10 @@ fn list<'a>(
 ) -> Result<(), RuntimeCatalogCompileError> {
     collection(values.len())?;
     let child = shape(service, target)?
-        .element()?
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .element()
+        ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "fixed_input list element".to_owned(),
+        })?;
     state.work.push(Work::List(values.len()));
     state.work.extend(
         values
@@ -229,7 +260,9 @@ fn structure<'a>(
                 .name()
                 .map_or(true, |name| !values.contains_key(name))
     }) {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input structure required".to_owned(),
+        });
     }
     let children = values
         .iter()
@@ -238,7 +271,9 @@ fn structure<'a>(
             let member = members
                 .iter()
                 .find(|member| member.name().is_ok_and(|member_name| member_name == name))
-                .ok_or(RuntimeCatalogCompileError::Capability)?;
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: format!("fixed_input structure member {name}"),
+                })?;
             Ok((Key::Field(member.id), value, member.target))
         })
         .collect::<Result<Vec<_>, RuntimeCatalogCompileError>>()?;
@@ -263,17 +298,23 @@ fn map<'a>(
     collection(values.len())?;
     let shape = shape(service, target)?;
     let key = shape
-        .map_key()?
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .map_key()
+        ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "fixed_input map key".to_owned(),
+        })?;
     if !matches!(
         super::super::model_path::kind(service, key)?,
         "string" | "enum"
     ) {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input map key kind".to_owned(),
+        });
     }
     let child = shape
-        .map_value()?
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .map_value()
+        ?.ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "fixed_input map value".to_owned(),
+        })?;
     values.keys().try_for_each(|name| {
         text_bound(name.len(), &mut state.budget.bytes)?;
         enum_value(service, key, ValueRef::Text(name))
@@ -293,30 +334,46 @@ fn shape(service: Service<'_>, target: Target) -> Result<Shape<'_>, RuntimeCatal
     match target {
         Target::Shape(index) => service
             .shape(index)?
-            .ok_or(RuntimeCatalogCompileError::Capability),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: "fixed_input shape index".to_owned(),
+            }),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input shape target".to_owned(),
+        }),
     }
 }
-fn split(values: &mut Vec<Value>, length: usize) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
+fn split(
+    values: &mut Vec<Value>,
+    length: usize,
+    path: &str,
+) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
     let start = values
         .len()
         .checked_sub(length)
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        })?;
     Ok(values.split_off(start))
 }
 fn text_bound(length: usize, bytes: &mut usize) -> Result<(), RuntimeCatalogCompileError> {
     *bytes = bytes
         .checked_add(length)
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "fixed_input text bytes".to_owned(),
+        })?;
     if length > BindingValue::MAX_STRING || *bytes > BindingValue::MAX_TEXT_BYTES {
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input text length".to_owned(),
+        })
     } else {
         Ok(())
     }
 }
 fn collection(length: usize) -> Result<(), RuntimeCatalogCompileError> {
     if length > BindingValue::MAX_COLLECTION {
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input collection size".to_owned(),
+        })
     } else {
         Ok(())
     }
@@ -338,7 +395,9 @@ fn enum_value(
     if let Target::Shape(_) = target
         && !shape(service, target)?.accepts_enum_value(value)?
     {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "fixed_input enum value".to_owned(),
+        });
     }
     Ok(())
 }

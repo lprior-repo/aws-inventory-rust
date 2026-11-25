@@ -173,12 +173,12 @@ fn last_item_cursor_rejects_non_list_response() -> TestResult {
     let error = compile_last_item_fixture(MODEL)
         .err()
         .ok_or("accepted scalar cursor")?;
-    assert_eq!(
-        error
-            .downcast_ref::<RuntimeCatalogCompileError>()
-            .map(ToString::to_string),
-        Some(RuntimeCatalogCompileError::Capability.to_string())
-    );
+    let compile_error = error
+        .downcast_ref::<RuntimeCatalogCompileError>()
+        .ok_or("wrong error type")?;
+    assert_eq!(compile_error, &RuntimeCatalogCompileError::Path {
+        path: "NextName".to_owned(),
+    });
     Ok(())
 }
 
@@ -191,29 +191,33 @@ fn last_item_cursor_rejects_nontext_elements_required_input_and_nonboolean_flag(
     ).replace(r#""n#Rows":{"type":"list""#,
         r#""n#Names":{"type":"list","member":{"target":"smithy.api#String"}},"n#Rows":{"type":"list""#);
     let cases = [
-        model.replace(
+        ("nontext elements", model.replace(
             r#""n#Names":{"type":"list","member":{"target":"smithy.api#String"}}"#,
             r#""n#Names":{"type":"list","member":{"target":"smithy.api#Boolean"}}"#,
-        ),
-        model.replace(
+        ), "NextName"),
+        ("required input", model.replace(
             r#""smithy.api#httpQuery":"name""#,
             r#""smithy.api#httpQuery":"name","smithy.api#required":{}"#,
-        ),
-        model.replace(
+        ), "StartName"),
+        ("nonboolean flag", model.replace(
             r#""IsTruncated":{"target":"smithy.api#Boolean"}"#,
             r#""IsTruncated":{"target":"smithy.api#String"}"#,
-        ),
+        ), "IsTruncated"),
     ];
-    for model in cases {
+    for (name, model, expected_path) in cases {
         // When compiled, then unsafe token/truncation contracts fail explicitly.
         let error = compile_last_item_fixture(&model)
             .err()
-            .ok_or("accepted invalid cursor")?;
+            .ok_or_else(|| format!("accepted invalid cursor for {name}"))?;
+        let compile_error = error
+            .downcast_ref::<RuntimeCatalogCompileError>()
+            .ok_or_else(|| format!("wrong error type for {name}"))?;
         assert_eq!(
-            error
-                .downcast_ref::<RuntimeCatalogCompileError>()
-                .map(ToString::to_string),
-            Some(RuntimeCatalogCompileError::Capability.to_string())
+            compile_error,
+            &RuntimeCatalogCompileError::Path {
+                path: expected_path.to_owned(),
+            },
+            "unexpected error for {name}"
         );
     }
     Ok(())

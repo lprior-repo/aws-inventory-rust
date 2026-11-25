@@ -1,7 +1,7 @@
 ---
 name: aws-land-sol
-description: GPT-6.1 Sol integration owner for reviewed aws-inventory-rust changes; serialized, verified, fast-forward-only pushes to main when explicitly assigned landing ownership.
-model: openai-codex/gpt-6.1-sol
+description: GPT-6.2 Sol integration owner for reviewed aws-inventory-rust changes; serialized, verified, fast-forward-only pushes to main when explicitly assigned landing ownership.
+model: openai-codex/gpt-6.2-sol
 thinkingLevel: high
 prewalk: false
 advisor: false

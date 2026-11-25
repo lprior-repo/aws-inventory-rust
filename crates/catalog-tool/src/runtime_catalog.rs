@@ -26,12 +26,36 @@ pub enum RuntimeCatalogCompileError {
         operation: String,
         path: String,
     },
+    #[error("runtime capability metadata is unsupported for kind {kind}, path {path}: {reason}")]
+    KindContext {
+        kind: String,
+        path: String,
+        reason: &'static str,
+    },
+    #[error("path {path} failed")]
+    Path { path: String },
     #[error("runtime capability metadata is invalid or unsupported")]
     Capability,
     #[error("binary record encoding failed")]
     Record(#[from] inventory_core::record::RecordError),
     #[error("inventory metadata is invalid")]
     Inventory(#[from] inventory_core::inventory::InventoryError),
+}
+
+pub(crate) fn unknown_service(name: &str) -> RuntimeCatalogCompileError {
+    RuntimeCatalogCompileError::CapabilityContext {
+        service: name.to_owned(),
+        operation: "-".to_owned(),
+        path: "-".to_owned(),
+    }
+}
+
+pub(crate) fn unknown_member(name: &str) -> RuntimeCatalogCompileError {
+    RuntimeCatalogCompileError::CapabilityContext {
+        service: "-".to_owned(),
+        operation: "-".to_owned(),
+        path: name.to_owned(),
+    }
 }
 pub(super) struct ServiceIndex<'a> {
     by_name: BTreeMap<&'a str, inventory_core::catalog::Service<'a>>,
@@ -67,14 +91,14 @@ impl<'a> ServiceIndex<'a> {
         self.by_name
             .get(key)
             .copied()
-            .ok_or(RuntimeCatalogCompileError::Capability)
+            .ok_or_else(|| unknown_service(key))
     }
 
     pub(super) fn field_id(&self, name: &str) -> Result<FieldId, RuntimeCatalogCompileError> {
         self.field_ids
             .get(name)
             .copied()
-            .ok_or(RuntimeCatalogCompileError::Capability)
+            .ok_or_else(|| unknown_member(name))
     }
 }
 
@@ -187,4 +211,41 @@ fn compile_extension(
         kinds,
     )?;
     Ok((extension, relations))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unknown_service_names_service_field() {
+        match unknown_service("iam") {
+            RuntimeCatalogCompileError::CapabilityContext {
+                service,
+                operation,
+                path,
+            } => {
+                assert_eq!(service, "iam");
+                assert_eq!(operation, "-");
+                assert_eq!(path, "-");
+            }
+            other => panic!("expected CapabilityContext, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn unknown_member_names_path_field() {
+        match unknown_member("Missing") {
+            RuntimeCatalogCompileError::CapabilityContext {
+                service,
+                operation,
+                path,
+            } => {
+                assert_eq!(service, "-");
+                assert_eq!(operation, "-");
+                assert_eq!(path, "Missing");
+            }
+            other => panic!("expected CapabilityContext, got {other:?}"),
+        }
+    }
 }

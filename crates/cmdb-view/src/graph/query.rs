@@ -3,9 +3,6 @@ use std::time::Duration;
 
 const FIELDS: &str = "startNode(r).account,startNode(r).region,startNode(r).kind,startNode(r).id,endNode(r).account,endNode(r).region,endNode(r).kind,endNode(r).id,r.relation,r.provenance";
 
-// Each read expands only the admitted frontier, with an early row LIMIT and no
-// path enumeration, aggregation or sort. Native graph writes between reads may
-// be observed; unlike SQLite's retained transaction this is not a graph snapshot.
 pub(super) async fn neighborhood(
     client: &redis::Client,
     graph: &str,
@@ -131,7 +128,6 @@ fn blast_radius_query(frontier: &[String], expanded: &[String], limit: usize) ->
 }
 
 fn key_list(keys: &[String]) -> String {
-    // Keys originate exclusively from the validated hexadecimal resource digest.
     keys.iter().fold(
         String::with_capacity(keys.len().saturating_mul(67)),
         |mut list, key| {
