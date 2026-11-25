@@ -1,5 +1,6 @@
-use super::{Outcome, Totals, render};
+use super::{Outcome, Row, Totals, render};
 use crate::probe::ProbeError;
+use inventory_core::catalog::runtime::RuntimeProtocol;
 
 #[test]
 fn given_no_enumerations_when_rendered_then_every_outcome_total_is_zero() -> Result<(), ProbeError>
@@ -22,4 +23,39 @@ fn given_maximum_outcome_total_when_incremented_then_overflow_is_reported() {
         Err(ProbeError::TotalOverflow)
     ));
     assert_eq!(totals.items, u64::MAX);
+}
+
+#[test]
+fn given_skipped_children_with_and_without_detail_when_rendered_then_both_count()
+-> Result<(), ProbeError> {
+    let rows = vec![
+        Row {
+            service: "fixture",
+            operation: "ListTags",
+            protocol: RuntimeProtocol::RestJson1,
+            outcome: Outcome::SkippedChild {
+                reason: "tag endpoint uses dedicated resource tag binding",
+                detail: None,
+            },
+        },
+        Row {
+            service: "fixture",
+            operation: "ListChildren",
+            protocol: RuntimeProtocol::RestJson1,
+            outcome: Outcome::SkippedChild {
+                reason: "no sampled parent item satisfies all bindings and row eligibility",
+                detail: Some("no caller identity".into()),
+            },
+        },
+    ];
+    assert_eq!(
+        render(rows)?,
+        concat!(
+            "fixture ListChildren restJson1 skipped child no sampled parent item satisfies all bindings and row eligibility: no caller identity\n",
+            "fixture ListTags restJson1 skipped child tag endpoint uses dedicated resource tag binding\n",
+            "total items 0\ntotal empty 0\ntotal unsupported 0\ntotal failed 0\ntotal skipped-child 2\n",
+            "protocol restJson1 items 0 empty 0 unsupported 0 failed 0 skipped-child 2\n",
+        )
+    );
+    Ok(())
 }

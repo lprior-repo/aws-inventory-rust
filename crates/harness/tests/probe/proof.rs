@@ -3,7 +3,6 @@ use super::{
     server::{Server, TestResult},
 };
 use inventory_core::catalog::runtime::RuntimeCatalog;
-use std::time::Duration;
 
 pub async fn twice(catalog: &RuntimeCatalog<'_>) -> TestResult<(String, Vec<String>)> {
     let server = Server::new().await?;
@@ -14,10 +13,7 @@ pub async fn twice(catalog: &RuntimeCatalog<'_>) -> TestResult<(String, Vec<Stri
         assert_eq!(first, second);
         Ok::<_, Box<dyn std::error::Error>>(first)
     };
-    tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::try_join!(probe, server.serve(10))
-    })
-    .await?
+    server.capture_with(probe, super::server::response).await
 }
 
 pub async fn once(
@@ -28,8 +24,5 @@ pub async fn once(
     let probe = async {
         Ok::<_, Box<dyn std::error::Error>>(context.once(catalog, "ListParents0", None).await?)
     };
-    tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::try_join!(probe, server.serve(1))
-    })
-    .await?
+    server.capture_with(probe, super::server::response).await
 }

@@ -1,4 +1,4 @@
-use std::{io, path::PathBuf, sync::Arc};
+use std::{future::Future, io, path::PathBuf, sync::Arc, time::Duration};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -50,29 +50,49 @@ impl Server {
         Ok(format!("https://{}", self.listener.local_addr()?))
     }
 
-    pub async fn serve(&self, count: usize) -> TestResult<Vec<String>> {
-        self.serve_with(count, response).await
+    pub async fn capture_with<T>(
+        &self,
+        probe: impl Future<Output = TestResult<T>>,
+        respond: impl Fn(&str) -> TestResult<(u16, &'static str)>,
+    ) -> TestResult<(T, Vec<String>)> {
+        let mut requests = Vec::new();
+        let result = tokio::time::timeout(Duration::from_secs(60), async {
+            tokio::select! {
+                biased;
+                error = self.record(&mut requests, respond) => Err(error),
+                result = probe => result,
+            }
+        })
+        .await
+        .map_err(|_| {
+            io::Error::other(format!("probe timed out; received requests: {requests:?}"))
+        })??;
+        Ok((result, requests))
     }
 
-    pub async fn serve_with(
+    async fn record(
         &self,
-        count: usize,
+        requests: &mut Vec<String>,
         respond: impl Fn(&str) -> TestResult<(u16, &'static str)>,
-    ) -> TestResult<Vec<String>> {
-        if count > 32 {
-            return Err(io::Error::other("probe test request bound exceeded").into());
+    ) -> Box<dyn std::error::Error> {
+        loop {
+            if let Err(error) = self.record_one(requests, &respond).await {
+                return error;
+            }
         }
-        let mut requests = Vec::new();
-        requests.try_reserve_exact(count)?;
-        for _ in 0..count {
-            let (socket, _) = self.listener.accept().await?;
-            let mut socket = self.acceptor.accept(socket).await?;
-            let request = read_request(&mut socket).await?;
-            let (status, body) = respond(&request)?;
-            reply(&mut socket, status, body).await?;
-            requests.push(request);
-        }
-        Ok(requests)
+    }
+
+    async fn record_one(
+        &self,
+        requests: &mut Vec<String>,
+        respond: &impl Fn(&str) -> TestResult<(u16, &'static str)>,
+    ) -> TestResult {
+        let (socket, _) = self.listener.accept().await?;
+        let mut socket = self.acceptor.accept(socket).await?;
+        let request = read_request(&mut socket).await?;
+        requests.push(request);
+        let (status, body) = respond(requests.last().ok_or("missing recorded request")?)?;
+        reply(&mut socket, status, body).await
     }
 }
 
@@ -104,19 +124,26 @@ fn content_length(head: &str) -> io::Result<usize> {
         .map_err(io::Error::other)?;
     match length {
         Some(length) if length <= 65_536 => Ok(length),
-        _ => Err(io::Error::other(
-            "probe test body length missing or oversized",
-        )),
+        None => Ok(0),
+        Some(_) => Err(io::Error::other("probe test body length oversized")),
     }
 }
 
 pub fn target(request: &str) -> TestResult<&str> {
+    header(request, "x-amz-target")?
+        .rsplit('.')
+        .next()
+        .ok_or_else(|| "probe target missing".into())
+}
+
+pub fn header<'a>(request: &'a str, name: &str) -> TestResult<&'a str> {
     request
         .lines()
+        .take_while(|line| !line.is_empty())
         .filter_map(|line| line.split_once(':'))
-        .find(|(name, _)| name.eq_ignore_ascii_case("x-amz-target"))
-        .and_then(|(_, value)| value.trim().rsplit('.').next())
-        .ok_or_else(|| "probe target missing".into())
+        .find(|(key, _)| key.eq_ignore_ascii_case(name))
+        .map(|(_, value)| value.trim())
+        .ok_or_else(|| format!("probe header {name} missing").into())
 }
 
 pub fn response(request: &str) -> TestResult<(u16, &'static str)> {

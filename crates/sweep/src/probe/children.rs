@@ -175,25 +175,62 @@ impl<'a, 'catalog> Wave<'a, 'catalog, '_> {
     ) -> Result<(), SweepError> {
         let branch = branch_at(parent, page.branch);
         let branch_name = branch.map(|branch| branch.discriminator.as_str());
-        let mut samples = None;
-        self.index
-            .candidates_for_branch(parent.service_name(), parent.operation_name(), branch_name)
-            .try_for_each(|plan| {
-                let Some((_, state)) = self.states.get_mut(&key(plan)) else {
-                    return Ok(());
-                };
-                if state.requests == self.limit || !consumes(plan, parent, branch_name) {
-                    return Ok(());
-                }
+        let mut pending = Vec::new();
+        for plan in self.index.candidates_for_branch(
+            parent.service_name(),
+            parent.operation_name(),
+            branch_name,
+        ) {
+            let Some((_, state)) = self.states.get_mut(&key(plan)) else {
+                continue;
+            };
+            if state.requests < self.limit && consumes(plan, parent, branch_name) {
                 state.parent_items = true;
-                let samples =
-                    samples.get_or_insert_with(|| page.samples(parent, branch, self.limit));
-                let context = BindingContext {
-                    parent_plan: parent,
-                    account: self.scope.account,
-                };
-                state.admit(plan, samples, context, self.scope.region, self.limit, tasks)
-            })
+                pending.try_reserve(1)?;
+                pending.push(plan);
+            }
+        }
+        if pending.is_empty() {
+            return Ok(());
+        }
+        let context = BindingContext {
+            parent_plan: parent,
+            account: self.scope.account,
+        };
+        let samples = match page.samples(parent, branch) {
+            Ok(samples) => samples,
+            Err(error) => {
+                for plan in pending {
+                    self.state_mut(plan)?.note_binding_error(&error);
+                }
+                return Ok(());
+            }
+        };
+        let mut remaining = pending.len();
+        for sample in samples {
+            for plan in &pending {
+                let limit = self.limit;
+                let home = self.scope.region;
+                let state = self.state_mut(plan)?;
+                if state.requests < limit {
+                    state.admit(plan, &sample, context, home, tasks)?;
+                    if state.requests == limit {
+                        remaining = remaining.saturating_sub(1);
+                    }
+                }
+            }
+            if remaining == 0 {
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    fn state_mut(&mut self, plan: Plan<'a, 'catalog>) -> Result<&mut State, SweepError> {
+        self.states
+            .get_mut(&key(plan))
+            .map(|(_, state)| state)
+            .ok_or(SweepError::Operation("missing probe child state"))
     }
 
     fn record(
@@ -201,10 +238,7 @@ impl<'a, 'catalog> Wave<'a, 'catalog, '_> {
         mut next: Vec<Parent<'a, 'catalog>>,
         (plan, result): (Plan<'a, 'catalog>, Result<ProbeAnswer, SweepError>),
     ) -> Result<Vec<Parent<'a, 'catalog>>, SweepError> {
-        let (_, state) = self
-            .states
-            .get_mut(&key(plan))
-            .ok_or(SweepError::Operation("missing probe child state"))?;
+        let state = self.state_mut(plan)?;
         match result {
             Ok(answer) if answer.items != 0 => {
                 state.items = state
@@ -235,45 +269,32 @@ impl State {
     fn admit<'a, 'catalog>(
         &mut self,
         plan: Plan<'a, 'catalog>,
-        samples: &Result<Vec<Result<Sample<'_>, SweepError>>, SweepError>,
+        sample: &Result<Sample<'_>, SweepError>,
         context: BindingContext<'_, '_>,
         home: &RegionId,
-        limit: usize,
         tasks: &mut Vec<Bound<'a, 'catalog>>,
     ) -> Result<(), SweepError> {
-        let samples = match samples {
-            Ok(samples) => samples,
+        let task = match sample {
+            Ok(sample) => sample.bind(plan, context, home),
             Err(error) => {
-                self.binding_error.get_or_insert_with(|| error.to_string());
+                self.note_binding_error(error);
                 return Ok(());
             }
         };
-        let remaining = limit.saturating_sub(self.requests);
-        let mut tasks_for_plan = samples
-            .iter()
-            .filter_map(|sample| {
-                let sample = match sample {
-                    Ok(sample) => sample,
-                    Err(error) => {
-                        self.binding_error.get_or_insert_with(|| error.to_string());
-                        return None;
-                    }
-                };
-                sample
-                    .bind(plan, context, home)
-                    .inspect_err(|error| {
-                        self.binding_error.get_or_insert_with(|| error.to_string());
-                    })
-                    .ok()
-                    .flatten()
-            })
-            .take(remaining);
-        tasks_for_plan.try_for_each(|task| {
-            tasks.try_reserve(1)?;
-            tasks.push(task);
-            self.requests = self.requests.saturating_add(1);
-            Ok(())
-        })
+        match task {
+            Ok(Some(task)) => {
+                tasks.try_reserve(1)?;
+                tasks.push(task);
+                self.requests = self.requests.saturating_add(1);
+            }
+            Ok(None) => {}
+            Err(error) => self.note_binding_error(&error),
+        }
+        Ok(())
+    }
+
+    fn note_binding_error(&mut self, error: &SweepError) {
+        self.binding_error.get_or_insert_with(|| error.to_string());
     }
 
     fn finish(self, plan: &CallablePlan<'_>) -> ChildProbeOutcome {
@@ -309,52 +330,44 @@ impl ProbePage {
 
     fn samples<'a>(
         &'a self,
-        plan: &CallablePlan<'_>,
+        plan: &'a CallablePlan<'_>,
         branch: Option<&'a ExecutionBranch>,
-        limit: usize,
-    ) -> Result<Vec<Result<Sample<'a>, SweepError>>, SweepError> {
-        let (count, selected) = record::item_selection(&self.response, plan.items())?;
-        let mut samples = Vec::new();
-        samples.try_reserve_exact(count.min(limit))?;
+    ) -> Result<impl Iterator<Item = Result<Sample<'a>, SweepError>> + 'a, SweepError> {
+        let (_, selected) = record::item_selection(&self.response, plan.items())?;
         let branch_name = branch.map(|branch| branch.discriminator.as_str());
-        samples.extend(
-            selected
-                .take(limit)
-                .enumerate()
-                .filter_map(|(ordinal, row)| {
-                    row.and_then(|row| {
-                        let Some(row) = crate::resource_projection::select_item(
-                            plan,
-                            branch,
-                            row,
-                            &self.request,
-                            &self.response,
-                        )?
-                        else {
-                            return Ok(None);
-                        };
-                        let frame = child::project_frame(
-                            plan,
-                            ordinal,
-                            &row,
-                            &self.request,
-                            &self.response,
-                            (&self.service, &self.operation, branch_name),
-                        )?;
-                        let ancestry = self.ancestry.push(frame).map_err(|_| {
-                            SweepError::Operation("discovery ancestry exceeds bounds")
-                        })?;
-                        Ok(Some(Sample {
-                            row,
-                            region: &self.region,
-                            branch: branch_name,
-                            ancestry,
-                        }))
-                    })
-                    .transpose()
-                }),
-        );
-        Ok(samples)
+        Ok(selected.enumerate().filter_map(move |(ordinal, row)| {
+            row.and_then(|row| {
+                let Some(row) = crate::resource_projection::select_item(
+                    plan,
+                    branch,
+                    row,
+                    &self.request,
+                    &self.response,
+                )?
+                else {
+                    return Ok(None);
+                };
+                let frame = child::project_frame(
+                    plan,
+                    ordinal,
+                    &row,
+                    &self.request,
+                    &self.response,
+                    (&self.service, &self.operation, branch_name),
+                )?;
+                let ancestry = self
+                    .ancestry
+                    .push(frame)
+                    .map_err(|_| SweepError::Operation("discovery ancestry exceeds bounds"))?;
+                Ok(Some(Sample {
+                    row,
+                    region: &self.region,
+                    branch: branch_name,
+                    ancestry,
+                }))
+            })
+            .transpose()
+        }))
     }
 }
 
@@ -371,14 +384,17 @@ impl Sample<'_> {
             branch: self.branch,
             ancestry: &self.ancestry,
         };
-        let result = branches(plan).find_map(|(ordinal, branch)| {
-            match self.bind_branch(plan, &context, &row, home, (ordinal, branch)) {
-                Ok(None) => None,
-                Ok(Some(bound)) => Some(Ok(bound)),
-                Err(error) => Some(Err(error)),
+        let mut first_error = None;
+        for branch in branches(plan) {
+            match self.bind_branch(plan, &context, &row, home, branch) {
+                Ok(Some(bound)) => return Ok(Some(bound)),
+                Ok(None) => {}
+                Err(error) => {
+                    first_error.get_or_insert(error);
+                }
             }
-        });
-        result.transpose()
+        }
+        first_error.map_or(Ok(None), Err)
     }
 
     fn bind_branch<'a, 'catalog>(

@@ -40,12 +40,14 @@ impl Native {
         check(command.output().await?)
     }
 
-    pub async fn probe(&self, report: &Path) -> TestResult {
+    pub async fn probe(&self) -> TestResult<String> {
+        let report = self.work.path().join("probe.report");
         let mut command = self.command();
         command.arg("probe");
         self.configure(&mut command);
-        command.arg("--report").arg(report);
-        check(command.output().await?)
+        command.arg("--report").arg(&report);
+        check(command.output().await?)?;
+        Ok(tokio::fs::read_to_string(report).await?)
     }
 
     pub fn stop(self) -> TestResult {

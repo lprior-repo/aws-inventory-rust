@@ -3,6 +3,7 @@ use inventory_core::catalog::runtime::RuntimeProtocol;
 use std::{
     collections::BTreeMap,
     fmt::{self, Write},
+    sync::Arc,
 };
 
 pub(super) enum Outcome {
@@ -14,6 +15,7 @@ pub(super) enum Outcome {
         class: &'static str,
         detail: String,
     },
+    FailedPlan(Arc<str>),
     SkippedChild {
         reason: &'static str,
         detail: Option<String>,
@@ -70,6 +72,7 @@ impl Row<'_> {
             Outcome::EmptyReason(reason) => writeln!(report, "empty {reason}"),
             Outcome::Unsupported(detail) => writeln!(report, "unsupported {detail}"),
             Outcome::Failed { class, detail } => writeln!(report, "failed {class} {detail}"),
+            Outcome::FailedPlan(detail) => writeln!(report, "failed plan {detail}"),
             Outcome::SkippedChild { reason, detail } => {
                 write!(report, "skipped child {reason}")?;
                 if let Some(detail) = detail {
@@ -96,7 +99,7 @@ impl Totals {
             Outcome::Items(_) => &mut self.items,
             Outcome::Empty | Outcome::EmptyReason(_) => &mut self.empty,
             Outcome::Unsupported(_) => &mut self.unsupported,
-            Outcome::Failed { .. } => &mut self.failed,
+            Outcome::Failed { .. } | Outcome::FailedPlan(_) => &mut self.failed,
             Outcome::SkippedChild { .. } => &mut self.skipped,
         };
         *total = total.checked_add(1).ok_or(ProbeError::TotalOverflow)?;

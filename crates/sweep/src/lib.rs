@@ -30,6 +30,9 @@ mod request;
 mod resource_projection;
 mod row_policy;
 #[cfg(test)]
+#[path = "../../catalog-tool/tests/support/bindings.rs"]
+mod test_bindings;
+#[cfg(test)]
 #[path = "tests/cbor.rs"]
 mod test_cbor;
 

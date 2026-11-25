@@ -23,6 +23,17 @@ use std::time::{Duration, Instant};
 type RootResult<'a, 'catalog> = (&'a CallablePlan<'catalog>, Result<ProbeAnswer, SweepError>);
 type ParentPage<'a, 'catalog> = (&'a CallablePlan<'catalog>, ProbeAnswer);
 
+type ChildResult<'a, 'catalog> = (
+    &'a CallablePlan<'catalog>,
+    inventory_sweep::ChildProbeOutcome,
+);
+
+struct ProbeReport {
+    text: String,
+    root_wall: Duration,
+    child_error: Option<SweepError>,
+}
+
 pub async fn run(
     catalog: &RuntimeCatalog<'_>,
     credentials: &impl CredentialSource,
@@ -32,7 +43,7 @@ pub async fn run(
     endpoint: &str,
     services: &[String],
 ) -> Result<String, ProbeError> {
-    let (text, _) = Probe {
+    let report = Probe {
         catalog,
         credentials,
         client,
@@ -44,7 +55,10 @@ pub async fn run(
     }
     .run()
     .await?;
-    Ok(text)
+    if let Some(error) = report.child_error {
+        return Err(error.into());
+    }
+    Ok(report.text)
 }
 
 struct Probe<'a, 'catalog, C> {
@@ -59,7 +73,7 @@ struct Probe<'a, 'catalog, C> {
 }
 
 impl<'a, 'catalog, C: CredentialSource> Probe<'a, 'catalog, C> {
-    async fn run(&self) -> Result<(String, Duration), ProbeError> {
+    async fn run(&self) -> Result<ProbeReport, ProbeError> {
         validate_services(self.catalog, self.services)?;
         let started = Instant::now();
         let identity = self.bootstrap().await;
@@ -87,13 +101,13 @@ impl<'a, 'catalog, C: CredentialSource> Probe<'a, 'catalog, C> {
             self.scope(account.as_ref()),
             ProbeChildren::new(&plans, parents, self.child_samples),
         )
-        .await?;
-        rows.extend(
-            children
-                .into_iter()
-                .map(|(plan, result)| row(plan, outcome::child(plan, result))),
-        );
-        Ok((report::render(rows)?, root_wall))
+        .await;
+        let child_error = append_children(&mut rows, &plans, children)?;
+        Ok(ProbeReport {
+            text: report::render(rows)?,
+            root_wall,
+            child_error,
+        })
     }
 
     async fn roots(
@@ -168,6 +182,32 @@ impl<'a, 'catalog, C: CredentialSource> Probe<'a, 'catalog, C> {
     }
 }
 
+fn append_children<'a, 'catalog>(
+    rows: &mut Vec<Row<'a>>,
+    plans: &[&'a CallablePlan<'catalog>],
+    children: Result<Vec<ChildResult<'a, 'catalog>>, SweepError>,
+) -> Result<Option<SweepError>, ProbeError> {
+    match children {
+        Ok(children) => rows.extend(
+            children
+                .into_iter()
+                .map(|(plan, result)| row(plan, outcome::child(plan, result))),
+        ),
+        Err(error) => {
+            let detail = std::sync::Arc::from(outcome::schedule_detail(&error)?);
+            rows.extend(
+                plans
+                    .iter()
+                    .copied()
+                    .filter(|plan| ProbeAnswer::requires_parent(plan))
+                    .map(|plan| row(plan, Outcome::FailedPlan(std::sync::Arc::clone(&detail)))),
+            );
+            return Ok(Some(error));
+        }
+    }
+    Ok(None)
+}
+
 fn validate_services(catalog: &RuntimeCatalog<'_>, services: &[String]) -> Result<(), ProbeError> {
     if services.iter().any(|service| {
         !catalog
@@ -194,5 +234,43 @@ fn outcome(plan: &CallablePlan<'_>, answer: Result<&ProbeAnswer, &SweepError>) -
         Ok(answer) if answer.items == 0 => Outcome::Empty,
         Ok(answer) => Outcome::Items(answer.items),
         Err(error) => outcome::failed(plan, error),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn given_child_schedule_error_when_rendering_then_root_evidence_is_preserved()
+    -> Result<(), ProbeError> {
+        let catalog =
+            RuntimeCatalog::from_bytes(include_bytes!("../../../catalog/aws-api.catalog"))?;
+        let root = catalog
+            .lookup("sns", "ListTopics")
+            .ok_or(ProbeError::Invalid("missing root fixture"))?;
+        let child = catalog
+            .lookup("sns", "ListSubscriptionsByTopic")
+            .ok_or(ProbeError::Invalid("missing child fixture"))?;
+        let mut rows = vec![row(root, Outcome::Items(4))];
+        let error = append_children(
+            &mut rows,
+            &[root, child],
+            Err(SweepError::Operation("consumer index\ncould not load")),
+        )?;
+        assert!(matches!(
+            error,
+            Some(SweepError::Operation("consumer index\ncould not load"))
+        ));
+        assert_eq!(
+            report::render(rows)?,
+            concat!(
+                "sns ListSubscriptionsByTopic awsQuery failed plan sweep operation failed: consumer index could not load\n",
+                "sns ListTopics awsQuery items 4\n",
+                "total items 1\ntotal empty 0\ntotal unsupported 0\ntotal failed 1\ntotal skipped-child 0\n",
+                "protocol awsQuery items 1 empty 0 unsupported 0 failed 1 skipped-child 0\n",
+            )
+        );
+        Ok(())
     }
 }

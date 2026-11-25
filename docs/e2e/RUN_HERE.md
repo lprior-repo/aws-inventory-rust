@@ -855,14 +855,21 @@ region, endpoint-discovery and tag plans. STS identity executes once before fan-
 its returned account ID supplies account-bound root inputs. The child phase uses
 the sweep's bindings on the parents' actual first-page items and request context,
 including items returned by children. Set `--child-samples N` (1–64, default 1)
-to raise the sample limit per operation. Both phases use at most eight concurrent
-calls, one attempt per call, and never follow a pagination token.
-`items N` counts selected items across successful sampled first pages; a failed
-sample still reports `failed CLASS DETAIL`. A child without usable input reports
-`skipped child REASON` (for example `no parent items`).
+to raise the request limit per child operation. The probe visits producers in
+service and operation order within each wave. At the default limit, only the
+first producer that supplies an eligible, bindable item is sampled. With a
+higher limit, later producers may fill unused slots. Both phases use at most
+eight concurrent calls, one attempt per call, and never follow a pagination token.
+`items N` counts selected items across successful sampled first pages. If any
+sample fails with an error other than an unsupported operation or known absence,
+the child row reads `failed CLASS DETAIL`, even if another sample returned items.
+A child without usable input reports `skipped child REASON` (for example
+`no parent items`).
 Known absent features/singletons report `empty REASON`; this is not
 a blanket conversion of missing resources or denied access to empty success.
 Tag endpoints that need the sweep's dedicated resource-tag binding are not probed.
+If child scheduling fails, the CLI writes the root evidence and marks dependent
+operations `failed plan`; it then exits with status 1.
 The CLI reports root-phase and full-probe elapsed time on stderr.
 Rows are sorted and followed by separate outcome totals and
 per-protocol totals. Error details are single-line, capped at 1,024 bytes; decoder

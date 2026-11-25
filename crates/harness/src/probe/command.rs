@@ -28,7 +28,7 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let executor = executor()?;
     let started = Instant::now();
-    let (text, root_wall) = super::Probe {
+    let report = super::Probe {
         catalog: &catalog,
         credentials: &credentials,
         client: &client,
@@ -40,12 +40,15 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
     }
     .run()
     .await?;
-    tokio::fs::write(args.report, text).await?;
+    tokio::fs::write(args.report, report.text).await?;
     eprintln!(
         "probe wall time: roots {:.3}s, full {:.3}s",
-        root_wall.as_secs_f64(),
+        report.root_wall.as_secs_f64(),
         started.elapsed().as_secs_f64(),
     );
+    if let Some(error) = report.child_error {
+        return Err(error.into());
+    }
     Ok(())
 }
 

@@ -66,6 +66,12 @@ pub(super) fn failed(plan: &CallablePlan<'_>, error: &SweepError) -> Outcome {
     }
 }
 
+pub(super) fn schedule_detail(error: &SweepError) -> Result<String, fmt::Error> {
+    let mut detail = Detail(String::new());
+    write!(detail, "{error}")?;
+    Ok(detail.0)
+}
+
 fn detail(plan: &CallablePlan<'_>, error: &SweepError) -> Result<String, fmt::Error> {
     let mut detail = Detail(String::new());
     if matches!(error, SweepError::Decode(_))

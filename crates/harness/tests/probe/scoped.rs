@@ -5,7 +5,6 @@ use super::{
 };
 use catalog_tool::overlay::{Binding, MemberPath};
 use inventory_core::{catalog::runtime::RuntimeCatalog, inventory::AccountId};
-use std::time::Duration;
 
 fn catalog_bytes() -> TestResult<Vec<u8>> {
     let account_path = MemberPath::new("OrganizationId")?;
@@ -31,10 +30,7 @@ async fn probe(
             .await
             .map_err(Into::into)
     };
-    tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::try_join!(call, server.serve(1))
-    })
-    .await?
+    server.capture_with(call, super::server::response).await
 }
 
 #[tokio::test]

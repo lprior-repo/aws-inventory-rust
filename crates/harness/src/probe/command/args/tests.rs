@@ -158,3 +158,13 @@ fn given_out_of_range_child_samples_when_parsed_then_the_bound_is_reported() {
         ));
     }
 }
+
+#[test]
+fn given_child_sample_range_endpoints_when_parsed_then_both_are_accepted() -> TestResult {
+    for count in ["1", "64"] {
+        let mut args = arguments();
+        args.extend(["--child-samples", count].map(str::to_owned));
+        Args::parse(&args)?;
+    }
+    Ok(())
+}

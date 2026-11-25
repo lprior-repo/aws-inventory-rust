@@ -180,13 +180,17 @@ pub fn alternatives(
     ))
 }
 
-fn endpoint() -> TestResult<endpoints::VerifiedEndpoint> {
-    let properties = json!({"authSchemes":[{"name":"sigv4","signingName":"bindings","signingRegion":"us-east-1"}]});
-    let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://bindings.test","properties":properties}}]});
+pub fn endpoint() -> TestResult<endpoints::VerifiedEndpoint> {
+    let cases = ["us-east-1", "us-west-2"].map(|region| json!({
+        "params":{"Region":region},
+        "expect":{"endpoint":{
+            "url":"https://bindings.test",
+            "properties":{"authSchemes":[{"name":"sigv4","signingName":"bindings","signingRegion":region}]}
+        }}
+    }));
+    let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://bindings.test","properties":{"authSchemes":[{"name":"sigv4","signingName":"bindings","signingRegion":"{Region}"}]}}}]});
     let rules = endpoints::RuleSet::parse(Path::new("binding-endpoint.json"), &document)?;
-    let cases: Vec<endpoints::Case> = serde_json::from_value(
-        json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://bindings.test","properties":properties}}}]),
-    )?;
+    let cases: Vec<endpoints::Case> = serde_json::from_value(json!(cases))?;
     rules
         .run_cases(&cases)?
         .verified_endpoint(Some("bindings"))
