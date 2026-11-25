@@ -34,15 +34,13 @@ pub struct PgStore {
 }
 
 impl PgStore {
-    pub async fn exists(url: &DatabaseUrl, config: PgWriteConfig) -> Result<bool, StoreError> {
+    /// True only when a fully initialized schema exists. An interrupted
+    /// initialization reports false so callers `create` (which resumes it).
+    pub async fn is_ready(url: &DatabaseUrl, config: PgWriteConfig) -> Result<bool, StoreError> {
         let pool = connection::connect(url, config).await?;
-        let result = sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='inventory')",
-        )
-        .fetch_one(&pool)
-        .await;
+        let result = schema::state(&pool).await;
         pool.close().await;
-        result.map_err(StoreError::from)
+        Ok(result? == schema::SchemaState::Ready)
     }
 
     pub async fn create(

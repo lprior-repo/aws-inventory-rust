@@ -15,7 +15,7 @@ async fn commit(store: &BinaryStore, sweep: &str, at: i64, values: &[(&str, &str
         .map(|(id, value)| observation(id, value))
         .collect::<Result<Vec<_>, _>>()?;
     store
-        .commit_page(page(lease, observations, true, None, at + 1))
+        .commit_page(page(lease, observations, true, None, at.saturating_add(1)))
         .await?;
     Ok(())
 }

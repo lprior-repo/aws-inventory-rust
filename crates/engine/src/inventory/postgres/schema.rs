@@ -9,15 +9,94 @@ use inventory_core::inventory::KindSchema;
 use sqlx::{PgPool, Postgres, Row, Transaction, postgres::PgRow};
 use std::sync::Arc;
 
+/// Publication state of the `inventory` schema.
+///
+/// `initialize` creates the shared tables first, then the per-kind tables in
+/// bounded batches, and writes `schema_version` last in its own transaction. The
+/// `schema_version` row is therefore the atomic "ready" record: a namespace
+/// without it is an interrupted initialization that `initialize` resumes.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SchemaState {
+    Absent,
+    Incomplete,
+    Ready,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+enum Plan {
+    Fresh,
+    Resume,
+}
+
+fn plan(
+    state: SchemaState,
+    stored_digest: Option<&[u8]>,
+    expected: &[u8; 32],
+) -> Result<Plan, StoreError> {
+    match (state, stored_digest) {
+        (SchemaState::Absent, _) => Ok(Plan::Fresh),
+        (SchemaState::Ready, _) => Err(StoreError::Invalid("inventory schema already exists")),
+        (SchemaState::Incomplete, Some(stored)) if stored == expected.as_slice() => {
+            Ok(Plan::Resume)
+        }
+        (SchemaState::Incomplete, Some(_)) => Err(StoreError::CatalogMismatch),
+        (SchemaState::Incomplete, None) => Err(StoreError::Invalid(
+            "incomplete inventory schema has no catalog digest",
+        )),
+    }
+}
+
+pub async fn state(pool: &PgPool) -> Result<SchemaState, StoreError> {
+    let namespace: bool =
+        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='inventory')")
+            .fetch_one(pool)
+            .await?;
+    if !namespace {
+        return Ok(SchemaState::Absent);
+    }
+    let metadata: bool = sqlx::query_scalar("SELECT to_regclass('inventory.metadata') IS NOT NULL")
+        .fetch_one(pool)
+        .await?;
+    if !metadata {
+        return Err(StoreError::Invalid(
+            "inventory schema exists without metadata",
+        ));
+    }
+    let ready: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM inventory.metadata WHERE key='schema_version')",
+    )
+    .fetch_one(pool)
+    .await?;
+    Ok(if ready {
+        SchemaState::Ready
+    } else {
+        SchemaState::Incomplete
+    })
+}
+
 pub async fn initialize(pool: &PgPool, registry: &SchemaRegistry) -> Result<(), StoreError> {
-    initialize_shared(pool, registry).await?;
+    let state = state(pool).await?;
+    let stored = match state {
+        SchemaState::Incomplete => Some(metadata(pool, "catalog_digest").await?),
+        SchemaState::Absent | SchemaState::Ready => None,
+    };
+    if plan(state, stored.as_deref(), registry.digest())? == Plan::Fresh {
+        initialize_shared(pool, registry).await?;
+    }
     stream::iter(registry.schemas().chunks(200).map(Ok))
         .try_for_each(|batch| kinds::create_batch(pool, batch))
         .await?;
-    sqlx::query("INSERT INTO inventory.metadata(key,value) VALUES('schema_version',$1)")
+    publish(pool).await
+}
+
+async fn publish(pool: &PgPool) -> Result<(), StoreError> {
+    let mut tx = pool.begin().await?;
+    kinds::lock(&mut tx).await?;
+    sqlx::query("INSERT INTO inventory.metadata(key,value) VALUES('schema_version',$1) ON CONFLICT(key) DO NOTHING")
         .bind(b"14".as_slice())
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
+    tx.commit().await?;
     Ok(())
 }
 
@@ -114,4 +193,51 @@ pub(super) async fn metadata(pool: &PgPool, key: &str) -> Result<Vec<u8>, StoreE
         .await?
         .try_get("value")?,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const DIGEST: [u8; 32] = [7; 32];
+
+    #[test]
+    fn given_absent_schema_when_planned_then_fresh() {
+        assert_eq!(
+            plan(SchemaState::Absent, None, &DIGEST).ok(),
+            Some(Plan::Fresh)
+        );
+    }
+
+    #[test]
+    fn given_incomplete_schema_with_same_digest_when_planned_then_resume() {
+        assert_eq!(
+            plan(SchemaState::Incomplete, Some(&DIGEST), &DIGEST).ok(),
+            Some(Plan::Resume)
+        );
+    }
+
+    #[test]
+    fn given_incomplete_schema_with_other_digest_when_planned_then_catalog_mismatch() {
+        assert!(matches!(
+            plan(SchemaState::Incomplete, Some(&[9; 32]), &DIGEST),
+            Err(StoreError::CatalogMismatch)
+        ));
+    }
+
+    #[test]
+    fn given_incomplete_schema_without_digest_when_planned_then_refused() {
+        assert!(matches!(
+            plan(SchemaState::Incomplete, None, &DIGEST),
+            Err(StoreError::Invalid(_))
+        ));
+    }
+
+    #[test]
+    fn given_ready_schema_when_planned_then_create_is_refused() {
+        assert!(matches!(
+            plan(SchemaState::Ready, Some(&DIGEST), &DIGEST),
+            Err(StoreError::Invalid("inventory schema already exists"))
+        ));
+    }
 }

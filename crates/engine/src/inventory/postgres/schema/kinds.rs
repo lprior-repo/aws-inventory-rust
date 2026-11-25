@@ -8,14 +8,37 @@ pub(super) async fn create_batch(
     pool: &PgPool,
     schemas: &[Arc<KindSchema>],
 ) -> Result<(), StoreError> {
-    let tx = pool.begin().await?;
-    let tx = stream::iter(schemas.iter().map(Ok))
+    let mut tx = pool.begin().await?;
+    lock(&mut tx).await?;
+    let present: Vec<String> =
+        sqlx::query_scalar("SELECT kind FROM inventory.kind_schemas WHERE kind=ANY($1)")
+            .bind(
+                schemas
+                    .iter()
+                    .map(|schema| schema.kind().as_str().to_owned())
+                    .collect::<Vec<_>>(),
+            )
+            .fetch_all(&mut *tx)
+            .await?;
+    let missing = schemas
+        .iter()
+        .filter(|schema| !present.iter().any(|kind| kind == schema.kind().as_str()));
+    let tx = stream::iter(missing.map(Ok))
         .try_fold(tx, |mut tx, schema| async move {
             create(&mut tx, schema).await?;
             Ok::<_, StoreError>(tx)
         })
         .await?;
     tx.commit().await?;
+    Ok(())
+}
+
+/// Serializes concurrent creators/resumers; batches are atomic, so a kind is
+/// either fully created or absent and resumption skips exactly the present ones.
+pub(super) async fn lock(tx: &mut Transaction<'_, Postgres>) -> Result<(), StoreError> {
+    sqlx::query("SELECT pg_advisory_xact_lock(hashtextextended('inventory.schema_init',0))")
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 

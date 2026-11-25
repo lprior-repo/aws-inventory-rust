@@ -2,6 +2,21 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Projection delivery checks the destination identity before sending any delta,
+  even when only part of the pending work is queued. A new destination is
+  forced through a full rebuild first, so it can no longer receive deltas for
+  rows it never held.
+- A failed export rolls back only its own synthetic reference generation.
+  Schema 14 adds `synthetic_generations`; if another connection persisted newer
+  references for the same scan, the rollback is skipped instead of erasing them.
+- Typed-table writes put a comma between the real and timestamp placeholders;
+  records with both columns present or absent previously produced invalid SQL.
+- An interrupted database initialization can be resumed. PostgreSQL treats a
+  schema without a `schema_version` row as incomplete, `open` reports it, and
+  `create` resumes the remaining 200-table batches for the same catalog. For
+  SQLite, `BinaryStore::probe` classifies a version-0 empty file as
+  uninitialized, and `serve` and `sweep` create it rather than failing to open.
+
 - The emulator probe now calls parent-bound operations using the sweep's binding
   and wire code, sampling one parent item by default (`--child-samples 1..64`)
   and reporting why unbound children are skipped.

@@ -2,6 +2,7 @@ mod authority;
 mod commit;
 mod completion;
 mod connection;
+pub use connection::StoreState;
 mod facets;
 mod legacy;
 pub mod postgres;
@@ -76,6 +77,8 @@ pub enum StoreError {
     RuntimeCatalog(#[from] inventory_core::catalog::runtime::RuntimeCatalogError),
     #[error("database uses an unsupported schema version: {found}")]
     SchemaVersion { found: i64 },
+    #[error("inventory schema initialization did not complete; create it again to resume")]
+    InitializationIncomplete,
     #[error("catalog digest differs from the immutable database catalog")]
     CatalogMismatch,
     #[error("stale or invalid work lease")]
@@ -135,6 +138,12 @@ impl BinaryStore {
 
     pub async fn open(path: &Path) -> Result<Self, StoreError> {
         connection::open(path).await
+    }
+
+    /// Classifies `path` so callers choose `open` for initialized databases and
+    /// `create` for absent or interrupted-initialization files.
+    pub async fn probe(path: &Path) -> Result<StoreState, StoreError> {
+        connection::probe(path).await
     }
 
     pub async fn open_with_catalog(path: &Path, catalog: &[u8]) -> Result<Self, StoreError> {

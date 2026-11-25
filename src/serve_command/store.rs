@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use inventory_core::catalog::runtime::RuntimeCatalog;
-use inventory_engine::inventory::{BinaryStore, SchemaRegistry};
+use inventory_engine::inventory::{BinaryStore, SchemaRegistry, StoreState};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -23,7 +23,7 @@ pub fn read_catalog(path: &Path) -> Result<Vec<u8>> {
 }
 
 pub async fn open_store(db_path: &Path, catalog_bytes: &[u8]) -> Result<BinaryStore> {
-    if db_path.exists() {
+    if BinaryStore::probe(db_path).await? == StoreState::Initialized {
         BinaryStore::open_with_catalog(db_path, catalog_bytes)
             .await
             .map_err(|e| anyhow::anyhow!("opening existing store: {e}"))

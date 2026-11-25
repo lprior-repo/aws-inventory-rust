@@ -52,6 +52,49 @@ pub(super) async fn create(
     })
 }
 
+/// What a database path holds, as far as choosing between `open` and `create`.
+///
+/// `schema::initialize` publishes its work atomically (one transaction ending in
+/// `PRAGMA user_version=17`), so a file that exists but reports version 0 with no
+/// tables is an interrupted or never-started initialization that `create` may
+/// safely resume; it must never be handed to `open`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum StoreState {
+    /// No file, or a zero-length file.
+    Absent,
+    /// A SQLite file with `user_version = 0` and no tables.
+    Uninitialized,
+    /// A file with a non-zero schema version; `open` decides whether it is supported.
+    Initialized,
+}
+
+pub(super) async fn probe(path: &Path) -> Result<StoreState, StoreError> {
+    if !std::fs::metadata(path).is_ok_and(|metadata| metadata.len() > 0) {
+        return Ok(StoreState::Absent);
+    }
+    let pool = pool().connect_with(options(path, false)?).await?;
+    let result = probe_open(&pool).await;
+    pool.close().await;
+    result
+}
+
+async fn probe_open(pool: &SqlitePool) -> Result<StoreState, StoreError> {
+    let version: i64 = sqlx::query_scalar("PRAGMA user_version")
+        .fetch_one(pool)
+        .await?;
+    if version != 0 {
+        return Ok(StoreState::Initialized);
+    }
+    let objects: i64 = sqlx::query_scalar("SELECT count(*) FROM sqlite_master")
+        .fetch_one(pool)
+        .await?;
+    if objects == 0 {
+        Ok(StoreState::Uninitialized)
+    } else {
+        Err(StoreError::SchemaVersion { found: 0 })
+    }
+}
+
 pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
     let writer = pool()
         .connect_with(options(path, false)?.journal_mode(SqliteJournalMode::Wal))
