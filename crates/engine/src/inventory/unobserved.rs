@@ -86,6 +86,7 @@ pub(super) async fn list(
     sweep: &SweepId,
     now_ms: i64,
 ) -> Result<Vec<UnobservedScope>, StoreError> {
+    let _turn = store.read_turn().await;
     let rows = sqlx::query("SELECT scope_key,observed_at FROM scope_outcomes WHERE sweep_id=?1 AND outcome='unobserved' ORDER BY scope_key")
         .bind(sweep.as_str())
         .fetch_all(&store.reader)

@@ -42,6 +42,7 @@ fn validate(endpoint: &str, graph: &str) -> Result<(), StoreError> {
 }
 
 pub(super) async fn read(store: &BinaryStore) -> Result<Option<ProjectionIdentity>, StoreError> {
+    let _turn = store.read_turn().await;
     let value: Option<Vec<u8>> =
         sqlx::query_scalar("SELECT value FROM metadata WHERE key='projection_identity'")
             .fetch_optional(&store.reader)
@@ -56,12 +57,14 @@ pub(super) async fn write(
     store: &BinaryStore,
     identity: &ProjectionIdentity,
 ) -> Result<(), StoreError> {
+    let _turn = store.writer_turn.lock().await;
     sqlx::query("INSERT INTO metadata(key,value) VALUES('projection_identity',?1) ON CONFLICT(key) DO UPDATE SET value=excluded.value")
         .bind(identity.encode()?).execute(&store.writer).await?;
     Ok(())
 }
 
 pub(super) async fn mark_rebuild(store: &BinaryStore) -> Result<(), StoreError> {
+    let _turn = store.writer_turn.lock().await;
     sqlx::query("UPDATE metadata SET value=X'01' WHERE key='projection_rebuild'")
         .execute(&store.writer)
         .await?;

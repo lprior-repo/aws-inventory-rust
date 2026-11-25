@@ -22,7 +22,7 @@ impl BinaryStore {
     /// tag, or work row changes, and no AWS call is made. Derived roles are read
     /// through `resource_roles`, so they reflect the new mapping at once.
     pub async fn replace_tag_mapping(&self, mapping: &TagMapping) -> Result<(), StoreError> {
-        let mut tx = self.writer.begin().await?;
+        let (_turn, mut tx) = self.begin_write().await?;
         sqlx::query("DELETE FROM tag_mapping")
             .execute(&mut *tx)
             .await?;

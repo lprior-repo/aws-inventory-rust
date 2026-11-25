@@ -110,8 +110,10 @@ pub struct SchemaRegistry {
 }
 
 pub struct BinaryStore {
-    pub(crate) writer: SqlitePool,
-    pub(crate) reader: SqlitePool,
+    writer: SqlitePool,
+    reader: SqlitePool,
+    writer_turn: Arc<tokio::sync::Mutex<()>>,
+    reader_shares_writer: bool,
     pub(crate) registry: SchemaRegistry,
 }
 
@@ -148,6 +150,7 @@ impl BinaryStore {
     }
 
     pub async fn unattributed_authority_count(&self) -> Result<u64, StoreError> {
+        let _turn = self.writer_turn.lock().await;
         legacy::count(&self.writer).await
     }
 
@@ -239,6 +242,7 @@ impl BinaryStore {
     }
     pub async fn validate_catalog(&self, catalog: &[u8]) -> Result<(), StoreError> {
         let requested: [u8; 32] = Sha256::digest(catalog).into();
+        let _turn = self.read_turn().await;
         let stored: Vec<u8> = sqlx::query("SELECT value FROM metadata WHERE key='catalog_digest'")
             .fetch_one(&self.reader)
             .await?

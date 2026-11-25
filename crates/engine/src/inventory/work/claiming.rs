@@ -37,7 +37,7 @@ async fn claim_inner(
         .checked_add(lease_ms)
         .filter(|_| now_ms >= 0 && lease_ms > 0)
         .ok_or(StoreError::Invalid("invalid lease interval"))?;
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     validate_active_sweep(&mut tx, Some(sweep)).await?;
     let lease = match select(&mut tx, sweep, now_ms).await? {
         Some(row) => Some(lease(&mut tx, sweep, &row, lease_until, depth).await?),

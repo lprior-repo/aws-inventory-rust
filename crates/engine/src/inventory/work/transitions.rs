@@ -112,7 +112,7 @@ pub(in super::super) async fn resume_sweep(
     sweep: &SweepId,
     expected_account: &AccountId,
 ) -> Result<(), StoreError> {
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
 
     // Ensure the sweeps table exists (may not exist in legacy databases).
     sqlx::query(
@@ -383,7 +383,7 @@ pub(in super::super) async fn create_sweep_manifest(
         .as_millis();
     let now_ms =
         i64::try_from(now_ms).map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     sqlx::query(
         "INSERT INTO sweeps(sweep_id,account,started_at) VALUES(?1,?2,?3) ON CONFLICT(sweep_id) DO UPDATE SET sweep_id=sweep_id",
     )
@@ -400,6 +400,7 @@ pub(in super::super) async fn sweep_manifest_account(
     store: &BinaryStore,
     sweep: &SweepId,
 ) -> Result<Option<String>, StoreError> {
+    let _turn = store.read_turn().await;
     let row = sqlx::query_scalar("SELECT account FROM sweeps WHERE sweep_id=?1")
         .bind(sweep.as_str())
         .fetch_optional(&store.reader)
@@ -410,6 +411,7 @@ pub(in super::super) async fn sweep_manifest_account(
 pub(in super::super) async fn discover_active_sweep(
     store: &BinaryStore,
 ) -> Result<Option<SweepId>, StoreError> {
+    let _turn = store.read_turn().await;
     let row = sqlx::query_scalar(
         "SELECT DISTINCT sweep_id FROM work_queue WHERE state IN(0,1) ORDER BY sweep_id LIMIT 1",
     )

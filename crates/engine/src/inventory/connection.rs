@@ -1,8 +1,29 @@
 use super::{BinaryStore, SchemaRegistry, StoreError};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
-use sqlx::{Row, SqlitePool};
+use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::{Mutex, MutexGuard};
+
+impl BinaryStore {
+    /// Queue for SQLite outside the pool's connection-acquisition deadline.
+    /// The caller keeps the FIFO turn until its transaction has been settled or dropped.
+    pub(super) async fn begin_write(
+        &self,
+    ) -> Result<(MutexGuard<'_, ()>, Transaction<'static, Sqlite>), StoreError> {
+        let turn = self.writer_turn.lock().await;
+        Ok((turn, self.writer.begin().await?))
+    }
+
+    pub(super) async fn read_turn(&self) -> Option<MutexGuard<'_, ()>> {
+        if self.reader_shares_writer {
+            Some(self.writer_turn.lock().await)
+        } else {
+            None
+        }
+    }
+}
 
 pub(super) async fn create(
     path: &Path,
@@ -27,6 +48,8 @@ pub(super) async fn create(
     Ok(BinaryStore {
         writer,
         reader,
+        writer_turn: Arc::new(Mutex::new(())),
+        reader_shares_writer: path == Path::new(":memory:"),
         registry,
     })
 }
@@ -58,6 +81,8 @@ pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
     Ok(BinaryStore {
         writer,
         reader,
+        writer_turn: Arc::new(Mutex::new(())),
+        reader_shares_writer: path == Path::new(":memory:"),
         registry,
     })
 }

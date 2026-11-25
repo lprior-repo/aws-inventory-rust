@@ -429,7 +429,7 @@ async fn resolve_reference(
 }
 
 pub(super) async fn request_graph_rebuild(store: &BinaryStore) -> Result<(), StoreError> {
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     let revision: i64 = sqlx::query_scalar("UPDATE metadata SET value=CAST(value AS INTEGER)+1 WHERE key='projection_revision' RETURNING value")
         .fetch_one(&mut *tx)
         .await?;

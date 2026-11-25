@@ -8,8 +8,12 @@ pub use types::{
 use super::{BinaryStore, StoreError};
 use inventory_core::inventory::{AccountId, Kind, Region, Relation, ResourceId, ResourceKey};
 use sqlx::{Row, Sqlite, Transaction};
+use std::sync::Arc;
+use tokio::sync::OwnedMutexGuard;
+
 pub struct ProjectionSnapshot {
     tx: Transaction<'static, Sqlite>,
+    _turn: Option<OwnedMutexGuard<()>>,
 }
 
 impl ProjectionSnapshot {
@@ -58,12 +62,19 @@ impl ProjectionSnapshot {
 }
 
 pub(super) async fn begin_snapshot(store: &BinaryStore) -> Result<ProjectionSnapshot, StoreError> {
+    let turn = if store.reader_shares_writer {
+        Some(Arc::clone(&store.writer_turn).lock_owned().await)
+    } else {
+        None
+    };
     Ok(ProjectionSnapshot {
         tx: store.reader.begin().await?,
+        _turn: turn,
     })
 }
 
 pub(super) async fn state(store: &BinaryStore) -> Result<ProjectionState, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let pending: i64 = sqlx::query("SELECT COUNT(*) FROM projection_outbox")
         .fetch_one(&mut *tx)
@@ -86,6 +97,7 @@ pub(super) async fn resources(
     after: Option<ResourceKey>,
     limit: u16,
 ) -> Result<Vec<ProjectionResource>, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let rows = read_resources(&mut tx, after, limit).await?;
     tx.commit().await?;
@@ -96,6 +108,7 @@ pub(super) async fn resource(
     store: &BinaryStore,
     key: &ResourceKey,
 ) -> Result<Option<ProjectionResource>, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let row = read_resource(&mut tx, key).await?;
     tx.commit().await?;
@@ -108,6 +121,7 @@ pub(super) async fn edges_for(
     after: Option<ProjectionEdgeCursor>,
     limit: u16,
 ) -> Result<ProjectionEdgePage, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let page = read_edges_for(&mut tx, key, after, limit).await?;
     tx.commit().await?;
@@ -119,6 +133,7 @@ pub(super) async fn edges(
     after: Option<ProjectionEdgeCursor>,
     limit: u16,
 ) -> Result<ProjectionEdgePage, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let page = read_edges(&mut tx, after, limit).await?;
     tx.commit().await?;

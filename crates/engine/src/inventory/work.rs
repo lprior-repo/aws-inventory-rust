@@ -242,7 +242,7 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
             return Err(StoreError::Invalid("batch work items must share one sweep"));
         }
     }
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     validate_active_sweep(&mut tx, Some(&first.sweep)).await?;
     for work in works {
         let scope = encode_scope(&work.scope)?;
@@ -341,7 +341,7 @@ async fn commit(
     keep_ms: Option<i64>,
 ) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
     validate_page(store, &page)?;
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     validate_lease(&mut tx, &page.lease, page.observed_at_ms).await?;
     let mut stats = super::commit::persist_page(store, &mut tx, &page).await?;
     persist_scope_members(&mut tx, &page).await?;
@@ -385,7 +385,7 @@ pub(super) async fn finish_scope(
     if matches!(outcome, ScopeOutcome::Complete) {
         store.registry.permissions.validate_completion(&lease)?;
     }
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     validate_lease(&mut tx, &lease, observed_at_ms).await?;
     let scope = encode_scope(&lease.scope)?;
     sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at,detail) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=excluded.outcome,observed_at=excluded.observed_at,detail=excluded.detail")

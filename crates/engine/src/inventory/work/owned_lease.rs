@@ -6,6 +6,7 @@ impl BinaryStore {
             .generation
             .checked_add(1)
             .ok_or(StoreError::LeaseGenerationOverflow)?;
+        let _turn = self.writer_turn.lock().await;
         let result = sqlx::query(
             "UPDATE work_queue SET state=0,generation=?3,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND state=1 AND generation=?4 AND lease_until=?5",
         )

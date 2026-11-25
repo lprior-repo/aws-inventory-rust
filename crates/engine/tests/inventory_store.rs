@@ -22,6 +22,8 @@ mod scalar;
     reason = "shared via #[path]; each test target uses a subset of the helpers"
 )]
 mod support;
+#[path = "inventory_store/writer_queue.rs"]
+mod writer_queue;
 
 #[tokio::test]
 async fn store_conformance_binary_store() -> support::TestResult {
