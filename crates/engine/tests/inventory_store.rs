@@ -16,6 +16,8 @@ mod projection_trait;
 mod reference;
 #[path = "inventory_store/scalar.rs"]
 mod scalar;
+#[path = "inventory_store/self_edges.rs"]
+mod self_edges;
 #[path = "inventory_store/support.rs"]
 #[allow(
     dead_code,

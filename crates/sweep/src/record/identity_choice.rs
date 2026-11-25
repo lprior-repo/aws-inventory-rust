@@ -8,13 +8,75 @@ use super::{
 };
 use inventory_core::{
     catalog::runtime::{
-        IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPlan,
+        IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPart, IdentityPlan,
         IdentityPredicatePlan,
     },
     inventory::{DiscoveryContext, ResourceId},
-    record::{Record, ValueRef},
+    record::{FieldId, Record, ValueRef},
 };
 use std::{borrow::Cow, fmt::Write};
+
+pub(crate) fn is_identity_member(
+    row: &Record,
+    request: &Record,
+    identity: &IdentityPlan,
+    member: &[FieldId],
+) -> Result<bool, SweepError> {
+    Ok(match identity {
+        IdentityPlan::Arn(path) => path.as_ref() == member,
+        IdentityPlan::Template(parts) => template_member(parts) == Some(member),
+        IdentityPlan::Key(paths) => key_member(paths) == Some(member),
+        IdentityPlan::CorrelatedKey(fields) => selected_member(fields) == Some(member),
+        IdentityPlan::Choice(IdentityChoicePlan::PreferArn { path, fallback, .. }) => {
+            let arn_matches = path.as_ref() == member;
+            let fallback_matches = leaf_member(fallback) == Some(member);
+            (arn_matches || fallback_matches)
+                && if path_value(row.root(), path)?.is_some() {
+                    arn_matches
+                } else {
+                    fallback_matches
+                }
+        }
+        IdentityPlan::Choice(IdentityChoicePlan::Discriminated(branches)) => {
+            branches
+                .iter()
+                .any(|branch| leaf_member(&branch.identity) == Some(member))
+                && leaf_member(&matching_branch(row, branches, Some(request))?.identity)
+                    == Some(member)
+        }
+        IdentityPlan::MapArn { .. } => false,
+    })
+}
+
+fn leaf_member(leaf: &IdentityLeafPlan) -> Option<&[FieldId]> {
+    match leaf {
+        IdentityLeafPlan::Arn(path) => Some(path),
+        IdentityLeafPlan::Template(parts) => template_member(parts),
+        IdentityLeafPlan::Key(paths) => key_member(paths),
+        IdentityLeafPlan::Fields(fields) => selected_member(fields),
+    }
+}
+
+fn template_member(parts: &[IdentityPart]) -> Option<&[FieldId]> {
+    match parts {
+        [IdentityPart::Field(path)] => Some(path),
+        _ => None,
+    }
+}
+
+fn key_member(paths: &[Box<[FieldId]>]) -> Option<&[FieldId]> {
+    match paths {
+        [path] => Some(path),
+        _ => None,
+    }
+}
+
+fn selected_member(fields: &[IdentityFieldPlan]) -> Option<&[FieldId]> {
+    match fields {
+        [IdentityFieldPlan::Selected(path) | IdentityFieldPlan::SelectedArn(path)] => Some(path),
+        _ => None,
+    }
+}
 
 pub(super) fn resource_id(
     row: &Record,

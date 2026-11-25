@@ -140,11 +140,6 @@ fn expect_child_rows(
             expected.0.insert(id.clone()),
             "different pages must retain distinct identities: {id}"
         );
-        if case.child == "ListEventRules" {
-            expected
-                .1
-                .insert((id.clone(), id.clone(), "REFERENCES".to_owned()));
-        }
         expected
             .1
             .insert((id, owner.to_owned(), case.relation.to_owned()));
