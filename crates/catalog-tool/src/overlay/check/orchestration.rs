@@ -25,7 +25,9 @@ pub(super) fn check(root: &Path, source: &Path) -> Result<CheckedOverlays, Check
     overlays.retain(|overlay| values.contains_key(overlay.service()));
     let text = super::super::generate::selection::deny_text(root)?;
     let deny = DenyList::parse(&text)?;
-    check_model_policies(&values, &overlays, &deny)
+    let checked = check_model_policies(&values, &overlays, &deny)?;
+    crate::runtime_catalog::skips::check_root(root, &checked)?;
+    Ok(checked)
 }
 
 pub(super) fn check_policies(
@@ -246,8 +248,10 @@ fn finish(
         reviewed,
         accumulation.unreviewed,
     )?;
-    Ok(CheckedOverlays {
+    let checked = CheckedOverlays {
         services: accumulation.checked,
         report,
-    })
+    };
+    super::super::skip_consumers::validate(&checked)?;
+    Ok(checked)
 }

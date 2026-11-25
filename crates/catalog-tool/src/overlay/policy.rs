@@ -106,6 +106,7 @@ fn operation(name: &OperationName, plan: &OperationOverlay) -> Result<(), NameEr
     disposition(plan)?;
     bounded(plan.exclude_from_hash.len(), 0, 64, "exclude_from_hash")?;
     bounded(plan.skip.len(), 0, 64, "skip")?;
+    super::skip::validate(plan)?;
     bounded(plan.queryable.len(), 0, 64, "queryable")?;
     if plan
         .page_size

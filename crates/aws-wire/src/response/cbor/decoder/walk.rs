@@ -126,6 +126,12 @@ impl WalkState<'_, '_, '_> {
             return Ok(false);
         }
         decoder.null().map_err(|_| invalid_cbor())?;
+        if modeled && self.context.limits.raw_values {
+            self.builder
+                .scalar(key, inventory_core::record::ValueRef::Null)?;
+            self.remember_field(key)?;
+            return Ok(true);
+        }
         let frame = self
             .frames
             .last()

@@ -13,6 +13,17 @@ fn map_bytes(
 }
 
 #[test]
+fn emit_aware_reader_rejects_skip_extension_field_26() -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = map_bytes([(25, Value::Int(1)), (26, Value::List(Vec::new()))])?;
+    let fields = MapRef::from_bytes_bounded(&bytes)?;
+    assert!(matches!(
+        metadata::only_fields(fields, &(1..=25).collect::<Vec<_>>()),
+        Err(RuntimeCatalogError::Capability)
+    ));
+    Ok(())
+}
+
+#[test]
 fn item_root_rejects_extra_fields() -> Result<(), Box<dyn std::error::Error>> {
     let bytes = map_bytes([(1, Value::Int(0)), (9, Value::Int(2))])?;
     assert!(matches!(

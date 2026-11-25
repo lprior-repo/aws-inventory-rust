@@ -1,4 +1,5 @@
 use super::*;
+mod skips;
 mod stages;
 use crate::consumer_fixture as fixture;
 use fixture::TestResult;

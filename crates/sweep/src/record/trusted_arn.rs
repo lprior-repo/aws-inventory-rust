@@ -84,8 +84,8 @@ fn validate_scope(
     trusted: &IdentityContext<'_>,
     exact: bool,
 ) -> Result<(), SweepError> {
-    let (partition, _, _) = partition(trusted.region.as_str());
-    if arn.partition != partition
+    let scope_partition = partition(trusted.region.as_str()).map(|(name, _, _)| name);
+    if scope_partition != Some(arn.partition)
         || ((exact || !arn.account.is_empty()) && arn.account != trusted.account.as_str())
         || ((exact || (!arn.region.is_empty() && !global_domain(arn)))
             && arn.region != trusted.region.as_str())
@@ -208,7 +208,9 @@ fn queue_host(host: &str, region: &str) -> bool {
 }
 
 fn regional_queue_host(host: &str, region: &str) -> bool {
-    let (_, dns, dual) = partition(region);
+    let Some((_, dns, dual)) = partition(region) else {
+        return false;
+    };
     for service in ["sqs", "sqs-fips"] {
         if let Some(suffix) = host
             .strip_prefix(service)
@@ -248,23 +250,25 @@ fn legacy_queue_region(region: &str) -> bool {
     )
 }
 
-fn partition(region: &str) -> (&'static str, &'static str, &'static str) {
+fn partition(region: &str) -> Option<(&'static str, &'static str, &'static str)> {
     if region.starts_with("cn-") {
-        ("aws-cn", "amazonaws.com.cn", "api.amazonwebservices.com.cn")
+        Some(("aws-cn", "amazonaws.com.cn", "api.amazonwebservices.com.cn"))
     } else if region.starts_with("us-gov-") {
-        ("aws-us-gov", "amazonaws.com", "api.aws")
+        Some(("aws-us-gov", "amazonaws.com", "api.aws"))
     } else if region.starts_with("us-isob-") {
-        ("aws-iso-b", "sc2s.sgov.gov", "api.aws.scloud")
+        Some(("aws-iso-b", "sc2s.sgov.gov", "api.aws.scloud"))
     } else if region.starts_with("us-iso-") {
-        ("aws-iso", "c2s.ic.gov", "api.aws.ic.gov")
+        Some(("aws-iso", "c2s.ic.gov", "api.aws.ic.gov"))
     } else if region.starts_with("eu-isoe-") {
-        ("aws-iso-e", "cloud.adc-e.uk", "api.cloud-aws.adc-e.uk")
+        Some(("aws-iso-e", "cloud.adc-e.uk", "api.cloud-aws.adc-e.uk"))
     } else if region.starts_with("us-isof-") {
-        ("aws-iso-f", "csp.hci.ic.gov", "api.aws.hci.ic.gov")
+        Some(("aws-iso-f", "csp.hci.ic.gov", "api.aws.hci.ic.gov"))
     } else if region.starts_with("eusc-") {
-        ("aws-eusc", "amazonaws.eu", "api.amazonwebservices.eu")
+        Some(("aws-eusc", "amazonaws.eu", "api.amazonwebservices.eu"))
+    } else if super::commercial_region(region) {
+        Some(("aws", "amazonaws.com", "api.aws"))
     } else {
-        ("aws", "amazonaws.com", "api.aws")
+        None
     }
 }
 

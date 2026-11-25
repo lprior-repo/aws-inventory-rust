@@ -59,6 +59,18 @@
   Pool defaults remain one second and up to eight idle sockets per endpoint.
   Benchmark output includes distinct hosts and summed connect-attempt time
   (including permit waits and failed attempts) relative to cold sweep wall time.
+- Catalog overlay operations can skip describe calls whose output the carrying
+  list already provides. A skip requires seeded comparison evidence, the same
+  resource kind, no dependent consumers, and the carrying operation as the
+  sole producer in every effective child branch. Runtime plan extension version
+  4 adds plan field 26; regenerate version 3 catalogs before use.
+- `inventory-harness probe --compare-pair` reports `unverified` and emits no
+  skip receipt for an unbound child branch. Verified receipts are published
+  atomically to `<report>.skip.toml` without overwriting an existing receipt.
+  Conflicting service filters are rejected before probing.
+- CodeBuild projects and Glue blueprints use full ARNs instead of names as
+  inventory keys. Old name-keyed rows can coexist with new ARN-keyed rows
+  until two complete sweeps retire them; use a fresh database to avoid overlap.
 - PostgreSQL sweeps can opt into binary COPY through temporary staging tables
   with `INVENTORY_POSTGRES_COPY_MIN_ROWS`. The default still uses `UNNEST`.
 - When the mutation harness cannot launch its child program, it writes a final

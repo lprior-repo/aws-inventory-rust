@@ -41,6 +41,10 @@ pub(super) fn key(member: &str) -> Result<Identity, NameError> {
     Ok(Identity::Key(vec![MemberPath::selected(member)?]))
 }
 
+pub(super) fn template(arn_template: &str) -> Result<Identity, NameError> {
+    Ok(Identity::Template(arn_template.to_owned()))
+}
+
 pub(super) fn enumerate(
     items: &str,
     identity: Identity,

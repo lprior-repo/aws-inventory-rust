@@ -37,7 +37,7 @@ pub use control::{ProgressEvent, SweepControl};
 pub use credentials::{CredentialFailure, CredentialSource};
 pub use execution::run;
 pub use metrics::SweepMetrics;
-pub use probe::{ProbeAnswer, ProbeScope, call_once};
+pub use probe::{ProbeAnswer, ProbePage, ProbeScope, ProbeSession, call_once, probe_pair};
 
 #[derive(Clone, Debug)]
 pub struct SweepConfig {

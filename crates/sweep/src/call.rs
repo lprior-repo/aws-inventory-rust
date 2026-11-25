@@ -67,6 +67,42 @@ impl<C: CredentialSource> Call<'_, '_, C> {
         response
     }
 
+    pub(super) async fn run_raw(&self) -> Result<DecodedResponse, SweepError> {
+        let group = self.plan.service().name().map_err(SweepError::Model)?;
+        let bucket = crate::bucket::key(self.account, self.scope, group);
+        let request = request::encode(self.plan, self.url, self.base, self.fields);
+        let response = self
+            .executor
+            .execute(&bucket, || async {
+                let request = request.as_ref().map_err(permanent)?.clone();
+                self.send_attempt(request, &SystemTime::now).await
+            })
+            .await?;
+        let response = match response {
+            ValidatedResponse::Page(response) => response,
+            ValidatedResponse::Absent(reason) => return Err(SweepError::Absent(reason)),
+        };
+        if response.body.len() > 1_048_576 {
+            return Err(SweepError::Operation(
+                "comparison wire response exceeds one MiB",
+            ));
+        }
+        let context = aws_wire::response::ResponseContext {
+            service: self.plan.service(),
+            operation: self.plan.operation(),
+            protocol: protocol(self.plan.protocol()),
+            body: &response.body,
+            headers: &response.headers,
+            status: response.status,
+            limits: aws_wire::response::DecodeLimits::default().preserve_raw_values(),
+        };
+        Ok(DecodedResponse {
+            record: aws_wire::response::decode(context)?,
+            headers: response.headers,
+            http_version: response.version,
+        })
+    }
+
     async fn send_attempt(
         &self,
         request: http::Request<bytes::Bytes>,

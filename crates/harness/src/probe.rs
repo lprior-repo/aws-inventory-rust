@@ -1,4 +1,5 @@
 mod command;
+mod compare;
 mod error;
 mod outcome;
 mod report;

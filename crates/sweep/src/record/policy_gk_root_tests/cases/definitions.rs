@@ -146,6 +146,11 @@ pub(in crate::record::policy_gk_root_tests) fn all() -> Vec<Case> {
             Some("NextToken"),
             json!({}),
         );
+        if operation == "ListBlueprints" {
+            entry.ids = entry
+                .ids
+                .map(|name| format!("arn:aws:glue:us-east-1:123456789012:blueprint/{name}"));
+        }
         if operation == "ListDataQualityRulesets" {
             for row in &mut entry.rows {
                 row["TargetTable"] = json!({"TableName":"target","DatabaseName":"database","CatalogId":"123456789012"});

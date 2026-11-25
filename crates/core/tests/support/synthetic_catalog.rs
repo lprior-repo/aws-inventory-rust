@@ -211,7 +211,7 @@ pub fn catalog(
     columns: Vec<Value>,
 ) -> TestResult<Vec<u8>> {
     let extension = map([
-        (1, Value::Int(3)),
+        (1, Value::Int(4)),
         (2, Value::List(vec![plan(item, identity, pagination)?])),
         (
             3,

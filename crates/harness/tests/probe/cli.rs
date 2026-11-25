@@ -26,7 +26,7 @@ pub async fn report(bytes: &[u8], services: &[&str]) -> TestResult<String> {
     Ok(tokio::fs::read_to_string(work.path().join("probe.report")).await?)
 }
 
-fn command(server: &Server, work: &Path) -> TestResult<tokio::process::Command> {
+pub(super) fn command(server: &Server, work: &Path) -> TestResult<tokio::process::Command> {
     let mut command = tokio::process::Command::new(env!("CARGO_BIN_EXE_inventory-harness"));
     configure(&mut command, server, work)?;
     command

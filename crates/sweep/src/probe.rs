@@ -1,3 +1,4 @@
+mod pair;
 use crate::{
     CredentialSource, SweepError, call,
     execution::{discovery, routing},
@@ -12,6 +13,7 @@ use inventory_core::{
     record::Record,
 };
 use inventory_engine::limiter::ApiExecutor;
+pub use pair::{ProbePage, ProbeSession, probe_pair};
 use std::borrow::Cow;
 
 #[cfg(test)]

@@ -1,7 +1,7 @@
 use super::*;
 use inventory_core::catalog::runtime::{BindingAlternativePlan, ContextSource, UrlResourceKind};
 
-pub(super) fn consumes_current(
+pub(crate) fn consumes_current(
     source: &BindingSource,
     parent: &CallablePlan<'_>,
     branch: Option<&str>,

@@ -1,5 +1,23 @@
 use super::*;
 
+fn evidenced_skip(plan: &mut OperationOverlay, operation: &str) -> Result<(), overlay::NameError> {
+    let operation = overlay::OperationName::new(operation)?;
+    plan.skip = vec![operation.clone()];
+    plan.skip_evidence.insert(
+        operation.clone(),
+        overlay::SkipEvidence::new(
+            "things",
+            "ListThings",
+            operation.as_str(),
+            &"a".repeat(64),
+            "reference-validation fixture selected item values",
+            1,
+            "2026-11-24T00:00:00Z",
+        )?,
+    );
+    Ok(())
+}
+
 #[test]
 fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std::error::Error>> {
     let mut model = BASIC.replace(
@@ -16,7 +34,7 @@ fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std
     );
     let root = fixture(&model, "")?;
     let mut plan = complete()?;
-    plan.skip = vec![overlay::OperationName::new("ListOther")?];
+    evidenced_skip(&mut plan, "ListOther")?;
     plan.batch = Some(batch("ListOther")?);
     let errors = violations(&root, vec![("ListThings", plan), ("ListOther", deferred())])?;
     for key in ["skip", "batch.replaces"] {
@@ -28,7 +46,7 @@ fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std
         );
     }
     let mut plan = complete()?;
-    plan.skip = vec![overlay::OperationName::new("GetThing")?];
+    evidenced_skip(&mut plan, "GetThing")?;
     plan.batch = Some(batch("GetThing")?);
     let mut child = complete()?;
     child.class = Some(OverlayClass::Expand);
@@ -212,7 +230,7 @@ fn references_reject_unknown_and_deferred_operations() -> Result<(), Box<dyn std
         );
     let root = fixture(&model, "")?;
     let mut plan = complete()?;
-    plan.skip = vec![overlay::OperationName::new("MissingSkip")?];
+    evidenced_skip(&mut plan, "MissingSkip")?;
     plan.batch = Some(batch("MissingBatch")?);
     let mut child = complete()?;
     child.class = Some(OverlayClass::Expand);
