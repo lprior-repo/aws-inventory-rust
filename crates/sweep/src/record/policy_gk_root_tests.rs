@@ -204,10 +204,13 @@ async fn consume(
     for observation in &observations {
         assert_eq!(observation.key().kind.as_str(), case.kind);
         assert_eq!(&observation.key().account, account);
+        let id = observation.key().id.as_str();
         assert!(
+            case.ids.iter().any(|expected| expected == id),
+            "{}.{} page {page}: unexpected resource ID {id:?}; expected one of {:?}",
+            case.service,
+            case.operation,
             case.ids
-                .iter()
-                .any(|id| id == observation.key().id.as_str())
         );
         assert_eq!(
             observation.key().region,

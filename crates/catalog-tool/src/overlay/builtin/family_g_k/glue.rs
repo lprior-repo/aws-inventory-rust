@@ -65,7 +65,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             policy::query(
                 policy::enumerate(
                     "Blueprints",
-                    policy::key("$")?,
+                    policy::template("arn:{partition}:glue:{region}:{account}:blueprint/{$}")?,
                     Some(("NextToken", "NextToken")),
                 )?,
                 &["$"],
