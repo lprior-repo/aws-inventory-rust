@@ -12,8 +12,7 @@ PoolName = "inventory-thin-cognito-identity-provider"
 [[step]]
 id = "group"
 operation = "CreateGroup"
-kind = "AWS::Cognito::UserPoolGroup"
-identity = "Group.GroupName"
+kind = ""
 [step.input]
 UserPoolId = { from = "pool", path = "UserPool.Id" }
 GroupName = "inventory-seed-users"
@@ -21,8 +20,7 @@ GroupName = "inventory-seed-users"
 [[step]]
 id = "resource_server"
 operation = "CreateResourceServer"
-kind = "AWS::Cognito::UserPoolResourceServer"
-identity = "ResourceServer.Identifier"
+kind = ""
 [step.input]
 UserPoolId = { from = "pool", path = "UserPool.Id" }
 Identifier = "https://inventory.example/resource"
@@ -32,8 +30,7 @@ Scopes = [{ ScopeName = "read", ScopeDescription = "Read fixture data" }]
 [[step]]
 id = "pool_client"
 operation = "CreateUserPoolClient"
-kind = "AWS::Cognito::UserPoolClient"
-identity = "UserPoolClient.ClientId"
+kind = ""
 [step.input]
 UserPoolId = { from = "pool", path = "UserPool.Id" }
 ClientName = "inventory-seed-client"
@@ -53,8 +50,7 @@ Links = { "cognito:default" = "https://inventory.example/terms" }
 [[step]]
 id = "identity_provider"
 operation = "CreateIdentityProvider"
-kind = "AWS::Cognito::UserPoolIdentityProvider"
-identity = "IdentityProvider.ProviderName"
+kind = ""
 [step.input]
 UserPoolId = { from = "pool", path = "UserPool.Id" }
 ProviderName = "Google"

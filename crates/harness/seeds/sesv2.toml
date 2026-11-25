@@ -36,11 +36,8 @@ PoolName = "inv-creatededicatedippool-{n}"
 [[step]]
 id = "createemailidentity"
 operation = "CreateEmailIdentity"
-kind = "AWS::SES::EmailIdentityCertificate"
+kind = ""
 scope = "region"
-
-[step.identity]
-input = "EmailIdentity"
 
 [step.input]
 EmailIdentity = "inv-createemailidentity-{n}"

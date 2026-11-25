@@ -22,7 +22,7 @@ logStreamName = "inventory-seed-log-stream"
 id = "metric_filter"
 operation = "PutMetricFilter"
 kind = "AWS::Logs::MetricFilter"
-identity = { input = "filterName" }
+identity = { input = "filterName", template = "30:inventory-thin-cloudwatch-logs|26:{value}" }
 [step.input]
 logGroupName = "inventory-thin-cloudwatch-logs"
 filterName = "inventory-seed-error-count"

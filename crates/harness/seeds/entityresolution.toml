@@ -87,7 +87,6 @@ roleArn = { from = "workflow_role", path = "Role.Arn" }
 [[step]]
 id = "matching_job"
 operation = "StartMatchingJob"
-kind = "AWS::ApiOnly::EntityResolutionMatchingJob"
-identity = "jobId"
+kind = ""
 [step.input]
 workflowName = { from = "matching_workflow", path = "workflowName" }

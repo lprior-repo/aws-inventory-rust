@@ -24,8 +24,7 @@ AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allo
 [[step]]
 id = "queue"
 operation = "CreateQueue"
-kind = "AWS::Deadline::Queue"
-identity = "queueId"
+kind = ""
 [step.input]
 farmId = { from = "farm", path = "farmId" }
 displayName = "inventory-seed-queue"
@@ -33,8 +32,7 @@ displayName = "inventory-seed-queue"
 [[step]]
 id = "fleet"
 operation = "CreateFleet"
-kind = "AWS::Deadline::Fleet"
-identity = "fleetId"
+kind = ""
 [step.input]
 farmId = { from = "farm", path = "farmId" }
 displayName = "inventory-seed-fleet"
@@ -45,8 +43,7 @@ configuration = { customerManaged = { mode = "NO_SCALING", workerCapabilities = 
 [[step]]
 id = "limit"
 operation = "CreateLimit"
-kind = "AWS::Deadline::Limit"
-identity = "limitId"
+kind = ""
 [step.input]
 farmId = { from = "farm", path = "farmId" }
 displayName = "inventory-seed-limit"
@@ -56,8 +53,7 @@ maxCount = 1
 [[step]]
 id = "queue_fleet_association"
 operation = "CreateQueueFleetAssociation"
-kind = "AWS::Deadline::QueueFleetAssociation"
-identity = { input = "fleetId" }
+kind = ""
 [step.input]
 farmId = { from = "farm", path = "farmId" }
 queueId = { from = "queue", path = "queueId" }
@@ -66,8 +62,7 @@ fleetId = { from = "fleet", path = "fleetId" }
 [[step]]
 id = "queue_limit_association"
 operation = "CreateQueueLimitAssociation"
-kind = "AWS::Deadline::QueueLimitAssociation"
-identity = { input = "limitId" }
+kind = ""
 [step.input]
 farmId = { from = "farm", path = "farmId" }
 queueId = { from = "queue", path = "queueId" }

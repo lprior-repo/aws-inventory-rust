@@ -35,7 +35,7 @@ computePlatform = "Server"
 id = "deployment_group"
 operation = "CreateDeploymentGroup"
 kind = "AWS::CodeDeploy::DeploymentGroup"
-identity = "deploymentGroupId"
+identity = { input = "deploymentGroupName", template = "26:inventory-seed-application|31:{value}" }
 [step.input]
 applicationName = "inventory-seed-application"
 deploymentGroupName = "inventory-seed-deployment-group"

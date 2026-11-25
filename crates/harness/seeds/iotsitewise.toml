@@ -103,8 +103,7 @@ roleArn = { from = "sitewise_role", path = "Role.Arn" }
 [[step]]
 id = "project"
 operation = "CreateProject"
-kind = "AWS::IoTSiteWise::Project"
-identity = "projectArn"
+kind = ""
 [step.input]
 portalId = { from = "portal", path = "portalId" }
 projectName = "inventory-seed-project"
@@ -112,8 +111,7 @@ projectName = "inventory-seed-project"
 [[step]]
 id = "dashboard"
 operation = "CreateDashboard"
-kind = "AWS::IoTSiteWise::Dashboard"
-identity = "dashboardArn"
+kind = ""
 [step.input]
 projectId = { from = "project", path = "projectId" }
 dashboardName = "inventory-seed-dashboard"
@@ -122,8 +120,7 @@ dashboardDefinition = '{"widgets":[]}'
 [[step]]
 id = "access_policy"
 operation = "CreateAccessPolicy"
-kind = "AWS::IoTSiteWise::AccessPolicy"
-identity = "accessPolicyArn"
+kind = ""
 [step.input]
 accessPolicyIdentity = { iamRole = { arn = { from = "sitewise_role", path = "Role.Arn" } } }
 accessPolicyResource = { portal = { id = { from = "portal", path = "portalId" } } }

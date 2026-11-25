@@ -44,7 +44,7 @@ layerDigests = ["sha256:dc570f145a7f2862c9ef3c30b8d6ae2feaceb0d364e4b2e08e67ae18
 id = "image"
 operation = "PutImage"
 kind = "AWS::ApiOnly::ECRPublicImage"
-identity = "image.imageId.imageDigest"
+identity = { input = "repositoryName", template = "12:{account}|25:{value}|71:sha256:2ab8b7be5951d0351c88b1148174d21d2ed101585df7ecb8b5e0ee0bce1c1fd0" }
 scope = "account"
 [step.input]
 repositoryName = { from = "repository", path = "repository.repositoryName" }

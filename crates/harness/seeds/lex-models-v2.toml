@@ -34,8 +34,7 @@ localeId = "en_US"
 [[step]]
 id = "bot_version"
 operation = "CreateBotVersion"
-kind = "AWS::Lex::BotVersion"
-identity = "botVersion"
+kind = ""
 [step.input]
 botId = { from = "resource", path = "botId" }
 botVersionLocaleSpecification = { en_US = { sourceBotVersion = "DRAFT" } }

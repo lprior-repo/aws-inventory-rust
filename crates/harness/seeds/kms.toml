@@ -42,8 +42,7 @@ AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allo
 [[step]]
 id = "grant"
 operation = "CreateGrant"
-kind = "AWS::ApiOnly::KmsGrant"
-identity = "GrantId"
+kind = ""
 [step.input]
 KeyId = { from = "grant_key", path = "KeyMetadata.Arn" }
 GranteePrincipal = { from = "grantee", path = "Role.Arn" }

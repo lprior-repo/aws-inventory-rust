@@ -53,8 +53,7 @@ ProtectedResource = { S3Bucket = { BucketName = "inventory-seed-guardduty" } }
 [[step]]
 id = "filter"
 operation = "CreateFilter"
-kind = "AWS::GuardDuty::Filter"
-identity = "Name"
+kind = ""
 [step.input]
 DetectorId = { from = "resource", path = "DetectorId" }
 Name = "inventory-seed-severity"
