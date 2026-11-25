@@ -39,6 +39,17 @@ pub(super) fn select(
             else {
                 return Ok::<_, SweepError>(());
             };
+            if record::foreign_owned(
+                &row,
+                page.plan.identity(),
+                &record::IdentityContext {
+                    account: page.context.account,
+                    region: &page.request.region,
+                },
+                Some(&page.request.record),
+            )? {
+                return Ok(());
+            }
             let ordinal = add_ordinal(offset, ordinal)?;
             *retained.next().ok_or(SweepError::Operation(
                 "discovery item ordinal exceeds bound",

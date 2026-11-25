@@ -16,6 +16,19 @@
   `create` resumes the remaining 200-table batches for the same catalog. For
   SQLite, `BinaryStore::probe` classifies a version-0 empty file as
   uninitialized, and `serve` and `sweep` create it rather than failing to open.
+- `serve` decides per run whether to resume or start a sweep from the database's
+  real state (fresh and completed databases start a new sweep), resolves each
+  profile's account before reading freshness so restarts order by persisted
+  staleness, and treats Ctrl-C as a daemon-wide interruption (exit 130) that stops
+  admitting profiles. Only fully successful sweeps record freshness (`sweeps.completed`).
+- SNS subscriptions owned by the scanned account are accepted even when their ARN
+  names another account's topic; ownership comes from `Owner`. Rows owned by
+  another account on the scanned account's topics are skipped, not attributed.
+- Native KMS keeps aliases without a target key, Step Functions describes with
+  `includedData=METADATA_ONLY` and keeps list rows when describe fails, and Route 53
+  no longer invents the scanning account as owner of associated VPCs.
+- The UI refreshes the selected resource's details from accepted graph metadata and
+  labels content hashes as BLAKE3.
 
 - The emulator probe now calls parent-bound operations using the sweep's binding
   and wire code, sampling one parent item by default (`--child-samples 1..64`)

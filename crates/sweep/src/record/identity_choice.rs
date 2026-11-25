@@ -81,6 +81,31 @@ fn selected_member(fields: &[IdentityFieldPlan]) -> Option<&[FieldId]> {
     }
 }
 
+/// Whether `row` is owned by another account while merely sitting under the
+/// scanned account's namespace (for example a subscription another account made
+/// to one of its topics). Such rows belong to their owner's inventory, so
+/// enumeration skips them instead of attributing them to the scanned account or
+/// failing the page. A row whose ARN also names a foreign account is not
+/// skipped: identity validation rejects it.
+pub(crate) fn foreign_owned(
+    row: &Record,
+    identity: &IdentityPlan,
+    trusted: &IdentityContext<'_>,
+    request: Option<&Record>,
+) -> Result<bool, SweepError> {
+    let IdentityPlan::Choice(IdentityChoicePlan::Discriminated(branches)) = identity else {
+        return Ok(false);
+    };
+    let IdentityLeafPlan::OwnedArn { path, owner, .. } =
+        &matching_branch(row, branches, request)?.identity
+    else {
+        return Ok(false);
+    };
+    let scanned = trusted.account.as_str();
+    Ok(required_text(row, owner)? != scanned
+        && super::trusted_arn::names_account(&required_text(row, path)?, scanned))
+}
+
 pub(super) fn resource_id(
     row: &Record,
     identity: &IdentityPlan,

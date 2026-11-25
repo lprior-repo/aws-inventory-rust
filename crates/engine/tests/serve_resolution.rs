@@ -84,6 +84,31 @@ async fn given_a_completed_sweep_when_planning_then_the_next_cycle_starts_fresh(
 }
 
 #[tokio::test]
+async fn given_a_failed_sweep_when_querying_history_then_only_the_successful_one_counts()
+-> TestResult {
+    let (_directory, store, _catalog) = support::fixture().await?;
+    let good = seed_pending(&store, "good", "111111111111").await?;
+    complete(&store, &good, 1_000).await?;
+    let bad = seed_pending(&store, "bad", "111111111111").await?;
+    let lease = store
+        .claim(&bad, 2_000, 60_000)
+        .await?
+        .ok_or("expected claimable work")?;
+    store
+        .finish_scope(lease, ScopeOutcome::Failed, 2_000, None)
+        .await?;
+    assert_eq!(
+        plan_run(&store, &account("111111111111")?).await?,
+        RunStart::Fresh
+    );
+    let last = last_completed_sweep(&store, "111111111111")
+        .await?
+        .ok_or("successful sweep not recorded")?;
+    assert_eq!((last.sweep_id.as_str(), last.ended_at_ms), ("good", 1_000));
+    Ok(())
+}
+
+#[tokio::test]
 async fn given_unfinished_work_when_querying_history_then_it_is_not_reported_completed()
 -> TestResult {
     let (_directory, store, _catalog) = support::fixture().await?;

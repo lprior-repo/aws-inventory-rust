@@ -157,8 +157,8 @@ pub(crate) fn validate_resource_arn(
 
 /// Validates an ARN whose resource is owned by the account named in `owner`
 /// rather than the ARN's account segment. The owner is checked against the
-/// trusted request account; partition, region, service and resource syntax
-/// are still validated against the request and the resource kind.
+/// trusted request account; partition, region, service and resource syntax are
+/// still validated against the request and the resource kind.
 pub(crate) fn validate_owned_arn(
     value: &str,
     kind: &ArnResourceKind,
@@ -174,6 +174,11 @@ pub(crate) fn validate_owned_arn(
         ));
     }
     validate_resource_arn(value, kind, trusted, None)
+}
+
+/// True when `value` is a well-formed ARN whose account segment is `account`.
+pub(crate) fn names_account(value: &str, account: &str) -> bool {
+    parse(value).is_ok_and(|arn| arn.account == account)
 }
 
 fn validate_name(value: &str, max: usize) -> Result<(), SweepError> {

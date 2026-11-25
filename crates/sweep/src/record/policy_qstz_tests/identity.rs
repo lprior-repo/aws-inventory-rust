@@ -257,8 +257,9 @@ const CROSS_ACCOUNT_SUBSCRIPTION: &str =
     "arn:aws:sns:us-east-1:999999999999:topic:0fbbf013-2c09-4c13-b31a-62857ec41b47";
 
 fn owned_subscriptions_xml(arn: &str, owner: &str) -> String {
+    let topic = arn.rsplit_once(':').map_or(arn, |(topic, _)| topic);
     format!(
-        "<ListSubscriptionsResponse><ListSubscriptionsResult><Subscriptions><member><SubscriptionArn>{arn}</SubscriptionArn><TopicArn>arn:aws:sns:us-east-1:{TOPIC_OWNER_ACCOUNT}:topic</TopicArn><Protocol>https</Protocol><Endpoint>https://example.com</Endpoint><Owner>{owner}</Owner></member></Subscriptions></ListSubscriptionsResult></ListSubscriptionsResponse>"
+        "<ListSubscriptionsResponse><ListSubscriptionsResult><Subscriptions><member><SubscriptionArn>{arn}</SubscriptionArn><TopicArn>{topic}</TopicArn><Protocol>https</Protocol><Endpoint>https://example.com</Endpoint><Owner>{owner}</Owner></member></Subscriptions></ListSubscriptionsResult></ListSubscriptionsResponse>"
     )
 }
 
@@ -322,6 +323,45 @@ async fn given_cross_account_topic_subscription_owned_by_scanned_account_when_co
             .collect::<Vec<_>>(),
         [("AWS::SNS::Subscription", CROSS_ACCOUNT_SUBSCRIPTION)]
     );
+    Ok(())
+}
+
+#[test]
+fn given_subscription_rows_when_owner_differs_then_only_foreign_owned_rows_on_scanned_topics_are_skipped()
+-> TestResult {
+    const OWN_TOPIC_SUBSCRIPTION: &str =
+        "arn:aws:sns:us-east-1:123456789012:topic:0fbbf013-2c09-4c13-b31a-62857ec41b47";
+    let catalog = RuntimeCatalog::from_bytes(bytes()?)?;
+    let list = catalog
+        .lookup("sns", "ListSubscriptions")
+        .ok_or("subscription list absent")?;
+    let account = AccountId::parse(SCANNED_ACCOUNT)?;
+    let region = RegionId::parse("us-east-1")?;
+    let trusted = IdentityContext {
+        account: &account,
+        region: &region,
+    };
+    let request = request_bindings(list, &[])?;
+    let skipped = |arn: &str, owner: &str| -> TestResult<bool> {
+        let response = decode(list, owned_subscriptions_xml(arn, owner).as_bytes())?;
+        let row = item_records(&response, list.items())?
+            .into_iter()
+            .next()
+            .ok_or("subscription row absent")?;
+        Ok(foreign_owned(
+            &row,
+            list.identity(),
+            &trusted,
+            Some(&request),
+        )?)
+    };
+    // Another account's subscription on the scanned account's topic: not ours.
+    assert!(skipped(OWN_TOPIC_SUBSCRIPTION, TOPIC_OWNER_ACCOUNT)?);
+    // The scanned account's own subscription, whatever topic account its ARN names.
+    assert!(!skipped(OWN_TOPIC_SUBSCRIPTION, SCANNED_ACCOUNT)?);
+    assert!(!skipped(CROSS_ACCOUNT_SUBSCRIPTION, SCANNED_ACCOUNT)?);
+    // Neither owner nor ARN is the scanned account: left to identity validation to reject.
+    assert!(!skipped(CROSS_ACCOUNT_SUBSCRIPTION, TOPIC_OWNER_ACCOUNT)?);
     Ok(())
 }
 

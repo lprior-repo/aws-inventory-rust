@@ -37,6 +37,7 @@ mod selection;
 mod selection_tests;
 mod tags;
 pub(crate) mod trusted_arn;
+pub(crate) use identity_choice::foreign_owned;
 pub(super) use identity_choice::is_identity_member;
 pub(super) use identity_validation::IdentityTextValidation;
 pub(super) use tags::tag_observation;

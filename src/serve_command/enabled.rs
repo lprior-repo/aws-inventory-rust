@@ -326,3 +326,33 @@ impl Environment for ServeEnv {
         classify(&result, &profile.name)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use inventory_engine::limiter::ApiError;
+
+    #[test]
+    fn given_a_cancelled_sweep_when_classified_then_the_daemon_is_interrupted_not_failed() {
+        let cancelled: Result<SweepSummary, SweepError> = Err(ApiError::Cancelled.into());
+        assert_eq!(classify(&cancelled, "p"), RunOutcome::Interrupted);
+    }
+
+    #[test]
+    fn given_an_ordinary_sweep_error_when_classified_then_it_is_a_failure() {
+        let failed: Result<SweepSummary, SweepError> = Err(SweepError::Operation("boom"));
+        assert_eq!(classify(&failed, "p"), RunOutcome::Failed);
+    }
+
+    #[test]
+    fn given_interruption_and_failure_when_exiting_then_interruption_wins() {
+        assert_eq!(
+            format!("{:?}", exit_code(1, 3)),
+            format!("{:?}", ExitCode::from(EXIT_INTERRUPTED))
+        );
+        assert_eq!(
+            format!("{:?}", exit_code(0, 3)),
+            format!("{:?}", ExitCode::from(EXIT_FAILED))
+        );
+    }
+}
