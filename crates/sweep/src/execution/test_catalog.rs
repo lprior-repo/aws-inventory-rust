@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, path::Path};
 
 type TestResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-pub(super) fn compile(
+pub(crate) fn compile(
     service: &str,
     date: &str,
     operations: &[&str],

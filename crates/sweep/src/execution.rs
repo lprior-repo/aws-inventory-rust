@@ -14,7 +14,7 @@ mod resolved_endpoints;
 pub(crate) mod routing;
 mod scheduler;
 #[cfg(test)]
-mod test_catalog;
+pub(crate) mod test_catalog;
 #[cfg(test)]
 mod test_transport;
 #[cfg(test)]

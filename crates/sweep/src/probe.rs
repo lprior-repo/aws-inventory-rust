@@ -7,6 +7,9 @@ use inventory_core::{
 };
 use inventory_engine::limiter::ApiExecutor;
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct ProbeAnswer {
