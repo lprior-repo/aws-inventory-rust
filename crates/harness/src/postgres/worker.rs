@@ -21,7 +21,7 @@ pub(crate) trait Actions: Send + 'static {
 
 pub(crate) struct Worker {
     keep: Option<mpsc::SyncSender<()>>,
-    finished: Option<oneshot::Receiver<Result<(), String>>>,
+    finished: Option<oneshot::Receiver<Result<(), HarnessError>>>,
     thread: Option<JoinHandle<()>>,
     name: String,
     failures: CleanupFailures,
@@ -76,7 +76,7 @@ impl Worker {
             HarnessError::invalid("database worker stopped without a cleanup result")
         })?;
         self.join()?;
-        result.map_err(HarnessError::invalid)
+        result
     }
 
     pub(crate) fn keep(mut self) -> Result<(), HarnessError> {
@@ -120,7 +120,7 @@ fn serve(
     failures: &CleanupFailures,
     created: oneshot::Sender<Result<(), HarnessError>>,
     keep: mpsc::Receiver<()>,
-    done: oneshot::Sender<Result<(), String>>,
+    done: oneshot::Sender<Result<(), HarnessError>>,
 ) {
     match runtime {
         Ok(runtime) => runtime.block_on(run(actions, name, failures, created, keep, done)),
@@ -137,7 +137,7 @@ async fn run(
     failures: &CleanupFailures,
     created: oneshot::Sender<Result<(), HarnessError>>,
     keep: mpsc::Receiver<()>,
-    done: oneshot::Sender<Result<(), String>>,
+    done: oneshot::Sender<Result<(), HarnessError>>,
 ) {
     let close = match actions.create().await {
         CreateOutcome::Created { close } => close,
@@ -158,7 +158,7 @@ async fn run(
             failures.record(name, &reason);
             eprintln!("PostgreSQL database {name}: {reason}");
             deliver(created, Err(creation_failure(error)));
-            deliver(done, Err(reason));
+            deliver(done, Err(HarnessError::invalid(reason)));
             return;
         }
     };
@@ -175,7 +175,7 @@ async fn run(
             "PostgreSQL database {name} cleanup failed: {error}; run inventory-harness postgres prune"
         );
     }
-    deliver(done, result.map_err(|error| error.to_string()));
+    deliver(done, result);
 }
 
 fn deliver<T>(sender: oneshot::Sender<T>, value: T) {

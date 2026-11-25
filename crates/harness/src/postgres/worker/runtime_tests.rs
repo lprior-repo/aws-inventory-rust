@@ -42,7 +42,7 @@ async fn given_runtime_build_failure_when_serving_then_waiter_gets_error_and_no_
         .err()
         .ok_or("runtime failure must reach the creation waiter")?;
     assert!(error.to_string().contains("runtime unavailable"));
-    assert_eq!(finished.await?, Ok(()));
+    finished.await??;
     assert_eq!(calls.load(Ordering::SeqCst), 0);
     assert!(failures.failures().is_empty());
     Ok(())
