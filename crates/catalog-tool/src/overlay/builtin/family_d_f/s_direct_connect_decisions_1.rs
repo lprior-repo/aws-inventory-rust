@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/direct-connect/service/2012-10-25/direct-connect-2012-10-25.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "DeleteVirtualInterface",

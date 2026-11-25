@@ -297,7 +297,6 @@ fn semantic_errors_are_sorted_and_failed_write_preserves_report_and_stdout()
     let keys: Vec<_> = errors.iter().map(Violation::key).collect();
     assert_eq!(keys, ["identity", "items", "queryable"]);
     fs::write(root.path().join("catalog/aws-overlay.report"), "previous\n")?;
-    // The CLI uses only embedded policy; missing models exercise its atomic failure path.
     fs::remove_dir_all(source(root.path()))?;
     let output = command(root.path())?;
     assert!(!output.status.success());

@@ -50,7 +50,6 @@ async fn assert_terminal_failure(worker: &DataWorker, diagnostic: &str) -> TestR
 fn given_invalid_graph_configuration_when_expanding_then_reconnection_failure_is_terminal()
 -> TestResult {
     supervised_async(|| async {
-        // Given: a real reader and graph configuration that cannot reconnect.
         let fixture = Fixture::new().await?;
         let worker = configured_worker(&fixture, "redis://127.0.0.1:6379".to_owned(), "");
         let (counts, rows, total) = snapshot(&worker).await?;
@@ -58,7 +57,6 @@ fn given_invalid_graph_configuration_when_expanding_then_reconnection_failure_is
         assert_eq!(rows, Vec::<Row>::new());
         assert_eq!(total, 0);
 
-        // When expanded, then both the event and graph helper retain the failure.
         assert_terminal_failure(&worker, "invalid graph configuration · graph name").await
     })
 }
@@ -67,7 +65,6 @@ fn given_invalid_graph_configuration_when_expanding_then_reconnection_failure_is
 fn given_unreachable_graph_when_expanding_then_terminal_failure_reaches_graph_helper() -> TestResult
 {
     supervised_async(|| async {
-        // Given: an owned, non-listening port and an independent Redis error oracle.
         let socket = tokio::net::TcpSocket::new_v4()?;
         socket.bind("127.0.0.1:0".parse()?)?;
         let endpoint = format!("redis://{}", socket.local_addr()?);
@@ -87,7 +84,6 @@ fn given_unreachable_graph_when_expanding_then_terminal_failure_reaches_graph_he
         assert_eq!(rows, Vec::<Row>::new());
         assert_eq!(total, 0);
 
-        // When expanded, then the real transport failure is terminal, not status.
         assert_terminal_failure(&worker, &diagnostic).await
     })
 }
@@ -96,7 +92,6 @@ fn given_unreachable_graph_when_expanding_then_terminal_failure_reaches_graph_he
 fn given_worker_without_graph_when_starting_then_first_snapshot_is_not_a_graph_failure()
 -> TestResult {
     supervised_async(|| async {
-        // Given: committed inventory and no graph configuration.
         let fixture = Fixture::new().await?;
         let expected = fixture
             .commit(
@@ -110,7 +105,6 @@ fn given_worker_without_graph_when_starting_then_first_snapshot_is_not_a_graph_f
             .await?;
         let worker = fixture.worker(None);
 
-        // When awaiting startup, then graph status cannot terminate the SQL result.
         let (counts, rows, total) = snapshot(&worker).await?;
         assert_eq!(
             counts,

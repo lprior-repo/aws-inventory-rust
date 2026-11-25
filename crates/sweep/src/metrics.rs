@@ -18,9 +18,7 @@ pub struct SweepMetrics {
     pub requests_reused: u64,
     pub http2_requests: u64,
     pub bytes_read: u64,
-    /// Wall-clock nanoseconds spent connecting, summed over every attempt.
     pub handshake_ns: u64,
-    /// Distinct authorities a connection was attempted to.
     pub hosts: u64,
     pub pages: u64,
     pub decode_ns: u64,
@@ -32,7 +30,6 @@ pub struct SweepMetrics {
     pub peak_rss_kb: u64,
     pub process_metrics_available: bool,
     pub progress_dropped: u64,
-    /// Required child requests skipped because their source text was absent or empty.
     pub child_requests_skipped: u64,
 }
 

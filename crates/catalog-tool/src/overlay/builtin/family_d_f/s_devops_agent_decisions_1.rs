@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/devops-agent/service/2026-01-01/devops-agent-2026-01-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "ListChats",

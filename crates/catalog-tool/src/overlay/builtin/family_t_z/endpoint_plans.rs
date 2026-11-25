@@ -5,7 +5,6 @@ use crate::overlay::{
 };
 use std::collections::BTreeMap;
 
-/// Literal pinned-model inventory contracts; endpoint bootstrap never emits a resource.
 pub(super) fn apply(mut services: Vec<ServiceOverlay>) -> Result<Vec<ServiceOverlay>, NameError> {
     for service in &mut services {
         match service.service.as_str() {

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/acm/service/2015-12-08/acm-2015-12-08.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::{TagEndpoint, TagEndpointParent, TagEndpointRequest, TagEndpointSelector};
 
@@ -77,7 +75,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AcmeExternalAccountBindingArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns detailed metadata about the specified external account binding, including the associated IAM role, expiration time, and usage history.",
             ),
         ),
-        // Model: Returns detailed metadata about the specified ACM certificate. If you have just created a certificate using the RequestCertificate action, there is a delay of several seconds before you can retrieve…
         (
             "DescribeCertificate",
             OperationOverlay {
@@ -112,7 +109,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is ExpiryEvents; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the account configuration options associated with an Amazon Web Services account.",
             ),
         ),
-        // Model: Retrieves the key ID and MAC key credentials for an external account binding. These credentials are used by ACME clients during account registration to bind to the endpoint.
         (
             "GetAcmeExternalAccountBindingCredentials",
             denied(DenyReason::Secret),
@@ -135,7 +131,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AcmeEndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves a list of ACME accounts registered with the specified ACME endpoint. ACME accounts are created when clients use external account binding credentials to register.",
             ),
         ),
-        // Model: Retrieves a list of domain validations for the specified ACME endpoint.
         (
             "ListAcmeDomainValidations",
             OperationOverlay {
@@ -158,7 +153,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list of ACME endpoints in your account. Use this operation to view all configured ACME endpoints and their current status.
         (
             "ListAcmeEndpoints",
             OperationOverlay {
@@ -176,7 +170,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Retrieves a list of external account bindings for the specified ACME endpoint.
         (
             "ListAcmeExternalAccountBindings",
             OperationOverlay {
@@ -205,7 +198,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires CertificateArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns per-domain validation summaries for an ACM certificate. Each summary includes the domain name, the active validation configuration, and the requested validation configuration when a validation method migration is in…",
             ),
         ),
-        // Model: Retrieves a list of certificate ARNs and domain names. You can request that only certificates that match a specific status be listed. You can also filter by specific attributes of the certificate.…
         (
             "ListCertificates",
             OperationOverlay {

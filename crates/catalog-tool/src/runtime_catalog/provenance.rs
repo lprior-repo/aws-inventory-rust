@@ -23,7 +23,6 @@ impl CatalogSources {
         }
     }
 
-    /// Binds provenance to the encoded base catalog bytes.
     pub fn compiled(base_bytes: &[u8]) -> Self {
         Self {
             models: ModelSourceProvenance::CompiledCatalog {

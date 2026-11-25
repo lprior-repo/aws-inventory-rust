@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/m2/service/2021-04-28/m2-2021-04-28.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -91,7 +90,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the applications associated with a specific Amazon Web Services account. You can provide the unique identifier of a specific runtime environment in a query parameter to see a
     Resource {
         operation: "ListApplications",
         items: "applications",
@@ -113,7 +111,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the runtime environments.
     Resource {
         operation: "ListEnvironments",
         items: "environments",
@@ -133,7 +130,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Describes a specific runtime environment.
     Resource {
         operation: "GetEnvironment",
         items: "$",

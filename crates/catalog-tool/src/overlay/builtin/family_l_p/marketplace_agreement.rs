@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/marketplace-agreement/service/2020-03-01/marketplace-agreement-2020-03-01.json
 use super::super::{name, path};
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::{FixedValue, Scope};
@@ -85,26 +84,23 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Searches across all agreements that a proposer or an acceptor has in AWS Marketplace. The search returns a list of agreements with basic agreement information.
-    Resource {
-        operation: "SearchAgreements",
-        items: "agreementViewSummaries",
-        id: Id::Key(&["agreementId"]),
-        scope: Scope::Account,
-        tokens: Some(("nextToken", "nextToken")),
-        query: &[
-            "agreementId",
-            "agreementType",
-            "status",
-            "initialAgreementId",
-            "endTimeBehaviorType",
-        ],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "SearchAgreements",
+    items: "agreementViewSummaries",
+    id: Id::Key(&["agreementId"]),
+    scope: Scope::Account,
+    tokens: Some(("nextToken", "nextToken")),
+    query: &[
+        "agreementId",
+        "agreementType",
+        "status",
+        "initialAgreementId",
+        "endTimeBehaviorType",
+    ],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let mut overlay = compile("marketplace-agreement", GROUPS, RESOURCES)?;
@@ -114,7 +110,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         .ok_or_else(|| NameError {
             value: "SearchAgreements".to_owned(),
         })?;
-    // The pinned filters documentation requires AgreementType for either caller role.
     operation.fixed.insert(
         path("filters")?,
         FixedValue::list([FixedValue::structure([

@@ -1,5 +1,3 @@
-//! Parent resource assertions for Cloud Control API coverage.
-
 pub mod checks;
 pub mod identity;
 pub mod scope;
@@ -20,7 +18,6 @@ pub async fn check(
 ) -> Result<Vec<Value>, HarnessError> {
     let mut checks = Vec::new();
 
-    // Try to load fixtures
     let fixtures = match seed::load_fixtures(root) {
         Ok((doc, sha)) => Some((doc, sha)),
         Err(_) => None,
@@ -34,7 +31,6 @@ pub async fn check(
     );
 
     if let Some((_fixture, sha)) = fixtures {
-        // Check seed report hash if provided
         let reported_hash = seed_report
             .and_then(|sr| sr.get("fixture_sha256"))
             .and_then(Value::as_str);
@@ -46,7 +42,6 @@ pub async fn check(
             None,
         );
 
-        // Check seed status
         let status = seed_report
             .and_then(|sr| sr.get("status"))
             .and_then(Value::as_str)

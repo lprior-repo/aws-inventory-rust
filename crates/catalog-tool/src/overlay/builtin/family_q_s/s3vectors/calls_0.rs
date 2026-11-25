@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/s3vectors/service/2025-07-15/s3vectors-2025-07-15.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

@@ -3,7 +3,6 @@ use super::*;
 #[tokio::test]
 async fn given_two_apis_with_empty_first_and_terminal_pages_when_position_cursors_resume_then_each_middle_resource_and_exact_parent_edge_survives()
 -> TestResult {
-    // Given pinned REST plans and two independent API owners with distinct native position tokens.
     let compiled = compile(
         "api-gateway",
         "2015-07-09",
@@ -43,7 +42,6 @@ async fn given_two_apis_with_empty_first_and_terminal_pages_when_position_cursor
     let mut first_pages = 0_u8;
     let mut middle_pages = 0_u8;
     let mut terminal_pages = 0_u8;
-    // When native requests, empty pages, continuations and terminal commits pass through the real wire/row/store consumers.
     for at in 0..7 {
         let lease = store
             .claim(&sweep, at, 10_000)
@@ -159,7 +157,6 @@ async fn given_two_apis_with_empty_first_and_terminal_pages_when_position_cursor
         drop(store);
         store = BinaryStore::open(&path).await?;
     }
-    // Then reopen retains exactly one parent-qualified middle-page resource per API, not phantom empty-page rows.
     assert_eq!((first_pages, middle_pages, terminal_pages), (2, 2, 2));
     assert!(store.claim(&sweep, 8, 10_000).await?.is_none());
     let resources = store.projection_resources(None, 100).await?;

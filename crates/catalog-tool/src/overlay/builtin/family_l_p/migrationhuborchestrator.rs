@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/migrationhuborchestrator/service/2021-08-28/migrationhuborchestrator-2021-08-28.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -109,26 +108,23 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // List the migration workflows.
-    Resource {
-        operation: "ListWorkflows",
-        items: "migrationWorkflowSummary",
-        id: Id::Key(&["id"]),
-        scope: Scope::HomeRegion,
-        tokens: Some(("nextToken", "nextToken")),
-        query: &[
-            "id",
-            "name",
-            "templateId",
-            "adsApplicationConfigurationName",
-            "status",
-        ],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListWorkflows",
+    items: "migrationWorkflowSummary",
+    id: Id::Key(&["id"]),
+    scope: Scope::HomeRegion,
+    tokens: Some(("nextToken", "nextToken")),
+    query: &[
+        "id",
+        "name",
+        "templateId",
+        "adsApplicationConfigurationName",
+        "status",
+    ],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("migrationhuborchestrator", GROUPS, RESOURCES)

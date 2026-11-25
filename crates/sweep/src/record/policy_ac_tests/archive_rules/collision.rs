@@ -2,7 +2,6 @@ use super::*;
 #[tokio::test]
 async fn given_two_analyzers_with_identical_rule_names_when_later_pages_and_details_resume_then_keys_and_edges_keep_their_analyzer()
 -> TestResult {
-    // Given actual pinned shapes and reviewed policies, including both list and detail facets.
     let compiled = compile(
         "accessanalyzer",
         "2019-11-01",
@@ -92,7 +91,6 @@ async fn given_two_analyzers_with_identical_rule_names_when_later_pages_and_deta
     let mut keys = BTreeMap::<(String, String), ResourceKey>::new();
     let mut resumed_analyzers = Vec::new();
     let mut detail_count = 0_u32;
-    // When the real queue, context projection, cursor and request serializers run after each reopen.
     for at in 1..=16 {
         let Some(lease) = store.claim(&sweep, at, 10_000).await? else {
             break;
@@ -241,7 +239,6 @@ async fn given_two_analyzers_with_identical_rule_names_when_later_pages_and_deta
         drop(store);
         store = BinaryStore::open(&path).await?;
     }
-    // Then equal names have two stable owners, both later pages and all detail facets ran, and graph joins remain exact.
     assert!(store.claim(&sweep, 17, 10_000).await?.is_none());
     resumed_analyzers.sort();
     assert_eq!(resumed_analyzers, ["analyzer-a", "analyzer-b"]);

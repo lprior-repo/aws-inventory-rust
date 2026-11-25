@@ -160,7 +160,6 @@ fn document(json: &Json) -> TestResult<Value> {
     })
 }
 
-/// Parses an unsigned-or-signed decimal field of an RFC 3339 timestamp.
 fn field<T: FromStr>(text: Option<&str>) -> TestResult<T>
 where
     T::Err: std::error::Error + 'static,
@@ -203,7 +202,6 @@ fn timestamp(json: &Json) -> TestResult<Value> {
     Ok(Value::Time(Time::new(seconds, nanos)?))
 }
 
-/// Days since the Unix epoch for a proleptic Gregorian date (Howard Hinnant's algorithm).
 fn days_from_civil(year: i64, month: i64, day: i64) -> Option<i64> {
     let year = year.checked_sub(i64::from(month <= 2))?;
     let era = year.div_euclid(400);

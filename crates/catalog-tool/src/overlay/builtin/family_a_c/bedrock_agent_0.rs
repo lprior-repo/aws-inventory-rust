@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bedrock-agent/service/2023-06-05/bedrock-agent-2023-06-05.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::IdentityField;
 
@@ -191,7 +189,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires agentId, agentVersion, knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disassociates a knowledge base from an agent.",
             ),
         ),
-        // Model: Gets information about an agent.
         ("GetAgent", denied(DenyReason::Content)),
         (
             "GetAgentActionGroup",
@@ -229,7 +226,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a data source.",
             ),
         ),
-        // Model: Retrieves information about a flow. For more information, see Manage a flow in Amazon Bedrock in the Amazon Bedrock User Guide.
         ("GetFlow", denied(DenyReason::Content)),
         (
             "GetFlowAlias",
@@ -254,7 +250,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires knowledgeBaseId, dataSourceId, ingestionJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a data ingestion job. Data sources are ingested into your knowledge base so that Large Language Models (LLMs) can use your data.",
             ),
         ),
-        // Model: Gets information about a knowledge base.
         (
             "GetKnowledgeBase",
             OperationOverlay {
@@ -283,7 +278,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires knowledgeBaseId, dataSourceId, documentIdentifiers. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves specific documents from a data source that is connected to a knowledge base. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.",
             ),
         ),
-        // Model: Retrieves information about the working draft ( DRAFT version) of a prompt or a version of it, depending on whether you include the promptVersion field or not. For more information, see View…
         ("GetPrompt", denied(DenyReason::Content)),
         (
             "GetResourcePolicy",
@@ -315,7 +309,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the action groups for an agent and information about each one.",
             ),
         ),
-        // Reviewed full response: alias metadata/version/throughput references only, no instructions/prompts or invocation content.
         (
             "ListAgentAliases",
             OperationOverlay {
@@ -359,7 +352,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires agentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the versions of an agent and information about each version.",
             ),
         ),
-        // Model: Lists the agents belonging to an account and information about each agent.
         (
             "ListAgents",
             OperationOverlay {
@@ -372,7 +364,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Reviewed full response: scoped identifiers/name/status/description/update time; no connector credentials or documents.
         (
             "ListDataSources",
             OperationOverlay {
@@ -407,7 +398,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of information about each flow. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
             ),
         ),
-        // Model: Returns a list of flows and information about each flow. For more information, see Manage a flow in Amazon Bedrock in the Amazon Bedrock User Guide.
         (
             "ListFlows",
             OperationOverlay {
@@ -432,7 +422,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves all the documents contained in a data source that is connected to a knowledge base. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.",
             ),
         ),
-        // Model: Lists the knowledge bases in an account. The list also includesinformation about each knowledge base.
         (
             "ListKnowledgeBases",
             OperationOverlay {
@@ -450,7 +439,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns either information about the working draft ( DRAFT version) of each prompt in an account, or information about of all versions of a prompt, depending on whether you include the…
         (
             "ListPrompts",
             OperationOverlay {
@@ -469,7 +457,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the numbered versions of a retrieval instruction, newest first. DRAFT is not listed; read it with GetRetrievalInstruction without retrievalInstructionVersion. Results are paginated. Use the nextToken parameter to retrieve…",
             ),
         ),
-        // Model: Lists the retrieval instructions in the caller's account. Results are paginated. Use the nextToken parameter to retrieve additional results.
         (
             "ListRetrievalInstructions",
             OperationOverlay {

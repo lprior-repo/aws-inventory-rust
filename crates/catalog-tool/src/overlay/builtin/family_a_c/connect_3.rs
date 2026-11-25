@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/connect/service/2017-08-08/connect-2017-08-08.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -40,7 +38,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, HoursOfOperationId, HoursOfOperationOverrideId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the hours of operation override.",
             ),
         ),
-        // Model: This API is in preview release for Connect Customer and is subject to change. Returns the current state of the specified instance identifier. It tracks the instance while it is being created and…
         (
             "DescribeInstance",
             OperationOverlay {
@@ -369,7 +366,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, ResourceId, ResourceType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the flow associated for a given resource.",
             ),
         ),
-        // Model: Gets historical metric data from the specified Connect Customer instance. For a description of each historical metric, see Metrics definitions in the Connect Customer Administrator Guide . We…
         ("GetMetricData", denied(DenyReason::Paid)),
         (
             "GetMetricDataV2",
@@ -413,7 +409,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, WorkspaceId, MediaType, MediaSource. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Imports a media asset (such as a logo) for use in a workspace.",
             ),
         ),
-        // Exclude built-in ROUTABLE/OFFLINE references at the request boundary.
         (
             "ListAgentStatuses",
             OperationOverlay {

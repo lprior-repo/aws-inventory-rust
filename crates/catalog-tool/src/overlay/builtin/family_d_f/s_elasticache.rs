@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/elasticache/service/2015-02-02/elasticache-2015-02-02.json
 use super::support::{arn, inventory, queried, reviewed, scoped, token};
 use crate::overlay::{NameError, Scope, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "elasticache",
         vec![
-            // Returns information about all provisioned clusters if no cluster identifier is specified, or about a specific cache cluster if a cluster identifier is supplied.
             queried(
                 inventory(
                     "DescribeCacheClusters",
@@ -24,7 +22,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "NetworkType",
                 ],
             )?,
-            // Returns a list of cache parameter group descriptions.
             queried(
                 inventory(
                     "DescribeCacheParameterGroups",
@@ -34,7 +31,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ARN", "CacheParameterGroupName"],
             )?,
-            // Returns a list of cache security group descriptions.
             queried(
                 inventory(
                     "DescribeCacheSecurityGroups",
@@ -44,7 +40,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ARN", "OwnerId", "CacheSecurityGroupName"],
             )?,
-            // Returns a list of cache subnet group descriptions.
             queried(
                 inventory(
                     "DescribeCacheSubnetGroups",
@@ -54,7 +49,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ARN", "CacheSubnetGroupName", "VpcId"],
             )?,
-            // Returns information about a particular global replication group.
             queried(
                 scoped(
                     inventory(
@@ -67,7 +61,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ),
                 &["ARN", "GlobalReplicationGroupId", "Status", "CacheNodeType"],
             )?,
-            // Returns information about a particular replication group.
             queried(
                 inventory(
                     "DescribeReplicationGroups",
@@ -86,7 +79,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "NetworkType",
                 ],
             )?,
-            // Returns information about a specific serverless cache.
             queried(
                 inventory(
                     "DescribeServerlessCaches",
@@ -105,7 +97,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "ConnectionType",
                 ],
             )?,
-            // Returns information about serverless cache snapshots.
             queried(
                 inventory(
                     "DescribeServerlessCacheSnapshots",
@@ -121,7 +112,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "Status",
                 ],
             )?,
-            // Returns information about cluster or replication group snapshots.
             queried(
                 inventory(
                     "DescribeSnapshots",
@@ -142,7 +132,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "KmsKeyId",
                 ],
             )?,
-            // Returns a list of user groups.
             queried(
                 inventory(
                     "DescribeUserGroups",
@@ -152,7 +141,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ARN", "UserGroupId", "Status"],
             )?,
-            // Returns a list of users.
             queried(
                 inventory(
                     "DescribeUsers",
@@ -162,7 +150,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ARN", "UserId", "UserName", "Status"],
             )?,
-            // Existing reservations are metadata; this does not purchase or enumerate public offerings.
             queried(
                 inventory(
                     "DescribeReservedCacheNodes",

@@ -1,18 +1,3 @@
--- scope_freshness: one row per collection scope ever recorded in
--- scope_outcomes (M7.3). The row carries that scope's most recent stored
--- outcome (greatest observed_at, then greatest sweep_id) with the scope's
--- account, region, service, operation and parent flag decoded from the binary
--- scope_key, plus the observation time of the scope's last complete outcome.
---
--- Outcomes are reported verbatim as stored: 'complete', 'partial',
--- 'inaccessible', 'unsupported', 'failed' or 'unobserved'. Ages are
--- milliseconds against the SQLite clock at read time; a reader that holds its
--- own clock subtracts observed_at and last_complete_at instead.
---
--- scope_key layout (see inventory/work/transitions.rs encode_scope): four
--- text fields, each a 4-byte big-endian length then UTF-8 bytes (account,
--- region, service, operation), then one parent marker byte. Keys are bounded
--- well below 65,536 bytes, so only the low two length bytes are read.
 CREATE VIEW scope_freshness AS
 WITH latest AS (
     SELECT sweep_id, scope_key, outcome, observed_at

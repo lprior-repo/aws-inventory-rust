@@ -11,13 +11,10 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn aggregate_context_budget_accepts_exact_limit_and_rejects_one_more_byte_atomically() -> TestResult
 {
-    // Given one page-wide budget shared by projected contexts and durable child copies.
     let mut budget = PageContextBudget::new(&DiscoveryContext::empty(), 3)?;
     budget.charge(MAX_PAGE_CONTEXT_BYTES - 1)?;
-    // When cumulative admission reaches the named exact limit, then it succeeds.
     budget.charge(1)?;
     assert_eq!(budget.used, MAX_PAGE_CONTEXT_BYTES);
-    // One additional byte fails without advancing the admitted total.
     assert!(matches!(
         budget.charge(1),
         Err(SweepError::Operation(
@@ -61,7 +58,6 @@ fn large_inherited_context_rejects_many_tiny_rows_before_projecting_a_page() -> 
         OperationId::parse(plan.operation_name())?,
         None,
     )?;
-    // The entire page is rejected, not a prefix of contexts that could produce partial children.
     let result = super::super::contexts(plan, &rows, &empty, &empty, &ancestry, &scope);
     assert!(matches!(
         result,

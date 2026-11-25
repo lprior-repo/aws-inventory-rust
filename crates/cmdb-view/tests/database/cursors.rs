@@ -203,7 +203,6 @@ async fn given_untrusted_kind_table_mapping_when_reading_detail_then_identifier_
 async fn postgres_given_parallel_edges_and_self_loop_when_paging_then_every_identity_appears_once()
 -> TestResult {
     use super::postgres_support as pg;
-    // Given real PgStore resources, two existing edges, a parallel edge and a self-loop.
     let fixture = super::support::postgres_fixture().await?;
     let db = fixture.reader().await?;
     let root = pg::root();
@@ -217,11 +216,9 @@ async fn postgres_given_parallel_edges_and_self_loop_when_paging_then_every_iden
     fixture
         .edge(&pg::edge(&root, &root, "self", "inferred"))
         .await?;
-    // When cursor pages cross relation and provenance identities.
     let first = db.edges_page(&root, pg_edge_request(None)).await?;
     let second = db.edges_page(&root, pg_edge_request(first.next)).await?;
     let third = db.edges_page(&root, pg_edge_request(second.next)).await?;
-    // Then every exact edge appears once, including the self-loop.
     assert_eq!(
         (
             first.total_matching,
@@ -267,11 +264,9 @@ fn pg_edge_request(after: Option<EdgeCursor>) -> EdgePageRequest {
 async fn postgres_given_same_identity_in_two_kinds_when_reading_then_records_remain_exact()
 -> TestResult {
     use super::postgres_support as pg;
-    // Given the same account, region and ID stored through two distinct kind tables.
     let fixture = super::support::postgres_fixture().await?;
     let padded = pg_pad_other_kind(&fixture).await?;
     let db = fixture.reader().await?;
-    // When reading both kinds and a lightweight page.
     let bucket = db.detail(&pg::root()).await?.ok_or("missing kind zero")?;
     let other = db
         .detail(&pg::node("111111111111", "global", 1, "shared"))
@@ -286,7 +281,6 @@ async fn postgres_given_same_identity_in_two_kinds_when_reading_then_records_rem
             },
         )
         .await?;
-    // Then the payload, hash and byte length all follow the complete key.
     assert_eq!(bucket.record, pg::record("shared", 10)?);
     assert_eq!(other.record, padded);
     assert_ne!(
@@ -339,7 +333,6 @@ async fn pg_pad_other_kind(
 #[tokio::test]
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_given_literal_wildcards_when_searching_then_values_never_expand() -> TestResult {
-    // Given punctuation including the explicit LIKE escape character.
     let fixture = super::support::postgres_fixture().await?;
     fixture
         .commit(
@@ -361,7 +354,6 @@ async fn postgres_given_literal_wildcards_when_searching_then_values_never_expan
         .execute(&fixture.pool)
         .await?;
     let db = fixture.reader().await?;
-    // When a case-insensitive search combines identity and literal text.
     let page = db
         .page(
             &ResourceFilter {
@@ -377,7 +369,6 @@ async fn postgres_given_literal_wildcards_when_searching_then_values_never_expan
             },
         )
         .await?;
-    // Then only the one literal match is returned.
     assert_eq!(page.total_matching, 1);
     assert_eq!(
         page.resources
@@ -395,7 +386,6 @@ async fn postgres_given_literal_wildcards_when_searching_then_values_never_expan
 async fn postgres_given_untrusted_kind_table_when_reading_detail_then_identifier_is_rejected()
 -> TestResult {
     use super::postgres_support as pg;
-    // Given a corrupted table mapping in the documented kinds table.
     let fixture = super::support::postgres_fixture().await?;
     sqlx::query("UPDATE inventory.kinds SET table_name=$1 WHERE kind='AWS::Example::Kind0'")
         .bind("kind_0\"; DELETE FROM resources; --")

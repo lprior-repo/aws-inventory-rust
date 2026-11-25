@@ -6,7 +6,6 @@ fn given_guarded_membership_when_null_empty_or_hostile_types_arrive_then_only_ex
         catalog::runtime::{RelationGuard, RelationPathMode},
         record::FieldId,
     };
-    // Given a reviewed list source and request guard, not a truthy/unconditional approximation.
     let mut rule = typed_rule()?;
     rule.guard = Some(RelationGuard {
         source: RelationSource::Request,
@@ -25,7 +24,6 @@ fn given_guarded_membership_when_null_empty_or_hostile_types_arrive_then_only_ex
         ]),
     )])?;
     let home = RegionId::parse("us-east-1")?;
-    // When the actual bound request guard matches.
     let request = typed_record([(2, Value::Text("active".into()))])?;
     let mut output = Vec::new();
     super::relations::Context {
@@ -36,7 +34,6 @@ fn given_guarded_membership_when_null_empty_or_hostile_types_arrive_then_only_ex
         parent: None,
     }
     .append(&rule, &mut output, 10)?;
-    // Then every meaningful list member becomes an exact reference; no list is stringified.
     assert_eq!(
         output
             .iter()
@@ -82,7 +79,6 @@ fn given_root_and_compound_selectors_when_extracted_then_namespaces_and_conjunct
         catalog::runtime::{RelationPathMode, RelationTargetMode, RelationshipComponentPlan},
         record::{FieldId, Key},
     };
-    // Given a real scalar selected row and a separate actual request conjunct.
     let mut rule = typed_rule()?;
     rule.source_path = Box::new([]);
     rule.source_path_mode = RelationPathMode::RootText;
@@ -103,7 +99,6 @@ fn given_root_and_compound_selectors_when_extracted_then_namespaces_and_conjunct
     let request = typed_record([(2, Value::Text("context-operand".into()))])?;
     let observation = typed_observation(&rule)?;
     let home = RegionId::parse("us-east-1")?;
-    // When extracting through the production source projection.
     let mut output = Vec::new();
     super::relations::Context {
         row: &row,
@@ -113,7 +108,6 @@ fn given_root_and_compound_selectors_when_extracted_then_namespaces_and_conjunct
         parent: None,
     }
     .append(&rule, &mut output, 1)?;
-    // Then canonical ID and target context are distinct typed operands, never field-path sentinels.
     let reference = output.first().ok_or("root reference absent")?;
     assert_eq!(reference.target.value().as_str(), "exact-id");
     assert_eq!(reference.target.mode(), RelationTargetMode::CanonicalId);

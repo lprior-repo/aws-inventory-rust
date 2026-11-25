@@ -15,7 +15,6 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 #[test]
 fn given_compiled_last_item_cursor_when_resuming_then_final_list_text_is_scalar_input() -> TestResult
 {
-    // Given a reviewed list-output/scalar-input paginator compiled and decoded by production APIs.
     let bytes = compiled_catalog_bytes()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let page = catalog
@@ -32,11 +31,9 @@ fn given_compiled_last_item_cursor_when_resuming_then_final_list_text_is_scalar_
             ]),
         ),
     ])?;
-    // When the real page cursor advances, checkpoints and restores its request fields.
     let next = advance(page, &response)?;
     let fields = restored(&next)?.request_fields(page)?;
     let request = input::merge_input(&empty_record()?, &fields)?;
-    // Then the continuation contains the final string, not the list or its first element.
     assert_eq!(
         request.as_bytes(),
         record([(3, Value::Text("last".into()))])?.as_bytes()
@@ -46,7 +43,6 @@ fn given_compiled_last_item_cursor_when_resuming_then_final_list_text_is_scalar_
 
 #[test]
 fn given_last_item_cursor_when_not_truncated_then_empty_list_finishes() -> TestResult {
-    // Given a compiled paginator whose final response has no items or continuation.
     let bytes = compiled_catalog_bytes()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let page = catalog
@@ -54,7 +50,6 @@ fn given_last_item_cursor_when_not_truncated_then_empty_list_finishes() -> TestR
         .ok_or("missing plan")?
         .pagination();
     let response = record([(1, Value::Bool(false)), (2, Value::List(vec![]))])?;
-    // When the real cursor consumes it, then no extra request is scheduled.
     assert!(
         Cursor::default()
             .next(page, &response, &http::HeaderMap::new(), 10)?
@@ -66,7 +61,6 @@ fn given_last_item_cursor_when_not_truncated_then_empty_list_finishes() -> TestR
 #[test]
 fn given_last_item_cursor_when_truncated_without_valid_final_text_then_continuation_is_rejected()
 -> TestResult {
-    // Given malformed or absent last-item continuation values on truncated pages.
     let bytes = compiled_catalog_bytes()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let page = catalog
@@ -100,7 +94,6 @@ fn given_last_item_cursor_when_truncated_without_valid_final_text_then_continuat
     ];
     for (items, message) in cases {
         let response = record([(1, Value::Bool(true)), (2, items)])?;
-        // When consumed, then invalid pages cannot produce a misleading request checkpoint.
         let result = Cursor::default().next(page, &response, &http::HeaderMap::new(), 10);
         assert!(
             matches!(result, Err(SweepError::Operation(actual)) if actual == message),

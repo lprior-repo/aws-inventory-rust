@@ -30,17 +30,14 @@ async fn work_queue_claim_ready_branch_uses_index() -> Result<(), Box<dyn std::e
         return Err("work_queue_ready index does not exist".into());
     }
 
-    // Populate table so optimizer has statistics
     seed_work_queue(&pool).await?;
 
-    // Test the ready branch of the claim query (state=0)
     let plan = explain_plan(&pool,
         "SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id='s1' AND state=0 ORDER BY scope_key LIMIT 1")
         .await?;
 
     pool.close().await;
 
-    // Must use the work_queue_ready index with SEARCH, not PK or SCAN
     if plan.contains("PRIMARY KEY") {
         return Err(format!("ready branch uses PK, not work_queue_ready index: {}", plan).into());
     }
@@ -68,19 +65,14 @@ async fn work_queue_claim_expired_branch_is_bounded() -> Result<(), Box<dyn std:
         )
         .await?;
 
-    // Populate table so optimizer has statistics
     seed_work_queue(&pool).await?;
 
-    // Test the expired lease branch of the claim query (state=1 AND lease_until<=now)
     let plan = explain_plan(&pool,
         "SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id='s1' AND state=1 AND lease_until<=1000 ORDER BY scope_key LIMIT 1")
         .await?;
 
     pool.close().await;
 
-    // Must use work_queue_ready with SEARCH, not PK or SCAN
-    // SQLite chooses work_queue_ready over work_queue_expired because it can
-    // satisfy ORDER BY scope_key without a temp B-tree.
     if plan.contains("PRIMARY KEY") {
         return Err(format!("expired branch uses PK, not work_queue_ready: {}", plan).into());
     }
@@ -108,27 +100,24 @@ async fn es09_claim_split_result_set_equivalence() -> Result<(), Box<dyn std::er
         )
         .await?;
 
-    // Insert work queue rows: completed, pending, ready, expired lease
-    // state=2 is completed, state=1 is leased, state=0 is ready
     sqlx::query(
         "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'01',2,1,0,X'')"
-    ).execute(&pool).await?; // completed
+    ).execute(&pool).await?;
     sqlx::query(
         "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'02',1,1,999999,X'')"
-    ).execute(&pool).await?; // leased, not expired
+    ).execute(&pool).await?;
     sqlx::query(
         "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'03',0,1,0,X'')"
-    ).execute(&pool).await?; // ready
+    ).execute(&pool).await?;
     sqlx::query(
         "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'04',1,1,500,X'')"
-    ).execute(&pool).await?; // expired lease (now=1000)
+    ).execute(&pool).await?;
     sqlx::query(
         "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'05',0,1,0,X'')"
-    ).execute(&pool).await?; // ready (higher scope_key)
+    ).execute(&pool).await?;
 
     let now = 1000_i64;
 
-    // Original OR query
     let original = sqlx::query(
         "SELECT scope_key FROM work_queue WHERE sweep_id='s1' AND (state=0 OR (state=1 AND lease_until<=?)) ORDER BY scope_key LIMIT 1"
     )
@@ -136,7 +125,6 @@ async fn es09_claim_split_result_set_equivalence() -> Result<(), Box<dyn std::er
     .fetch_optional(&pool)
     .await?;
 
-    // Split queries
     let ready = sqlx::query(
         "SELECT scope_key FROM work_queue WHERE sweep_id='s1' AND state=0 ORDER BY scope_key LIMIT 1"
     )
@@ -152,7 +140,6 @@ async fn es09_claim_split_result_set_equivalence() -> Result<(), Box<dyn std::er
 
     pool.close().await;
 
-    // Compute split result
     let split = match (ready, expired) {
         (Some(r), Some(e)) => {
             let r_key: Vec<u8> = r.try_get("scope_key")?;
@@ -164,7 +151,6 @@ async fn es09_claim_split_result_set_equivalence() -> Result<(), Box<dyn std::er
         (None, None) => return Err("split returned no row".into()),
     };
 
-    // Compare
     let original_key: Vec<u8> = original
         .ok_or("original returned no row")?
         .try_get("scope_key")?;
@@ -192,7 +178,6 @@ async fn es09_claim_skips_completed_rows() -> Result<(), Box<dyn std::error::Err
         )
         .await?;
 
-    // Insert many completed rows with lower scope_keys than the ready row
     for i in 0..10u8 {
         sqlx::query(
             "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',?,2,1,0,X'')"
@@ -202,14 +187,12 @@ async fn es09_claim_skips_completed_rows() -> Result<(), Box<dyn std::error::Err
         .await?;
     }
 
-    // One ready row with higher scope_key
     sqlx::query(
         "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'FF',0,1,0,X'')"
     )
     .execute(&pool)
     .await?;
 
-    // Split queries
     let ready = sqlx::query(
         "SELECT scope_key FROM work_queue WHERE sweep_id='s1' AND state=0 ORDER BY scope_key LIMIT 1"
     )
@@ -225,7 +208,6 @@ async fn es09_claim_skips_completed_rows() -> Result<(), Box<dyn std::error::Err
 
     pool.close().await;
 
-    // The ready query should find the ready row, not any completed row
     let ready_key: Vec<u8> = ready.ok_or("ready returned no row")?.try_get("scope_key")?;
     assert!(expired.is_none(), "expired should return no row");
     if ready_key != [0xFF] {
@@ -288,8 +270,6 @@ async fn unresolved_refs_exact_kind_uses_target_index() -> Result<(), Box<dyn st
         )
         .await?;
 
-    // ES-10: The derived candidate index table drives resolution lookups.
-    // Check that the table exists.
     let row: Option<(String,)> = sqlx::query_as(
         "SELECT name FROM sqlite_master WHERE type='table' AND name='unresolved_ref_candidates'",
     )
@@ -300,8 +280,6 @@ async fn unresolved_refs_exact_kind_uses_target_index() -> Result<(), Box<dyn st
         return Err("unresolved_ref_candidates table does not exist".into());
     }
 
-    // The refresh_columns query uses a JOIN with the derived table.
-    // Verify the query plan searches the derived table by primary key prefix.
     let plan = explain_plan(&pool,
         "SELECT r.from_account,r.from_region,r.from_kind,r.from_id,r.target_kind,r.target_kinds,r.target_path,r.target_value,r.relation,r.source FROM unresolved_ref_candidates c JOIN unresolved_refs r ON (r.from_account=c.from_account AND r.from_region=c.from_region AND r.from_kind=c.from_kind AND r.from_id=c.from_id AND r.target_scope=c.target_scope AND r.target_kind=c.target_kind AND r.target_path=c.target_path AND r.target_value=c.target_value AND r.relation=c.relation AND r.source=c.source) WHERE c.target_scope=X'00' AND c.candidate_kind='AWS::Example::Thing'")
         .await?;
@@ -336,8 +314,6 @@ async fn unresolved_refs_multi_kind_uses_target_index() -> Result<(), Box<dyn st
         )
         .await?;
 
-    // ES-10: The derived candidate index table drives resolution lookups.
-    // The query plan should use the derived table's primary key prefix.
     let plan = explain_plan(&pool,
         "SELECT r.from_account,r.from_region,r.from_kind,r.from_id,r.target_kind,r.target_kinds,r.target_path,r.target_value,r.relation,r.source FROM unresolved_ref_candidates c JOIN unresolved_refs r ON (r.from_account=c.from_account AND r.from_region=c.from_region AND r.from_kind=c.from_kind AND r.from_id=c.from_id AND r.target_scope=c.target_scope AND r.target_kind=c.target_kind AND r.target_path=c.target_path AND r.target_value=c.target_value AND r.relation=c.relation AND r.source=c.source) WHERE c.target_scope=X'00' AND c.candidate_kind='AWS::Example::Thing'")
         .await?;
@@ -374,7 +350,6 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
 
     let scope = reference_scope_bytes("123456789012", "us-east-1")?;
 
-    // Insert source resources
     for id in ["f1", "f2", "f3"] {
         sqlx::query(
             "INSERT INTO resources(account,region,kind,id,name,content_hash,first_seen,last_changed) VALUES('a','r','k',?1,'n',X'00',0,0)"
@@ -384,8 +359,6 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
         .await?;
     }
 
-    // ES-10: After normalization, multi-kind refs are separate rows. Insert one
-    // exact match, one multi-kind ref (as separate rows), and one non-matching.
     sqlx::query(
         "INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) VALUES('a','r','k','f1',?1,'AWS::Example::Thing','p','v1','references','s')"
     )
@@ -393,7 +366,6 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
     .execute(&pool)
     .await?;
 
-    // Multi-kind ref: two rows, one for each candidate kind
     sqlx::query(
         "INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) VALUES('a','r','k','f2',?1,'AWS::Example::Thing','p','v2','references','s')"
     )
@@ -414,7 +386,6 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
     .execute(&pool)
     .await?;
 
-    // Original OR query (what the old code would have run)
     let original_rows = sqlx::query(
         "SELECT from_id FROM unresolved_refs WHERE target_scope=? AND (target_kind=? OR target_kinds<>X'') ORDER BY from_id",
     )
@@ -423,7 +394,6 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
     .fetch_all(&pool)
     .await?;
 
-    // New exact match query (what the code now runs)
     let exact_rows = sqlx::query(
         "SELECT from_id FROM unresolved_refs WHERE target_scope=? AND target_kind=? ORDER BY from_id",
     )
@@ -492,7 +462,6 @@ async fn explain_plan(
 }
 
 async fn seed_work_queue(pool: &sqlx::SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
-    // Insert many completed rows so optimizer has statistics
     for i in 0..100u8 {
         sqlx::query(
             "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',?,2,1,0,X'')"

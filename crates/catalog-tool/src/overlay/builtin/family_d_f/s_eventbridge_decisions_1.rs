@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/eventbridge/service/2015-10-07/eventbridge-2015-10-07.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "PutPermission",

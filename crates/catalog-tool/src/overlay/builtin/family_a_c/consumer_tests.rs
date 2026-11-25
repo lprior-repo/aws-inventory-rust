@@ -22,7 +22,6 @@ type CursorCase = (
 #[test]
 fn given_items_only_smithy_pagination_when_compiled_and_decoded_then_all_eight_real_cursors_survive()
 -> TestResult {
-    // Given: pinned request/response shapes; their Smithy traits omit token metadata.
     let groups: &[CursorCase] = &[
         (
             "accessanalyzer",
@@ -62,7 +61,6 @@ fn given_items_only_smithy_pagination_when_compiled_and_decoded_then_all_eight_r
             .iter()
             .map(|(operation, _, _)| *operation)
             .collect::<Vec<_>>();
-        // When: the real policy checker, compiler and consumer artifact decoder run.
         let compiled = compile(service, date, &operations)?;
         let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
         assert_eq!(catalog.plans().len(), cases.len());
@@ -76,7 +74,6 @@ fn given_items_only_smithy_pagination_when_compiled_and_decoded_then_all_eight_r
                 .first()
                 .ok_or("continuation token missing")?;
             let token_id = field(&compiled.fields, token_name)?;
-            // Then: page two has an exact typed request and response cursor, not an empty vector.
             assert_eq!(plan.pagination().tokens.len(), 1, "{service}.{operation}");
             assert_eq!(
                 token.request_path.as_ref(),
@@ -102,7 +99,6 @@ fn given_items_only_smithy_pagination_when_compiled_and_decoded_then_all_eight_r
 #[test]
 fn given_domain_association_and_archive_views_when_compiled_then_each_pair_has_one_canonical_identity()
 -> TestResult {
-    // Given: each real root/detail pair maps to the same physical resource kind.
     let cases = [
         (
             "apigatewayv2",
@@ -136,7 +132,6 @@ fn given_domain_association_and_archive_views_when_compiled_then_each_pair_has_o
         ),
     ];
     for (service, date, list, detail, identity, source, kind, arn) in cases {
-        // When: actual embedded policies compile against their pinned output structures.
         let compiled = compile(service, date, &[list, detail])?;
         let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
         let root = catalog.lookup(service, list).ok_or("root missing")?;
@@ -147,7 +142,6 @@ fn given_domain_association_and_archive_views_when_compiled_then_each_pair_has_o
         } else {
             IdentityPlan::Key(vec![path].into_boxed_slice())
         };
-        // Then: the decoder exposes identical item-relative keys and one kind schema.
         assert_eq!(root.identity(), &expected, "{service}.{list}");
         assert_eq!(expanded.identity(), &expected, "{service}.{detail}");
         assert_eq!(
@@ -178,14 +172,11 @@ fn given_domain_association_and_archive_views_when_compiled_then_each_pair_has_o
 #[test]
 fn given_enabled_baselines_when_compiled_then_child_baseline_inclusion_is_an_outbound_binding()
 -> TestResult {
-    // Given: the pinned model defaults includeChildren to false.
     let compiled = compile("controltower", "2018-05-10", &["ListEnabledBaselines"])?;
-    // When: the actual binary consumer decodes the reviewed root plan.
     let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
     let plan = catalog
         .lookup("controltower", "ListEnabledBaselines")
         .ok_or("baseline plan missing")?;
-    // Then: outbound requests explicitly include children and retain ARN identity.
     let include = field(&compiled.fields, "includeChildren")?;
     assert_eq!(plan.bindings().len(), 1);
     let binding = plan.bindings().first().ok_or("includeChildren missing")?;
@@ -204,14 +195,11 @@ fn given_enabled_baselines_when_compiled_then_child_baseline_inclusion_is_an_out
 #[test]
 fn given_inference_profiles_when_compiled_then_only_application_profiles_are_requested_as_resources()
 -> TestResult {
-    // Given: SYSTEM_DEFINED profiles are reference data, APPLICATION profiles are owned resources.
     let compiled = compile("bedrock", "2023-04-20", &["ListInferenceProfiles"])?;
-    // When: the compiler and production decoder consume the promoted root.
     let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
     let plan = catalog
         .lookup("bedrock", "ListInferenceProfiles")
         .ok_or("profile plan missing")?;
-    // Then: the exact enum filter, canonical kind, ARN and cursor survive compilation.
     assert_eq!(catalog.plans().len(), 1);
     assert_eq!(
         plan.kind().as_str(),
@@ -262,14 +250,11 @@ fn given_inference_profiles_when_compiled_then_only_application_profiles_are_req
 #[test]
 fn given_portal_summaries_when_compiled_then_configuration_tags_and_cursor_are_consumable()
 -> TestResult {
-    // Given: ListPortals exposes safe portal summaries, not document-fetch or credentials.
     let compiled = compile("apigatewayv2", "2018-11-29", &["ListPortals"])?;
-    // When: the checked root is compiled and decoded through the public runtime artifact API.
     let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
     let plan = catalog
         .lookup("apigatewayv2", "ListPortals")
         .ok_or("portal root missing")?;
-    // Then: API-only mapping is honest; identity, inline tag path, and pagination remain intact.
     assert_eq!(plan.kind().as_str(), "AWS::ApiOnly::ApiGatewayV2Portal");
     assert_eq!(
         plan.identity(),
@@ -298,7 +283,6 @@ fn given_portal_summaries_when_compiled_then_configuration_tags_and_cursor_are_c
 #[test]
 fn given_archives_and_buses_when_compiled_then_exact_account_region_dependency_survives()
 -> TestResult {
-    // Given: the already registered relation joins archive EventSourceArn to bus Arn.
     let compiled = compile(
         "cloudwatch-events",
         "2015-10-07",
@@ -309,7 +293,6 @@ fn given_archives_and_buses_when_compiled_then_exact_account_region_dependency_s
             "DescribeEventBus",
         ],
     )?;
-    // When: the consumer decodes relationships from the compiled artifact.
     let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
     let matching = catalog
         .relationships()
@@ -319,7 +302,6 @@ fn given_archives_and_buses_when_compiled_then_exact_account_region_dependency_s
                 && relation.target_kind.as_str() == "AWS::Events::EventBus"
         })
         .collect::<Vec<_>>();
-    // Then: no duplicate label is invented and resolution is fenced by both account and region.
     assert_eq!(matching.len(), 1);
     let relation = matching.first().ok_or("archive bus relation missing")?;
     assert_eq!(

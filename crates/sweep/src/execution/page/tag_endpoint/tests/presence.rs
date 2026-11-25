@@ -32,19 +32,16 @@ fn given_required_tag_collection_when_absent_then_snapshot_mode_preserves_absenc
         .id("IsTruncated")
         .ok_or("IsTruncated field missing")?;
     let absent = "<ListRoleTagsResponse><ListRoleTagsResult/></ListRoleTagsResponse>";
-    // Given: the pinned Smithy response marks Tags as required and defaults IsTruncated=false.
     let sdk = decode(plan, absent, aws_wire::response::DecodeLimits::default())?;
     let Some(ValueRef::List(sdk_tags)) = sdk.root().get_field(tags)? else {
         return Err("normal SDK collection correction changed".into());
     };
     assert_eq!(sdk_tags.count()?, 0);
-    // When: the dedicated endpoint decoder opts into preserving collection presence.
     let strict = decode(
         plan,
         absent,
         aws_wire::response::DecodeLimits::new(65_536, 1024, 16)?.preserve_field_presence(),
     )?;
-    // Then: neither tag content nor pagination evidence is invented.
     assert!(strict.root().get_field(tags)?.is_none());
     assert!(strict.root().get_field(truncated)?.is_none());
     assert!(matches!(
@@ -71,8 +68,6 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
     let plan = catalog
         .lookup("iam", "ListRoleTags")
         .ok_or("tag endpoint missing")?;
-    // Malformed tag pairs are skipped (ES-01); the snapshot stays stale.
-    // Only the completion-flag case still hard-fails at decode time.
     let skip = [
         (
             "value",
@@ -100,7 +95,6 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
             record,
             headers: http::HeaderMap::new(),
         };
-        // Malformed pair is skipped; consume returns Ok with Partial coverage.
         let result = consume(&catalog, &lease, response, 10);
         assert!(
             matches!(result, Ok(PageParts { .. })),
@@ -117,7 +111,6 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
         drop(store);
         directory.close()?;
     }
-    // Completion flag still hard-fails.
     let (directory, store, owner, sweep) = seeded(&compiled, "missing-completion").await?;
     let lease = claim(&store, &sweep, 2).await?;
     let body =

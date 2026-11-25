@@ -155,8 +155,6 @@ fn given_empty_text_binding_when_child_built_then_skipped_and_counted() -> TestR
     )
 }
 
-// A required text member missing from the wire decodes as empty text, so it takes the same
-// counted skip as an explicit empty value.
 #[test]
 fn given_missing_required_binding_when_child_built_then_skipped_and_counted() -> TestResult {
     check_child_for_row(

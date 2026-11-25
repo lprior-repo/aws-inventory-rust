@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/agent-registry-control/service/2025-12-01/agent-registry-control-2025-12-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -28,7 +26,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires registryId, recordId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a registry record",
             ),
         ),
-        // Model: Gets a registry by identifier (ARN or ID)
         ("GetRegistry", denied(DenyReason::Content)),
         (
             "GetRegistryRecord",
@@ -36,7 +33,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires registryId, recordId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the details of a registry record",
             ),
         ),
-        // Model: Lists the registries in the caller's account and Region, with optional filtering by status and discovery authorizer type
         (
             "ListRegistries",
             OperationOverlay {

@@ -39,8 +39,6 @@ pub(super) async fn create(tx: &mut Transaction<'_, Sqlite>) -> Result<(), Store
 }
 
 pub(super) async fn adopt(tx: &mut Transaction<'_, Sqlite>) -> Result<(), StoreError> {
-    // Keep the existing canonical typed row, name and relationships as the explicit
-    // unattributed baseline; never guess which historical source owned a field.
     sqlx::query(
         "INSERT OR IGNORE INTO legacy_resources SELECT account,region,kind,id FROM resources",
     )
@@ -75,8 +73,6 @@ pub(super) async fn demote_facets(
     }
     adopt(tx).await?;
     if attributed {
-        // A facet with no surviving owner row has no recoverable execution proof.
-        // Keep its exact origin opaque rather than substituting another request.
         for table in ["legacy_authorities", "legacy_unknown_authorities"] {
             let mut query = sqlx::QueryBuilder::<Sqlite>::new("INSERT OR IGNORE INTO ");
             query.push(table).push("(account,region,kind,id,scope_key) SELECT facet.account,facet.region,facet.kind,facet.id,facet.source_key FROM resource_facets facet WHERE NOT EXISTS(SELECT 1 FROM resource_scopes owner WHERE owner.account=facet.account AND owner.region=facet.region AND owner.kind=facet.kind AND owner.id=facet.id AND owner.scope_key=facet.source_key)");
@@ -85,7 +81,6 @@ pub(super) async fn demote_facets(
     }
     sqlx::query("INSERT OR IGNORE INTO legacy_unknown_authorities(account,region,kind,id,scope_key) SELECT pending.account,pending.region,pending.kind,pending.id,pending.scope_key FROM legacy_authorities pending WHERE NOT EXISTS(SELECT 1 FROM resource_scopes owner WHERE owner.account=pending.account AND owner.region=pending.region AND owner.kind=pending.kind AND owner.id=pending.id AND owner.scope_key=pending.scope_key)")
         .execute(&mut **tx).await?;
-    // Old Complete outcomes and active dependencies are history, not V3 proofs.
     sqlx::query("DELETE FROM legacy_refreshes")
         .execute(&mut **tx)
         .await?;
@@ -183,8 +178,6 @@ pub(super) async fn retire_source(
     sqlx::query("DELETE FROM legacy_authorities WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND scope_key=?5")
         .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
         .bind(source).execute(&mut **tx).await?;
-    // A proven loss of this exact parent origin retires even an opaque request
-    // authority; unrelated fresh requests still cannot certify or remove it.
     sqlx::query("DELETE FROM legacy_unknown_authorities WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND scope_key=?5")
         .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
         .bind(source).execute(&mut **tx).await?;
@@ -199,8 +192,6 @@ pub(super) async fn publish_ready(
     tx: &mut Transaction<'_, Sqlite>,
     at: i64,
 ) -> Result<ChangeStats, StoreError> {
-    // An orphan baseline also needs a completed attributed facet: unrelated
-    // complete work cannot certify its buffered partial observations.
     let rows = sqlx::query("SELECT account,region,kind,id FROM legacy_resources baseline WHERE NOT EXISTS(SELECT 1 FROM legacy_unknown_authorities unknown WHERE unknown.account=baseline.account AND unknown.region=baseline.region AND unknown.kind=baseline.kind AND unknown.id=baseline.id) AND NOT EXISTS(SELECT 1 FROM legacy_authorities pending WHERE pending.account=baseline.account AND pending.region=baseline.region AND pending.kind=baseline.kind AND pending.id=baseline.id) AND EXISTS(SELECT 1 FROM resource_facets facet JOIN legacy_refreshes refreshed ON refreshed.account=facet.account AND refreshed.region=facet.region AND refreshed.kind=facet.kind AND refreshed.id=facet.id AND refreshed.scope_key=facet.source_key WHERE facet.account=baseline.account AND facet.region=baseline.region AND facet.kind=baseline.kind AND facet.id=baseline.id)")
         .fetch_all(&mut **tx).await?;
     let mut stats = ChangeStats::default();

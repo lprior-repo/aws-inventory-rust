@@ -5,7 +5,6 @@ use crate::{
 
 const MAX_PATTERN_BYTES: usize = 16_384;
 
-/// Retained Smithy length, pattern and integer range traits from the checked catalog.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ValueConstraints<'a> {
     pub min_length: Option<usize>,

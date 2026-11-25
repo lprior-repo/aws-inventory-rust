@@ -1,4 +1,3 @@
-//! Bounded TLS-to-HTTP pipes; preserves signed request bytes unchanged.
 use futures_util::{StreamExt, TryStreamExt, stream};
 use std::{net::SocketAddr, path::Path, sync::Arc, time::Duration};
 use tokio::{

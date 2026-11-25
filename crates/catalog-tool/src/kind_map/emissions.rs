@@ -162,7 +162,6 @@ mod tests {
 
     #[test]
     fn additional_emitter_lookup_is_exact_and_never_falls_back_to_primary() -> TestResult {
-        // Given two reviewed resource emitters in reverse declaration order.
         let source = [
             ROW,
             AdditionalEmissionMapping {
@@ -172,12 +171,10 @@ mod tests {
             },
         ];
         let known = [PRIMARY, KEY, OTHER].into_iter().collect();
-        // When compiling, key order is canonical and independent of the declaration order.
         let compiled = compile(&source, &primary(), &known)?;
         let [first, second] = source;
         let reversed = [second, first];
         assert_eq!(compiled, compile(&reversed, &primary(), &known)?);
-        // Then only the exact operation and stable emitter key yields the reviewed kind.
         assert_eq!(
             lookup(&compiled, ROW.service, ROW.operation, ROW.emitter_key),
             Some(KEY)
@@ -329,7 +326,6 @@ mod tests {
             ..*source
         }
         .compile(&Exceptions::none())?;
-        // When adding an emitter, its review changes provenance and exact lookup is available.
         assert_ne!(baseline.source_sha256(), mapped.source_sha256());
         assert_eq!(
             mapped.additional_emission_kind(ROW.service, ROW.operation, ROW.emitter_key),
@@ -395,7 +391,6 @@ mod tests {
     #[test]
     fn full_mapping_pipeline_binds_each_emitter_field_and_canonicalizes_declarations() -> TestResult
     {
-        // Given two primary operations and separately reviewed additional resource kinds.
         let primary_operations = [
             OperationMapping {
                 service: ROW.service,
@@ -424,7 +419,6 @@ mod tests {
         };
         assert_baseline_no_additional_emissions(&source)?;
         assert_adding_emitter_changes_provenance(&source, &primary_operations)?;
-        // Then declaration order cannot alter either the map or its reviewed fingerprint.
         assert_declaration_order_does_not_affect_fingerprint(&source, &primary_operations)?;
         Ok(())
     }

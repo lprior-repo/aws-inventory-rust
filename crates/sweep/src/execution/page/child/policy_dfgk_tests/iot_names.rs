@@ -1,8 +1,6 @@
 use super::*;
 use inventory_core::inventory::{Kind, ResourceId};
 
-// DEAD FIELDS removed — unused, was only for offline smoke, not needed for tests (fixture catalog built via other path)
-
 type Node = (String, String, String, String);
 
 struct NameCase {
@@ -77,7 +75,6 @@ async fn given_name_only_iot_roots_when_two_pages_resume_then_canonical_graph_no
                 assert_eq!(wire.method(), http::Method::GET);
                 assert!(wire.body().is_empty());
                 assert_eq!(wire.uri().path(), case.path);
-                // Page size derived from pinned Smithy model: iot MaxResults range 1-250 -> 250
                 let expected_query = if second_page {
                     "maxResults=250&nextToken=next-page".to_owned()
                 } else {

@@ -1,5 +1,3 @@
--- Native SQS queue projection over the durable observation table. The fields
--- mirror the collector's bounded attribute set; no policy document is exposed.
 CREATE VIEW IF NOT EXISTS aws_sqs_queue AS
 SELECT r.*,
        json_extract(properties, '$.queue_name') AS queue_name,

@@ -1,99 +1,76 @@
-// Pinned operation purposes: .local/aws-models/models/sso-admin/service/2020-07-20/sso-admin-2020-07-20.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Adds a Region to an IAM Identity Center instance. This operation initiates an asynchronous workflow to replicate the IAM Identity Center instance to the target Region. The Region status is set to ADDING at first and changes to ACTIVE when the workflow completes. To use this operation, your IAM Identity Center instance and the target Region must meet the requirements described in the IAM Identity C
     ("AddRegion", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Attaches the specified customer managed policy to the specified PermissionSet .
     (
         "AttachCustomerManagedPolicyReferenceToPermissionSet",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Attaches an Amazon Web Services managed policy ARN to a permission set. If the permission set is already referenced by one or more account assignments, you will need to call ProvisionPermissionSet after this operation. Calling ProvisionPermissionSet applies the corresponding IAM policy updates to all assigned accounts.
     (
         "AttachManagedPolicyToPermissionSet",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Assigns access to a principal for a specified Amazon Web Services account using a specified permission set. The term principal here refers to a user or group that is defined in IAM Identity Center. As part of a successful CreateAccountAssignment call, the specified permission set will automatically be provisioned to the account in the form of an IAM policy. That policy is attached to the IAM role
     (
         "CreateAccountAssignment",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an OAuth 2.0 customer managed application in IAM Identity Center for the given application provider. This API does not support creating SAML 2.0 customer managed applications or Amazon Web Services managed applications. To learn how to create an Amazon Web Services managed application, see the application user guide. You can create a SAML 2.0 customer managed application in the Amazon Web
     ("CreateApplication", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Grant application access to a user or group.
     (
         "CreateApplicationAssignment",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an instance of IAM Identity Center for a standalone Amazon Web Services account that is not managed by Organizations or a member Amazon Web Services account in an organization. You can create only one instance per account and across all Amazon Web Services Regions. The CreateInstance request is rejected if the following apply: The instance is created within the organization management acco
     ("CreateInstance", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Enables the attributes-based access control (ABAC) feature for the specified IAM Identity Center instance. You can also specify new attributes to add to your ABAC configuration during the enabling process. For more information about ABAC, see Attribute-Based Access Control in the IAM Identity Center User Guide . After a successful response, call DescribeInstanceAccessControlAttributeConfiguration
     (
         "CreateInstanceAccessControlAttributeConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a permission set within a specified IAM Identity Center instance. To grant users and groups access to Amazon Web Services account resources, use CreateAccountAssignment .
     (
         "CreatePermissionSet",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a connection to a trusted token issuer in an instance of IAM Identity Center. A trusted token issuer enables trusted identity propagation to be used with applications that authenticate outside of Amazon Web Services. This trusted token issuer describes an external identity provider (IdP) that can generate claims or assertions in the form of access tokens for a user. Applications enabled fo
     (
         "CreateTrustedTokenIssuer",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a principal's access from a specified Amazon Web Services account using a specified permission set. After a successful response, call DescribeAccountAssignmentDeletionStatus to describe the status of an assignment deletion request.
     (
         "DeleteAccountAssignment",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the association with the application. The connected service resource still exists.
     ("DeleteApplication", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an IAM Identity Center access scope from an application.
     (
         "DeleteApplicationAccessScope",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Revoke application access to an application by deleting application assignments for a user or group.
     (
         "DeleteApplicationAssignment",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an authentication method from an application.
     (
         "DeleteApplicationAuthenticationMethod",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a grant from an application.
     (
         "DeleteApplicationGrant",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the inline policy from a specified permission set.
     (
         "DeleteInlinePolicyFromPermissionSet",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the instance of IAM Identity Center. Only the account that owns the instance can call this API. Neither the delegated administrator nor member account can delete the organization instance, but those roles can delete their own instance.
     ("DeleteInstance", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Disables the attributes-based access control (ABAC) feature for the specified IAM Identity Center instance and deletes all of the attribute mappings that have been configured. Once deleted, any attributes that are received from an identity source and any custom attributes you have previously configured will not be passed. For more information about ABAC, see Attribute-Based Access Control in the I
     (
         "DeleteInstanceAccessControlAttributeConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified permission set.
     (
         "DeletePermissionSet",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the permissions boundary from a specified PermissionSet .
     (
         "DeletePermissionsBoundaryFromPermissionSet",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a trusted token issuer configuration from an instance of IAM Identity Center. Deleting this trusted token issuer configuration will cause users to lose access to any applications that are configured to use the trusted token issuer.
     (
         "DeleteTrustedTokenIssuer",
         Decision::Denied(DenyReason::Mutating),
@@ -164,12 +141,10 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors TrustedTokenIssuerArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TrustedTokenIssuerArn, Name, TrustedTokenIssuerType, TrustedTokenIssuerConfiguration. Pinned purpose: Retrieves details about a trusted token issuer configuration stored in an instance of IAM Identity Center. Details include the name of the trusted token issuer, the issuer URL, and the path of the source attribute and the destination attribute for a ",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Detaches the specified customer managed policy from the specified PermissionSet .
     (
         "DetachCustomerManagedPolicyReferenceFromPermissionSet",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Detaches the attached Amazon Web Services managed policy ARN from the specified permission set.
     (
         "DetachManagedPolicyFromPermissionSet",
         Decision::Denied(DenyReason::Mutating),
@@ -276,7 +251,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Grants, NextToken. Pinned purpose: List the grants associated with an application.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists the application providers configured in the IAM Identity Center identity store.
     (
         "ListApplicationProviders",
         Decision::Denied(DenyReason::ReferenceData),

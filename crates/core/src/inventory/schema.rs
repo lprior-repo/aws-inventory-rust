@@ -1,6 +1,5 @@
 use super::{InventoryError, Kind, SqlName};
 
-/// SQLite's maximum column count. Bound projected columns before CREATE TABLE.
 pub const MAX_SQLITE_COLUMNS: usize = 256;
 use crate::record::FieldId;
 use std::fmt::Write;

@@ -2,18 +2,14 @@ use std::collections::BinaryHeap;
 
 use super::*;
 
-/// Idle buckets one eviction pass removes, so a pass frees room for many
-/// later keys and the scan under the registry lock stays rare.
 const EVICT_BATCH: usize = 1_024;
 
-/// The live buckets and the reduced rates of buckets that were evicted.
 #[derive(Debug, Default)]
 pub(super) struct Registry {
     buckets: HashMap<String, Arc<Bucket>>,
     learned: HashMap<String, AdaptiveRate>,
 }
 
-/// What one eviction pass removed.
 #[derive(Clone, Copy, Debug, Default)]
 struct Evicted {
     buckets: usize,
@@ -60,10 +56,6 @@ impl ApiExecutor {
         Ok(())
     }
 
-    /// Key, whole requests per second and results seen, for every bucket
-    /// whose rate rises until throttled, in no particular order. Evicted
-    /// buckets whose rate is remembered are included; buckets on a fixed
-    /// policy are not. Empty when the registry lock is poisoned.
     pub fn bucket_rates(&self) -> Vec<(String, u32, u64)> {
         self.registry
             .lock()
@@ -94,7 +86,6 @@ impl Registry {
             .collect()
     }
 
-    /// Adds a bucket for `key`, resuming the rate it was evicted with.
     fn create(&mut self, key: &str, limits: ValidatedLimits) -> Result<Arc<Bucket>, ApiError> {
         self.buckets
             .try_reserve(1)
@@ -111,11 +102,6 @@ impl Registry {
         Ok(bucket)
     }
 
-    /// Removes up to `EVICT_BATCH` idle buckets, least recently used first.
-    ///
-    /// A bucket is idle when no call holds it and its pacing has nothing left
-    /// to enforce. Only the registry clones a bucket and it does so under the
-    /// registry lock, so a count of one here means no call can be using it.
     fn evict(&mut self, now: Instant) -> Result<Evicted, ApiError> {
         let mut oldest = BinaryHeap::new();
         oldest

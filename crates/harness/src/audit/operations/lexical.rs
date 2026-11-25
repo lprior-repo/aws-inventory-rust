@@ -1,4 +1,3 @@
-/// Rust tokenizer for AWS SDK call analysis.
 use crate::HarnessError;
 use std::collections::HashMap;
 
@@ -31,24 +30,17 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
             Some(b) => *b,
             None => break,
         };
-        // Skip whitespace
         if current.is_ascii_whitespace() {
             position = position.saturating_add(1);
             continue;
         }
-        // Alphanumeric identifier
         if current.is_ascii_alphanumeric() || current == b'_' {
             let start = position;
             skip_word_bytes(bytes, &mut position);
             tokens.push(token_between(text, start, position));
-        }
-        // Lifetime parameter: 'name
-        else if current == b'\'' {
+        } else if current == b'\'' {
             scan_quote_token(text, bytes, &mut tokens, &mut position);
-        }
-        // Single character token (delimiters, operators, punctuation)
-        // Multi-byte UTF-8 characters are treated as a single token
-        else {
+        } else {
             let start = position;
             scan_single_char(bytes, current, &mut position);
             tokens.push(token_between(text, start, position));
@@ -92,9 +84,7 @@ fn scan_quote_token(text: &str, bytes: &[u8], tokens: &mut Vec<Token>, position:
 }
 
 fn scan_single_char(bytes: &[u8], current: u8, position: &mut usize) {
-    // Find the end of the UTF-8 character
     if current >= 0x80 {
-        // Multi-byte character: find the end
         let mut end = position.saturating_add(1);
         while end < bytes.len() {
             let byte = match bytes.get(end) {
@@ -112,7 +102,6 @@ fn scan_single_char(bytes: &[u8], current: u8, position: &mut usize) {
     }
 }
 
-/// Tokenize Rust source and pair matching delimiters.
 pub fn tokens_and_pairs(
     path: &str,
     text: &str,
@@ -120,7 +109,6 @@ pub fn tokens_and_pairs(
     tokens_and_pairs_with_budget(path, text, MAX_TOKENS)
 }
 
-/// Tokenize with explicit token budget.
 pub fn tokens_and_pairs_with_budget(
     path: &str,
     text: &str,

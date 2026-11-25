@@ -25,7 +25,6 @@ async fn copy_fixture(database: &str, destination: &Path) -> TestResult {
 #[ignore = "requires AWS_INVENTORY_PROJECTION_DATABASE SQLite fixture with pending resource and an explicit connected FalkorDB"]
 async fn live_falkor_projects_all_2001_incident_edges_before_acknowledging() -> TestResult {
     let _database_owner = LIVE_DATABASE.lock().await;
-    // Given: an isolated copy of a real pending SQLite inventory and a fresh graph.
     let database = env::var("AWS_INVENTORY_PROJECTION_DATABASE")?;
     let endpoint = env::var("AWS_INVENTORY_PROJECTION_URL")?;
     let graph = format!(
@@ -58,7 +57,6 @@ async fn live_falkor_projects_all_2001_incident_edges_before_acknowledging() -> 
     let backend = FalkorDb::connect(&endpoint, &graph)?;
     backend.claim_projection(0).await?;
     backend.clear().await?;
-    // When/Then: projection must deliver both chunks before durable acknowledgement.
     let result = project_and_compare(&store, &backend, expected).await;
     backend.clear().await?;
     result

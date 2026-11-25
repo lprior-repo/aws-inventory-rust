@@ -1,14 +1,11 @@
-// Pinned operation purposes: .local/aws-models/models/ssm-sap/service/2018-05-10/ssm-sap-2018-05-10.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Removes permissions associated with the target database.
     (
         "DeleteResourcePermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deregister an SAP application with AWS Systems Manager for SAP. This action does not aﬀect the existing setup of your SAP workloads on Amazon EC2.
     (
         "DeregisterApplication",
         Decision::Denied(DenyReason::Mutating),
@@ -49,7 +46,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors ResourceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Policy. Pinned purpose: Gets permissions associated with the target database.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists all configuration check types supported by AWS Systems Manager for SAP.
     (
         "ListConfigurationCheckDefinitions",
         Decision::Denied(DenyReason::ReferenceData),
@@ -90,35 +86,26 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: resourceArn. Pinned purpose: Lists all tags on an SAP HANA application and/or database registered with AWS Systems Manager for SAP.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds permissions to the target database.
     (
         "PutResourcePermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Register an SAP application with AWS Systems Manager for SAP. You must meet the following requirements before registering. The SAP application you want to register with AWS Systems Manager for SAP is running on Amazon EC2. AWS Systems Manager Agent must be setup on an Amazon EC2 instance along with the required IAM permissions. Amazon EC2 instance(s) must have access to the secrets created in AWS
     (
         "RegisterApplication",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Request is an operation which starts an application. Parameter ApplicationId is required.
     ("StartApplication", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Refreshes a registered application.
     (
         "StartApplicationRefresh",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Initiates configuration check operations against a specified application.
     (
         "StartConfigurationChecks",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Request is an operation to stop an application. Parameter ApplicationId is required. Parameters StopConnectedEntity and IncludeEc2InstanceShutdown are optional.
     ("StopApplication", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates tag for a resource by specifying the ARN.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Delete the tags for a resource.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the settings of an application registered with AWS Systems Manager for SAP.
     (
         "UpdateApplicationSettings",
         Decision::Denied(DenyReason::Mutating),

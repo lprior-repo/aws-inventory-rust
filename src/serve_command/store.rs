@@ -1,5 +1,3 @@
-//! Catalog and store setup for the serve command.
-
 use anyhow::{Context, Result};
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{BinaryStore, SchemaRegistry};

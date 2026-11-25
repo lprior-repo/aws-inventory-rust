@@ -255,7 +255,6 @@ fn cfn_only_denominator_addition_changes_cfn_and_completed_kind_map_pins() -> Te
 }
 
 fn hidden_tracked_model_change_is_rejected(flag: &str) -> TestResult {
-    // Given a tracked model hidden from Git status by an index optimization flag.
     let source = source()?;
     git::command(
         source.path(),
@@ -266,7 +265,6 @@ fn hidden_tracked_model_change_is_rejected(flag: &str) -> TestResult {
         format!("{MODEL}\n"),
     )?;
     assert!(git::command(source.path(), &["status", "--porcelain", "--", "models"])?.is_empty());
-    // When compiling, then the actual bytes must still match the claimed HEAD blob.
     let root = root()?;
     rejected(
         &compile(source.path(), root.path(), &["--write"])?,
@@ -290,14 +288,12 @@ fn skip_worktree_does_not_allow_uncommitted_bytes_to_claim_the_head_commit() -> 
 fn unchanged_model_bytes_with_index_flags_retain_the_real_repository_source_receipt() -> TestResult
 {
     for flag in ["--assume-unchanged", "--skip-worktree"] {
-        // Given unchanged committed bytes whose index flag suppresses ordinary stat checks.
         let source = source()?;
         git::command(
             source.path(),
             &["update-index", flag, "--", "models/example/model.json"],
         )?;
         let root = root()?;
-        // When compiling, then a valid repository receipt remains available.
         success(&compile(source.path(), root.path(), &["--write"])?);
         let bytes = fs::read(root.path().join("catalog/aws-api.catalog"))?;
         let head = git::command(source.path(), &["rev-parse", "HEAD"])?;
@@ -321,7 +317,6 @@ fn assembled_catalog_source_digest_is_verified_against_the_actual_base_catalog()
         catalog::runtime::RuntimeCatalogError,
         record::{FieldId, Key, Record, Value, ValueRef},
     };
-    // Given a real compiled catalog, assemble its base through the public synthetic constructor.
     let source = source()?;
     let root = root()?;
     success(&compile(source.path(), root.path(), &["--write"])?);
@@ -346,7 +341,6 @@ fn assembled_catalog_source_digest_is_verified_against_the_actual_base_catalog()
             sha256: Sha256::digest(&base).into()
         }
     );
-    // When only a same-size source digest changes, then the public loader rejects the receipt.
     let record = Record::from_bytes(assembled)?;
     let Value::Map(mut fields) = ValueRef::Map(record.root()).to_value()? else {
         return Err("root is not a map".into());

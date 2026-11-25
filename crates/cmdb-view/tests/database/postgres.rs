@@ -7,7 +7,6 @@ use inventory_core::inventory::TagCoverage;
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_given_tag_filter_when_writer_changes_tags_then_snapshot_keeps_metadata()
 -> TestResult {
-    // Given real swept resources and literal tag metadata in the documented tables.
     let fixture = pg::Fixture::new().await?;
     sqlx::query("INSERT INTO inventory.tags SELECT account,region,kind,id,$1,$2 FROM inventory.resources WHERE region='global'")
         .bind("env%_!").bind("Production").execute(&fixture.pool).await?;
@@ -22,7 +21,6 @@ async fn postgres_given_tag_filter_when_writer_changes_tags_then_snapshot_keeps_
         }),
         ..ResourceFilter::default()
     };
-    // When another connection replaces tag values and coverage.
     sqlx::query("UPDATE inventory.tags SET tag_value='Staging'")
         .execute(&fixture.pool)
         .await?;
@@ -34,7 +32,6 @@ async fn postgres_given_tag_filter_when_writer_changes_tags_then_snapshot_keeps_
         .detail(&pg::root())
         .await?
         .ok_or("missing pinned detail")?;
-    // Then filtering and both projections retain the same complete observation.
     assert_eq!(page.total_matching, 1);
     let row = page.rows.first().ok_or("missing pinned row")?;
     assert_tag_metadata(
@@ -159,7 +156,6 @@ async fn postgres_given_invalid_page_limits_when_reading_then_every_page_api_rej
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_given_equal_scope_times_when_limiting_freshness_then_text_order_precedes_encoded_lengths()
 -> TestResult {
-    // Given a lexical-first region whose encoded length exceeds global's length.
     let fixture = pg::Fixture::new().await?;
     fixture
         .commit("lexical", "111111111111", "ap-east-1", 0, &["shared"], 50)
@@ -168,9 +164,7 @@ async fn postgres_given_equal_scope_times_when_limiting_freshness_then_text_orde
         .execute(&fixture.pool)
         .await?;
     let db = fixture.reader().await?;
-    // When the report selects only the oldest first scope.
     let report = db.scope_freshness(100, 1).await?;
-    // Then selection happens in public field order, before the SQL limit.
     assert_eq!(report.total_scopes, 5);
     assert_eq!(report.counts.complete, 5);
     assert_eq!(

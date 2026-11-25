@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/entityresolution/service/2018-05-10/entityresolution-2018-05-10.json
 use super::support::{arn, bound, correlated, inventory, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "entityresolution",
         vec![
-            // Returns a list of all the IdMappingWorkflows that have been created for an Amazon Web Services account.
             queried(
                 inventory(
                     "ListIdMappingWorkflows",
@@ -16,7 +14,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["workflowArn", "workflowName"],
             )?,
-            // Returns a list of all ID namespaces.
             queried(
                 inventory(
                     "ListIdNamespaces",
@@ -26,7 +23,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["idNamespaceArn", "idNamespaceName", "type"],
             )?,
-            // Returns a list of all the MatchingWorkflows that have been created for an Amazon Web Services account.
             queried(
                 inventory(
                     "ListMatchingWorkflows",
@@ -36,7 +32,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["workflowArn", "workflowName", "resolutionType"],
             )?,
-            // Returns a list of all the SchemaMappings that have been created for an Amazon Web Services account.
             queried(
                 inventory(
                     "ListSchemaMappings",
@@ -46,7 +41,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["schemaArn", "schemaName"],
             )?,
-            // JobSummary contains IDs, status and timestamps only; matched records are never fetched.
             queried(
                 bound(
                     inventory(

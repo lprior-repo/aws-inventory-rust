@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/elasticache/service/2015-02-02/elasticache-2015-02-02.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "DescribeReservedCacheNodesOfferings",

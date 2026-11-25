@@ -54,8 +54,6 @@ pub(super) fn validate(
     Ok(())
 }
 
-// Branch inputs replace common inputs at the exact destination path, whether
-// the replacement is fixed or bound. With branches, no common-only call runs.
 pub(in crate::overlay) fn effective_bindings(
     plan: &OperationOverlay,
 ) -> impl Iterator<Item = &Binding> {
@@ -381,7 +379,6 @@ mod tests {
     }
 
     fn assert_branch_only_self_reference_rejected() -> TestResult {
-        // Given every producer namespace can occur only in a branch.
         let bindings = [
             alternatives(&["B", "A"])?,
             Binding::FromBranch {
@@ -411,7 +408,6 @@ mod tests {
                 )],
                 ..OperationOverlay::default()
             };
-            // When constructed, then branch-only self references are rejected explicitly.
             assert_eq!(
                 ServiceOverlay::new("example", vec![("A", a)])
                     .map(|overlay| overlay.operations().len()),
@@ -422,7 +418,6 @@ mod tests {
     }
 
     fn assert_mixed_branch_common_cycle_detected() -> TestResult {
-        // Given the nonprimary branch alternative closes A -> B -> A.
         let a = OperationOverlay {
             branches: vec![branch(
                 BTreeMap::from([(MemberPath::new("Id")?, alternatives(&["C", "B"])?)]),
@@ -434,7 +429,6 @@ mod tests {
             operation: OperationName::new("A")?,
             path: MemberPath::new("Id")?,
         })?;
-        // When constructed, then common and branch dependencies share one cycle check.
         assert_eq!(
             ServiceOverlay::new(
                 "example",
@@ -457,7 +451,6 @@ mod tests {
     fn every_branch_override_removes_only_its_common_destination_dependency() -> TestResult {
         for parent in ["A", "B"] {
             for fixed in [false, true] {
-                // Given a common self reference or cycle replaced in the actual branch.
                 let mut a = operation_with(alternatives(&[parent])?)?;
                 let path = MemberPath::new("Id")?;
                 a.branches = vec![if fixed {
@@ -472,18 +465,15 @@ mod tests {
                     operation: OperationName::new("A")?,
                     path: MemberPath::new("Id")?,
                 })?;
-                // When constructed, then the overridden common dependency is not executed.
                 assert_eq!(
                     ServiceOverlay::new("example", vec![("A", a.clone()), ("B", b.clone())])?
                         .operations()
                         .len(),
                     2
                 );
-                // Given another actual branch that inherits the common dependency.
                 let mut inherited = branch(BTreeMap::new(), BTreeMap::new());
                 inherited.discriminator = "inherited".into();
                 a.branches.push(inherited);
-                // Then one overriding branch cannot hide another branch's dependency.
                 let error = if parent == "A" {
                     invalid("operation", "self reference")
                 } else {
@@ -501,18 +491,15 @@ mod tests {
 
     #[test]
     fn alternative_dependencies_detect_cycle_through_nonprimary_producer() -> TestResult {
-        // Given A depends on both B and C, while C depends back on A.
         let a = operation_with(alternatives(&["B", "C"])?)?;
         let c = operation_with(Binding::From {
             operation: OperationName::new("A")?,
             path: MemberPath::new("Id")?,
         })?;
-        // When the public policy constructor validates the dependency graph.
         let result = ServiceOverlay::new(
             "example",
             vec![("A", a), ("B", OperationOverlay::default()), ("C", c)],
         );
-        // Then the second alternative cannot hide the dependency cycle.
         assert_eq!(
             result.map(|overlay| overlay.operations().len()),
             Err(invalid("bind", "cycle"))
@@ -522,7 +509,6 @@ mod tests {
 
     #[test]
     fn branch_and_alternative_bindings_reject_self_reference() -> TestResult {
-        // Given each newly supported producer reference points back at A.
         let bindings = [
             Binding::FromBranch {
                 operation: OperationName::new("A")?,
@@ -538,7 +524,6 @@ mod tests {
             alternatives(&["B", "A"])?,
         ];
         for binding in bindings {
-            // When constructed, then every namespace reports the same explicit self-reference error.
             let mut a = operation_with(binding)?;
             a.branches.push(branch(BTreeMap::new(), BTreeMap::new()));
             let result = ServiceOverlay::new("example", vec![("A", a)]);
@@ -552,15 +537,12 @@ mod tests {
 
     #[test]
     fn region_list_and_acyclic_alternatives_keep_all_operations_callable() -> TestResult {
-        // Given an acyclic set with region routing and two producer alternatives.
         let operations = vec![
             ("A", operation_with(alternatives(&["B", "C"])?)?),
             ("B", operation_with(Binding::RegionList)?),
             ("C", OperationOverlay::default()),
         ];
-        // When the public constructor validates the policy.
         let result = ServiceOverlay::new("example", operations)?;
-        // Then none of the new binding variants is rejected or creates a phantom dependency.
         assert_eq!(result.operations().len(), 3);
         Ok(())
     }
@@ -607,16 +589,13 @@ mod tests {
     #[test]
     fn explicit_stage_dags_allow_same_and_cross_operation_dependencies() -> TestResult {
         for context in [false, true] {
-            // Given detail consumes the independent seed of the same operation.
             let a = staged_plan(staged_reference("A", "seed", context)?)?;
-            // When constructed, then the distinct stage identities form a legal DAG.
             assert_eq!(
                 ServiceOverlay::new("example", vec![("A", a)])?
                     .operations()
                     .len(),
                 1
             );
-            // Given A.detail -> B -> A.seed, not the collapsed operation cycle A -> B -> A.
             let a = staged_plan(Binding::From {
                 operation: OperationName::new("B")?,
                 path: MemberPath::new("Id")?,
@@ -635,21 +614,18 @@ mod tests {
     #[test]
     fn explicit_stage_self_cycles_missing_targets_and_real_cycles_are_rejected() -> TestResult {
         for context in [false, true] {
-            // Given detail explicitly consumes itself, then construction rejects that self edge.
             let a = staged_plan(staged_reference("A", "detail", context)?)?;
             assert_eq!(
                 ServiceOverlay::new("example", vec![("A", a)])
                     .map(|overlay| overlay.operations().len()),
                 Err(invalid("operation", "self reference"))
             );
-            // Given a reference names no actual producer stage, then it cannot become a phantom root.
             let a = staged_plan(staged_reference("A", "missing", context)?)?;
             assert_eq!(
                 ServiceOverlay::new("example", vec![("A", a)])
                     .map(|overlay| overlay.operations().len()),
                 Err(invalid("bind.from_branch", "unknown branch"))
             );
-            // Given seed and detail consume each other, then their distinct identities do not hide a cycle.
             let mut a = staged_plan(staged_reference("A", "seed", context)?)?;
             let seed = a.branches.first_mut().ok_or("seed absent")?;
             seed.fixed.clear();

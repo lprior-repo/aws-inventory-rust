@@ -3,7 +3,6 @@ use crate::kind_map::{
     RelationSource, RelationTarget,
 };
 
-// Reviewed against the pinned Smithy request and full summary-response closures.
 pub(super) const SOURCE: MappingSource<'static> = MappingSource {
     cfn: &[
         CfnMapping::canonical("AWS::APS::AnomalyDetector"),

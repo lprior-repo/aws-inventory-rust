@@ -1,5 +1,3 @@
-//! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/iot/service.
-//! Review is source-only; no live service or emulator support claim.
 use super::policy;
 use crate::overlay::{
     Identity, IdentityField, MemberPath, MissingSelected, NameError, OperationOverlay,
@@ -85,8 +83,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["arn", "name"],
             )?,
         ),
-        // ARN resource forms are specified by the IoT service authorization reference:
-        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_iot.html#list_iot-resources-for-iam-policies
         (
             "ListCustomMetrics",
             policy::query(
@@ -113,8 +109,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["$"],
             )?,
         ),
-        // These list summaries contain identifiers/configuration metadata, never the
-        // certificate PEM, command payload, job document, template body or script.
         (
             "ListAuthorizers",
             policy::query(
@@ -148,7 +142,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["certificateArn", "certificateId"],
             )?,
         ),
-        // No paginator trait exists for this modeled nextToken pair.
         (
             "ListCertificateProviders",
             policy::query(
@@ -298,8 +291,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["versionId"],
             )?,
         ),
-        // The complete modeled summary is integer versionId/creationDate/isDefaultVersion;
-        // provisioning template documents are returned only by the unapproved detail call.
         (
             "ListProvisioningTemplateVersions",
             policy::query(
@@ -389,8 +380,6 @@ fn qualified(parent: &str, member: &str) -> Result<Identity, NameError> {
     ]))
 }
 
-// Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
-// Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
     "DescribeAccountAuditConfiguration",
     "DescribeAuditFinding",

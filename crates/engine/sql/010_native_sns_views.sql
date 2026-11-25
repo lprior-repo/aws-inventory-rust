@@ -1,5 +1,3 @@
--- Native SNS projections over the durable observation table. Topic policy and
--- delivery-policy bodies are never stored; only their presence is exposed.
 CREATE VIEW IF NOT EXISTS aws_sns_topic AS
 SELECT r.*,
        json_extract(properties, '$.topic_arn') AS topic_arn,

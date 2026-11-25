@@ -287,8 +287,6 @@ fn placement(
         (HttpBinding::Document, TokenPlacement::Body(body)) => {
             body.as_ref() == path && (response || !query || path.len() > 1)
         }
-        // Request-only bindings are ignored on output members, which the wire
-        // decoder therefore reads from the response body.
         (
             HttpBinding::Label | HttpBinding::Query(_) | HttpBinding::QueryParams,
             TokenPlacement::Body(body),

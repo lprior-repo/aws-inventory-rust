@@ -1,4 +1,3 @@
-/// Reviewed IAM resource classes that can name a concrete trust graph target.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum IamPrincipalKind {
     Role,
@@ -18,8 +17,6 @@ impl IamPrincipalKind {
     }
 }
 
-/// Parse the resource portion of an IAM ARN, not a policy pattern or URL.
-/// Account root, service principals, and wildcards intentionally have no resource kind.
 pub fn iam_principal_resource_kind(resource: &str) -> Option<IamPrincipalKind> {
     if resource.len() > 2048
         || !resource.is_ascii()
@@ -53,7 +50,6 @@ fn iam_name_with_path(suffix: &str) -> bool {
         .map_or((None, suffix), |(path, terminal)| (Some(path), terminal));
     name(terminal, 64, b"_+=,.@-")
         && path.is_none_or(|path| {
-            // The modeled IAM path includes its leading and trailing slash (max 512 bytes).
             !path.is_empty()
                 && path.len() <= 510
                 && path.bytes().all(|byte| (b'!'..=b'~').contains(&byte))
@@ -88,7 +84,6 @@ fn dns_host(host: &str) -> bool {
 }
 
 fn uri_path(path: &str) -> bool {
-    // Each percent sign consumes exactly two ASCII hex digits; no decoding or allocation.
     path.bytes().try_fold(0_u8, |remaining, byte| {
         if remaining > 0 {
             return byte

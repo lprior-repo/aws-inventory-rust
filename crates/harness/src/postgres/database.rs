@@ -4,8 +4,6 @@ use sqlx::{ConnectOptions, Executor};
 use super::{URL_LIMIT, bounded, names};
 use crate::HarnessError;
 
-// Forced checkpoint waits during DROP exceeded the regular statement budget.
-// Give DDL its own server deadline, then allow five seconds for the reply.
 const DDL_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(65);
 
 #[non_exhaustive]
@@ -80,7 +78,6 @@ impl TestDatabase {
         self.name.as_str()
     }
 
-    /// Disable automatic deletion for an explicitly retained development run.
     pub fn keep(mut self) {
         self.cleanup = false;
     }

@@ -117,9 +117,6 @@ fn cleanup_ascend(stack: &mut Vec<CleanupFrame>) -> Result<(), HarnessError> {
             .fd()
             .map_err(std::io::Error::from)?
             .try_clone_to_owned()?;
-        // Ownership is the opened inode, not the mutable name used to descend.
-        // remove_empty claims into a private quarantine and checks that identity
-        // before unlinking; a substituted foreign directory is preserved/restored.
         OwnedDirectory::retained(parent_fd, OsString::from_vec(name.into_bytes()), child_fd)
             .remove_empty()?;
     }

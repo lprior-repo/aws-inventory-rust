@@ -1,5 +1,3 @@
-//! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/iot-wireless/service.
-//! Review is source-only; no live service or emulator support claim.
 use super::policy;
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -93,8 +91,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["Arn", "Name"],
             )?,
         ),
-        // Explicit modeled tokens: these two APIs lack Smithy paginated traits.
-        // Import Sidewalk information contains S3 file references/role/destination, not file bytes or keys.
         (
             "ListWirelessDeviceImportTasks",
             policy::query(
@@ -106,7 +102,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["Arn", "Id"],
             )?,
         ),
-        // LoRaWAN task entries contain current/update firmware version metadata only.
         (
             "ListWirelessGatewayTaskDefinitions",
             policy::query(
@@ -131,8 +126,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     )
 }
 
-// Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
-// Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
     "GetDestination",
     "GetDeviceProfile",

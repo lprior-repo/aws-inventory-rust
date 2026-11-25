@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/ssm-sap/service/2018-05-10/ssm-sap-2018-05-10.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

@@ -9,9 +9,6 @@ use tokio::{
 type ProxyResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 const MAX_FRAME: usize = 2_097_152;
 
-/// Relays genuine native RESP traffic; it only delays one EXEC, never supplies
-/// graph replies. In particular it keeps a cancelled client's queued native
-/// transaction alive until the test explicitly releases it.
 pub(super) struct Proxy {
     pub(super) endpoint: String,
     arrived: oneshot::Receiver<()>,
@@ -151,7 +148,6 @@ async fn relay(
                 }
                 armed && frame == b"*1\r\n$4\r\nEXEC\r\n"
             }
-            // EVAL(script, 1, owner_key, token) atomically compares then SETs.
             Barrier::Claim => frame.starts_with(b"*5\r\n$4\r\nEVAL\r\n"),
         };
         let acknowledgement = if paused {

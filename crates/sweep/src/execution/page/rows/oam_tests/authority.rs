@@ -11,7 +11,6 @@ async fn given_legacy_matching_foreign_reference_when_catalog_is_attached_then_o
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     for version in [14_i64, 15] {
         let (directory, original) = store(&catalog).await?;
-        // Given an old real source whose payload declares a DIFFERENT foreign sink.
         let mut page = oam_page(&original, &catalog, "ListLinks", "123456789012", 1).await?;
         let plan = catalog
             .lookup("oam", "ListLinks")
@@ -52,11 +51,9 @@ async fn given_legacy_matching_foreign_reference_when_catalog_is_attached_then_o
         let path = directory.path().join("inventory.sqlite");
         let pool = sqlx::SqlitePool::connect(&format!("sqlite://{}", path.display())).await?;
         let mut tx = pool.begin().await?;
-        // A historical store predates the derived candidate index.
         sqlx::query("DROP TABLE unresolved_ref_candidates")
             .execute(&mut *tx)
             .await?;
-        // This historical unchecked tuple matches a reviewed rule but not its actual source value.
         sqlx::query("UPDATE unresolved_refs SET target_value=?1")
             .bind(SINK)
             .execute(&mut *tx)
@@ -64,7 +61,6 @@ async fn given_legacy_matching_foreign_reference_when_catalog_is_attached_then_o
         downgrade_oam(&mut tx, version).await?;
         tx.commit().await?;
         pool.close().await;
-        // When catalog attachment is followed ONLY by an unrelated foreign target arrival.
         let reopened = BinaryStore::open_with_catalog(&path, &bytes).await?;
         persist_oam(&reopened, &catalog, "ListSinks", "210987654321", 2).await?;
         assert_eq!(reopened.projection_resources(None, 100).await?.len(), 2);
@@ -87,7 +83,6 @@ async fn given_legacy_matching_foreign_reference_when_catalog_is_attached_then_o
             0
         );
         pool.close().await;
-        // Then history stays dormant, but a later genuine source page can prove the same tuple.
         persist_oam(&reopened, &catalog, "ListLinks", "123456789012", 3).await?;
         let edges = reopened.projection_edges(None, 100).await?.edges;
         assert_eq!(edges.len(), 1, "schema {version}");

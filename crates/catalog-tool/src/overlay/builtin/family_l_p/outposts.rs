@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/outposts/service/2019-12-03/outposts-2019-12-03.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -126,7 +125,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the Outposts for your Amazon Web Services account. Use filters to return specific results. If you specify multiple filters, the results include only the resources that match
     Resource {
         operation: "ListOutposts",
         items: "Outposts",
@@ -149,7 +147,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the Outpost sites for your Amazon Web Services account. Use filters to return specific results. Use filters to return specific results. If you specify multiple filters, the r
     Resource {
         operation: "ListSites",
         items: "Sites",
@@ -167,7 +164,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListOutposts; no content-bearing expansion.
     Resource {
         operation: "GetOutpost",
         items: "Outpost",
@@ -190,7 +186,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("OutpostId", "ListOutposts", "OutpostId")],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListSites; no content-bearing expansion.
     Resource {
         operation: "GetSite",
         items: "Site",

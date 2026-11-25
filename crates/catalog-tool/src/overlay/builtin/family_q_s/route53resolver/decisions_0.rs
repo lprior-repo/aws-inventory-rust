@@ -1,117 +1,91 @@
-// Pinned operation purposes: .local/aws-models/models/route53resolver/service/2018-04-01/route53resolver-2018-04-01.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Associates a FirewallRuleGroup with a VPC, to provide DNS filtering for the VPC. If the rule group contains any rule configured with the PartnerThreatProtection rule type, the calling account must hold an active Amazon Web Services Marketplace subscription to the named partner. If the subscription is missing, the association request is rejected.
     (
         "AssociateFirewallRuleGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds IP addresses to an inbound or an outbound Resolver endpoint. If you want to add more than one IP address, submit one AssociateResolverEndpointIpAddress request for each IP address. To remove an IP address from an endpoint, see DisassociateResolverEndpointIpAddress .
     (
         "AssociateResolverEndpointIpAddress",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Associates an Amazon VPC with a specified query logging configuration. Route 53 Resolver logs DNS queries that originate in all of the Amazon VPCs that are associated with a specified query logging configuration. To associate more than one VPC with a configuration, submit one AssociateResolverQueryLogConfig request for each VPC. The VPCs that you associate with a query logging configuration must b
     (
         "AssociateResolverQueryLogConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Associates a Resolver rule with a VPC. When you associate a rule with a VPC, Resolver forwards all DNS queries for the domain name that is specified in the rule and that originate in the VPC. The queries are forwarded to the IP addresses for the DNS resolvers that are specified in the rule. For more information about rules, see CreateResolverRule .
     (
         "AssociateResolverRule",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates multiple DNS Firewall rules in the specified rule group.
     (
         "BatchCreateFirewallRule",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes multiple DNS Firewall rules from the specified rule group.
     (
         "BatchDeleteFirewallRule",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates multiple DNS Firewall rules in the specified rule group.
     (
         "BatchUpdateFirewallRule",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an empty firewall domain list for use in DNS Firewall rules. You can populate the domains for the new list with a file, using ImportFirewallDomains , or with domain strings, using UpdateFirewallDomains .
     (
         "CreateFirewallDomainList",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a single DNS Firewall rule in the specified rule group. The rule can use any one of the following match sources, and the chosen source must be supplied through the matching request field — they are mutually exclusive: FirewallDomainListId — match a customer-managed or Amazon Web Services-managed domain list. DnsThreatProtection — match a built-in DNS Firewall Advanced threat detector ( DGA
     ("CreateFirewallRule", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an empty DNS Firewall rule group for filtering DNS network traffic in a VPC. You can add rules to the new rule group by calling CreateFirewallRule .
     (
         "CreateFirewallRuleGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a Route 53 Resolver on an Outpost. This operation applies to first-generation Outposts only. On second-generation Outposts, Resolver is enabled by default and managed automatically by Amazon Web Services, so you don't need to create it.
     (
         "CreateOutpostResolver",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a Resolver endpoint. There are two types of Resolver endpoints, inbound and outbound: An inbound Resolver endpoint forwards DNS queries to the DNS service for a VPC from your network. An outbound Resolver endpoint forwards DNS queries from the DNS service for a VPC to your network.
     (
         "CreateResolverEndpoint",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a Resolver query logging configuration, which defines where you want Resolver to save DNS query logs that originate in your VPCs. Resolver can log queries only for VPCs that are in the same Region as the query logging configuration. To specify which VPCs you want to log queries for, you use AssociateResolverQueryLogConfig . For more information, see AssociateResolverQueryLogConfig . You ca
     (
         "CreateResolverQueryLogConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: For DNS queries that originate in your VPCs, specifies which Resolver endpoint the queries pass through, one domain name that you want to forward to your network, and the IP addresses of the DNS resolvers in your network.
     ("CreateResolverRule", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified domain list.
     (
         "DeleteFirewallDomainList",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified firewall rule. Identify the rule using either FirewallDomainListId (for domain-list and DNS Firewall Advanced rules) or FirewallThreatProtectionId (for partner-managed and DNS Firewall Advanced rules) — together with FirewallRuleGroupId . DeleteFirewallRule is the only operation that succeeds against a rule whose Status is CREATION_FAILED .
     ("DeleteFirewallRule", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified firewall rule group.
     (
         "DeleteFirewallRuleGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a Resolver on the Outpost. This operation applies to first-generation Outposts only. On second-generation Outposts, Resolver is managed automatically by Amazon Web Services and can't be deleted directly. To opt out of Resolver on second-generation Outposts, contact Amazon Web Services Support.
     (
         "DeleteOutpostResolver",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a Resolver endpoint. The effect of deleting a Resolver endpoint depends on whether it's an inbound or an outbound Resolver endpoint: Inbound : DNS queries from your network are no longer routed to the DNS service for the specified VPC. Outbound : DNS queries from a VPC are no longer routed to your network.
     (
         "DeleteResolverEndpoint",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a query logging configuration. When you delete a configuration, Resolver stops logging DNS queries for all of the Amazon VPCs that are associated with the configuration. This also applies if the query logging configuration is shared with other Amazon Web Services accounts, and the other accounts have associated VPCs with the shared configuration. Before you can delete a query logging confi
     (
         "DeleteResolverQueryLogConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a Resolver rule. Before you can delete a Resolver rule, you must disassociate it from all the VPCs that you associated the Resolver rule with. For more information, see DisassociateResolverRule .
     ("DeleteResolverRule", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Disassociates a FirewallRuleGroup from a VPC, to remove DNS filtering from the VPC.
     (
         "DisassociateFirewallRuleGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes IP addresses from an inbound or an outbound Resolver endpoint. If you want to remove more than one IP address, submit one DisassociateResolverEndpointIpAddress request for each IP address. To add an IP address to an endpoint, see AssociateResolverEndpointIpAddress .
     (
         "DisassociateResolverEndpointIpAddress",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Disassociates a VPC from a query logging configuration. Before you can delete a query logging configuration, you must first disassociate all VPCs from the configuration. If you used Resource Access Manager (RAM) to share a query logging configuration with other accounts, VPCs can be disassociated from the configuration in the following ways: The accounts that you shared the configuration with can
     (
         "DisassociateResolverQueryLogConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes the association between a specified Resolver rule and a specified VPC. If you disassociate a Resolver rule from a VPC, Resolver stops forwarding DNS queries for the domain name that you specified in the Resolver rule.
     (
         "DisassociateResolverRule",
         Decision::Denied(DenyReason::Mutating),
@@ -206,7 +180,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors Arn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ResolverRulePolicy. Pinned purpose: Gets information about the Resolver rule policy for a specified rule. A Resolver rule policy includes the rule that you want to share with another account, the account that you want to share the rule with, and the Resolver operations that you want to",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Imports domain names from a file into a domain list, for use in a DNS firewall rule group. Each domain specification in your domain list must satisfy the following requirements: It can optionally start with * (asterisk). With the exception of the optional starting asterisk, it must only contain the following characters: A-Z , a-z , 0-9 , - (hyphen). It must be from 1-255 characters in length.
     (
         "ImportFirewallDomains",
         Decision::Denied(DenyReason::Mutating),
@@ -217,7 +190,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors FirewallDomainListId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members NextToken, Domains. Pinned purpose: Retrieves the domains that you have defined for the specified firewall domain list. A single call might return only a partial list of the domains. For information, see MaxResults .",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Retrieves the rule-type variants that can be used in the FirewallRuleType field of CreateFirewallRule and UpdateFirewallRule . Each returned FirewallRuleTypeDefinition identifies one variant + value combination — for example, FirewallAdvancedContentCategory + VIOLENCE_AND_HATE_SPEECH , or PartnerThreatProtection + a partner-managed feed. The suppor
     (
         "ListFirewallRuleTypes",
         Decision::Denied(DenyReason::ReferenceData),
@@ -240,38 +212,29 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceArn. Pinned purpose: Lists the tags that you associated with the specified resource.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Attaches an Identity and Access Management (Amazon Web Services IAM) policy for sharing the rule group. You can use the policy to share the rule group using Resource Access Manager (RAM).
     (
         "PutFirewallRuleGroupPolicy",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Specifies an Amazon Web Services account that you want to share a query logging configuration with, the query logging configuration that you want to share, and the operations that you want the account to be able to perform on the configuration.
     (
         "PutResolverQueryLogConfigPolicy",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Specifies an Amazon Web Services rule that you want to share with another account, the account that you want to share the rule with, and the operations that you want the account to be able to perform on the rule.
     (
         "PutResolverRulePolicy",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds one or more tags to a specified resource.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes one or more tags from a specified resource.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the configuration of the firewall behavior provided by DNS Firewall for a single VPC from Amazon Virtual Private Cloud (Amazon VPC).
     (
         "UpdateFirewallConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the firewall domain list from an array of domain specifications.
     (
         "UpdateFirewallDomains",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the specified firewall rule. The rule's FirewallRuleType , FirewallDomainListId , and top-level DnsThreatProtection match source cannot be changed after creation. Rules whose Status is CREATING or CREATION_FAILED cannot be updated; remove a failed rule with DeleteFirewallRule .
     ("UpdateFirewallRule", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Changes the association of a FirewallRuleGroup with a VPC. The association enables DNS filtering for the VPC.
     (
         "UpdateFirewallRuleGroupAssociation",
         Decision::Denied(DenyReason::Mutating),

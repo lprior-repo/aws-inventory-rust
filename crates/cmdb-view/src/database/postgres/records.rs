@@ -42,7 +42,6 @@ async fn fetch_details(
     rows: &[(usize, &PgRow)],
 ) -> Result<Vec<PgRow>, ViewError> {
     let table = queries::table_for(snapshot, kind).await?;
-    // The identifier is checked by table_for; every resource key is bound.
     let statement = format!(
         "SELECT p.row_index,k.record,k.content_hash FROM inventory.\"{}\" k JOIN unnest($1::text[],$2::text[],$3::text[],$4::bigint[]) AS p(account,region,id,row_index) USING(account,region,id)",
         table.as_str()

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/directory-service/service/2015-04-16/directory-service-2015-04-16.json
 use super::support::{inventory, key, queried, reviewed, token};
 use crate::classes::DenyReason;
 use crate::overlay::{NameError, Paginator, ServiceOverlay};
@@ -7,7 +6,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "directory-service",
         vec![
-            // Obtains information about the directory snapshots that belong to this account.
             queried(
                 inventory(
                     "DescribeSnapshots",
@@ -17,7 +15,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["SnapshotId", "DirectoryId", "Type", "Name", "Status"],
             )?,
-            // Obtains information about the trust relationships for this account.
             queried(
                 inventory(
                     "DescribeTrusts",
@@ -35,7 +32,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "TrustStateReason",
                 ],
             )?,
-            // Retrieves a list of directory assessments for the specified directory or all assessments in your account.
             queried(
                 inventory(
                     "ListADAssessments",
@@ -51,7 +47,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "ReportType",
                 ],
             )?,
-            // Lists the active log subscriptions for the Amazon Web Services account.
             queried(
                 inventory(
                     "ListLogSubscriptions",
@@ -61,7 +56,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["DirectoryId", "LogGroupName"],
             )?,
-            // With no DirectoryId or TopicName, the API documents all account associations; no pagination fields exist.
             queried(
                 inventory(
                     "DescribeEventTopics",
@@ -77,9 +71,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             super::s_directory_service_decisions_1::ENTRIES,
             super::s_directory_service_decisions_2::ENTRIES,
         ],
-        &[
-            // DirectoryDescriptions includes RadiusSettings.SharedSecret and OwnerDirectoryDescription.RadiusSettings.SharedSecret; pinned output docs do not establish omission.
-            ("DescribeDirectories", DenyReason::Secret),
-        ],
+        &[("DescribeDirectories", DenyReason::Secret)],
     )
 }

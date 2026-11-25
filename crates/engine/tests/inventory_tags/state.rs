@@ -19,7 +19,6 @@ pub(super) async fn commit_tags(
     tags: Vec<TagObservation>,
     at: i64,
 ) -> TestResult<CommitResult> {
-    // A parent-owned tag fetch does not certify an account-wide resource enumeration.
     let target = tags.first().ok_or("tag fetch needs a target")?.resource();
     store.seed_work(support::child_work(sweep, target)?).await?;
     let lease = store
@@ -122,7 +121,6 @@ fn quote(value: &str) -> String {
 }
 
 pub(super) async fn resource_image(pool: &SqlitePool) -> TestResult<Vec<(String, String)>> {
-    // SQL quote is byte-exact for records/hashes (BLOB hex), and distinguishes NULL.
     Ok(sqlx::query_as(
         "SELECT 'resource:'||account||':'||region||':'||kind||':'||id,quote(name)||'|'||quote(content_hash)||'|'||quote(first_seen)||'|'||quote(last_changed) FROM resources UNION ALL SELECT 'typed:'||account||':'||region||':'||id,quote(content_hash)||'|'||quote(first_seen)||'|'||quote(last_changed)||'|'||quote(record)||'|'||quote(f_1) FROM thing_table ORDER BY 1",
     ).fetch_all(pool).await?)

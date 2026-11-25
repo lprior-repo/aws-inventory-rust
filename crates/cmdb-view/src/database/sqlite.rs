@@ -27,7 +27,6 @@ pub struct ResourceFilter {
     pub tag: Option<TagFilter>,
 }
 
-/// Exact tag key, optionally restricted to an exact value (including empty).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TagFilter {
     pub key: String,
@@ -53,31 +52,19 @@ pub struct StoredResource {
     pub name: Option<String>,
     pub content_hash: ContentHash,
     pub record: Record,
-    /// Last known persisted pairs; an empty set does not imply a complete scan.
     pub tags: Vec<ResourceTag>,
-    /// The persisted tag set exceeded the reader's `MAX_PAGE_LIMIT` cap.
     pub tags_truncated: bool,
-    /// Latest tag observation, independent of the retained last-known pairs.
-    /// `None` means no persisted observation; it does not mean complete-empty.
     pub tag_observation: Option<StoredTagObservation>,
 }
 
-/// Lightweight row for table pages; omits the record payload to avoid loading
-/// gigabytes of unused data for bounded pages. Payload is loaded lazily via
-/// `Database::detail` when the user opens a specific resource.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceRow {
     pub key: ResourceKey,
     pub name: Option<String>,
     pub content_hash: ContentHash,
-    /// Byte size of the persisted record payload, loaded without the payload.
     pub record_bytes: usize,
-    /// Last known persisted pairs; an empty set does not imply a complete scan.
     pub tags: Vec<ResourceTag>,
-    /// The persisted tag set exceeded the reader's `MAX_PAGE_LIMIT` cap.
     pub tags_truncated: bool,
-    /// Latest tag observation, independent of the retained last-known pairs.
-    /// `None` means no persisted observation; it does not mean complete-empty.
     pub tag_observation: Option<StoredTagObservation>,
 }
 
@@ -102,15 +89,11 @@ pub struct ResourcePage {
     pub total_matching: u64,
 }
 
-/// Lightweight page for table views; rows omit the record payload to bound
-/// memory on large inventories. Payload is loaded on demand via `detail`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceRowPage {
     pub rows: Vec<ResourceRow>,
     pub next: Option<PageCursor>,
     pub total_matching: u64,
-    /// The page was truncated because the byte budget was exceeded;
-    /// additional rows matched but were not returned.
     pub truncated: bool,
 }
 
@@ -258,7 +241,6 @@ struct RowKeyGroups {
 }
 
 fn extract_row_keys(rows: &[sqlx::sqlite::SqliteRow]) -> Result<RowKeyGroups, ViewError> {
-    // Extract row metadata as full 4-tuples.
     let mut row_keys: Vec<(String, String, String, String)> = Vec::with_capacity(rows.len());
     let mut kind_rows: std::collections::HashMap<String, Vec<(String, String, String)>> =
         std::collections::HashMap::new();
@@ -306,8 +288,7 @@ fn build_page_rows(
     lengths: &std::collections::HashMap<(String, String, String, String), usize>,
     page_tags: &tags::PageTags,
 ) -> Result<(Vec<ResourceRow>, bool), ViewError> {
-    // Build result rows with byte budget check.
-    let page_budget_bytes = 10_485_760usize; // 10 MiB
+    let page_budget_bytes = 10_485_760usize;
     let mut result = Vec::with_capacity(rows.len());
     let mut total_bytes = 0usize;
     let mut truncated = false;
@@ -375,13 +356,11 @@ async fn decode_rows(
 
     let groups = extract_row_keys(&rows)?;
 
-    // Batch 1: kind -> table name mapping (one query).
     let kinds_vec: Vec<&str> = groups.kind_set.iter().map(|k| k.as_str()).collect();
     let table_map = tables_for_kinds(tx, &kinds_vec).await?;
 
     let lengths = fetch_row_lengths(tx, &table_map, &groups.kind_rows).await?;
 
-    // Batch 3: tags for all rows (one query).
     let page_tags = tags::read_many(tx, &groups.row_keys).await?;
 
     let (result, truncated) = build_page_rows(rows, groups.row_keys, &lengths, &page_tags)?;

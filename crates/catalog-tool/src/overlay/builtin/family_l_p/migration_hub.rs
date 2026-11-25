@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/migration-hub/service/2017-05-31/migration-hub-2017-05-31.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -43,7 +42,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists progress update streams associated with the user account making this call.
     Resource {
         operation: "ListProgressUpdateStreams",
         items: "ProgressUpdateStreamSummaryList",
@@ -55,7 +53,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all the migration statuses for your applications. If you use the optional ApplicationIds parameter, only the migration statuses for those applications will be returned.
     Resource {
         operation: "ListApplicationStates",
         items: "ApplicationStateList",

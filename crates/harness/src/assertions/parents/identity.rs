@@ -1,5 +1,3 @@
-//! Parent resource identity extraction.
-
 use serde_json::Value;
 
 use crate::provenance;

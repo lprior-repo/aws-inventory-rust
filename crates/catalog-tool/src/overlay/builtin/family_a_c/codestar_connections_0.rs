@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codestar-connections/service/2019-12-01/codestar-connections-2019-12-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -52,7 +50,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SyncType, ResourceName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the sync configuration for a specified repository and connection.",
             ),
         ),
-        // Model: Returns the connection ARN and details such as status, owner, and provider type.
         (
             "GetConnection",
             OperationOverlay {
@@ -81,7 +78,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Host metadata response does not repeat HostArn. Current selected-record identities cannot use the bound HostArn; ListHosts already supplies stable ARN summaries.",
             ),
         ),
-        // Model: Returns details about a repository link. A repository link allows Git sync to monitor and sync changes from files in a specified Git repository.
         (
             "GetRepositoryLink",
             OperationOverlay {
@@ -128,7 +124,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SyncType, ResourceName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns details about a sync configuration, including the sync type and resource name. A sync configuration allows the configuration to sync (push and pull) changes from the remote repository for a specified branch in a Git…",
             ),
         ),
-        // Model: Lists the connections associated with your account.
         (
             "ListConnections",
             OperationOverlay {
@@ -141,7 +136,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the hosts associated with your account.
         (
             "ListHosts",
             OperationOverlay {
@@ -154,7 +148,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the repository links created for connections in your account.
         (
             "ListRepositoryLinks",
             OperationOverlay {

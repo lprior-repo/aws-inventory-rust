@@ -4,9 +4,6 @@ pub const MAX_RESOURCE_TAGS: usize = 100;
 pub const MAX_TAG_KEY_CHARS: usize = 128;
 pub const MAX_TAG_VALUE_CHARS: usize = 256;
 
-/// A validated AWS tag pair. Empty values are meaningful and are retained verbatim.
-/// Tag limits are measured in Unicode characters, not UTF-8 bytes, per AWS tag
-/// documentation.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Tag {
     key: String,
@@ -25,7 +22,6 @@ impl Tag {
     }
 }
 
-/// Shared by tag observations and tag-key mappings: one rule for what a key may be.
 pub fn check_key(key: &str) -> Result<(), InventoryError> {
     if key.is_empty()
         || key.chars().count() > MAX_TAG_KEY_CHARS
@@ -65,7 +61,6 @@ impl TagCoverage {
     }
 }
 
-/// Only a complete observation is authoritative enough to replace persisted tags.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TagObservation {
     resource: ResourceKey,

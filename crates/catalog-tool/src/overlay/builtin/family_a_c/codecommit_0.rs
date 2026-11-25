@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codecommit/service/2015-04-13/codecommit-2015-04-13.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -255,7 +253,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns information about a repository. The description field for a repository accepts all HTML characters and all valid Unicode characters. Applications that do not HTML-encode the description and…
         (
             "GetRepository",
             OperationOverlay {
@@ -284,7 +281,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires repositoryName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about triggers configured for a repository.",
             ),
         ),
-        // Model: Lists all approval rule templates in the specified Amazon Web Services Region in your Amazon Web Services account. If an Amazon Web Services Region is not specified, the Amazon Web Services Region…
         (
             "ListApprovalRuleTemplates",
             OperationOverlay {
@@ -321,7 +317,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires repositoryName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of pull requests for a specified repository. The return list can be refined by pull request status or pull request author ARN.",
             ),
         ),
-        // Model: Gets information about one or more repositories.
         (
             "ListRepositories",
             OperationOverlay {

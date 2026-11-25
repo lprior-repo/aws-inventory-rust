@@ -8,8 +8,6 @@ pub const MAX_LAYOUT_NODES: usize = 2_000;
 
 pub const MAX_LAYERS: usize = 64;
 
-// `f32_index` converts counts through `u16`. Both caps must fit that domain
-// so the saturating fallback in `f32_index` is unreachable by construction.
 const _: () = assert!(MAX_LAYOUT_NODES <= 65_535);
 const _: () = assert!(MAX_LAYERS <= 65_535);
 

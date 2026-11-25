@@ -11,9 +11,6 @@ fn given_parent_identity_when_indexed_then_every_producer_can_offer_the_original
     let plan = catalog
         .lookup("route-53", "ListHostedZones")
         .ok_or("parent plan missing")?;
-    // ParentIdentity is a legacy runtime source, not emitted by today's overlay
-    // compiler. Exercise its production dependency/index path with a real plan;
-    // no row eligibility or scheduling outcome is fabricated here.
     let source = BindingSource::ParentIdentity {
         path: Box::default(),
     };
@@ -138,8 +135,6 @@ fn given_exact_source_stages_when_indexed_then_only_that_stage_or_ordinary_depen
         source: ContextSource::Request,
         path: Box::default(),
     };
-    // The first consumer has an ordinary dependency as well as an exact-stage
-    // dependency. Neither binding order nor overlapping keys may duplicate work.
     let detail = stage("DETAIL");
     index.add_dependency(
         Consumer {

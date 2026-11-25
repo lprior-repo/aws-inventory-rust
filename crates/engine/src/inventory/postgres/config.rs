@@ -31,7 +31,6 @@ impl PgWriteConfig {
         self.max_connections
     }
 
-    /// Opt into staging COPY for batches with at least `rows` changed or new records.
     #[must_use]
     pub fn with_copy_min_rows(self, rows: NonZeroUsize) -> Self {
         Self {

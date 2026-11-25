@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/partnercentral-selling/service/2022-07-26/partnercentral-selling-2022-07-26.json
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -117,7 +116,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves a list of Partner Solutions that the partner registered on Partner Central. This API is used to generate a list of solutions that an end user selects from for association
     Resource {
         operation: "ListSolutions",
         items: "SolutionSummaries",
@@ -129,7 +127,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("Catalog", "AWS")],
     },
-    // This action allows users to retrieve a list of Engagement records from Partner Central. This action can be used to manage and track various engagements across different stages of t
     Resource {
         operation: "ListEngagements",
         items: "EngagementSummaryList",

@@ -200,11 +200,9 @@ async fn given_mismatched_detail_hash_when_reading_then_corruption_is_not_missin
 async fn postgres_given_pinned_reader_when_sweep_changes_keys_then_pages_keep_begin_state()
 -> TestResult {
     use super::postgres_support as pg;
-    // Given a snapshot pinned before its caller's first read.
     let fixture = super::support::postgres_fixture().await?;
     let db = fixture.reader().await?;
     let mut snapshot = db.snapshot().await?;
-    // When another connection removes one key and PgStore writes keys before and after it.
     pg_change_resources(&fixture).await?;
     let first = snapshot
         .page(
@@ -224,7 +222,6 @@ async fn postgres_given_pinned_reader_when_sweep_changes_keys_then_pages_keep_be
             },
         )
         .await?;
-    // Then resource pages and details retain the old revision; a new reader sees the sweep.
     assert_eq!((first.total_matching, second.total_matching), (4, 4));
     assert_eq!(
         second
@@ -278,11 +275,9 @@ async fn pg_change_resources(fixture: &super::postgres_support::Fixture) -> Test
 async fn postgres_given_snapshot_when_first_detail_follows_sweep_then_hash_and_record_are_pinned()
 -> TestResult {
     use super::postgres_support as pg;
-    // Given a retained snapshot with no application reads yet.
     let fixture = super::support::postgres_fixture().await?;
     let db = fixture.reader().await?;
     let mut snapshot = db.snapshot().await?;
-    // When PgStore replaces a record while the reader holds the transaction.
     fixture
         .commit("updated", "111111111111", "global", 0, &["shared"], 50)
         .await?;
@@ -291,7 +286,6 @@ async fn postgres_given_snapshot_when_first_detail_follows_sweep_then_hash_and_r
         .await?
         .ok_or("missing old record")?;
     let new = db.detail(&pg::root()).await?.ok_or("missing new record")?;
-    // Then record bytes and matching hashes belong to their respective revisions.
     assert_eq!(old.record, pg::record("shared", 10)?);
     assert_eq!(new.record, pg::record("shared", 50)?);
     assert_eq!(
@@ -314,7 +308,6 @@ async fn postgres_given_snapshot_when_first_detail_follows_sweep_then_hash_and_r
 async fn postgres_given_edge_cursor_when_sweep_changes_edges_then_snapshot_has_no_gaps()
 -> TestResult {
     use super::postgres_support as pg;
-    // Given a reader on the original two edges.
     let fixture = super::support::postgres_fixture().await?;
     let db = fixture.reader().await?;
     let mut snapshot = db.snapshot().await?;
@@ -328,7 +321,6 @@ async fn postgres_given_edge_cursor_when_sweep_changes_edges_then_snapshot_has_n
             },
         )
         .await?;
-    // When the writer deletes an edge and adds a self-loop.
     sqlx::query("DELETE FROM inventory.edges WHERE to_account='222222222222'")
         .execute(&fixture.pool)
         .await?;
@@ -344,7 +336,6 @@ async fn postgres_given_edge_cursor_when_sweep_changes_edges_then_snapshot_has_n
             },
         )
         .await?;
-    // Then the cursor and LOD counts still describe the original graph.
     assert_eq!((first.total_matching, second.total_matching), (2, 2));
     assert_eq!(
         second
@@ -376,20 +367,17 @@ fn pg_lod(connected_resources: u64, isolated_resources: u64) -> cmdb_view::LodSu
 async fn postgres_given_mismatched_detail_hash_when_reading_then_corruption_is_not_missing()
 -> TestResult {
     use super::postgres_support as pg;
-    // Given a kind table whose hash differs from the shared resource row.
     let fixture = super::support::postgres_fixture().await?;
     sqlx::query("UPDATE inventory.kind_0 SET content_hash=$1 WHERE region='global'")
         .bind([9_u8; 32].as_slice())
         .execute(&fixture.pool)
         .await?;
     let db = fixture.reader().await?;
-    // When fetching the record, corruption is a typed failure rather than absence.
     let error = db
         .detail(&pg::root())
         .await
         .err()
         .ok_or("expected stored-row failure")?;
-    // Then the public diagnostic is exact.
     assert_eq!(error.to_string(), "invalid stored resource row");
     drop(db);
     fixture.finish().await

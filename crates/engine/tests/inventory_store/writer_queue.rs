@@ -48,7 +48,6 @@ async fn given_a_held_sqlite_writer_when_concurrent_page_commits_wait_past_five_
         let lease = store.claim(&sweep, 100, 20).await?.ok_or("missing lease")?;
         pages.push(page(lease, Vec::new(), true, None, 101));
     }
-    // An in-memory snapshot owns the same sole connection as the writer.
     let snapshot = store.begin_projection_snapshot().await?;
 
     let commits = join_all(pages.into_iter().map(|page| store.commit_page(page)));

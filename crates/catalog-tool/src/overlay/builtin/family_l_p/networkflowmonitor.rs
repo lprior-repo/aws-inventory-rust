@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/networkflowmonitor/service/2023-04-19/networkflowmonitor-2023-04-19.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -73,7 +72,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // List all monitors in an account. Optionally, you can list only monitors that have a specific status, by using the STATUS parameter.
     Resource {
         operation: "ListMonitors",
         items: "monitors",
@@ -85,7 +83,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List all the scopes for an account.
     Resource {
         operation: "ListScopes",
         items: "scopes",

@@ -1,5 +1,3 @@
-//! Global resource architecture assertions.
-
 use std::path::Path;
 
 use serde_json::Value;
@@ -15,7 +13,6 @@ pub async fn check(
 ) -> Result<Vec<Value>, HarnessError> {
     let mut checks = Vec::new();
 
-    // Check for fixture metadata (authoritative flag)
     let fixture_ok = seed_report
         .map(|sr| sr.get("fixtures").is_some())
         .unwrap_or(false);

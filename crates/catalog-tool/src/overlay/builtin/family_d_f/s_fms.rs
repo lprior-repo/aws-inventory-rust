@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/fms/service/2018-01-01/fms-2018-01-01.json
 use super::support::{
     arn, bound, correlated, fixed_integer, inventory, key, queried, reviewed, token,
 };
@@ -9,7 +8,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "fms",
         vec![
-            // Returns an array of PolicySummary objects.
             queried(
                 inventory(
                     "ListPolicies",
@@ -26,7 +24,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "PolicyStatus",
                 ],
             )?,
-            // Returns an array of ResourceSetSummary objects.
             queried(
                 inventory(
                     "ListResourceSets",
@@ -36,8 +33,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Id", "Name", "ResourceSetStatus"],
             )?,
-            // MaxResults is required by the pinned input shape and bounded to 1..=100.
-            // DefaultLists remains false: only caller-owned configuration lists are inventoried.
             queried(
                 fixed_integer(
                     inventory(
@@ -64,7 +59,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ListArn", "ListId", "ListName"],
             )?,
-            // The channel is configuration, not the referenced SNS topic or SNS message content.
             queried(
                 inventory(
                     "GetNotificationChannel",
@@ -74,7 +68,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["SnsTopicArn", "SnsRoleName"],
             )?,
-            // Memberships are parent-qualified association nodes; URI does not prove a resource was collected.
             queried(
                 bound(
                     inventory(

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/appsync/service/2017-07-25/appsync-2017-07-25.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -178,7 +176,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires apiId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Flushes an ApiCache object.",
             ),
         ),
-        // Model: Retrieves an Api object.
         (
             "GetApi",
             OperationOverlay {
@@ -237,7 +234,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Retrieves a custom DomainName object.
         (
             "GetDomainName",
             OperationOverlay {
@@ -261,9 +257,7 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Get a Function .
         ("GetFunction", denied(DenyReason::Content)),
-        // Model: Retrieves a GraphqlApi object.
         (
             "GetGraphqlApi",
             OperationOverlay {
@@ -329,7 +323,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires apiId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the API keys for a given API. API keys are deleted automatically 60 days after they expire. However, they may still be included in the response until they have actually been deleted. You can safely call DeleteApiKey to…",
             ),
         ),
-        // Model: Lists the APIs in your AppSync account. ListApis returns only the high level API details. For more detailed information about an API, use GetApi .
         (
             "ListApis",
             OperationOverlay {
@@ -343,7 +336,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the channel namespaces for a specified Api . ListChannelNamespaces returns only high level details for the channel namespace. To retrieve code handlers, use GetChannelNamespace .
         (
             "ListChannelNamespaces",
             OperationOverlay {
@@ -378,7 +370,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists multiple custom domain names.
         (
             "ListDomainNames",
             OperationOverlay {
@@ -398,7 +389,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires apiId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: List multiple functions.",
             ),
         ),
-        // Model: Lists your GraphQL APIs.
         (
             "ListGraphqlApis",
             OperationOverlay {

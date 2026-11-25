@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lakeformation/service/2017-03-31/lakeformation-2017-03-31.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -150,7 +149,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the resources registered to be managed by the Data Catalog.
     Resource {
         operation: "ListResources",
         items: "ResourceInfoList",
@@ -162,7 +160,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists LF-tags that the requester has permission to view.
     Resource {
         operation: "ListLFTags",
         items: "LFTags",
@@ -174,7 +171,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns the LF-Tag expressions in caller’s account filtered based on caller's permissions. Data Lake and read only admins implicitly can see all tag expressions in their account, e
     Resource {
         operation: "ListLFTagExpressions",
         items: "LFTagExpressions",
@@ -186,7 +182,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListResources; no content-bearing expansion.
     Resource {
         operation: "DescribeResource",
         items: "ResourceInfo",

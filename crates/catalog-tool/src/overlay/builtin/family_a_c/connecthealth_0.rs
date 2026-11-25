@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/connecthealth/service/2025-01-29/connecthealth-2025-01-29.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -58,7 +56,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domainId, subscriptionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a Subscription.",
             ),
         ),
-        // Model: Lists Domains for a given account.
         (
             "ListDomains",
             OperationOverlay {
@@ -71,7 +68,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Existing subscriptions expose status and lifecycle times only; listing does not activate billing.
         (
             "ListSubscriptions",
             OperationOverlay {

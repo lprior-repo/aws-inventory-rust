@@ -28,7 +28,6 @@ fn pinned_operations(service: &str) -> TestResult<BTreeSet<String>> {
             .ok_or("pinned model has no shapes")?;
         for (name, shape) in shapes {
             if shape.get("type").and_then(serde_json::Value::as_str) == Some("operation") {
-                // Public service operation keys are short names.
                 operations.insert(
                     name.rsplit('#')
                         .next()
@@ -43,7 +42,6 @@ fn pinned_operations(service: &str) -> TestResult<BTreeSet<String>> {
 }
 
 pub(crate) fn assert_reviewed(policies: &[ServiceOverlay]) -> TestResult {
-    // Given independent pinned models, compare operation keys rather than raw shape counts.
     for policy in policies {
         assert_eq!(
             policy
@@ -56,7 +54,6 @@ pub(crate) fn assert_reviewed(policies: &[ServiceOverlay]) -> TestResult {
             policy.service()
         );
     }
-    // When the public checker constructs the compiler's callable-operation handles.
     let checked = overlay::check_policies(&source(), policies, &DenyList::builtin())?;
     assert_eq!(
         checked
@@ -107,8 +104,6 @@ pub(crate) fn assert_reviewed(policies: &[ServiceOverlay]) -> TestResult {
             "{}",
             policy.service()
         );
-        // Then every reviewed operation has the intended consumer-visible disposition;
-        // denied/deferred operations never acquire callable handles.
         for (name, plan) in policy.operations() {
             let decision = service
                 .decisions()
@@ -151,12 +146,10 @@ pub(crate) fn assert_reviewed(policies: &[ServiceOverlay]) -> TestResult {
             let plan = callable.plan();
             let label = format!("{}/{}", policy.service(), callable.operation());
             if plan.endpoint_discovery {
-                // Discovery reads one unpaginated root response and never emits a resource.
                 assert_eq!(plan.identity, None, "{label}");
                 assert_eq!(plan.items, Some(ItemSelector::Root), "{label}");
                 assert_eq!(plan.paginator, Some(overlay::Paginator::None), "{label}");
             } else if let Some(tags) = &plan.tag_endpoint {
-                // Tag reads enrich an existing parent, not an invented tag resource.
                 assert_eq!(callable.class(), EffectiveClass::Expand, "{label}");
                 assert_eq!(plan.identity, None, "{label}");
                 assert_eq!(plan.items, Some(ItemSelector::Root), "{label}");
@@ -183,7 +176,6 @@ pub(crate) fn assert_reviewed(policies: &[ServiceOverlay]) -> TestResult {
 }
 
 fn assert_compiled(policies: &[ServiceOverlay], checked: &overlay::CheckedOverlays) -> TestResult {
-    // Given complete, unmodified pinned service models and their real endpoint-rule cases.
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let pinned = source();
     let selected = tempfile::tempdir()?;
@@ -195,7 +187,6 @@ fn assert_compiled(policies: &[ServiceOverlay], checked: &overlay::CheckedOverla
             fs::copy(file, destination)?;
         }
     }
-    // When current production compilation is consumed in memory, never read the stale binary.
     let registry =
         crate::smithy::Registry::parse(&fs::read_to_string(root.join("catalog/field-ids.txt"))?)?;
     let base = crate::smithy::build_catalog(selected.path(), &registry, "gk-tz-pinned-regression")?;
@@ -206,7 +197,6 @@ fn assert_compiled(policies: &[ServiceOverlay], checked: &overlay::CheckedOverla
     let endpoints = crate::endpoints::verified_endpoints(selected.path())?;
     let bytes = crate::runtime_catalog::augment(&base, checked, &kinds, &endpoints)?;
     let runtime = inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)?;
-    // Then all reviewed callable keys survive numeric lowering, and noncallable keys do not.
     let expected = checked
         .services()
         .iter()

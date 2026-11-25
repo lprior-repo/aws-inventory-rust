@@ -1,4 +1,3 @@
-//! Strict parsing of the collector's existing summary and metrics lines.
 use std::collections::BTreeMap;
 
 const OUTCOME: &[&str] = &[

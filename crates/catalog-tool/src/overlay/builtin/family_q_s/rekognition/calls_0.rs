@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/rekognition/service/2016-06-27/rekognition-2016-06-27.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

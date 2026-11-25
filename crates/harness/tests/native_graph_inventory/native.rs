@@ -37,16 +37,11 @@ impl PreparedGraph {
     pub(super) fn install() -> TestResult<Self> {
         let source = std::env::var_os("AWS_INVENTORY_GRAPH_ARTIFACTS")
             .ok_or("native graph evidence requires AWS_INVENTORY_GRAPH_ARTIFACTS pinned inputs")?;
-        // Compile before starting the emulator, whose deliberate idle timeout
-        // must not turn a slow native build into a seeding failure.
         let installation = tempfile::tempdir()?;
         let install = installation.path().to_path_buf();
         for name in ["redis-8.10.3.tar.gz", "falkordb.so"] {
             std::fs::copy(Path::new(&source).join(name), install.join(name))?;
         }
-        // Deliberately synchronous outer preparation, before emulator/tasks exist.
-        // There is no cancellable blocking worker: the directory and installer
-        // stay in this stack frame until the bounded native build is reaped.
         let receipt = graph::install(&install, graph::DEFAULT_JOBS)?;
         let server = path_field(&receipt, "redis_server")?;
         let module = path_field(&receipt, "falkor_module")?;
@@ -218,7 +213,6 @@ async fn request<T: redis::FromRedisValue>(
     command: &redis::Cmd,
     budget: Duration,
 ) -> TestResult<T> {
-    // The one client deadline includes protocol setup, not only the final query.
     Ok(tokio::time::timeout(budget, async {
         let client = redis::Client::open(endpoint)?;
         let mut connection = client.get_multiplexed_async_connection().await?;

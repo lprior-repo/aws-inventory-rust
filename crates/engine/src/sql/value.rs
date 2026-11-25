@@ -88,7 +88,6 @@ fn decode_binary(name: &str, bytes: &[u8]) -> Result<SqlValue, SqlError> {
 }
 
 fn float4(value: f32) -> Result<f64, SqlError> {
-    // f32's shortest decimal fits in 64 bytes, including sign and subnormal zeros.
     let mut decimal = Cursor::new([0_u8; 64]);
     write!(&mut decimal, "{value}").map_err(|_| SqlError::InvalidValue("float4 decimal"))?;
     let length = usize::try_from(decimal.position())

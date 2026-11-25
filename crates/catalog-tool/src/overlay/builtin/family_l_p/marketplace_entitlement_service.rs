@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/marketplace-entitlement-service/service/2017-01-11/marketplace-entitlement-service-2017-01-11.json
 use super::policy::{Group, compile};
 use crate::overlay::{NameError, OverlayClass, ServiceOverlay};
 

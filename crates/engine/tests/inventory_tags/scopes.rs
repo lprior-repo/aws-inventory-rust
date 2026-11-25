@@ -33,7 +33,6 @@ fn work(sweep: &str, key: &ResourceKey) -> TestResult<WorkSpec> {
 #[tokio::test]
 async fn same_region_kind_id_across_accounts_and_global_scopes_never_leak_or_replace_tags()
 -> TestResult {
-    // Given independent account-only and global/regional collisions with identical pair text.
     let (directory, store, _) = support::fixture().await?;
     let fixtures = [
         (
@@ -57,7 +56,6 @@ async fn same_region_kind_id_across_accounts_and_global_scopes_never_leak_or_rep
             vec![("owner", "alice")],
         ),
     ];
-    // Same account/region items share a page so a complete enumeration does not mark them missing.
     for (index, (account, region)) in [
         ("123456789012", "us-east-1"),
         ("000000000000", "us-east-1"),
@@ -111,7 +109,6 @@ async fn same_region_kind_id_across_accounts_and_global_scopes_never_leak_or_rep
         assert_eq!(state::read_tags(&store, target).await?, expected);
     }
 
-    // When just the selected regional/account target is cleared, the four collisions survive.
     let selected = &fixtures.first().ok_or("selected target missing")?.0;
     state::commit_tags(
         &store,
@@ -141,7 +138,6 @@ async fn same_region_kind_id_across_accounts_and_global_scopes_never_leak_or_rep
         Some(selected)
     );
 
-    // A persisted foreign-account collision cannot be written through the selected lease.
     let lease = state::scoped_work(
         &store,
         support::child_work("foreign-account", selected)?,

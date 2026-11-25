@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/migrationhubstrategy/service/2020-02-19/migrationhubstrategy-2020-02-19.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -62,7 +61,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves a list of all the installed collectors.
     Resource {
         operation: "ListCollectors",
         items: "Collectors",
@@ -74,7 +72,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists servers that can be analyzed.
     Resource {
         operation: "ListAnalyzableServers",
         items: "analyzableServers",
@@ -86,7 +83,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all registered servers.
     Resource {
         operation: "ListServers",
         items: "serverInfos",
@@ -98,7 +94,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists application components for analysis.
     Resource {
         operation: "ListApplicationComponents",
         items: "applicationComponentInfos",
@@ -110,7 +105,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists file import tasks.
     Resource {
         operation: "ListImportFileTask",
         items: "taskInfos",

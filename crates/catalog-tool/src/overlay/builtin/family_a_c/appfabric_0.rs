@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/appfabric/service/2023-05-19/appfabric-2023-05-19.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::ContextSource;
 
@@ -71,7 +69,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires appBundleIdentifier, appAuthorizationIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about an app authorization.",
             ),
         ),
-        // Model: Returns information about an app bundle.
         (
             "GetAppBundle",
             OperationOverlay {
@@ -106,7 +103,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires appBundleIdentifier, ingestionIdentifier, ingestionDestinationIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about an ingestion destination.",
             ),
         ),
-        // Model: Returns a list of all app authorizations configured for an app bundle.
         (
             "ListAppAuthorizations",
             OperationOverlay {
@@ -129,7 +125,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of app bundles.
         (
             "ListAppBundles",
             OperationOverlay {
@@ -142,7 +137,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Reviewed full response: destination ARNs and continuation only; inherit the bundle from this ingestion's request.
         (
             "ListIngestionDestinations",
             OperationOverlay {
@@ -175,7 +169,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of all ingestions configured for an app bundle.
         (
             "ListIngestions",
             OperationOverlay {

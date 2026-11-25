@@ -42,7 +42,6 @@ impl Bounds {
     }
 }
 
-/// Charges column names and raw cell payloads before allocating owned results.
 #[derive(Debug)]
 pub struct Budget {
     bounds: Bounds,

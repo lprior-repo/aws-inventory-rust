@@ -18,7 +18,6 @@ use std::collections::BTreeSet;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-// Shared by policy scenarios: real projected observations and actual child planning.
 pub(crate) fn project_children(
     catalog: &RuntimeCatalog<'_>,
     context: &Context<'_, '_>,

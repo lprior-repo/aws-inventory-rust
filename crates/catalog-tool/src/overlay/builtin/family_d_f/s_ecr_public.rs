@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/ecr-public/service/2020-10-30/ecr-public-2020-10-30.json
 use super::support::{arn, bound, inventory, key, queried, reviewed, scoped, token};
 use crate::classes::DenyReason;
 use crate::overlay::{NameError, Scope, ServiceOverlay};
@@ -7,7 +6,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "ecr-public",
         vec![
-            // Returns details for a public registry.
             queried(
                 scoped(
                     inventory(
@@ -20,7 +18,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ),
                 &["registryArn", "registryId"],
             )?,
-            // Describes repositories that are in a public registry.
             queried(
                 scoped(
                     inventory(
@@ -33,7 +30,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ),
                 &["repositoryArn", "registryId", "repositoryName"],
             )?,
-            // Keep registry and repository context in the image identity; image digests can repeat between repositories.
             queried(
                 scoped(
                     bound(
@@ -52,9 +48,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ],
         &[super::s_ecr_public_decisions_0::ENTRIES],
         &[
-            // Retrieves an authorization token.
             ("GetAuthorizationToken", DenyReason::Secret),
-            // Retrieve catalog metadata for a repository in a public registry.
             ("GetRepositoryCatalogData", DenyReason::Content),
         ],
     )

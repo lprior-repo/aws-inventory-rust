@@ -33,7 +33,6 @@ pub(super) async fn validate_active_sweep(
     Ok(())
 }
 
-/// A stored outcome reason is bounded so one failing scope cannot grow the table.
 pub(super) fn validate_detail(detail: Option<&str>) -> Result<(), StoreError> {
     match detail {
         Some(text) if text.len() > MAX_OUTCOME_DETAIL_BYTES => {

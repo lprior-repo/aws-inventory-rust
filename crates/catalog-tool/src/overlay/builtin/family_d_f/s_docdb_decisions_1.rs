@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/docdb/service/2014-10-31/docdb-2014-10-31.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "ModifyDBInstance",

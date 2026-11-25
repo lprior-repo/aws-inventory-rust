@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/artifact/service/2018-05-10/artifact-2018-05-10.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

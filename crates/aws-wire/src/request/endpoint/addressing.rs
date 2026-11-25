@@ -250,8 +250,6 @@ fn use_virtual_host(
             AddressingStyle::Path | AddressingStyle::Auto => Ok(false),
         };
     };
-    // S3 Express directory buckets: only virtual-hosted style is supported on zonal endpoints.
-    // Path-style requests are not supported for directory buckets.
     if is_directory_bucket(bucket) {
         match style {
             AddressingStyle::Path => return Err(EncodeError::InvalidEndpoint),
@@ -262,8 +260,6 @@ fn use_virtual_host(
                 if !valid_directory_bucket(bucket) {
                     return Err(EncodeError::InvalidEndpoint);
                 }
-                // For S3Express, accelerate is never allowed; dualstack is handled in s3_url
-                // via zonal dualstack variant, so allow it.
                 return Ok(true);
             }
         }
@@ -321,10 +317,6 @@ fn s3_url<'a>(
         .map_err(|_| EncodeError::InvalidEndpoint)?;
     let scheme = uri.scheme_str().ok_or(EncodeError::InvalidEndpoint)?;
     let authority = uri.authority().ok_or(EncodeError::InvalidEndpoint)?;
-    // S3 Express zonal endpoint: bucket--az--x-s3 -> {bucket}.s3express-{zone}.{region}.amazonaws.com
-    // Account prefix logic for S3 Control (s3-control / s3express-control) is handled separately
-    // via host_prefix in endpoint::resolve; data plane here is bucket-prefix only.
-    // For directory buckets, the zonal host incorporates the zone id extracted from the bucket name.
     let host = if let Some(b) = bucket {
         if is_directory_bucket(b) {
             if accelerate {
@@ -542,7 +534,6 @@ mod tests {
     fn s3express_operation_style_overrides_client_style() -> Result<(), Box<dyn std::error::Error>>
     {
         let bucket = "mybucket--usw2-az1--x-s3";
-        // Client says path, operation says virtual -> should succeed as virtual
         let resolved = s3_endpoint(cfg(
             Some(bucket),
             Some(AddressingStyle::Path),
@@ -551,7 +542,6 @@ mod tests {
             false,
         ))?;
         assert!(resolved.addressing.is_some());
-        // Client virtual, operation path -> should error because path not allowed for directory
         let result = s3_endpoint(cfg(
             Some(bucket),
             Some(AddressingStyle::Virtual),
@@ -569,9 +559,6 @@ mod tests {
     #[test]
     fn account_prefix_not_applied_in_s3_endpoint_data_plane()
     -> Result<(), Box<dyn std::error::Error>> {
-        // s3_endpoint only deals with bucket prefix; account prefix (s3-control) is handled
-        // via operation host_prefix in endpoint::resolve. This test ensures s3_endpoint
-        // does not inject account prefix into data plane endpoint.
         let resolved = s3_endpoint(cfg(
             Some("mybucket"),
             Some(AddressingStyle::Virtual),
@@ -580,7 +567,6 @@ mod tests {
             false,
         ))?;
         assert!(resolved.endpoint.as_ref().starts_with("https://s3."));
-        // Directory bucket zonal host should not contain account id prefix
         let bucket = "mybucket--usw2-az1--x-s3";
         let resolved = s3_endpoint(cfg(Some(bucket), None, None, false, false))?;
         assert!(resolved.endpoint.as_ref().contains("s3express-"));

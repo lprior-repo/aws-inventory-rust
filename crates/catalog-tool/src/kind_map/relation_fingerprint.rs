@@ -215,7 +215,6 @@ mod tests {
 
     #[test]
     fn unchanged_selected_field_relation_retains_the_exact_legacy_hash_preimage() -> TestResult {
-        // This byte string is the existing untyped serializer's exact public hash contract.
         let expected: [u8; 32] = Sha256::digest(
             b"relation\0AWS::EC2::Subnet\0VpcId\0AWS::EC2::VPC\0VpcId\0IN_VPC\0account_region\0\xff"
         ).into();
@@ -242,7 +241,6 @@ mod tests {
             scope: "account_region".to_owned(),
             guard: None,
         };
-        // Primary is deliberately not lexically first, catching duplicate-anchor or order drift.
         let mut legacy = Sha256::new();
         legacy.update(b"relation\0AWS::MSK::VpcConnection\0TargetClusterArn\0AWS::MSK::ServerlessCluster\0ClusterArn\0CONNECTS_TO\0account_region\0\xff");
         legacy.update(

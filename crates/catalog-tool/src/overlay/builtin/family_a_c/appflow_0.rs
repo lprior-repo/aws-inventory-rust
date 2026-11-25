@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/appflow/service/2020-08-23/appflow-2020-08-23.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -46,7 +44,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires connectorEntityName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides details regarding the entity used with the connector, with a description of the data model for each field in that entity.",
             ),
         ),
-        // Model: Returns a list of connector-profile details matching the provided connector-profile names and connector-types . Both input lists are optional, and you can use them to filter the result. If no names…
         (
             "DescribeConnectorProfiles",
             OperationOverlay {
@@ -65,7 +62,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is connectorConfigurations, connectors; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the connectors vended by Amazon AppFlow for specified connector types. If you don't specify a connector type, this operation describes all connectors vended by Amazon AppFlow. If there are more connectors than can be…",
             ),
         ),
-        // Model: Provides a description of the specified flow.
         (
             "DescribeFlow",
             OperationOverlay {
@@ -101,7 +97,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is connectorEntityMap; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the list of available connector entities supported by Amazon AppFlow. For example, you can query Salesforce for Account and Opportunity entities, or query ServiceNow for the Incident entity.",
             ),
         ),
-        // Model: Returns the list of all registered custom connectors in your Amazon Web Services account. This API lists only custom connectors registered in this account, not the Amazon Web Services authored…
         (
             "ListConnectors",
             OperationOverlay {
@@ -114,7 +109,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all of the flows associated with your account.
         (
             "ListFlows",
             OperationOverlay {

@@ -42,7 +42,6 @@ fn read_json_with_limit(path: &Path, limit: usize) -> Result<(Value, String), Ha
     Ok((serde_json::from_slice(&bytes)?, digest))
 }
 
-/// Reads a hand-authored TOML document as a JSON-shaped value plus its byte digest.
 pub fn read_toml(path: &Path) -> Result<(Value, String), HarnessError> {
     let file = std::fs::File::open(path)?;
     let bytes =

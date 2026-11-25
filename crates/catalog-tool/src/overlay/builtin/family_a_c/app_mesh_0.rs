@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/app-mesh/service/2019-01-25/app-mesh-2019-01-25.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -94,7 +92,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires gatewayRouteName, meshName, virtualGatewayName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes an existing gateway route.",
             ),
         ),
-        // Model: Describes an existing service mesh.
         (
             "DescribeMesh",
             OperationOverlay {
@@ -154,7 +151,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires virtualServiceName, meshName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes an existing virtual service.",
             ),
         ),
-        // Reviewed full response: route references contain identifiers/ownership/version/times, not route specifications.
         (
             "ListGatewayRoutes",
             OperationOverlay {
@@ -193,7 +189,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of existing service meshes.
         (
             "ListMeshes",
             OperationOverlay {
@@ -206,7 +201,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Bind every routing key from the same reference, never independent mesh/router roots.
         (
             "ListRoutes",
             OperationOverlay {
@@ -251,7 +245,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: List the tags for an App Mesh resource.",
             ),
         ),
-        // Model: Returns a list of existing virtual gateways in a service mesh.
         (
             "ListVirtualGateways",
             OperationOverlay {
@@ -286,7 +279,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of existing virtual nodes.
         (
             "ListVirtualNodes",
             OperationOverlay {
@@ -316,7 +308,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of existing virtual routers in a service mesh.
         (
             "ListVirtualRouters",
             OperationOverlay {
@@ -346,7 +337,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of existing virtual services in a service mesh.
         (
             "ListVirtualServices",
             OperationOverlay {

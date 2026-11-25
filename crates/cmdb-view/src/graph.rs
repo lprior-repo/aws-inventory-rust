@@ -34,16 +34,11 @@ pub struct GraphLimits {
     pub edges: usize,
 }
 
-/// Outcome of a shortest-path search, including searches cut short by a bound.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PathResult {
-    /// No path exists between the source and target within the depth limit.
     NotFound,
-    /// A search bound prevented establishing whether a path exists.
     Truncated,
-    /// Source and target are the same node; the path has zero hops.
     SameNode,
-    /// A path was found. Edges are returned in traversal order.
     Path(Vec<GraphEdge>),
 }
 
@@ -63,8 +58,6 @@ impl<G: GraphBackend> GraphConnection<G> {
     pub fn from_backend(backend: G) -> Self {
         Self { backend }
     }
-    /// Live native tag membership, separate from AWS dependency traversal.
-    /// This does not share SQLite's retained snapshot or pin a native revision.
     pub async fn tag_affiliations(
         &self,
         node: &GraphNode,
@@ -96,11 +89,6 @@ impl<G: GraphBackend> GraphConnection<G> {
         Ok(neighborhood(result))
     }
 
-    /// Returns upstream dependents only (what is affected if this node
-    /// fails), following incoming edges. Edge orientation is source->target
-    /// (A->B means A refers to B), so dependents of C are nodes that refer
-    /// to C. This differs from `neighbors` which traverses in both
-    /// directions. A node with no incoming edges has empty blast radius.
     pub async fn blast_radius(
         &self,
         node: &GraphNode,
@@ -115,10 +103,6 @@ impl<G: GraphBackend> GraphConnection<G> {
         Ok(neighborhood(result))
     }
 
-    /// Finds the shortest path between two nodes. Returns a PathResult that
-    /// distinguishes NotFound (no path within depth limit), SameNode (source
-    /// and target are the same node with zero hops), and Path(edges) when a
-    /// path is found.
     pub async fn path(
         &self,
         from: &GraphNode,

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/chime-sdk-identity/service/2021-04-20/chime-sdk-identity-2021-04-20.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -58,7 +56,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AppInstanceUserArn, EndpointId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deregisters an AppInstanceUserEndpoint .",
             ),
         ),
-        // Model: Returns the full details of an AppInstance .
         ("DescribeAppInstance", denied(DenyReason::Content)),
         (
             "DescribeAppInstanceAdmin",
@@ -66,9 +63,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AppInstanceAdminArn, AppInstanceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the full details of an AppInstanceAdmin .",
             ),
         ),
-        // Model: The AppInstanceBot's information.
         ("DescribeAppInstanceBot", denied(DenyReason::Content)),
-        // Model: Returns the full details of an AppInstanceUser .
         ("DescribeAppInstanceUser", denied(DenyReason::Content)),
         (
             "DescribeAppInstanceUserEndpoint",
@@ -88,7 +83,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AppInstanceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of the administrators in the AppInstance .",
             ),
         ),
-        // Model: Lists all AppInstanceBots created under a single AppInstance .
         ("ListAppInstanceBots", denied(DenyReason::Content)),
         (
             "ListAppInstanceUserEndpoints",
@@ -96,9 +90,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AppInstanceUserArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all the AppInstanceUserEndpoints created under a single AppInstanceUser .",
             ),
         ),
-        // Model: List all AppInstanceUsers created under a single AppInstance .
         ("ListAppInstanceUsers", denied(DenyReason::Content)),
-        // Model: Lists all Amazon Chime AppInstance s created under a single AWS account.
         ("ListAppInstances", denied(DenyReason::Content)),
         (
             "ListTagsForResource",

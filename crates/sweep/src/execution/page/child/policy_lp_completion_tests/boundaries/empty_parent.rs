@@ -2,9 +2,6 @@ use super::*;
 #[tokio::test]
 async fn given_a_native_graph_with_empty_request_parent_field_when_child_work_is_attempted_then_no_phantom_endpoint_can_persist()
 -> TestResult {
-    // The parent ARN is valid; its separate queryable id is exactly empty text. A required child
-    // request source that is empty is absent: the child is skipped for that row, so no request
-    // with an empty correlated operand is ever scheduled.
     let bytes = compiled(
         "neptune-graph",
         "2023-11-29",

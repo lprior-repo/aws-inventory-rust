@@ -80,7 +80,6 @@ pub enum ReferenceOwnerRule {
 }
 
 impl ArnOwnerRule {
-    /// Parse the complete reviewed ARN grammar; never infer an owner from arbitrary text.
     pub fn owner(
         &self,
         arn: &str,

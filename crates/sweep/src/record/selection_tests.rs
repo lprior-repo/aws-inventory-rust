@@ -15,7 +15,6 @@ fn page(value: Value) -> Result<Record, inventory_core::record::RecordError> {
 
 #[test]
 fn explicit_map_entries_preserve_keys_and_full_modeled_values() -> TestResult {
-    // Given a map with two distinct keys and structured values.
     let member = FieldId::new(2)?;
     let value = Value::Map(BTreeMap::from([(
         Key::Field(member),
@@ -25,7 +24,6 @@ fn explicit_map_entries_preserve_keys_and_full_modeled_values() -> TestResult {
         (Key::Name("a".to_owned()), value.clone()),
         (Key::Name("b".to_owned()), value),
     ])))?;
-    // When the reviewed selector emits map entries.
     let rows = item_records(
         &source,
         &ItemPlan::Select {
@@ -33,7 +31,6 @@ fn explicit_map_entries_preserve_keys_and_full_modeled_values() -> TestResult {
             kind: SelectionKind::MapEntries,
         },
     )?;
-    // Then no key or modeled value is silently discarded, and identity paths address values.
     assert_eq!(rows.len(), 2);
     let first = rows.first().ok_or("missing first entry")?;
     assert!(matches!(
@@ -49,7 +46,6 @@ fn explicit_map_entries_preserve_keys_and_full_modeled_values() -> TestResult {
 
 #[test]
 fn explicit_map_keys_and_values_support_scalar_items_without_heuristics() -> TestResult {
-    // Given modeled string-valued map entries.
     let source = page(Value::Map(BTreeMap::from([
         (
             Key::Name("owner-a".to_owned()),
@@ -69,10 +65,8 @@ fn explicit_map_keys_and_values_support_scalar_items_without_heuristics() -> Tes
             },
         )
     };
-    // When independently selecting map keys and map values.
     let keys = select(SelectionKind::MapKeys)?;
     let values = select(SelectionKind::MapValues)?;
-    // Then exact scalar values survive and mismatched selector shapes fail.
     assert_eq!(keys.len(), 2);
     assert_eq!(values.len(), 2);
     assert!(matches!(
@@ -92,7 +86,6 @@ fn explicit_map_keys_and_values_support_scalar_items_without_heuristics() -> Tes
 fn arn_preference_falls_back_only_for_absence_not_malformed_present_values() -> TestResult {
     let arn = FieldId::new(1)?;
     let name = FieldId::new(2)?;
-    // Given a reviewed absence fallback alongside an actual ARN field.
     let identity = IdentityPlan::Choice(IdentityChoicePlan::PreferArn {
         path: vec![arn].into_boxed_slice(),
         fallback: IdentityLeafPlan::Key(vec![vec![name].into_boxed_slice()].into_boxed_slice()),
@@ -102,7 +95,6 @@ fn arn_preference_falls_back_only_for_absence_not_malformed_present_values() -> 
         Key::Field(name),
         Value::Text("fallback-name".to_owned()),
     )])))?;
-    // When the ARN is absent, malformed, null, or valid, then only absence uses the fallback.
     assert_eq!(
         resource_id(&absent, &identity, None)?.as_str(),
         "fallback-name"
@@ -134,7 +126,6 @@ fn arn_preference_falls_back_only_for_absence_not_malformed_present_values() -> 
 #[test]
 fn given_lazy_list_with_invalid_later_item_when_consumed_then_valid_prefix_is_not_eagerly_materialized_and_whole_page_still_fails()
 -> TestResult {
-    // Given a valid encoded list whose second element is an invalid enumeration row.
     let source = page(Value::List(vec![
         Value::Text("first".to_owned()),
         Value::List(Vec::new()),
@@ -143,7 +134,6 @@ fn given_lazy_list_with_invalid_later_item_when_consumed_then_valid_prefix_is_no
         path: vec![FieldId::new(1)?].into_boxed_slice(),
         kind: SelectionKind::List,
     };
-    // When obtaining the cardinality and consuming one row, no later row is materialized.
     let (count, mut selected) = item_selection(&source, &plan)?;
     assert_eq!(count, 2);
     let first = selected.next().ok_or("first row absent")??;
@@ -151,7 +141,6 @@ fn given_lazy_list_with_invalid_later_item_when_consumed_then_valid_prefix_is_no
         scalar_item(first.root())?,
         Some(ValueRef::Text("first"))
     ));
-    // Then the malformed later item and the complete synchronous page both fail.
     assert!(matches!(
         selected.next(),
         Some(Err(SweepError::Operation(

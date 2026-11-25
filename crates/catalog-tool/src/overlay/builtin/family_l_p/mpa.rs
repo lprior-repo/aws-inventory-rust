@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mpa/service/2022-07-26/mpa-2022-07-26.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -89,7 +88,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of approval teams.
     Resource {
         operation: "ListApprovalTeams",
         items: "ApprovalTeams",
@@ -101,7 +99,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of identity sources. For more information, see Identity Source in the Multi-party approval User Guide .
     Resource {
         operation: "ListIdentitySources",
         items: "IdentitySources",

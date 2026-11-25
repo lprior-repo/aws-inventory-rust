@@ -46,7 +46,6 @@ impl Observation {
         self.name.as_deref()
     }
 
-    /// Assigns the catalog-validated precedence of this operation's replaceable facet.
     pub fn with_facet_precedence(mut self, precedence: u16) -> Self {
         self.facet_precedence = precedence;
         self

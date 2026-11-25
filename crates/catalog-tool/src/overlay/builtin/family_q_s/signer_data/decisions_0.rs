@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/signer-data/service/2017-08-25/signer-data-2017-08-25.json
 use super::super::construction::Decision;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[(

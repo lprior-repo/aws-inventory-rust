@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/networkmonitor/service/2023-08-01/networkmonitor-2023-08-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -38,7 +37,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of all of your monitors.
     Resource {
         operation: "ListMonitors",
         items: "monitors",

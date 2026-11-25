@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/chatbot/service/2017-10-11/chatbot-2017-10-11.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -82,7 +80,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SlackTeamId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the Slack workspace authorization that allows channels to be configured in that workspace. This requires all configured channels in the workspace to be deleted.",
             ),
         ),
-        // Model: Lists Amazon Chime webhook configurations optionally filtered by ChatConfigurationArn
         (
             "DescribeChimeWebhookConfigurations",
             OperationOverlay {
@@ -96,7 +93,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists Slack channel configurations optionally filtered by ChatConfigurationArn
         (
             "DescribeSlackChannelConfigurations",
             OperationOverlay {
@@ -152,7 +148,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ChatConfiguration. No reviewed complete parent binding and selected-item resource identity is authorized for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the resources associated with a channel configuration, for example, a custom action.",
             ),
         ),
-        // Model: Lists custom actions defined in this account.
         (
             "ListCustomActions",
             OperationOverlay {
@@ -170,7 +165,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists all AWS Chatbot Microsoft Teams channel configurations in an AWS account.
         (
             "ListMicrosoftTeamsChannelConfigurations",
             OperationOverlay {

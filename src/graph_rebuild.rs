@@ -1,8 +1,3 @@
-//! Rebuilds the FalkorDB projection from an existing SQLite inventory.
-//!
-//! Makes no AWS calls: it re-projects the stored resources and edges into the
-//! graph named by `--graph-name`, replacing whatever that graph holds.
-
 use anyhow::{Context, Result, ensure};
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{BinaryStore, ProjectionReport, run_projection};

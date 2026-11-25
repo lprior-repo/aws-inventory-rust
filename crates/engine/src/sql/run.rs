@@ -12,7 +12,6 @@ pub struct SqlResult {
     pub rows: Vec<Vec<SqlValue>>,
 }
 
-/// Execute on a verified reader; roll back success and disconnect on failure.
 #[tracing::instrument(skip_all)]
 pub async fn run(reader: &ReaderUrl, sql: &str, bounds: Bounds) -> Result<SqlResult, SqlError> {
     validate(sql)?;
@@ -44,7 +43,6 @@ async fn execute(
     )
     .await
     .map_err(|_| SqlError::Timeout)??;
-    // The watchdog leaves the server time to deliver its distinct cancellation.
     let result = tokio::time::timeout(
         Duration::from_millis(bounds.millis.saturating_add(1_000)),
         query_transaction(&mut tx, sql, bounds, server_millis),
@@ -64,7 +62,6 @@ async fn query_transaction(
     bounds: Bounds,
     server_millis: u64,
 ) -> Result<SqlResult, SqlError> {
-    // set_config(..., true) is SET LOCAL with a safely bound timeout value.
     sqlx::query("SELECT set_config('statement_timeout', $1, true)")
         .bind(format!("{server_millis}ms"))
         .execute(&mut **tx)

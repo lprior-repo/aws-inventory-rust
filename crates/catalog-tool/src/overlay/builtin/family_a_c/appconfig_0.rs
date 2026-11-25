@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/appconfig/service/2019-10-09/appconfig-2019-10-09.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -106,7 +104,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is DeletionProtection, VendedMetrics; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns information about the status of the DeletionProtection parameter.",
             ),
         ),
-        // Model: Retrieves information about an application.
         (
             "GetApplication",
             OperationOverlay {
@@ -147,7 +144,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ApplicationId, EnvironmentId, DeploymentNumber. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a configuration deployment.",
             ),
         ),
-        // Model: Retrieves information about a deployment strategy. A deployment strategy defines important criteria for rolling out your configuration to the designated targets. A deployment strategy includes the…
         (
             "GetDeploymentStrategy",
             OperationOverlay {
@@ -193,14 +189,12 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns information about an AppConfig extension.
         (
             "GetExtension",
             deferred(
                 "ListExtensions includes AWS-authored reference extensions without an account-owner request filter; its child describe cannot run safely until an owned-only selector exists.",
             ),
         ),
-        // Model: Returns information about an AppConfig extension association. For more information about extensions and associations, see Extending workflows in the AppConfig User Guide .
         (
             "GetExtensionAssociation",
             OperationOverlay {
@@ -229,7 +223,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ApplicationId, ConfigurationProfileId, VersionNumber. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a specific configuration version.",
             ),
         ),
-        // Model: Lists all applications in your Amazon Web Services account.
         (
             "ListApplications",
             OperationOverlay {
@@ -242,7 +235,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the configuration profiles for an application.
         (
             "ListConfigurationProfiles",
             OperationOverlay {
@@ -265,7 +257,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists deployment strategies.
         (
             "ListDeploymentStrategies",
             OperationOverlay {
@@ -284,7 +275,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ApplicationId, EnvironmentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the deployments for an environment in descending deployment number order.",
             ),
         ),
-        // Model: Lists the environments for an application.
         (
             "ListEnvironments",
             OperationOverlay {
@@ -312,7 +302,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists the experiment definitions for an account. You can filter results by application, configuration profile, environment, or status.
         (
             "ListExperimentDefinitions",
             OperationOverlay {
@@ -337,7 +326,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ApplicationIdentifier, ExperimentDefinitionIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the experiment runs for a specified experiment definition. You can filter by status.",
             ),
         ),
-        // Model: Lists all AppConfig extension associations in the account. For more information about extensions and associations, see Extending workflows in the AppConfig User Guide .
         (
             "ListExtensionAssociations",
             OperationOverlay {
@@ -350,7 +338,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all custom and Amazon Web Services authored AppConfig extensions in the account. For more information about extensions, see Extending workflows in the AppConfig User Guide .
         (
             "ListExtensions",
             deferred(

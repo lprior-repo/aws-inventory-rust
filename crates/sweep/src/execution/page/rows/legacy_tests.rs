@@ -4,7 +4,6 @@ mod legacy_fixture;
 use legacy_fixture::*;
 
 async fn populated_upgrade(version: u8) -> TestResult {
-    // Given real native facets, both resolved and unresolved relationships, and leased paginated work.
     let bytes = fixture::compiled_competing()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -22,7 +21,6 @@ async fn populated_upgrade(version: u8) -> TestResult {
     downgrade(&directory, version).await?;
     let before = image(&directory, &catalog).await?;
     let old_work = work_image(&directory).await?;
-    // When opening the actual old schema, migration must not manufacture checked source attribution.
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     assert_eq!(reopened.unattributed_authority_count().await?, 2);
     assert_eq!(image(&directory, &catalog).await?, before);
@@ -46,7 +44,6 @@ async fn populated_upgrade(version: u8) -> TestResult {
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     assert_eq!(reopened.unattributed_authority_count().await?, 2);
     assert_eq!(image(&directory, &catalog).await?, before);
-    // Then each prior owner must complete before canonical cutover; the late target resolves only fresh evidence.
     persist(
         &reopened,
         &catalog,
@@ -100,7 +97,6 @@ async fn populated_upgrade(version: u8) -> TestResult {
 #[tokio::test]
 async fn given_populated_legacy_owners_when_all_are_completely_absent_twice_then_baseline_is_tombstoned_not_published_empty()
 -> TestResult {
-    // Given a populated native inventory downgraded to schema15.
     let bytes = fixture::compiled_competing()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -110,7 +106,6 @@ async fn given_populated_legacy_owners_when_all_are_completely_absent_twice_then
     downgrade(&directory, 15).await?;
     let reopened =
         BinaryStore::open_with_catalog(&directory.path().join("inventory.sqlite"), &bytes).await?;
-    // When every historical owner reports a complete first miss, the exact canonical row stays visible.
     for (index, operation) in [
         "ListPortals",
         "GetPortal",
@@ -126,7 +121,6 @@ async fn given_populated_legacy_owners_when_all_are_completely_absent_twice_then
     assert_eq!(reopened.unattributed_authority_count().await?, 2);
     drop(reopened);
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    // Then a second complete miss retires all owners and emits actual resource tombstones.
     for (index, operation) in [
         "ListPortals",
         "GetPortal",
@@ -156,7 +150,6 @@ async fn given_populated_legacy_owners_when_all_are_completely_absent_twice_then
 #[tokio::test]
 async fn given_an_orphan_legacy_baseline_when_only_partial_or_unrelated_complete_work_runs_then_no_unattributed_fields_are_discarded()
 -> TestResult {
-    // Given a genuine old row for which no source owner survived archival.
     let bytes = fixture::compiled_competing()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -180,7 +173,6 @@ async fn given_an_orphan_legacy_baseline_when_only_partial_or_unrelated_complete
         .claim(&sweep, 20_000, 100)
         .await?
         .ok_or("orphan source absent")?;
-    // When the orphan receives a sparse first page but that execution terminates partial.
     resume_first_page(&reopened, &catalog, lease).await?;
     let lease = reopened
         .claim(&sweep, 20_002, 100)
@@ -208,7 +200,6 @@ async fn given_an_orphan_legacy_baseline_when_only_partial_or_unrelated_complete
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     assert_eq!(state(&directory, &catalog).await?, before);
     assert_eq!(reopened.unattributed_authority_count().await?, 1);
-    // Then only a completed attributed facet can replace the orphan's old fields and relationships.
     persist(
         &reopened,
         &catalog,

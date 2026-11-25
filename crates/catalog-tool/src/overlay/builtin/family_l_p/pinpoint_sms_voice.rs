@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pinpoint-sms-voice/service/2018-09-05/pinpoint-sms-voice-2018-09-05.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -28,20 +27,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // List all of the configuration sets associated with your Amazon Pinpoint account in the current region.
-    Resource {
-        operation: "ListConfigurationSets",
-        items: "ConfigurationSets",
-        id: Id::Key(&["$"]),
-        scope: Scope::Region,
-        tokens: Some(("NextToken", "NextToken")),
-        query: &["$"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListConfigurationSets",
+    items: "ConfigurationSets",
+    id: Id::Key(&["$"]),
+    scope: Scope::Region,
+    tokens: Some(("NextToken", "NextToken")),
+    query: &["$"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("pinpoint-sms-voice", GROUPS, RESOURCES)

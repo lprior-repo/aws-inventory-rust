@@ -3,7 +3,6 @@ use crate::kind_map::{
     RelationSource, RelationTarget,
 };
 
-// Grounded in the pinned Deadline, EVS, DataZone, EntityResolution, FIS, FMS and FraudDetector models.
 pub(super) const SOURCE: MappingSource<'static> = MappingSource {
     cfn: &[
         CfnMapping::canonical("AWS::Deadline::Limit"),

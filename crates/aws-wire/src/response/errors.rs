@@ -220,11 +220,8 @@ fn class_from_code(code: Option<&str>) -> Option<ErrorClass> {
     }
 }
 
-/// Upper bound on a server retry hint; larger hints are clamped, not dropped.
 const MAX_RETRY_AFTER_SECONDS: u64 = 300;
 
-/// Decode a delta-seconds `retry-after` header, clamped to `MAX_RETRY_AFTER_SECONDS`.
-/// Non-numeric values (including HTTP-date) carry no usable hint and yield `None`.
 fn parse_retry_after_header(
     headers: &http::HeaderMap,
 ) -> Result<Option<std::time::Duration>, super::DecodeError> {
@@ -238,7 +235,6 @@ fn parse_retry_after_header(
     if text.is_empty() || !text.bytes().all(|byte| byte.is_ascii_digit()) {
         return Ok(None);
     }
-    // All-digit text only fails to parse on u64 overflow, which exceeds the cap.
     let seconds = text
         .parse::<u64>()
         .unwrap_or(MAX_RETRY_AFTER_SECONDS)

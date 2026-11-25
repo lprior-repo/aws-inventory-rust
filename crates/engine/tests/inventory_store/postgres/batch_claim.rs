@@ -37,7 +37,6 @@ async fn check_partial_and_remainder(
         ])
         .await?;
     let sweep = SweepId::new("sweep-partial".to_owned())?;
-    // No scope has completed before, so the tie goes to the smaller scope key.
     let first: Vec<String> = store
         .claim_batch(&sweep, 100, 10_000, 2)
         .await?

@@ -1,12 +1,3 @@
-//! M6.1 Exit Evidence Tests
-//!
-//! Four exit-evidence sentences, each mapped to a test:
-//! 1. After a re-sweep with one change, only that key is sent
-//! 2. A rebuilt graph equals the incrementally updated one (resource-set
-//!    equality at the store snapshot; graph CONTENT equality needs live FalkorDB)
-//! 3. With FalkorDB stopped a sweep completes and the queue is retained
-//!    (the drain-after-return half needs live FalkorDB; see `graph_retry.rs`)
-//! 4. Overflowing the queue ends in a full rebuild enumeration with nothing lost
 #[path = "inventory_store/support.rs"]
 #[allow(
     dead_code,
@@ -20,12 +11,10 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::collections::BTreeMap;
 use support::{TestResult, fixture, observation, page, work};
 
-/// Test 1: After a re-sweep with one change, only that key is sent.
 #[tokio::test]
 async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent() -> TestResult {
     let (_directory, store, _) = fixture().await?;
 
-    // First sweep: add two resources
     store.seed_work(work("initial", "us-east-1")?).await?;
     let lease = store
         .claim(&SweepId::new("initial".to_owned())?, 100, 20)
@@ -44,7 +33,6 @@ async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent
         ))
         .await?;
 
-    // Drain and ack all initial projections
     let mut delivered = Vec::new();
     for entry in store.drain_projection(100).await? {
         store
@@ -57,7 +45,6 @@ async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent
     }
     assert_eq!(delivered.len(), 2, "initial sweep delivers 2 resources");
 
-    // Second sweep: change only thing-1
     store.seed_work(work("re-sweep", "us-east-1")?).await?;
     let lease = store
         .claim(&SweepId::new("re-sweep".to_owned())?, 200, 20)
@@ -68,7 +55,7 @@ async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent
             lease,
             vec![
                 observation("thing-1", "changed")?,
-                observation("thing-2", "beta")?, // unchanged
+                observation("thing-2", "beta")?,
             ],
             true,
             None,
@@ -76,7 +63,6 @@ async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent
         ))
         .await?;
 
-    // Only the changed resource should be pending
     let pending = store.drain_projection(100).await?;
     assert_eq!(
         pending.len(),
@@ -98,12 +84,10 @@ async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent
     Ok(())
 }
 
-/// Test 2: A rebuilt graph equals the incrementally updated one.
 #[tokio::test]
 async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal() -> TestResult {
     let (directory, store, _) = fixture().await?;
 
-    // Add three resources incrementally
     store.seed_work(work("incremental", "us-east-1")?).await?;
     let lease = store
         .claim(&SweepId::new("incremental".to_owned())?, 100, 20)
@@ -123,7 +107,6 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
         ))
         .await?;
 
-    // Track what incremental projection would deliver
     let mut incremental_keys = BTreeMap::new();
     for entry in store.drain_projection(100).await? {
         if let Some(key) = &entry.key {
@@ -142,7 +125,6 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
         "incremental projection delivered 3 resources"
     );
 
-    // Now force overflow BEFORE making a change, so the change triggers a rebuild marker
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
@@ -154,7 +136,6 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
         .await?;
     pool.close().await;
 
-    // Make a change that should trigger a rebuild marker due to overflow
     store
         .seed_work(work("overflow-sweep", "us-east-1")?)
         .await?;
@@ -172,7 +153,6 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
         ))
         .await?;
 
-    // The rebuild marker is now in the outbox
     let pending = store.drain_projection(100).await?;
     let marker = pending
         .iter()
@@ -182,7 +162,6 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
         .ack_projection(ProjectionAck::full_rebuild(marker.revision)?)
         .await?;
 
-    // Enumerate live resources via projection snapshot (same source as rebuild)
     let mut snapshot = store.begin_projection_snapshot().await?;
     let mut rebuild_keys = BTreeMap::new();
     let mut after = None;
@@ -196,8 +175,6 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
         }
     }
 
-    // The rebuilt graph (via snapshot) must contain exactly the same resources
-    // that the incremental graph would have produced.
     assert_eq!(
         rebuild_keys.keys().collect::<Vec<_>>(),
         incremental_keys.keys().collect::<Vec<_>>(),
@@ -207,13 +184,11 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
     Ok(())
 }
 
-/// Test 3: With FalkorDB stopped a sweep completes and the queue is retained.
 #[tokio::test]
 async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_later_delivery()
 -> TestResult {
     let (_directory, store, _) = fixture().await?;
 
-    // Add a resource
     store.seed_work(work("offline", "us-east-1")?).await?;
     let lease = store
         .claim(&SweepId::new("offline".to_owned())?, 100, 20)
@@ -229,21 +204,18 @@ async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_lat
         ))
         .await?;
 
-    // Try to project to an offline server - should report offline, not error
     let backend =
         inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "offline-test")?;
     let report = run_projection(&store, &backend, 10).await?;
     assert!(report.offline, "report should indicate FalkorDB is offline");
     assert_eq!(report.acknowledged, 0, "no acknowledgments when offline");
 
-    // The queue should still have the entry
     let pending = store.drain_projection(100).await?;
     assert!(
         !pending.is_empty(),
         "queue should still have entries after offline attempt"
     );
 
-    // Verify entries are still deliverable (not corrupted by offline attempt)
     let deliverable = pending.iter().filter(|e| e.key.is_some()).count();
     assert!(
         deliverable > 0,
@@ -253,12 +225,10 @@ async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_lat
     Ok(())
 }
 
-/// Test 4: Overflowing the queue ends in a graph equal to a rebuild.
 #[tokio::test]
 async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResult {
     let (directory, store, _) = fixture().await?;
 
-    // Add multiple resources
     store.seed_work(work("overflow", "us-east-1")?).await?;
     let lease = store
         .claim(&SweepId::new("overflow".to_owned())?, 100, 20)
@@ -278,7 +248,6 @@ async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResu
         ))
         .await?;
 
-    // Ack the incremental projections to simulate normal delivery
     for entry in store.drain_projection(100).await? {
         store
             .ack_projection(ProjectionAck::new(
@@ -288,7 +257,6 @@ async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResu
             .await?;
     }
 
-    // Force outbox overflow by triggering a change while outbox is over limit
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
@@ -300,7 +268,6 @@ async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResu
         .await?;
     pool.close().await;
 
-    // Make a change that should trigger a rebuild marker
     store
         .seed_work(work("overflow-sweep", "us-east-1")?)
         .await?;
@@ -318,7 +285,6 @@ async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResu
         ))
         .await?;
 
-    // Draining should yield a rebuild marker first
     let pending = store.drain_projection(100).await?;
     let Some(first) = pending.first() else {
         return Err("no entries after overflow".into());
@@ -328,12 +294,10 @@ async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResu
         "overflow should trigger rebuild marker first"
     );
 
-    // Acknowledge the rebuild marker
     store
         .ack_projection(ProjectionAck::full_rebuild(first.revision)?)
         .await?;
 
-    // Verify all original resources are still present via projection snapshot
     let mut snapshot = store.begin_projection_snapshot().await?;
     let mut rebuild_keys = BTreeMap::new();
     let mut after = None;

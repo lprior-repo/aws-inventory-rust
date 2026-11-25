@@ -146,12 +146,10 @@ fn dispatched(
 #[test]
 fn given_one_production_constraint_operation_when_compiled_then_all_five_canonical_schemas_and_relations_are_authorized()
 -> TestResult {
-    // Given the actual pinned Smithy model, embedded policies and production kind mappings.
     let catalog = catalog()?;
     let plan = catalog
         .lookup(SERVICE, OPERATION)
         .ok_or("constraint plan absent")?;
-    // When the checked runtime catalog is decoded, there is one producer, not five filtered calls.
     assert_eq!(catalog.plans().len(), 2);
     assert_eq!(plan.emission(), Emission::EmitMetadata);
     assert_eq!(
@@ -172,7 +170,6 @@ fn given_one_production_constraint_operation_when_compiled_then_all_five_canonic
     let parent = catalog
         .lookup(SERVICE, "ListPortfolios")
         .ok_or("portfolio plan absent")?;
-    // Then every selected subtype owns a canonical schema and exactly its checked portfolio relation.
     let mut tables = BTreeSet::new();
     for (_, kind) in MAPPINGS {
         let schema = catalog

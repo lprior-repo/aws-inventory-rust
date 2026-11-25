@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/eventbridgev2/service/2025-05-15/eventbridgev2-2025-05-15.json
 use super::support::{arn, bound, describe, inventory, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "eventbridgev2",
         vec![
-            // Lists the event buses visible to the caller: buses the account owns and buses shared with it through AWS RAM.
             queried(
                 inventory(
                     "ListEventBuses",
@@ -22,7 +20,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "EventBusAccountId",
                 ],
             )?,
-            // Lists EventSources as summaries.
             queried(
                 inventory(
                     "ListEventSources",
@@ -39,7 +36,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "EventSourceAccountId",
                 ],
             )?,
-            // Lists subscribers as summaries.
             queried(
                 inventory(
                     "ListSubscribers",
@@ -56,7 +52,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "SubscriberAccountId",
                 ],
             )?,
-            // DescribeEventBus returns the full configuration of an event bus.
             queried(
                 bound(
                     describe("DescribeEventBus", "$", arn("EventBusArn")?)?,
@@ -71,7 +66,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "LastModifiedTime",
                 ],
             )?,
-            // DescribeEventSource returns the full configuration of an event source.
             queried(
                 bound(
                     describe("DescribeEventSource", "$", arn("EventSourceArn")?)?,

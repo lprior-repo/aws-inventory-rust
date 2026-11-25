@@ -1,25 +1,18 @@
-// Pinned operation purposes: .local/aws-models/models/secrets-manager/service/2017-10-17/secrets-manager-2017-10-17.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Links a primary secret in your account to a replica secret in a different Amazon Web Services account and starts replication to this replica. The replica secret must already exist in the other Amazon Web Services account. Create the replica with CreateSecret and set its CrossAccountPrimaryARN field set to this primary secret's ARN. When you call AssociateCrossAccountReplica, Secrets Manager calls
     (
         "AssociateCrossAccountReplica",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Full modeled response contains authentication/secret material SecretValues[].SecretBinary, SecretValues[].SecretString. Pinned purpose: Retrieves the contents of the encrypted fields SecretString or SecretBinary for up to 20 secrets. To retrieve a single secret, call GetSecretValue . To choose which secrets to retrieve, you can specify a list of secrets by name or ARN, or you can use filters. If Secrets Manager encounters errors suc. Projection cannot authorize this call.
     ("BatchGetSecretValue", Decision::Denied(DenyReason::Secret)),
-    // Changes service state rather than reading inventory. Pinned purpose: Turns off automatic rotation, and if a rotation is currently in progress, cancels the rotation. If you cancel a rotation in progress, it can leave the VersionStage labels in an unexpected state. You might need to remove the staging label AWSPENDING from the partially created version. You also need to determine whether to roll back to the previous version of the secret by moving the staging label A
     ("CancelRotateSecret", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new secret. A secret can be a password, a set of credentials such as a user name and password, an OAuth token, or other secret information that you store in an encrypted form in Secrets Manager. The secret also includes the connection information to access a database or other service. Secrets Manager does not encrypt this connection information. A secret in Secrets Manager consists of bo
     ("CreateSecret", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the resource-based permission policy attached to the secret. To attach a policy to a secret, use PutResourcePolicy . Secrets Manager generates a CloudTrail log entry when you call this action. Do not include sensitive information in request parameters because it might be logged. For more information, see Logging Secrets Manager events with CloudTrail . Required permissions: secretsmanager:
     (
         "DeleteResourcePolicy",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a secret and all of its versions. You can specify a recovery window during which you can restore the secret. The minimum recovery window is 7 days. The default recovery window is 30 days. Secrets Manager attaches a DeletionDate stamp to the secret that specifies the end of the recovery window. At the end of the recovery window, Secrets Manager deletes the secret permanently. You can't dele
     ("DeleteSecret", Decision::Denied(DenyReason::Mutating)),
     (
         "DescribeSecret",
@@ -27,12 +20,10 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors SecretId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ARN, Name, Type, Description, KmsKeyId, RotationEnabled, RotationLambdaARN, RotationRules, ExternalSecretRotationMetadata, ExternalSecretRotationRoleArn, LastRotatedDate, LastChangedDate, LastAccessedDate, DeletedDate, NextRotationDate, Tags, VersionIdsToStages, OwningService, CreatedDate, PrimaryRegion, ReplicationStatus, CrossAccountPrimary, CrossAccountReplicas. Pinned purpose: Retrieves the details of a secret. It does not include the encrypted secret value. Secrets Manager only returns fields that have a value in the response. The VersionIdsToStages field in the response includes every version ID that has a staging label ",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes the link between a primary secret in your account and a cross-account replica secret, and stops replication to the replica secret. Call this operation on the primary secret. This action removes the replica association created by AssociateCrossAccountReplica . Disassociating the replica from the primary does not delete the replica secret or convert the replica secret to a standalone secret.
     (
         "DisassociateCrossAccountReplica",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Generates a random password. We recommend that you specify the maximum length and include every character type that the system you are generating a password for can support. By default, Secrets Manager uses uppercase and lowercase letters, numbers, and the following characters in passwords: !\"#$%&'()*+,-./:; ?@[\\]^_`{|}~ Secrets Manager generates a CloudTrail log entry when you call this action.
     ("GetRandomPassword", Decision::Denied(DenyReason::Content)),
     (
         "GetResourcePolicy",
@@ -40,7 +31,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors SecretId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ARN, Name, ResourcePolicy, PolicyName. Pinned purpose: Retrieves the JSON text of the resource-based policy document attached to the secret. For more information about permissions policies attached to a secret, see Permissions policies attached to a secret . Secrets Manager generates a CloudTrail log ent",
         ),
     ),
-    // Full modeled response contains authentication/secret material SecretBinary, SecretString. Pinned purpose: Retrieves the contents of the encrypted fields SecretString or SecretBinary from the specified version of a secret, whichever contains content. To retrieve the values for a group of secrets, call BatchGetSecretValue . We recommend that you cache your secret values by using client-side caching. Cachi. Projection cannot authorize this call.
     ("GetSecretValue", Decision::Denied(DenyReason::Secret)),
     (
         "ListResourcePolicies",
@@ -54,11 +44,8 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors SecretId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Versions, NextToken, ARN, Name. Pinned purpose: Lists the versions of a secret. Secrets Manager uses staging labels to indicate the different versions of a secret. For more information, see Secrets Manager concepts: Versions . To list the secrets in the account, use ListSecrets . ListSecretVersion",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Attaches a resource-based permission policy to a secret. A resource-based policy is optional. For more information, see Authentication and access control for Secrets Manager For information about attaching a policy in the console, see Attach a permissions policy to a secret . Secrets Manager generates a CloudTrail log entry when you call this action. Do not include sensitive information in request
     ("PutResourcePolicy", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new version of your secret by creating a new encrypted value and attaching it to the secret. version can contain a new SecretString value or a new SecretBinary value. Do not call PutSecretValue at a sustained rate of more than once every 10 minutes. When you update the secret value, Secrets Manager creates a new version of the secret. Secrets Manager keeps 100 of the most recent versions
     ("PutSecretValue", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: For a secret that is replicated to other Regions, deletes the secret replicas from the Regions you specify. Secrets Manager generates a CloudTrail log entry when you call this action. Do not include sensitive information in request parameters because it might be logged. For more information, see Logging Secrets Manager events with CloudTrail . Required permissions: secretsmanager:RemoveRegionsFrom
     (
         "RemoveRegionsFromReplication",
         Decision::Denied(DenyReason::Mutating),
@@ -69,22 +56,15 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors SecretId, AddReplicaRegions are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ARN, ReplicationStatus. Pinned purpose: Replicates the secret to a new Regions. See Multi-Region secrets . Secrets Manager generates a CloudTrail log entry when you call this action. Do not include sensitive information in request parameters because it might be logged. For more information",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Cancels the scheduled deletion of a secret by removing the DeletedDate time stamp. You can access a secret again after it has been restored. Secrets Manager generates a CloudTrail log entry when you call this action. Do not include sensitive information in request parameters because it might be logged. For more information, see Logging Secrets Manager events with CloudTrail . Required permissions:
     ("RestoreSecret", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Configures and starts the asynchronous process of rotating the secret. For information about rotation, see Rotate secrets in the Secrets Manager User Guide . If you include the configuration parameters, the operation sets the values for the secret and then immediately starts a rotation. If you don't include the configuration parameters, the operation starts a rotation with the values already store
     ("RotateSecret", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes the link between a replica secret and its primary secret, and stops replication to the replica. You call this operation from the replica account or Region. Depending on the type of replica, the behavior is: Cross-Region replica : promotes the replica to a standalone primary secret in the replica Region. Cross-account replica : promotes the replica in your account to a standalone secret and
     (
         "StopReplicationToReplica",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Attaches tags to a secret. Tags consist of a key name and a value. Tags are part of the secret's metadata. They are not associated with specific versions of the secret. This operation appends tags to the existing list of tags. For tag quotas and naming restrictions, see Service quotas for Tagging in the Amazon Web Services General Reference guide . If you use tags as part of your security strategy
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes specific tags from a secret. This operation is idempotent. If a requested tag is not attached to the secret, no error is returned and the secret metadata is unchanged. If you use tags as part of your security strategy, then removing a tag can change permissions. If successfully completing this operation would result in you losing your permissions for this secret, then the operation is bloc
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Modifies the details of a secret, including metadata and the secret value. To change the secret value, you can also use PutSecretValue . To change the rotation configuration of a secret, use RotateSecret instead. To change a secret so that it is managed by another service, you need to recreate the secret in that service. See Secrets Manager secrets managed by other Amazon Web Services services . W
     ("UpdateSecret", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Modifies the staging labels attached to a version of a secret. Secrets Manager uses staging labels to track a version as it progresses through the secret rotation process. Each staging label can be attached to only one version at a time. To add a staging label to a version when it is already attached to another version, Secrets Manager first removes it from the other version first and then attache
     (
         "UpdateSecretVersionStage",
         Decision::Denied(DenyReason::Mutating),

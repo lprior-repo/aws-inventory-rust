@@ -1,14 +1,11 @@
-// Pinned operation purposes: .local/aws-models/models/sagemakertrainingsessionruntime/service/2025-02-10/sagemakertrainingsessionruntime-2025-02-10.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Submits an asynchronous sampling operation to generate text or compute log-probabilities from the model associated with the specified training session. The session must be in Running or Blocked state. Use GetSamplingOperationResult to poll for the result.
     (
         "ExecuteSamplingOperation",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Submits an asynchronous training operation to the specified training session. The service executes operations in sequence number order. The session must be in Running or Blocked state. Use GetTrainingOperationResult to poll for the result. Supported operation types: forward , forwardBackward , optimizerStep , saveWeights , saveState , and loadState .
     (
         "ExecuteTrainingOperation",
         Decision::Denied(DenyReason::Mutating),
@@ -25,7 +22,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors trainingSessionName, operationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members status, operationResult, errorDetails, tokenUsage. Pinned purpose: Retrieves the current status and result of a previously submitted training operation. Poll this operation until the status reaches a terminal state (Completed, Failed, or Skipped).",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Sends an inference request to the model associated with the specified training session and returns the response synchronously. The service passes the request and response bodies to and from the model without modification.
     (
         "SampleTrainingSession",
         Decision::Denied(DenyReason::Mutating),

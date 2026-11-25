@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/directory-service-data/service/2023-05-31/directory-service-data-2023-05-31.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AddGroupMember",

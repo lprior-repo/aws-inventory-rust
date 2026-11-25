@@ -1,10 +1,3 @@
-//! Freshness and coverage panel model (M7.3).
-//!
-//! Turns the stored scope outcomes read by `cmdb_view::Database::scope_freshness`
-//! into the rows and summary the panel shows. The model holds no state of its
-//! own: every figure is a stored outcome or an age computed from the supplied
-//! clock, so the panel cannot disagree with the `scope_freshness` SQL view.
-
 use cmdb_view::{Database, ScopeFreshness, ScopeFreshnessReport, ScopeOutcomeCounts, ViewError};
 use std::time::Duration;
 
@@ -12,32 +5,23 @@ const SECONDS_PER_MINUTE: u64 = 60;
 const SECONDS_PER_HOUR: u64 = 3_600;
 const SECONDS_PER_DAY: u64 = 86_400;
 
-/// One scope line of the panel.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FreshnessRow {
-    /// `account/region service:operation`, marked when the scope lists children.
     pub scope: String,
-    /// Stored outcome name: complete, partial, inaccessible, unsupported,
-    /// failed or unobserved.
     pub outcome: &'static str,
-    /// Age of the latest stored outcome.
     pub age: String,
-    /// Age of the last complete outcome, or `never`.
     pub last_complete: String,
 }
 
-/// The whole panel: summary line, per-outcome counts and stalest-first rows.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FreshnessPanel {
     pub summary: String,
     pub total_scopes: u64,
     pub counts: ScopeOutcomeCounts,
     pub rows: Vec<FreshnessRow>,
-    /// More scopes are stored than `rows` lists.
     pub truncated: bool,
 }
 
-/// Compact age: `45s`, `12m`, `3h 05m`, `2d 04h`.
 pub fn format_age(age_ms: u64) -> String {
     let seconds = Duration::from_millis(age_ms).as_secs();
     if seconds < SECONDS_PER_MINUTE {
@@ -96,7 +80,6 @@ impl FreshnessPanel {
         }
     }
 
-    /// Reads the stored outcomes and builds the panel at `now_ms`.
     pub async fn load(database: &Database, now_ms: i64, limit: usize) -> Result<Self, ViewError> {
         Ok(Self::from_report(
             &database.scope_freshness(now_ms, limit).await?,

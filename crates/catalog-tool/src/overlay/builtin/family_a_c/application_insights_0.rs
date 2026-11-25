@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/application-insights/service/2018-11-25/application-insights-2018-11-25.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -46,7 +44,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceGroupName, PatternSetName, PatternName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the specified log pattern from a LogPatternSet .",
             ),
         ),
-        // Model: Describes the application.
         (
             "DescribeApplication",
             OperationOverlay {
@@ -117,7 +114,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceGroupName, ComponentName, WorkloadId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes a workload and its configuration.",
             ),
         ),
-        // Model: Lists the IDs of the applications that you are monitoring.
         (
             "ListApplications",
             OperationOverlay {

@@ -60,11 +60,9 @@ async fn seed_tags(pool: &SqlitePool, key: &ResourceKey, tags: &[(&str, &str)]) 
 #[tokio::test]
 async fn given_colliding_resource_ids_when_tags_are_paged_then_only_full_scoped_rows_are_read()
 -> TestResult {
-    // Given the same ID and tag key in several account/region/kind scopes.
     let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     let mut snapshot = store.begin_projection_snapshot().await?;
-    // When a two-tag resource is read one tag per page.
     let first = snapshot.tags_for(&root, None, 1).await?;
     assert_eq!(
         first.tags,
@@ -75,7 +73,6 @@ async fn given_colliding_resource_ids_when_tags_are_paged_then_only_full_scoped_
     );
     let cursor = first.next.ok_or("first tag page lacks continuation")?;
     let last = snapshot.tags_for(&root, Some(cursor.clone()), 1).await?;
-    // Then the final full page is terminal, and replay returns exactly that page.
     assert_eq!(
         last.tags,
         vec![ProjectionTag {
@@ -98,17 +95,14 @@ async fn given_colliding_resource_ids_when_tags_are_paged_then_only_full_scoped_
 #[tokio::test]
 async fn given_a_tag_snapshot_when_sqlite_changes_then_pages_keep_the_original_revision()
 -> TestResult {
-    // Given a snapshot pinned by its first SELECT.
     let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     let mut snapshot = store.begin_projection_snapshot().await?;
     let first = snapshot.tags_for(&root, None, 1).await?;
-    // When a writer changes the next tag between page reads.
     sqlx::query("UPDATE tags SET tag_value='updated' WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND tag_key='b'")
         .bind(root.account.as_str()).bind(root.region.as_str()).bind(root.kind.as_str())
         .bind(root.id.as_str()).execute(&pool).await?;
     let next = snapshot.tags_for(&root, first.next, 1).await?;
-    // Then the original revision remains visible until the snapshot finishes.
     assert_eq!(
         next.tags,
         vec![ProjectionTag {
@@ -156,7 +150,6 @@ async fn given_oversized_legacy_tags_when_projected_then_excluded_without_error(
         .bind(root.account.as_str()).bind(root.region.as_str()).bind(root.kind.as_str())
         .bind(root.id.as_str()).execute(&pool).await?;
     let mut snapshot = store.begin_projection_snapshot().await?;
-    // The oversized tag is excluded; remaining tags are still readable.
     let page = snapshot.tags_for(&root, None, 10).await?;
     assert_eq!(page.tags.len(), 1);
     assert!(page.tags.first().is_some_and(|tag| tag.key == "b"));
@@ -170,10 +163,8 @@ async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_suc
 {
     let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
-    // 128 Unicode characters, 256 UTF-8 bytes. Well within the character limit.
     let key = "é".repeat(128);
     let value = "é".repeat(256);
-    // Use ON CONFLICT because the resource already exists from tagged_fixture().
     sqlx::query("INSERT OR IGNORE INTO resources(account,region,kind,id,content_hash,first_seen,last_changed) VALUES(?1,?2,?3,?4,?5,0,0)")
         .bind(root.account.as_str()).bind(root.region.as_str()).bind(root.kind.as_str())
         .bind(root.id.as_str()).bind(vec![0_u8; 32]).execute(&pool).await?;
@@ -190,8 +181,6 @@ async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_suc
     .await?;
     let mut snapshot = store.begin_projection_snapshot().await?;
     let page = snapshot.tags_for(&root, None, 10).await?;
-    // The fixture created 2 ASCII tags ("a", "b"); we added one multibyte tag.
-    // Verify the multibyte tag is present and readable.
     let multibyte = page
         .tags
         .iter()
@@ -209,7 +198,6 @@ async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_suc
 async fn given_oversized_tag_key_when_projected_then_excluded() -> TestResult {
     let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
-    // Key with 129 characters exceeds the 128 limit.
     let long_key = "é".repeat(129);
     let value = "value";
     sqlx::query(
@@ -225,7 +213,6 @@ async fn given_oversized_tag_key_when_projected_then_excluded() -> TestResult {
     .await?;
     let mut snapshot = store.begin_projection_snapshot().await?;
     let page = snapshot.tags_for(&root, None, 10).await?;
-    // The oversized key should be excluded; only the 2 fixture tags remain.
     assert_eq!(page.tags.len(), 2);
     for tag in page.tags.iter() {
         assert_eq!(tag.key.chars().count(), 1);

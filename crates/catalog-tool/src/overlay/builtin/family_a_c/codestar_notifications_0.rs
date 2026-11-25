@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codestar-notifications/service/2019-10-15/codestar-notifications-2019-10-15.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -22,7 +20,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires TargetAddress. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a specified target for notifications.",
             ),
         ),
-        // Model: Returns information about a specified notification rule.
         (
             "DescribeNotificationRule",
             OperationOverlay {
@@ -52,7 +49,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is EventTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns information about the event types available for configuring notifications.",
             ),
         ),
-        // Model: Returns a list of the notification rules for an Amazon Web Services account.
         (
             "ListNotificationRules",
             OperationOverlay {

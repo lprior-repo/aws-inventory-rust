@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/customer-profiles/service/2020-08-15/customer-profiles-2020-08-15.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -255,7 +253,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns information about a specific domain.
         (
             "GetDomain",
             OperationOverlay {
@@ -470,7 +467,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of all the domains for an AWS account that have been created.
         (
             "ListDomains",
             OperationOverlay {

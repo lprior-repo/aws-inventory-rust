@@ -126,7 +126,6 @@ pub(super) fn encoded_len(
     if count > MAX_DISCOVERY_FRAMES {
         return Err(ContextError::Bounds);
     }
-    // Root map has two keys, the version, and the definite-length frame list.
     let count_len = u64::try_from(count).map_err(|_| ContextError::Bounds)?;
     let initial = 4_usize
         .checked_add(argument_len(count_len))
@@ -136,7 +135,6 @@ pub(super) fn encoded_len(
         .iter()
         .chain(additional)
         .try_fold(initial, |total, frame| {
-            // A six-field frame map has a one-byte map header and six one-byte keys.
             let initial = total
                 .checked_add(7)
                 .and_then(|size| size.checked_add(argument_len(u64::from(frame.ordinal))))

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/apigatewayv2/service/2018-11-29/apigatewayv2-2018-11-29.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::IdentityField;
 
@@ -256,7 +254,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Gets an Api resource.
         (
             "GetApi",
             OperationOverlay {
@@ -292,7 +289,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires DomainName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets API mappings.",
             ),
         ),
-        // Model: Gets a collection of Api resources.
         (
             "GetApis",
             OperationOverlay {
@@ -348,7 +344,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ApiId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the Deployments for an API.",
             ),
         ),
-        // Model: Gets a domain name.
         (
             "GetDomainName",
             OperationOverlay {
@@ -372,7 +367,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets the domain names for an AWS account.
         (
             "GetDomainNames",
             OperationOverlay {
@@ -529,7 +523,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets a collection of Tag resources.",
             ),
         ),
-        // Model: Gets a VPC link.
         (
             "GetVpcLink",
             OperationOverlay {
@@ -553,7 +546,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a collection of VPC links.
         (
             "GetVpcLinks",
             OperationOverlay {
@@ -573,7 +565,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Body. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Imports an API.",
             ),
         ),
-        // Model: Lists portal products.
         (
             "ListPortalProducts",
             OperationOverlay {
@@ -587,7 +578,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Portal summaries contain configuration metadata and inline tags, not portal document payloads.
         (
             "ListPortals",
             OperationOverlay {

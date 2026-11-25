@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/auto-scaling-plans/service/2018-01-06/auto-scaling-plans-2018-01-06.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -22,7 +20,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ScalingPlanName, ScalingPlanVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the scalable resources in the specified scaling plan.",
             ),
         ),
-        // Model: Describes one or more of your scaling plans.
         (
             "DescribeScalingPlans",
             OperationOverlay {

@@ -110,7 +110,6 @@ fn resolve_request_path<'m>(
 ) -> Option<crate::plans::model::ShapeRef<'m>> {
     let root = model.side_root(operation, "input")?;
     path.split('.').try_fold(root, |shape, segment| {
-        // Native request cursor ancestors must be structures, not projected rows.
         (plans::model::shape_type(shape.value) == Some("structure"))
             .then_some(shape)
             .and_then(|shape| model.resolve_path_from(shape, segment).ok())

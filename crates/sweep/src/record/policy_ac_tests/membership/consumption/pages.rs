@@ -41,7 +41,6 @@ impl PageContext<'_, '_> {
             sweep,
         } = self;
         let mut seen = BTreeSet::new();
-        // When real child projection, durable work leases, cursor resumes and native serializers consume both pages.
         for at in 1..=expected.len() {
             let at = i64::try_from(at)?;
             let lease = store

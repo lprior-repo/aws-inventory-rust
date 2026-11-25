@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bedrock/service/2023-04-20/bedrock-2023-04-20.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -291,7 +289,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires policyArn, buildWorkflowId, testCaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the test result for a specific Automated Reasoning policy test. Returns detailed validation findings and execution status.",
             ),
         ),
-        // Model: Get the properties associated with a Amazon Bedrock custom model that you have created. For more information, see Custom models in the Amazon Bedrock User Guide .
         (
             "GetCustomModel",
             OperationOverlay {
@@ -344,7 +341,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires guardrailIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets details about a guardrail. If you don't specify a version, the response returns details for the DRAFT version.",
             ),
         ),
-        // Model: Gets properties associated with a customized model you imported.
         (
             "GetImportedModel",
             OperationOverlay {
@@ -415,7 +411,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires promptRouterArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves details about a prompt router.",
             ),
         ),
-        // Model: Returns details for a Provisioned Throughput. For more information, see Provisioned Throughput in the Amazon Bedrock User Guide .
         (
             "GetProvisionedModelThroughput",
             OperationOverlay {
@@ -455,7 +450,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists the advanced prompt optimization jobs in your account.
         (
             "ListAdvancedPromptOptimizationJobs",
             OperationOverlay {
@@ -468,7 +462,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all Automated Reasoning policies in your account, with optional filtering by policy ARN. This helps you manage and discover existing policies.
         (
             "ListAutomatedReasoningPolicies",
             OperationOverlay {
@@ -499,7 +492,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires policyArn, buildWorkflowId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists test results for an Automated Reasoning policy, showing how the policy performed against various test scenarios and validation checks.",
             ),
         ),
-        // Model: Lists custom model deployments in your account. You can filter the results by creation time, name, status, and associated model. Use this operation to manage and monitor your custom model…
         (
             "ListCustomModelDeployments",
             OperationOverlay {
@@ -512,7 +504,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of the custom models that you have created with the CreateModelCustomizationJob operation. For more information, see Custom models in the Amazon Bedrock User Guide .
         (
             "ListCustomModels",
             OperationOverlay {
@@ -534,7 +525,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is guardrailsConfig; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the account-level enforced guardrail configurations.",
             ),
         ),
-        // Model: Lists all existing evaluation jobs.
         (
             "ListEvaluationJobs",
             OperationOverlay {
@@ -559,7 +549,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is modelSummaries; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists Amazon Bedrock foundation models that you can use. You can filter the results with the request parameters. For more information, see Foundation models in the Amazon Bedrock User Guide .",
             ),
         ),
-        // Model: Lists details about all the guardrails in an account. To list the DRAFT version of all your guardrails, don't specify the guardrailIdentifier field. To list all versions of a guardrail, specify the…
         (
             "ListGuardrails",
             OperationOverlay {
@@ -572,7 +561,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of models you've imported. You can filter the results to return based on one or more criteria. For more information, see Import a customized model in the Amazon Bedrock User Guide .
         (
             "ListImportedModels",
             OperationOverlay {
@@ -585,7 +573,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // APPLICATION profiles are customer-created resources; SYSTEM_DEFINED profiles are reference data.
         (
             "ListInferenceProfiles",
             OperationOverlay {
@@ -609,7 +596,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists the endpoints for models from Amazon Bedrock Marketplace in your Amazon Web Services account.
         (
             "ListMarketplaceModelEndpoints",
             OperationOverlay {
@@ -622,7 +608,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of model copy jobs that you have submitted. You can filter the jobs to return based on one or more criteria. For more information, see Copy models to be used in other regions in the…
         (
             "ListModelCopyJobs",
             OperationOverlay {
@@ -635,7 +620,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of model customization jobs that you have submitted. You can filter the jobs to return based on one or more criteria. For more information, see Custom models in the Amazon Bedrock User…
         (
             "ListModelCustomizationJobs",
             OperationOverlay {
@@ -648,7 +632,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of import jobs you've submitted. You can filter the results to return based on one or more criteria. For more information, see Import a customized model in the Amazon Bedrock User…
         (
             "ListModelImportJobs",
             OperationOverlay {
@@ -661,7 +644,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all batch inference jobs in the account. For more information, see View details about a batch inference job .
         (
             "ListModelInvocationJobs",
             OperationOverlay {
@@ -680,7 +662,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is promptRouterSummaries; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves a list of prompt routers.",
             ),
         ),
-        // Model: Lists the Provisioned Throughputs in the account. For more information, see Provisioned Throughput in the Amazon Bedrock User Guide .
         (
             "ListProvisionedModelThroughputs",
             OperationOverlay {

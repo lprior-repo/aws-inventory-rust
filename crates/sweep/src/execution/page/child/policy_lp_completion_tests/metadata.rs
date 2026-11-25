@@ -11,7 +11,6 @@ const DIGESTS: [&str; 2] = [
 #[tokio::test]
 async fn given_omics_reference_integrity_metadata_when_native_pages_resume_then_md5_survives_reopen_while_readsets_are_denied()
 -> TestResult {
-    // Given actual policy compilation includes the clinical ReadSets exclusion.
     let policies = catalog_tool::overlay::embedded()?;
     let omics = policies
         .iter()
@@ -42,7 +41,6 @@ async fn given_omics_reference_integrity_metadata_when_native_pages_resume_then_
     scenario
         .seed(plan(&catalog, "omics", "ListReferenceStores")?)
         .await?;
-    // When resource-only references, including their native integrity digests, traverse real work.
     for _ in 0..3 {
         let lease = scenario.claim().await?;
         let operation = lease.scope().operation().as_str().to_owned();
@@ -70,7 +68,6 @@ async fn given_omics_reference_integrity_metadata_when_native_pages_resume_then_
             .apply(&catalog, callable, lease, &request, body)
             .await?;
     }
-    // Then exact owned resources, store edges and both md5 values remain after reopening SQLite.
     let scenario = scenario.reopen().await?;
     let ids: BTreeSet<_> = ["1234567891", "1234567892"]
         .into_iter()

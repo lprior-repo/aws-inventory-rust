@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codecatalyst/service/2022-09-28/codecatalyst-2022-09-28.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

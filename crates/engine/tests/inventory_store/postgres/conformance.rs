@@ -59,7 +59,6 @@ async fn fixture(config: PgWriteConfig) -> TestResult<(TestDatabase, PgStore, Ve
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn a_page_at_the_threshold_creates_staging_tables_but_a_smaller_page_does_not() -> TestResult
 {
-    // Given a store whose resource and kind staging threshold is two.
     let threshold = NonZeroUsize::new(2).ok_or("threshold must be nonzero")?;
     let (database, store, _) =
         fixture(PgWriteConfig::default().with_copy_min_rows(threshold)).await?;
@@ -72,7 +71,6 @@ async fn a_page_at_the_threshold_creates_staging_tables_but_a_smaller_page_does_
 }
 
 async fn check_stage_threshold(store: &PgStore, pool: &sqlx::PgPool) -> TestResult {
-    // When one row arrives, then the UNNEST path leaves no temp tables behind.
     store.seed_works(&[super::work("work-1", None)?]).await?;
     let first = support::page(
         super::claim(store, "work-1", 100).await?,
@@ -84,7 +82,6 @@ async fn check_stage_threshold(store: &PgStore, pool: &sqlx::PgPool) -> TestResu
     let (result, lease) = store.commit_page_keeping(first, 10_000).await?;
     assert_eq!(result.stats.resources_inserted, 1);
     assert!(staging_tables(pool).await?.is_empty());
-    // When a page contains two new rows, then both staging tables exist.
     let second = support::page(
         lease.ok_or("first page did not keep its lease")?,
         vec![

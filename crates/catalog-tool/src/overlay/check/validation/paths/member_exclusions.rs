@@ -125,7 +125,6 @@ fn unique_struct_member<'a>(
     let mut pending = vec![root];
     let mut visits = BTreeMap::new();
     let mut sites = 0;
-    // At most two visits per shape detect shared paths and cycles without recursion.
     while let Some(shape) = pending.pop() {
         let seen = visits.entry(shape.id).or_insert(0u8);
         if *seen == 2 {

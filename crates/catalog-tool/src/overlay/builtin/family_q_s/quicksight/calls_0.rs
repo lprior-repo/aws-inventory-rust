@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/quicksight/service/2018-04-01/quicksight-2018-04-01.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

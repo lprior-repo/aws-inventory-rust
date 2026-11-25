@@ -65,8 +65,6 @@ pub(super) fn parse(text: &str) -> Result<BTreeMap<String, &str>, Error> {
         })
 }
 
-/// Refresh the tracked reference, fetching only services used by callable plans/mappings.
-/// Date is explicit so invocation and fixtures never depend on a wall clock.
 pub fn refresh(root: &Path, date: &str) -> Result<(), Error> {
     validate_date(date)?;
     let bytes = std::fs::read(root.join("catalog/aws-api.catalog"))?;

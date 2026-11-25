@@ -90,7 +90,6 @@ pub enum IdentityChoicePlan {
     Discriminated(Box<[IdentityBranchPlan]>),
 }
 
-/// Exact producer fields reviewed as inputs to later discovery work.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ContextProjectionPlan {
     pub selected: Box<[Box<[FieldId]>]>,

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/direct-connect/service/2012-10-25/direct-connect-2012-10-25.json
 use super::support::{arn, bound, inventory, key, queried, reviewed, scoped, tagged, token};
 use crate::overlay::{NameError, Scope, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "direct-connect",
         vec![
-            // Displays the specified connection or all connections in this Region.
             queried(
                 tagged(
                     inventory(
@@ -28,7 +26,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "portEncryptionStatus",
                 ],
             )?,
-            // Lists all your Direct Connect gateways or only the specified Direct Connect gateway.
             queried(
                 scoped(
                     tagged(
@@ -49,7 +46,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "stateChangeError",
                 ],
             )?,
-            // Lists the interconnects owned by the Amazon Web Services account or only the specified interconnect.
             queried(
                 tagged(
                     inventory(
@@ -70,7 +66,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "portEncryptionStatus",
                 ],
             )?,
-            // Describes all your link aggregation groups (LAG) or the specified LAG.
             queried(
                 tagged(
                     inventory(
@@ -89,7 +84,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "providerName",
                 ],
             )?,
-            // Lists the resiliency groups owned by your Amazon Web Services account in the current Amazon Web Services Region.
             queried(
                 inventory(
                     "ListResiliencyGroups",
@@ -105,7 +99,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "state",
                 ],
             )?,
-            // Bind the documented one-of gateway selector even though the Smithy members are individually optional.
             queried(
                 scoped(
                     bound(
@@ -168,12 +161,9 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             super::s_direct_connect_decisions_0::ENTRIES,
             super::s_direct_connect_decisions_1::ENTRIES,
         ],
-        &[
-            // Both virtualInterfaces[].authKey and bgpPeers[].authKey return BGP authentication keys.
-            (
-                "DescribeVirtualInterfaces",
-                crate::classes::DenyReason::Secret,
-            ),
-        ],
+        &[(
+            "DescribeVirtualInterfaces",
+            crate::classes::DenyReason::Secret,
+        )],
     )
 }

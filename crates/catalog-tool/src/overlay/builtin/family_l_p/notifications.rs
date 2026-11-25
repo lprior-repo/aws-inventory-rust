@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/notifications/service/2018-05-10/notifications-2018-05-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -88,7 +87,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of abbreviated NotificationConfigurations according to specified filters, in reverse chronological order (newest first).
     Resource {
         operation: "ListNotificationConfigurations",
         items: "notificationConfigurations",
@@ -100,7 +98,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of Managed Notification Configurations according to specified filters, ordered by creation time in reverse chronological order (newest first).
     Resource {
         operation: "ListManagedNotificationConfigurations",
         items: "managedNotificationConfigurations",
@@ -112,7 +109,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of NotificationHubs .
     Resource {
         operation: "ListNotificationHubs",
         items: "notificationHubs",

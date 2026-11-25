@@ -33,7 +33,6 @@ async fn given_bound_channel_when_summary_parent_is_equal_absent_or_hostile_then
         ("null", Some(Json::Null), true),
         ("wrong-type", Some(json!(7)), false),
     ] {
-        // Given persisted channel metadata and its real request-bound stream-key child lease.
         let scenario = Scenario::new(&catalog, label).await?;
         scenario.seed(root).await?;
         let lease = scenario
@@ -73,7 +72,6 @@ async fn given_bound_channel_when_summary_parent_is_equal_absent_or_hostile_then
                 .ok_or("summary is not an object")?
                 .insert("channelArn".to_owned(), value);
         }
-        // When one native page contains a valid first row and a potentially hostile duplicate owner.
         let result = scenario.apply(&catalog, child, lease, &request, json!({"streamKeys":[
             {"arn":"arn:aws:ivs:us-east-1:123456789012:stream-key/first","channelArn":owner}, second
         ]})).await;
@@ -85,8 +83,6 @@ async fn given_bound_channel_when_summary_parent_is_equal_absent_or_hostile_then
                 "accepted inconsistent channel duplicate: {label}"
             );
         }
-        // Then valid/absent duplicates preserve both metadata rows and request-origin edges;
-        // mismatches reject the whole page rather than silently committing the valid first row.
         let keys = saved(&scenario, child.kind().as_str()).await?;
         assert_eq!(keys.len(), if accepted { 2 } else { 0 }, "{label}");
         assert_eq!(saved(&scenario, root.kind().as_str()).await?.len(), 1);

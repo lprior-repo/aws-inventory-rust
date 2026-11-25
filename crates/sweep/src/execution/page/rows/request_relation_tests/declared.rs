@@ -11,7 +11,6 @@ const SOURCE_ARN: &str = "arn:aws:refs:us-east-1:123456789012:source";
 
 #[test]
 fn given_model_rule_when_sweep_extracts_reference_then_model_provenance_is_preserved() -> ResultOf {
-    // Given a model rule and a source row carrying its reference value.
     let mut rule = typed_rule()?;
     rule.edge_source = EdgeSource::Model;
     let observation = typed_observation(&rule)?;
@@ -19,7 +18,6 @@ fn given_model_rule_when_sweep_extracts_reference_then_model_provenance_is_prese
     let request = typed_record([])?;
     let home = RegionId::parse("us-east-1")?;
     let mut output = Vec::new();
-    // When extracting through the production sweep context.
     super::super::relations::Context {
         row: &row,
         request: &request,
@@ -28,7 +26,6 @@ fn given_model_rule_when_sweep_extracts_reference_then_model_provenance_is_prese
         parent: None,
     }
     .append(&rule, &mut output, 1)?;
-    // Then the reference carries the rule's provenance, not an unconditional reviewed label.
     assert_eq!(output.len(), 1);
     let reference = output.first().ok_or("model reference missing")?;
     assert_eq!(reference.source, EdgeSource::Model);
@@ -39,7 +36,6 @@ fn given_model_rule_when_sweep_extracts_reference_then_model_provenance_is_prese
 #[tokio::test]
 async fn given_declared_catalog_when_sweep_commits_to_engine_then_late_target_resolves_model_edge()
 -> ResultOf {
-    // Given a catalog compiled from actual reference traits and a real SQLite store.
     let (bytes, _) = declared_fixture::compile(TargetState::Callable, &[])?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let directory = tempfile::tempdir()?;
@@ -57,7 +53,6 @@ async fn given_declared_catalog_when_sweep_commits_to_engine_then_late_target_re
         .lookup("refs", "ListSources")
         .ok_or("source plan missing")?;
     let mut references = Vec::new();
-    // When the real sweep extractor submits its emitted references to the checked engine.
     super::super::relations::Context {
         row: &row,
         request: &request,
@@ -82,7 +77,6 @@ async fn given_declared_catalog_when_sweep_commits_to_engine_then_late_target_re
     )?;
     let target_key = target.key().clone();
     commit(&store, "ListTargets", vec![target], Vec::new(), 1002).await?;
-    // Then the persisted edge resolves exactly, with model provenance intact.
     let edges = store.projection_edges_for(&key, None, 10).await?;
     assert_eq!(edges.edges.len(), 1);
     let edge = edges.edges.first().ok_or("declared edge missing")?;

@@ -29,7 +29,6 @@ async fn source(store: &BinaryStore, catalog: &RuntimeCatalog<'_>) -> TestResult
 #[tokio::test]
 async fn given_candidate_group_before_targets_when_unique_then_ambiguous_then_unique_again_edges_follow_observed_evidence()
 -> TestResult {
-    // Given one group with no observed candidate, not two asserted placeholder references.
     let bytes = fixture::compiled_candidates()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -39,7 +38,6 @@ async fn given_candidate_group_before_targets_when_unique_then_ambiguous_then_un
         store.projection_edges_for(&key()?, None, 100).await?.edges,
         Vec::new()
     );
-    // When exactly one allowed kind is observed, the evidence resolves to it.
     persist(
         &store,
         &catalog,
@@ -61,7 +59,6 @@ async fn given_candidate_group_before_targets_when_unique_then_ambiguous_then_un
             .as_str(),
         "AWS::WorkSpacesWeb::BrowserSettings"
     );
-    // When a second allowed kind matches the same path/value, no edge may claim certainty.
     persist(
         &store,
         &catalog,
@@ -75,7 +72,6 @@ async fn given_candidate_group_before_targets_when_unique_then_ambiguous_then_un
         store.projection_edges_for(&key()?, None, 100).await?.edges,
         Vec::new()
     );
-    // Then removing that candidate's matching field restores the unique remaining match.
     persist(
         &store,
         &catalog,
@@ -103,7 +99,6 @@ async fn given_candidate_group_before_targets_when_unique_then_ambiguous_then_un
 #[tokio::test]
 async fn given_observed_candidate_before_group_when_reference_arrives_then_only_actual_kind_resolves()
 -> TestResult {
-    // Given the target exists before its referring resource and group.
     let bytes = fixture::compiled_candidates()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -115,9 +110,7 @@ async fn given_observed_candidate_before_group_when_reference_arrives_then_only_
         0,
     )
     .await?;
-    // Native decoding/extraction must preserve the reviewed nonprimary alternative.
     source(&store, &catalog).await?;
-    // Then exactly one group and exactly one observed target exist.
     assert_eq!(status(&directory).await?, (1, "resolved".to_owned()));
     let edges = store.projection_edges_for(&key()?, None, 100).await?.edges;
     assert_eq!(edges.len(), 1);

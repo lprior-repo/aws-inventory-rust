@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/securityhub/service/2018-10-26/securityhub-2018-10-26.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

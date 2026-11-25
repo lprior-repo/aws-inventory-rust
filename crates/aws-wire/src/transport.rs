@@ -81,8 +81,6 @@ impl Client {
         self.counters.snapshot()
     }
 
-    /// Each authority a connection was attempted to, sorted by authority,
-    /// with the number of connections to it that finished connecting.
     #[must_use]
     pub fn hosts(&self) -> Vec<HostConnections> {
         self.counters.host_connections()

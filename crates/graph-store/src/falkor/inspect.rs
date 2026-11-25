@@ -2,7 +2,6 @@ use super::FalkorDb;
 use crate::{GraphError, NodeRow, cypher, response};
 use cypher::Inspection;
 
-/// State of the deterministic `bench-<ordinal>` tag fixture.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TagFixturePhase {
     Initial,
@@ -55,7 +54,6 @@ pub async fn orphan_tag_count(graph: &FalkorDb) -> Result<u64, GraphError> {
     count(graph, Inspection::OrphanTags).await
 }
 
-/// Counts affiliations inconsistent with the named benchmark fixture phase.
 pub async fn invalid_tag_assignment_count(
     graph: &FalkorDb,
     phase: TagFixturePhase,
@@ -63,7 +61,6 @@ pub async fn invalid_tag_assignment_count(
     count(graph, Inspection::InvalidTagAssignments(phase)).await
 }
 
-/// Counts resources with missing, duplicate or unexpected fixture tag keys.
 pub async fn invalid_tag_cardinality_count(
     graph: &FalkorDb,
     phase: TagFixturePhase,
@@ -71,7 +68,6 @@ pub async fn invalid_tag_cardinality_count(
     count(graph, Inspection::InvalidTagCardinality(phase)).await
 }
 
-/// Counts absent or mismatched resources among at most 1,000 named expected rows.
 pub async fn resource_mismatch_count(
     graph: &FalkorDb,
     expected: &[NodeRow],
@@ -86,7 +82,6 @@ pub async fn resource_mismatch_count(
     )
 }
 
-/// Runs the real traversal without induced-edge completion for paired benchmarks.
 #[cfg(feature = "test-fixtures")]
 pub async fn neighborhood_without_completion(
     graph: &FalkorDb,
@@ -107,7 +102,6 @@ pub async fn neighborhood_without_completion(
     .map_err(|_| GraphError::Timeout)?
 }
 
-/// Runs the real shortest-path search without induced-edge completion.
 #[cfg(feature = "test-fixtures")]
 pub async fn path_without_completion(
     graph: &FalkorDb,

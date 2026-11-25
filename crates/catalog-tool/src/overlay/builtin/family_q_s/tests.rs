@@ -48,7 +48,6 @@ fn model_files(root: &Path, files: &mut Vec<PathBuf>) -> TestResult {
 
 #[test]
 fn every_pinned_q_s_service_and_operation_has_an_explicit_decision() -> TestResult {
-    // Given the independently pinned service tree, including services with no safe root.
     let policies = super::overlays()?;
     let excluded = ["rds", "route-53", "s3", "sfn", "sns", "sqs", "sts"];
     let mut expected_services = BTreeSet::new();
@@ -66,7 +65,6 @@ fn every_pinned_q_s_service_and_operation_has_an_explicit_decision() -> TestResu
             expected_services.insert(name);
         }
     }
-    // When resolving the entire assigned family, no service disappears for lack of support.
     assert_eq!(
         policies
             .iter()
@@ -102,7 +100,6 @@ fn every_pinned_q_s_service_and_operation_has_an_explicit_decision() -> TestResu
                 }
             }
         }
-        // Then every actual modeled operation is inventoried, denied, or explicitly blocked.
         assert!(!expected_operations.is_empty(), "{}", policy.service());
         let actual = policy
             .operations()
@@ -142,11 +139,8 @@ fn every_pinned_q_s_service_and_operation_has_an_explicit_decision() -> TestResu
 
 #[test]
 fn pinned_model_checker_accepts_every_callable_q_s_contract() -> TestResult {
-    // Given the real pinned models, not an echo of the policy data.
     let policies = super::overlays()?;
-    // When typed policies are checked for request/output/type compatibility.
     let checked = overlay::check_policies(&source(), &policies, &DenyList::builtin())?;
-    // Then all authored callable operations survive the safety/model boundary.
     let authored = policies
         .iter()
         .flat_map(|service| {
@@ -175,7 +169,6 @@ fn pinned_model_checker_accepts_every_callable_q_s_contract() -> TestResult {
         })
         .collect::<BTreeSet<_>>();
     assert_eq!(callable, authored);
-    // Then customer permissions and caller-owned applications retain their exact request domains.
     let permissions = operation(&policies, "ram", "ListPermissions")?;
     assert_eq!(
         permissions.fixed.get(&MemberPath::new("permissionType")?),
@@ -196,7 +189,6 @@ fn pinned_model_checker_accepts_every_callable_q_s_contract() -> TestResult {
         applications.identity,
         Some(Identity::Arn(MemberPath::new("ApplicationArn")?))
     );
-    // Both optional safety-rule arms remain callable, each using its exact returned ARN.
     let rules = operation(
         &policies,
         "route53-recovery-control-config",
@@ -230,7 +222,6 @@ fn pinned_model_checker_accepts_every_callable_q_s_contract() -> TestResult {
 
 #[test]
 fn secret_content_billed_and_mutating_calls_cannot_be_authorized_by_projection() -> TestResult {
-    // Given whole-response secret/content and billable service APIs.
     let policies = super::overlays()?;
     for (service, name, reason) in [
         ("secrets-manager", "GetSecretValue", DenyReason::Secret),
@@ -240,9 +231,7 @@ fn secret_content_billed_and_mutating_calls_cannot_be_authorized_by_projection()
         ("rds-data", "ExecuteStatement", DenyReason::Paid),
         ("ses", "SendEmail", DenyReason::Mutating),
     ] {
-        // When resolving the actual embedded operation decision.
         let decision = operation(&policies, service, name)?;
-        // Then no item, identity or projection accidentally turns the denied call executable.
         assert_eq!(
             decision.class,
             Some(OverlayClass::Deny(reason)),
@@ -258,7 +247,6 @@ fn secret_content_billed_and_mutating_calls_cannot_be_authorized_by_projection()
 #[test]
 fn secrets_inventory_includes_planned_deletion_without_fetching_secret_values() -> TestResult {
     let policies = super::overlays()?;
-    // Given metadata-only ListSecrets, including resources pending deletion.
     let decision = operation(&policies, "secrets-manager", "ListSecrets")?;
     assert_eq!(decision.class, Some(OverlayClass::Enumerate));
     assert_eq!(
@@ -271,7 +259,6 @@ fn secrets_inventory_includes_planned_deletion_without_fetching_secret_values() 
             .get(&MemberPath::selected("IncludePlannedDeletion")?),
         Some(&FixedValue::Boolean(true))
     );
-    // Then the full token chain is preserved, rather than silently collecting one page.
     assert_eq!(
         decision.paginator,
         Some(Paginator::Token(TokenPair {
@@ -286,7 +273,6 @@ fn secrets_inventory_includes_planned_deletion_without_fetching_secret_values() 
 #[test]
 fn s3_control_all_data_sources_and_global_mrap_routing_are_explicit() -> TestResult {
     let policies = super::overlays()?;
-    // Given pinned hostPrefix {AccountId}. and AccountId hostLabel/header traits.
     let decision = operation(&policies, "s3-control", "ListAccessPoints")?;
     assert_eq!(decision.class, Some(OverlayClass::Enumerate));
     assert_eq!(
@@ -298,7 +284,6 @@ fn s3_control_all_data_sources_and_global_mrap_routing_are_explicit() -> TestRes
         decision.fixed.get(&MemberPath::selected("DataSourceType")?),
         Some(&FixedValue::String("ALL".to_owned())),
     );
-    // Then the supported modeled prefix is used, but MRAP fixed us-west-2 routing is explicit.
     let mrap = operation(&policies, "s3-control", "ListMultiRegionAccessPoints")?;
     assert_eq!(mrap.class, Some(OverlayClass::Enumerate));
     assert_eq!(mrap.scope, Some(Scope::Account));
@@ -320,10 +305,8 @@ fn s3_control_all_data_sources_and_global_mrap_routing_are_explicit() -> TestRes
 #[test]
 fn supply_chain_dataset_expansion_keeps_both_identifiers_on_one_parent_row() -> TestResult {
     let policies = super::overlays()?;
-    // Given namespaces from potentially different Supply Chain instances.
     let decision = operation(&policies, "supplychain", "ListDataLakeDatasets")?;
     assert_eq!(decision.class, Some(OverlayClass::Expand));
-    // Then instance and namespace come from the same namespace item, never a Cartesian product.
     for (member, source) in [("instanceId", "instanceId"), ("namespace", "name")] {
         assert_eq!(
             decision.bind.get(&MemberPath::selected(member)?),
@@ -343,14 +326,12 @@ fn supply_chain_dataset_expansion_keeps_both_identifiers_on_one_parent_row() -> 
 #[test]
 fn singleton_local_index_and_scalar_permission_set_arns_use_real_items() -> TestResult {
     let policies = super::overlays()?;
-    // Given GetIndex explicitly describes the Region in which it was invoked.
     let index = operation(&policies, "resource-explorer-2", "GetIndex")?;
     assert_eq!(index.items, Some(ItemSelector::Root));
     assert_eq!(
         index.identity,
         Some(Identity::Arn(MemberPath::selected("Arn")?))
     );
-    // Given PermissionSets is a list of ARN strings, not structures with an invented field.
     let permissions = operation(&policies, "sso-admin", "ListPermissionSets")?;
     assert_eq!(
         permissions.identity,
@@ -369,12 +350,10 @@ fn singleton_local_index_and_scalar_permission_set_arns_use_real_items() -> Test
 #[test]
 fn incomplete_union_and_foreign_scope_enumerations_are_explicitly_noncallable() -> TestResult {
     let policies = super::overlays()?;
-    // Given APIs whose apparent root would omit variants or misattribute other Regions.
     for (service, name, reason) in [
         ("servicediscovery", "ListNamespaces", "DNS_PUBLIC"),
         ("resource-explorer-2", "ListIndexes", "per-item"),
     ] {
-        // Then clients see the actual blocker rather than an unsupported placeholder or partial page.
         let decision = operation(&policies, service, name)?;
         assert_eq!(decision.class, Some(OverlayClass::Defer));
         assert_eq!(decision.items, None);

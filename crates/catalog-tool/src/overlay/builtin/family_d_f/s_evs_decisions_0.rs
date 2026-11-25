@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/evs/service/2023-07-27/evs-2023-07-27.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AssociateEipToVlan",

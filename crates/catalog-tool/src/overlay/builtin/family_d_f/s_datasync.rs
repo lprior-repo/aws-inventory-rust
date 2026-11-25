@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/datasync/service/2018-11-09/datasync-2018-11-09.json
 use super::support::{arn, bound, inventory, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "datasync",
         vec![
-            // Returns a list of DataSync agents that belong to an Amazon Web Services account in the Amazon Web Services Region specified in the request.
             queried(
                 inventory(
                     "ListAgents",
@@ -16,7 +14,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["AgentArn", "Name", "Status"],
             )?,
-            // Returns a list of source and destination locations.
             queried(
                 inventory(
                     "ListLocations",
@@ -26,7 +23,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["LocationArn"],
             )?,
-            // Returns a list of the DataSync tasks you created.
             queried(
                 inventory(
                     "ListTasks",
@@ -36,7 +32,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["TaskArn", "Status", "Name"],
             )?,
-            // Returns a list of executions for an DataSync transfer task.
             queried(
                 bound(
                     inventory(

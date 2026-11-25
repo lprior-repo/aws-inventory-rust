@@ -1,5 +1,3 @@
-//! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/healthlake/service.
-//! Review is source-only; no live service or emulator support claim.
 use super::policy;
 use crate::overlay::{
     ContextSource, ExecutionBranch, FixedValue, Identity, IdentityField, MemberPath, NameError,
@@ -107,10 +105,6 @@ fn profiles() -> Result<crate::overlay::OperationOverlay, NameError> {
     Ok(value)
 }
 
-// Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
-// Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
-// The pinned file also declares TransformData, ValidateSource, and duplicate tag operations in an
-// unbound transformation namespace; they are outside the HealthLake service closure and not reviewed.
 const DEFERRED: &[&str] = &[
     "DescribeDataTransformationJob",
     "DescribeFHIRExportJob",

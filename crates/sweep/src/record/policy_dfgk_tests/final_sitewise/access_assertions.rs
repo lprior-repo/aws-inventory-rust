@@ -77,7 +77,6 @@ async fn given_portal_and_project_bound_policies_when_native_resource_contradict
             ReturnedResource::WrongExpectedType,
             ReturnedResource::WrongIdType,
         ] {
-            // Given durable Monitor parents and a real branch-specific native child request.
             let mut scenario =
                 Scenario::new(&catalog, &format!("policy-resource-{branch}-{variant:?}")).await?;
             scenario.seed(portals).await?;
@@ -138,7 +137,6 @@ async fn given_portal_and_project_bound_policies_when_native_resource_contradict
             if let Some(replacement) = replacement {
                 object.insert("resource".to_owned(), replacement);
             }
-            // When an otherwise valid first row precedes a contradictory native resource row.
             let result = scenario.apply(&catalog, policies, lease, &request,
                 json!({"accessPolicySummaries":[summary(FIRST_POLICY, resource, owner),second]})).await;
             let accepted = matches!(
@@ -151,7 +149,6 @@ async fn given_portal_and_project_bound_policies_when_native_resource_contradict
                 assert!(result.is_err(), "{branch} admitted {variant:?}");
             }
             scenario = scenario.reopen().await?;
-            // Then reopened SQLite contains both correct owner edges or no policy facet/edge.
             let reader = scenario.reader().await?;
             let count: i64 = sqlx::query_scalar(
                 "SELECT COUNT(*) FROM resource_facets WHERE kind='AWS::IoTSiteWise::AccessPolicy'",

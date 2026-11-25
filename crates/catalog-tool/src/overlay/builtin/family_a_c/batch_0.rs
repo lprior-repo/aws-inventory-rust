@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/batch/service/2016-08-10/batch-2016-08-10.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -94,7 +92,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires jobDefinition. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deregisters an Batch job definition. Job definitions are permanently deleted after 180 days.",
             ),
         ),
-        // Model: Describes one or more of your compute environments. If you're using an unmanaged compute environment, you can use the DescribeComputeEnvironment operation to determine the ecsClusterArn that you…
         (
             "DescribeComputeEnvironments",
             OperationOverlay {
@@ -114,9 +111,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires consumableResource. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a description of the specified consumable resource.",
             ),
         ),
-        // Model: Describes a list of job definitions. You can specify a status (such as ACTIVE ) to only return job definitions that match that status.
         ("DescribeJobDefinitions", denied(DenyReason::Secret)),
-        // Model: Describes one or more of your job queues.
         (
             "DescribeJobQueues",
             OperationOverlay {
@@ -148,7 +143,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires arns. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes one or more of your scheduling policies.",
             ),
         ),
-        // Model: Describes one or more of your service environments.
         (
             "DescribeServiceEnvironments",
             OperationOverlay {

@@ -13,7 +13,6 @@ use inventory_core::{
     record::Record,
 };
 
-/// Every descriptor consumes this same decoded response; this module cannot make a request.
 pub(super) async fn additional(
     context: &assembly::Context<'_, '_>,
     lease: &WorkLease,

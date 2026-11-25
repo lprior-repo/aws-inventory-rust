@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/deadline/service/2023-10-12/deadline-2023-10-12.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "GetWorker",

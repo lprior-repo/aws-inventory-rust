@@ -17,7 +17,6 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 #[tokio::test]
 async fn given_mixed_search_engines_when_real_requests_are_encoded_then_domains_have_disjoint_canonical_nodes()
 -> TestResult {
-    // Given both production API policies and the actual pinned Smithy wire models.
     let catalog = catalog()?;
     let mut keys = std::collections::BTreeSet::new();
     for (service, engine, name, kind, expected_query) in [
@@ -37,10 +36,8 @@ async fn given_mixed_search_engines_when_real_requests_are_encoded_then_domains_
         ),
     ] {
         let plan = plan(&catalog, service, "ListDomainNames")?;
-        // When the request goes through the production numeric binding/REST encoder.
         let request = request(plan, &[])?;
         assert_eq!(request.uri().query(), expected_query);
-        // Then each engine response persists exactly its own physical domain and CFN kind.
         let body =
             serde_json::to_vec(&json!({"DomainNames":[{"DomainName":name,"EngineType":engine}]}))?;
         let saved = persist(
@@ -68,7 +65,6 @@ async fn given_databrew_rows_without_optional_arns_when_collected_then_required_
         ("ListRulesets", "Rulesets", "ruleset"),
         ("ListSchedules", "Schedules", "schedule"),
     ] {
-        // Given a model-valid row without ResourceArn, and a complete sibling.
         let mut first = serde_json::Map::from_iter([("Name".to_owned(), json!("a"))]);
         if operation == "ListProjects" {
             first.insert("RecipeName".to_owned(), json!("recipe-a"));
@@ -89,14 +85,12 @@ async fn given_databrew_rows_without_optional_arns_when_collected_then_required_
         );
         let body = serde_json::to_vec(&json!({member:[first, second]}))?;
         let plan = plan(&catalog, "databrew", operation)?;
-        // When the actual decoder, identity extractor and SQLite commit process both rows.
         let saved = persist(
             catalog.raw_bytes(),
             plan,
             observations(plan, rows(plan, &body)?)?,
         )
         .await?;
-        // Then neither a missing optional ARN nor a different sibling ARN changes the Name key.
         let ids = saved
             .iter()
             .map(|(_, id, _)| id.as_str())
@@ -111,7 +105,6 @@ fn given_datazone_environment_without_id_when_identity_is_extracted_then_failure
 -> TestResult {
     let catalog = catalog()?;
     let plan = plan(&catalog, "datazone", "ListEnvironments")?;
-    // Required metadata does not prove a unique environment identity if optional id is absent.
     let body = br#"{"items":[{"domainId":"dzd_12345678901234","projectId":"project-a","name":"environment-a","createdBy":"user-a","provider":"Amazon Web Services"}]}"#;
     let rows = rows(plan, body)?;
     let row = rows.first().ok_or("environment row absent")?;
@@ -137,7 +130,6 @@ async fn given_iot_security_profile_pages_when_wire_cursor_is_replayed_then_ever
     let value = path_value(response.root(), &token.response_path)?
         .ok_or("wire cursor absent")?
         .to_value()?;
-    // The compiled token paths, not assumed field names, drive the next real request.
     let next = request(
         plan,
         &[input::InputField {

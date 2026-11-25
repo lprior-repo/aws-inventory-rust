@@ -11,7 +11,6 @@ use inventory_core::{
 };
 use sha2::{Digest, Sha256};
 
-/// Minting capability borrowed from the exact checked execution, never from a saved tuple.
 pub(in crate::inventory) struct PageAuthority<'a> {
     registry: &'a SchemaRegistry,
     lease: &'a WorkLease,
@@ -20,7 +19,6 @@ pub(in crate::inventory) struct PageAuthority<'a> {
     base: [u8; 32],
 }
 
-/// Exact source payload capability, hashed once and borrowed by grants and codec.
 pub(in crate::inventory) struct SourceAuthority<'source, 'lease> {
     page: &'source PageAuthority<'lease>,
     source: &'source Observation,
@@ -44,8 +42,6 @@ pub(in crate::inventory) fn page_authority<'a>(
     hash.update(b"aws-inventory/page-authority/v3\0");
     hash.update(registry.digest());
     bytes(&mut hash, &source_facet)?;
-    // Scope identity deliberately excludes a volatile discovery-context digest. The
-    // complete immutable input still distinguishes root executions with other inputs.
     hash.update(Sha256::digest(lease.bindings()));
     Ok(Some(PageAuthority {
         registry,
@@ -134,8 +130,6 @@ impl SourceAuthority<'_, '_> {
                 && rule.declares(source, reference.target.value().as_str())?
             {
                 hash.update([2]);
-                // Reference identity already binds target kind/path and principal;
-                // the checked projection path additionally binds its actual origin.
                 path(&mut hash, rule.dependency_path())?;
                 matched = true;
             }

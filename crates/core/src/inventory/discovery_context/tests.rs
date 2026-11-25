@@ -20,7 +20,6 @@ fn projection() -> Result<ContextProjectionPlan, RecordError> {
 
 #[test]
 fn durable_restart_preserves_correlated_namespaces_and_all_ancestors() -> TestResult {
-    // Given two nested discoveries with distinct request/response/selected values.
     let first = DiscoveryFrame::project(
         ServiceId::parse("transfer")?,
         OperationId::parse("ListServers")?,
@@ -41,10 +40,8 @@ fn durable_restart_preserves_correlated_namespaces_and_all_ancestors() -> TestRe
         &record("request-user", "SECRET_USER_REQUEST")?,
     )?;
     let context = context.push(second)?;
-    // When a durable queue is reopened from its opaque binary context.
     let bytes = context.encode()?;
     let reopened = DiscoveryContext::decode(&bytes)?;
-    // Then projected fields and grandparent namespaces survive, never unreviewed fields.
     assert_eq!(context, reopened);
     assert!(!bytes.windows(6).any(|window| window == b"SECRET"));
     let path = [FieldId::new(1)?];

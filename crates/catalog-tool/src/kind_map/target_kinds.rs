@@ -124,9 +124,7 @@ mod tests {
 
     #[test]
     fn singleton_target_group_is_nonempty_without_a_redundant_vector_allocation() -> TestResult {
-        // Given one canonical target kind, when constructing its reviewed domain group.
         let group = ReviewedTargetKinds::singleton(PRIMARY, 0)?;
-        // Then the kind is retained exactly once and no expansion storage is allocated.
         assert_eq!(group.primary(), PRIMARY);
         assert_eq!(group.len(), 1);
         assert!(!group.is_empty());

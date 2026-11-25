@@ -16,7 +16,6 @@ async fn chunks(graph: &RecordingBackend) -> Vec<usize> {
 }
 
 async fn complete_degree(count: usize, expected_chunks: Vec<usize>) -> TestResult {
-    // Given: one real pending key with a complete, high-degree SQLite incident set.
     let (directory, store, owner) = pending_resource().await?;
     let mut expected = seed_edges(
         &directory.path().join("inventory.sqlite"),
@@ -26,9 +25,7 @@ async fn complete_degree(count: usize, expected_chunks: Vec<usize>) -> TestResul
     .await?;
     sort_edges(&mut expected);
     let graph = RecordingBackend::new(false);
-    // When: store pages are streamed through the paged replacement port.
     let report = run_projection(&store, &graph, 1_000).await?;
-    // Then: bounded chunks cover exactly the set before the revision is acknowledged.
     assert_eq!(chunks(&graph).await, expected_chunks);
     assert_eq!(graph.edges().await, expected);
     assert_eq!(
@@ -74,7 +71,6 @@ async fn given_5000_incident_edges_when_projected_then_three_chunks_are_acknowle
 #[tokio::test]
 async fn given_second_chunk_failure_when_replayed_then_no_ack_until_exact_complete_replacement()
 -> TestResult {
-    // Given: stale graph data and 5,000 authoritative incident edges in the store.
     let (directory, store, owner) = pending_resource().await?;
     let mut expected = seed_edges(
         &directory.path().join("inventory.sqlite"),
@@ -93,9 +89,7 @@ async fn given_second_chunk_failure_when_replayed_then_no_ack_until_exact_comple
             "second edge chunk failed".into(),
         ))
         .await;
-    // When: the second chunk fails after the first has changed the graph.
     let failed = run_projection(&store, &graph, 1_000).await?;
-    // Then: no durable revision is acknowledged; readers see only the successful prefix.
     assert_eq!(
         failed,
         ProjectionReport {
@@ -119,9 +113,7 @@ async fn assert_complete_replay(
     graph: &RecordingBackend,
     expected: Vec<EdgeRow>,
 ) -> TestResult {
-    // When: the complete replacement is replayed from its beginning.
     let replayed = run_projection(store, graph, 1_000).await?;
-    // Then: stale/prefix data is replaced, without missing or duplicate edges.
     assert_eq!(
         replayed,
         ProjectionReport {
@@ -151,7 +143,6 @@ async fn given_foreign_later_page_when_produced_then_no_foreign_edge_or_ack_esca
 {
     use super::fault::{Fault, FaultStore};
     use inventory_engine::inventory::InventoryStore;
-    // Given: two valid pages precede a corrupt final store page.
     let (directory, store, owner) = pending_resource().await?;
     let mut expected = seed_edges(
         &directory.path().join("inventory.sqlite"),
@@ -163,12 +154,10 @@ async fn given_foreign_later_page_when_produced_then_no_foreign_edge_or_ack_esca
     let pending = store.drain_projection(1).await?;
     let store = FaultStore::new(store, Fault::ForeignEdges);
     let graph = RecordingBackend::new(false);
-    // When: the producer encounters an edge excluding its owner.
     let error = run_projection(&store, &graph, 1_000)
         .await
         .err()
         .ok_or("expected invalid edge")?;
-    // Then: the malformed page never reaches the backend, nor is work acknowledged.
     assert_eq!(
         error.to_string(),
         "projection query is invalid or exceeds its bound"
@@ -185,9 +174,7 @@ async fn given_foreign_later_page_when_produced_then_no_foreign_edge_or_ack_esca
         graph.edges().await,
         expected.get(..2_000).ok_or("missing accepted prefix")?
     );
-    // When: the authoritative store is replayed without the injected corruption.
     let replay = run_projection(&store.inner, &graph, 1_000).await?;
-    // Then: exactly the new incident set is visible and the revision is acknowledged.
     assert_eq!(
         replay,
         ProjectionReport {
@@ -204,7 +191,6 @@ async fn given_foreign_later_page_when_produced_then_no_foreign_edge_or_ack_esca
 }
 
 async fn rejected_second_chunk(error: inventory_graph::GraphError) -> TestResult {
-    // Given: a complete replacement requiring two chunks.
     let (directory, store, owner) = pending_resource().await?;
     let mut expected = seed_edges(
         &directory.path().join("inventory.sqlite"),
@@ -216,12 +202,10 @@ async fn rejected_second_chunk(error: inventory_graph::GraphError) -> TestResult
     let pending = store.drain_projection(1).await?;
     let graph = RecordingBackend::new(false);
     graph.fail_second_chunk_once(error).await;
-    // When: the adapter rejects the later chunk.
     let error = run_projection(&store, &graph, 1_000)
         .await
         .err()
         .ok_or("expected rejected chunk")?;
-    // Then: the exact revision remains pending, with only the first chunk visible.
     assert_eq!(
         error.to_string(),
         "projection query is invalid or exceeds its bound"
@@ -231,9 +215,7 @@ async fn rejected_second_chunk(error: inventory_graph::GraphError) -> TestResult
         graph.edges().await,
         expected.get(..2_000).ok_or("missing first chunk")?
     );
-    // When: the complete replacement is replayed.
     let replayed = run_projection(&store, &graph, 1_000).await?;
-    // Then: acknowledgement follows convergence to exactly the authoritative set.
     assert_eq!(
         replayed,
         ProjectionReport {

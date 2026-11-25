@@ -49,7 +49,6 @@ fn replace_parent(parent: &Path, moved: &Path) -> std::io::Result<Vec<PathBuf>> 
 }
 
 fn parent_swap(download_matches: bool) -> TestResult {
-    // Given a transfer whose response is held until the real staging parent is replaced.
     let directory = tempfile::tempdir()?;
     let parent = directory.path().join("cache");
     let moved = directory.path().join("moved");
@@ -60,7 +59,6 @@ fn parent_swap(download_matches: bool) -> TestResult {
     let (sent, received) = std::sync::mpsc::channel();
     let (url, worker) = serve_once(move |stream| {
         let staged = replace_parent(&replacing, &retained)?;
-        // Recreate every visible staging name: the old implementation linked/deleted these.
         sent.send(staged).map_err(std::io::Error::other)?;
         stream.write_all(b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\nwanted")
     })?;
@@ -69,13 +67,11 @@ fn parent_swap(download_matches: bool) -> TestResult {
     } else {
         b"different".as_slice()
     };
-    // When the public production download finishes or rejects the received digest.
     let result = pinned(&url, &output, &sha256_hex(expected));
     worker
         .join()
         .map_err(|_| std::io::Error::other("server thread failed"))??;
     let staged = received.recv()?;
-    // Then publication is FD-relative and error cleanup never removes foreign replacements.
     assert_eq!(result.is_ok(), download_matches);
     assert_eq!(std::fs::read(parent.join("foreign"))?, b"foreign parent");
     staged.iter().try_for_each(|name| -> TestResult {
@@ -134,7 +130,6 @@ fn given_competing_fifo_when_pinned_then_download_refuses_without_open_block_or_
         .join()
         .map_err(|_| std::io::Error::other("server thread failed"))??;
     let result = received.recv_timeout(std::time::Duration::from_secs(5));
-    // Release a regressed blocking FIFO open before joining the download region.
     let rescue = std::fs::OpenOptions::new()
         .read(true)
         .write(true)
@@ -152,7 +147,6 @@ fn given_competing_fifo_when_pinned_then_download_refuses_without_open_block_or_
 #[test]
 fn given_replaced_visible_staging_when_pinned_then_replacement_never_becomes_publication_or_cleanup()
 -> TestResult {
-    // Given the server can replace every visible staging name before releasing verified bytes.
     let directory = tempfile::tempdir()?;
     let output = directory.path().join("published");
     let parent = directory.path().to_owned();
@@ -166,13 +160,11 @@ fn given_replaced_visible_staging_when_pinned_then_replacement_never_becomes_pub
         sent.send(staged).map_err(std::io::Error::other)?;
         stream.write_all(b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\nwanted")
     })?;
-    // When the public download verifies and publishes its owned staging descriptor.
     let result = pinned(&url, &output, &sha256_hex(b"wanted"));
     worker
         .join()
         .map_err(|_| std::io::Error::other("server thread failed"))??;
     result?;
-    // Then foreign replacements survive and cannot substitute their bytes in the cache.
     assert_eq!(std::fs::read(&output)?, b"wanted");
     received.recv()?.iter().try_for_each(|path| -> TestResult {
         assert_eq!(std::fs::read(path)?, b"foreign replacement");
@@ -185,7 +177,6 @@ fn given_replaced_visible_staging_when_pinned_then_replacement_never_becomes_pub
 #[test]
 fn given_verified_staging_when_public_download_commits_then_first_visible_inode_is_complete_and_identical()
 -> TestResult {
-    // Given actual downloaded bytes and a bounded observer at the production commit boundary.
     let directory = tempfile::tempdir()?;
     let source = directory.path().join("source");
     let output = directory.path().join("published");
@@ -232,7 +223,6 @@ fn observe_commit(
     assert_eq!(staged.nlink(), 0);
     assert!(!output.try_exists()?);
     resume.send(())?;
-    // The publisher is stopped immediately after the publication syscall, before returning.
     let (before, committed) = observed.recv_timeout(deadline)?;
     assert!(!before);
     let visible = std::fs::metadata(output)?;
@@ -243,7 +233,6 @@ fn observe_commit(
     );
     assert_eq!(committed.nlink(), 1);
     assert!(existing(output, digest)?);
-    // Exact inode identity rules out a create-new + copy implementation and partial visibility.
     resume.send(())?;
     Ok(())
 }

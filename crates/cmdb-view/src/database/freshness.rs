@@ -1,35 +1,22 @@
-//! Scope freshness and coverage read model (M7.3).
-//!
-//! Reads the engine's `scope_freshness` view: one row per collection scope
-//! with its latest stored outcome and the time of its last complete outcome.
-//! Ages are computed here from a caller-supplied clock so the UI and tests do
-//! not depend on the SQLite clock.
-
 use super::{DatabaseSnapshot, ViewError, validate_page_limit};
 use inventory_core::inventory::ScopeOutcome;
 use sqlx::Row;
 
-/// Latest stored outcome of one collection scope and how old it is.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ScopeFreshness {
     pub account: String,
     pub region: String,
     pub service: String,
     pub operation: String,
-    /// The scope enumerates the children of a parent resource.
     pub has_parent: bool,
     pub sweep_id: String,
     pub outcome: ScopeOutcome,
     pub observed_at_ms: i64,
-    /// Observation time of the scope's last `complete` outcome, if any.
     pub last_complete_at_ms: Option<i64>,
-    /// Milliseconds from the latest outcome to the report's clock (never negative).
     pub age_ms: u64,
-    /// Milliseconds from the last complete outcome to the report's clock.
     pub complete_age_ms: Option<u64>,
 }
 
-/// Count of scopes whose latest stored outcome is each variant.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ScopeOutcomeCounts {
     pub complete: u64,
@@ -53,14 +40,10 @@ impl ScopeOutcomeCounts {
     }
 }
 
-/// Stalest-first page of scope freshness with exact totals.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ScopeFreshnessReport {
-    /// The report's clock, as supplied by the caller.
     pub now_ms: i64,
-    /// Stalest first (oldest latest outcome); at most the requested limit.
     pub scopes: Vec<ScopeFreshness>,
-    /// Every scope with a stored outcome, including those not in `scopes`.
     pub total_scopes: u64,
     pub counts: ScopeOutcomeCounts,
 }
@@ -82,9 +65,6 @@ fn age_ms(now_ms: i64, observed_at_ms: i64) -> u64 {
 }
 
 impl DatabaseSnapshot {
-    /// Reads scope outcomes from the `scope_freshness` view in this snapshot.
-    /// `limit` bounds the returned scopes (1..=`MAX_PAGE_LIMIT`); totals and
-    /// counts always cover every scope.
     pub async fn scope_freshness(
         &mut self,
         now_ms: i64,
