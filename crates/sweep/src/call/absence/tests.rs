@@ -1,9 +1,21 @@
 mod iam;
+mod recorded;
 use super::*;
 use crate::consumer_fixture as fixture;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
+const ACCOUNT: &str = "000000000000";
+const REGION: &str = "us-east-1";
+
+fn validate_status(
+    plan: &CallablePlan<'_>,
+    response: Response,
+) -> Result<ValidatedResponse, inventory_engine::limiter::ApiError> {
+    super::super::validate_status(plan, response, ACCOUNT, REGION)
+}
+
 const ABSENT: &[(&str, &str, &str)] = &[
     ("iam", "GetLoginProfile", "NoSuchEntity"),
     (
@@ -56,6 +68,21 @@ const ABSENT: &[(&str, &str, &str)] = &[
         "GetIndex",
         "ResourceNotFoundException",
     ),
+    (
+        "s3-control",
+        "GetAccessGrantsInstance",
+        "AccessGrantsInstanceNotExistsError",
+    ),
+    (
+        "s3-control",
+        "ListAccessGrants",
+        "AccessGrantsInstanceNotExistsError",
+    ),
+    (
+        "s3-control",
+        "ListAccessGrantsLocations",
+        "AccessGrantsInstanceNotExistsError",
+    ),
 ];
 const FAILURES: &[(&str, &str, &str)] = &[
     ("iam", "GetLoginProfile", "AccessDenied"),
@@ -86,6 +113,16 @@ const FAILURES: &[(&str, &str, &str)] = &[
     ("securityhub", "DescribeHub", "InvalidAccessException"),
     ("macie2", "ListMembers", "AccessDeniedException"),
     (
+        "ec2",
+        "DescribeTrunkInterfaceAssociations",
+        "OperationNotPermitted",
+    ),
+    (
+        "s3-control",
+        "GetAccessGrant",
+        "AccessGrantsInstanceNotExistsError",
+    ),
+    (
         "controltower",
         "ListEnabledControls",
         "ResourceNotFoundException",
@@ -95,22 +132,15 @@ const FAILURES: &[(&str, &str, &str)] = &[
 #[test]
 fn given_absent_features_when_classified_then_specific_codes_are_empty() {
     for &(service, operation, code) in ABSENT {
-        assert!(
-            known(service, operation, Some(code)),
-            "{service} {operation}"
-        );
+        assert!(known(service, operation, code), "{service} {operation}");
     }
 }
 
 #[test]
 fn given_missing_resources_or_access_denied_when_classified_then_failures_remain() {
     for &(service, operation, code) in FAILURES {
-        assert!(
-            !known(service, operation, Some(code)),
-            "{service} {operation}"
-        );
+        assert!(!known(service, operation, code), "{service} {operation}");
     }
-    assert!(!known("organizations", "ListAccounts", None));
 }
 
 fn response(code: &str) -> Response {
@@ -133,9 +163,7 @@ fn given_organizations_not_in_use_when_wire_call_finishes_then_absence_retains_r
     let plan = catalog
         .lookup("organizations", "ListAccounts")
         .ok_or("plan absent")?;
-    let answer =
-        super::super::validate_status(plan, response("AWSOrganizationsNotInUseException"))?
-            .decode(plan);
+    let answer = validate_status(plan, response("AWSOrganizationsNotInUseException"))?.decode(plan);
     match answer {
         Err(SweepError::Absent(reason)) => {
             assert!(reason.contains("AWSOrganizationsNotInUseException"))
@@ -143,7 +171,7 @@ fn given_organizations_not_in_use_when_wire_call_finishes_then_absence_retains_r
         _ => return Err("absence was not retained".into()),
     }
     assert!(matches!(
-        super::super::validate_status(plan, response("AccessDeniedException")),
+        validate_status(plan, response("AccessDeniedException")),
         Err(inventory_engine::limiter::ApiError::Denied(_))
     ));
     Ok(())

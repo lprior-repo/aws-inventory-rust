@@ -5,7 +5,7 @@ use crate::execution::{
 };
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
-    inventory::{Region, RegionId},
+    inventory::{AccountId, Region, RegionId},
 };
 use std::time::Duration;
 use tokio::net::TcpListener;
@@ -118,6 +118,55 @@ async fn given_discovered_scope_differs_from_home_when_prepared_then_discovery_w
         prepared.endpoint.url(),
         "https://ingest-cell.timestream.us-west-2.amazonaws.com"
     );
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_discovered_inventory_when_probe_lease_is_invalid_then_data_call_is_not_sent()
+-> TestResult {
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let address = listener.local_addr()?;
+    let service = "timestream-write";
+    let bytes = test_catalog::compile(
+        service,
+        "2018-11-01",
+        &["DescribeEndpoints", "ListDatabases"],
+        Some(test_catalog::loopback_endpoint(service, address)?),
+        |_, _| Ok(()),
+    )?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog
+        .lookup(service, "ListDatabases")
+        .ok_or("plan absent")?;
+    let resources = Resources::new("us-east-1")?;
+    let bootstrap = resources.bootstrap(&catalog);
+    let account = AccountId::parse("123456789012")?;
+    let scope = crate::ProbeScope {
+        region: bootstrap.home,
+        account: Some(&account),
+        endpoint_override: None,
+    };
+    let (answer, captured) = tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::join!(
+            crate::call_once(
+                &catalog,
+                bootstrap.credentials,
+                bootstrap.client,
+                bootstrap.executor,
+                plan,
+                scope,
+            ),
+            serve(listener, r#"{"Endpoints":[]}"#)
+        )
+    })
+    .await?;
+    captured?.assert_operation("Timestream_20181101", "DescribeEndpoints")?;
+    assert!(matches!(
+        answer,
+        Err(SweepError::Operation(
+            "endpoint discovery returned invalid endpoint count"
+        ))
+    ));
     Ok(())
 }
 

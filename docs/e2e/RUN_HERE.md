@@ -422,13 +422,13 @@ mismatches. The classification includes additional emissions and classified
 kind variants, and joins seed kind/service metadata to the compiled service-level
 overlay deferrals without inventing a kind-to-operation mapping.
 
-**Open user decision — CloudWatch alarms:** both `PutMetricAlarm` seeds are
-accepted, but `DescribeAlarms` remains intentionally deferred. Its reviewed
-reason requires complete handling of MetricAlarms/CompositeAlarms/LogAlarms and
-a safe projection or evaluated-value decision for StateReason/StateReasonData;
-hash exclusions do not remove stored content. This patch does not change that
-safety boundary. CloudWatch alarm collection is **not verified**, even when the
-command's available count/repeat gates pass.
+**CloudWatch alarms:** `DescribeAlarms` requests all three alarm types and emits
+metric alarms (`AWS::CloudWatch::Alarm`), composite alarms, and log alarms as
+distinct ARN-keyed resources. Response decoding omits `StateReason` and
+`StateReasonData` from every alarm list, and omits the log alarm's scheduled
+query configuration. These are removals before persistence, not hash
+exclusions. The two seeded metric alarms have not been reverified against the
+emulator.
 
 ### Earlier A7.1 evidence (2026-11-23)
 

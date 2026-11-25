@@ -6,13 +6,29 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 #[test]
 fn denied_http_status_is_not_retried() {
+    let error = aws_wire::response::DecodeError::Invalid("service error CBOR is not a map");
     assert!(matches!(
-        status_fallback(http::StatusCode::FORBIDDEN),
-        ApiError::Denied(_)
+        status_fallback(http::StatusCode::FORBIDDEN, &error),
+        ApiError::Denied(message)
+            if message == "HTTP 403 Forbidden: invalid response: service error CBOR is not a map"
     ));
     assert!(matches!(
-        status_fallback(http::StatusCode::TOO_MANY_REQUESTS),
-        ApiError::Throttled(_)
+        status_fallback(http::StatusCode::TOO_MANY_REQUESTS, &error),
+        ApiError::Throttled(message)
+            if message == "HTTP 429 Too Many Requests: invalid response: service error CBOR is not a map"
+    ));
+}
+
+#[test]
+fn given_code_free_service_error_when_classified_then_status_is_reported() {
+    let error = aws_wire::response::errors::ServiceError {
+        class: aws_wire::response::errors::ErrorClass::Fatal,
+        code: None,
+        retry_after: None,
+    };
+    assert!(matches!(
+        classify_service(error, http::StatusCode::NOT_FOUND),
+        ApiError::Permanent(message) if message == "HTTP 404 Not Found"
     ));
 }
 

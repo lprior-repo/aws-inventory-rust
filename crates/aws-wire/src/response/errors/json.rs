@@ -1,4 +1,5 @@
 use super::super::{DecodeError, DecodeLimits};
+use super::Field;
 use jiter::{Jiter, Peek};
 
 enum Frame {
@@ -12,14 +13,18 @@ enum Action {
     ArrayNext,
 }
 
-pub(super) fn code(body: &[u8], limits: DecodeLimits) -> Result<Option<String>, DecodeError> {
+pub(super) fn scan(
+    body: &[u8],
+    limits: DecodeLimits,
+    field: Field,
+) -> Result<Option<String>, DecodeError> {
     if body.is_empty() {
         return Ok(None);
     }
     let mut parser = Jiter::new(body);
     check_root(&mut parser)?;
     let first = parser.next_object().map_err(syntax)?;
-    let mut scanner = Scanner::new(first, limits)?;
+    let mut scanner = Scanner::new(first, limits, field)?;
     while !scanner.frames.is_empty() {
         scanner.step(&mut parser)?;
     }
@@ -32,15 +37,16 @@ struct Scanner {
     nodes: usize,
     found: Option<String>,
     limits: DecodeLimits,
+    field: Field,
 }
 
 impl Scanner {
-    fn new(first: Option<&str>, limits: DecodeLimits) -> Result<Self, DecodeError> {
+    fn new(first: Option<&str>, limits: DecodeLimits, field: Field) -> Result<Self, DecodeError> {
         let mut frames = Vec::new();
         if let Some(first) = first {
             frames.try_reserve(1)?;
             frames.push(Frame::Object {
-                next: Some(error_key(first)),
+                next: Some(field.matches(first)),
                 root: true,
             });
         }
@@ -51,12 +57,13 @@ impl Scanner {
             nodes,
             found: None,
             limits,
+            field,
         })
     }
 
     fn step(&mut self, parser: &mut Jiter<'_>) -> Result<(), DecodeError> {
         match action(&mut self.frames)? {
-            Action::ObjectNext(root) => object_next(parser, &mut self.frames, root),
+            Action::ObjectNext(root) => object_next(parser, &mut self.frames, root, self.field),
             Action::ArrayNext => array_next(parser, &mut self.frames),
             Action::Value(candidate) => self.value(parser, candidate),
         }
@@ -69,13 +76,21 @@ impl Scanner {
 
     fn scan_value(&mut self, parser: &mut Jiter<'_>, candidate: bool) -> Result<(), DecodeError> {
         if candidate {
-            return scan_candidate(parser, &mut self.found);
+            return self.scan_candidate(parser);
         }
         match parser.peek().map_err(syntax)? {
             Peek::Object => push_object(parser, &mut self.frames, self.nodes, self.limits),
             Peek::Array => push_array(parser, &mut self.frames, self.nodes, self.limits),
             _ => parser.next_skip().map_err(syntax),
         }
+    }
+
+    fn scan_candidate(&mut self, parser: &mut Jiter<'_>) -> Result<(), DecodeError> {
+        if parser.peek().map_err(syntax)? != Peek::String {
+            return Err(self.field.invalid());
+        }
+        self.field
+            .record(&mut self.found, parser.next_str().map_err(syntax)?)
     }
 }
 
@@ -111,13 +126,14 @@ fn object_next(
     parser: &mut Jiter<'_>,
     frames: &mut Vec<Frame>,
     root: bool,
+    field: Field,
 ) -> Result<(), DecodeError> {
     match parser.next_key().map_err(syntax)? {
         Some(key) => {
             let Some(Frame::Object { next, .. }) = frames.last_mut() else {
                 return Err(DecodeError::Invalid("JSON error parser state"));
             };
-            *next = Some(root && error_key(key));
+            *next = Some(root && field.matches(key));
         }
         None => {
             frames.pop();
@@ -137,20 +153,6 @@ fn array_next(parser: &mut Jiter<'_>, frames: &mut Vec<Frame>) -> Result<(), Dec
         None => {
             frames.pop();
         }
-    }
-    Ok(())
-}
-
-fn scan_candidate(parser: &mut Jiter<'_>, found: &mut Option<String>) -> Result<(), DecodeError> {
-    if parser.peek().map_err(syntax)? != Peek::String {
-        return Err(DecodeError::Invalid("invalid service error code"));
-    }
-    let code = super::normalize_code(parser.next_str().map_err(syntax)?)?;
-    if found.as_ref().is_some_and(|previous| previous != &code) {
-        return Err(DecodeError::Invalid("conflicting service error codes"));
-    }
-    if found.is_none() {
-        *found = Some(code);
     }
     Ok(())
 }
@@ -216,10 +218,6 @@ fn depth_check(depth: usize, limits: DecodeLimits) -> Result<(), DecodeError> {
     } else {
         Ok(())
     }
-}
-
-fn error_key(key: &str) -> bool {
-    matches!(key, "__type" | "code" | "Code")
 }
 
 fn syntax<E>(_: E) -> DecodeError {

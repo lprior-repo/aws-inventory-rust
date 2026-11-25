@@ -3,8 +3,11 @@ use http::StatusCode;
 use inventory_core::catalog::{ErrorKind as ModeledKind, ModeledError, Shape};
 
 mod cbor;
+mod field;
 mod json;
 mod xml;
+
+use field::{Field, MAX_FIELD_BYTES, error_header};
 
 #[cfg(test)]
 mod tests;
@@ -47,8 +50,8 @@ pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super
         return Err(super::DecodeError::Limit("response body"));
     }
     let code = match error_header(context.headers)? {
-        Some(code) => Some(code),
-        None => body_code(context)?,
+        Some(code) => Some(own_text(code)?),
+        None => body_field(context, Field::Code)?,
     };
     let class = match modeled_class(context, code.as_deref())? {
         Some(class) => class,
@@ -57,7 +60,7 @@ pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super
             None => class_from_status(context.status),
         },
     };
-    let retry_after = parse_retry_after_header(context.headers)?;
+    let retry_after = parse_retry_after_header(context.headers);
     Ok(ServiceError {
         class,
         code,
@@ -65,7 +68,32 @@ pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super
     })
 }
 
-fn body_code(context: super::ResponseContext<'_>) -> Result<Option<String>, super::DecodeError> {
+pub fn message(context: super::ResponseContext<'_>) -> Result<Option<String>, super::DecodeError> {
+    if context.body.len() > context.limits.body_bytes() {
+        return Err(super::DecodeError::Limit("response body"));
+    }
+    if let Some(header) = error_header(context.headers)?
+        && body_field(context, Field::Code)?.is_some_and(|body| body != header)
+    {
+        return Err(Field::Code.invalid());
+    }
+    body_field(context, Field::Message)
+}
+
+pub fn header_body_codes_disagree(context: super::ResponseContext<'_>) -> bool {
+    if context.body.is_empty() || context.body.len() > context.limits.body_bytes() {
+        return false;
+    }
+    let Ok(Some(header)) = error_header(context.headers) else {
+        return false;
+    };
+    matches!(body_field(context, Field::Code), Ok(Some(body)) if body != header)
+}
+
+fn body_field(
+    context: super::ResponseContext<'_>,
+    field: Field,
+) -> Result<Option<String>, super::DecodeError> {
     let content_type = context
         .headers
         .get(http::header::CONTENT_TYPE)
@@ -75,34 +103,23 @@ fn body_code(context: super::ResponseContext<'_>) -> Result<Option<String>, supe
         content_type,
         Some("application/json" | "application/x-amz-json-1.0" | "application/x-amz-json-1.1")
     ) {
-        return json::code(context.body, context.limits);
+        return json::scan(context.body, context.limits, field);
     }
     match context.protocol {
         Protocol::AwsJson10 | Protocol::AwsJson11 | Protocol::RestJson1 => {
-            json::code(context.body, context.limits)
+            json::scan(context.body, context.limits, field)
         }
         Protocol::AwsQuery | Protocol::Ec2Query | Protocol::RestXml => {
-            xml::code(context.body, context.limits)
+            xml::scan(context.body, context.limits, field)
         }
-        Protocol::RpcV2Cbor => cbor::code(context.body, context.limits),
-    }
-}
-
-fn error_header(headers: &http::HeaderMap) -> Result<Option<String>, super::DecodeError> {
-    for name in [
-        "x-amzn-errortype",
-        "x-amzn-query-error",
-        "smithy-error-code",
-        "x-amz-error-code",
-    ] {
-        if let Some(value) = headers.get(name) {
-            let value = value
-                .to_str()
-                .map_err(|_| super::DecodeError::Invalid("invalid service error header"))?;
-            return normalize_code(value).map(Some);
+        Protocol::RpcV2Cbor => {
+            if context.body.trim_ascii_start().starts_with(b"{") {
+                json::scan(context.body, context.limits, field)
+            } else {
+                cbor::scan(context.body, context.limits, field)
+            }
         }
     }
-    Ok(None)
 }
 
 fn modeled_class(
@@ -174,7 +191,7 @@ fn class_from_modeled(error: ModeledError<'_>, code: &str) -> ErrorClass {
     }
 }
 
-fn normalize_code(value: &str) -> Result<String, super::DecodeError> {
+fn normalized_code(value: &str) -> Result<&str, super::DecodeError> {
     let trimmed = value.trim();
     let namespace = trimmed
         .split_once('#')
@@ -185,12 +202,23 @@ fn normalize_code(value: &str) -> Result<String, super::DecodeError> {
     let code = before_semicolon
         .split_once(':')
         .map_or(before_semicolon, |(name, _)| name);
-    if code.is_empty() || code.len() > 256 || code.bytes().any(|byte| byte.is_ascii_control()) {
-        return Err(super::DecodeError::Invalid("invalid service error code"));
+    if code.is_empty()
+        || code.len() > MAX_FIELD_BYTES
+        || code.bytes().any(|byte| byte.is_ascii_control())
+    {
+        return Err(Field::Code.invalid());
     }
+    Ok(code)
+}
+
+fn normalize_code(value: &str) -> Result<String, super::DecodeError> {
+    own_text(normalized_code(value)?)
+}
+
+fn own_text(value: &str) -> Result<String, super::DecodeError> {
     let mut owned = String::new();
-    owned.try_reserve_exact(code.len())?;
-    owned.push_str(code);
+    owned.try_reserve_exact(value.len())?;
+    owned.push_str(value);
     Ok(owned)
 }
 
@@ -216,30 +244,28 @@ fn class_from_code(code: Option<&str>) -> Option<ErrorClass> {
         | "ThrottlingException"
         | "TooManyRequestsException"
         | "RequestLimitExceeded" => Some(ErrorClass::Throttle),
+        "AmbiguousService" => Some(ErrorClass::Fatal),
         _ => None,
     }
 }
 
 const MAX_RETRY_AFTER_SECONDS: u64 = 300;
 
-fn parse_retry_after_header(
-    headers: &http::HeaderMap,
-) -> Result<Option<std::time::Duration>, super::DecodeError> {
-    let Some(value) = headers.get("retry-after") else {
-        return Ok(None);
-    };
-    let text = value
+fn parse_retry_after_header(headers: &http::HeaderMap) -> Option<std::time::Duration> {
+    let text = headers
+        .get(http::header::RETRY_AFTER)?
         .to_str()
-        .map_err(|_| super::DecodeError::Invalid("invalid retry-after header value"))?
+        .ok()?
         .trim();
     if text.is_empty() || !text.bytes().all(|byte| byte.is_ascii_digit()) {
-        return Ok(None);
+        return None;
     }
     let seconds = text
         .parse::<u64>()
-        .unwrap_or(MAX_RETRY_AFTER_SECONDS)
-        .min(MAX_RETRY_AFTER_SECONDS);
-    Ok(Some(std::time::Duration::from_secs(seconds)))
+        .map_or(MAX_RETRY_AFTER_SECONDS, |value| {
+            value.min(MAX_RETRY_AFTER_SECONDS)
+        });
+    Some(std::time::Duration::from_secs(seconds))
 }
 
 fn class_from_status(status: StatusCode) -> ErrorClass {
