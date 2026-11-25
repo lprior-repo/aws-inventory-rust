@@ -298,6 +298,114 @@ const CASES: &[(&str, &str, &[&str])] = &[
             "ResponsibilityTransfers.Target.ManagementAccountEmail",
         ],
     ),
+    (
+        "acm",
+        "DescribeCertificate",
+        &[
+            "Certificate.DomainValidationOptions.ValidationEmails",
+            "Certificate.RenewalSummary.DomainValidationOptions.ValidationEmails",
+        ],
+    ),
+    (
+        "acm-pca",
+        "DescribeCertificateAuthority",
+        &[
+            "CertificateAuthority.CertificateAuthorityConfiguration.CsrExtensions.SubjectInformationAccess.AccessLocation.Rfc822Name",
+        ],
+    ),
+    (
+        "acm-pca",
+        "ListCertificateAuthorities",
+        &[
+            "CertificateAuthorities.CertificateAuthorityConfiguration.CsrExtensions.SubjectInformationAccess.AccessLocation.Rfc822Name",
+        ],
+    ),
+    ("b2bi", "GetPartnership", &["email", "phone"]),
+    ("b2bi", "GetProfile", &["email", "phone"]),
+    (
+        "chime-sdk-voice",
+        "ListPhoneNumbers",
+        &["PhoneNumbers.E164PhoneNumber"],
+    ),
+    (
+        "connect",
+        "ListPhoneNumbersV2",
+        &["ListPhoneNumbersSummaryList.PhoneNumber"],
+    ),
+    (
+        "connectcampaigns",
+        "DescribeCampaign",
+        &["campaign.outboundCallConfig.connectSourcePhoneNumber"],
+    ),
+    (
+        "connectcampaignsv2",
+        "DescribeCampaign",
+        &[
+            "campaign.channelSubtypeConfig.email.defaultOutboundConfig.connectSourceEmailAddress",
+            "campaign.channelSubtypeConfig.telephony.defaultOutboundConfig.connectSourcePhoneNumber",
+        ],
+    ),
+    (
+        "detective",
+        "ListInvitations",
+        &["Invitations.EmailAddress"],
+    ),
+    ("detective", "ListMembers", &["MemberDetails.EmailAddress"]),
+    ("macie2", "ListMembers", &["members.email"]),
+    (
+        "notificationscontacts",
+        "GetEmailContact",
+        &["emailContact.address"],
+    ),
+    (
+        "notificationscontacts",
+        "ListEmailContacts",
+        &["emailContacts.address"],
+    ),
+    (
+        "odb",
+        "ListAutonomousDatabases",
+        &["autonomousDatabases.customerContacts.email"],
+    ),
+    (
+        "odb",
+        "ListCloudExadataInfrastructures",
+        &["cloudExadataInfrastructures.customerContactsToSendToOCI.email"],
+    ),
+    (
+        "pinpoint-sms-voice-v2",
+        "DescribePhoneNumbers",
+        &["PhoneNumbers.PhoneNumber"],
+    ),
+    (
+        "pinpoint-sms-voice-v2",
+        "DescribeVerifiedDestinationNumbers",
+        &["VerifiedDestinationNumbers.DestinationPhoneNumber"],
+    ),
+    ("securityhub", "ListMembers", &["Members.Email"]),
+    (
+        "ses",
+        "ListCustomVerificationEmailTemplates",
+        &["CustomVerificationEmailTemplates.FromEmailAddress"],
+    ),
+    (
+        "sesv2",
+        "ListCustomVerificationEmailTemplates",
+        &["CustomVerificationEmailTemplates.FromEmailAddress"],
+    ),
+    (
+        "sesv2",
+        "ListDeliverabilityTestReports",
+        &["DeliverabilityTestReports.FromEmailAddress"],
+    ),
+    (
+        "ssm-contacts",
+        "ListContactChannels",
+        &["ContactChannels.DeliveryAddress.SimpleAddress"],
+    ),
+    ("workmail", "ListGroups", &["Groups.Email"]),
+    ("workmail", "ListResources", &["Resources.Email"]),
+    ("workmail", "ListUsers", &["Users.Email"]),
 ];
 
 #[test]

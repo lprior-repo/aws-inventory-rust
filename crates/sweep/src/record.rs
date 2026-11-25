@@ -1,5 +1,13 @@
 mod composite;
 use composite::key_text;
+#[cfg(test)]
+mod contact_exclusion_ac_tests;
+#[cfg(test)]
+mod contact_exclusion_df_tests;
+#[cfg(test)]
+mod contact_exclusion_lp_tests;
+#[cfg(test)]
+mod contact_exclusion_support;
 mod identity_choice;
 #[cfg(test)]
 mod identity_tests;

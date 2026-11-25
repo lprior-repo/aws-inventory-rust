@@ -89,6 +89,10 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 .into_iter()
                 .collect(),
                 queryable: vec![path("CertificateArn")?],
+                exclude_response_members: vec![
+                    path("Certificate.DomainValidationOptions.ValidationEmails")?,
+                    path("Certificate.RenewalSummary.DomainValidationOptions.ValidationEmails")?,
+                ],
                 ..read(
                     "Certificate",
                     Identity::Arn(path("CertificateArn")?),

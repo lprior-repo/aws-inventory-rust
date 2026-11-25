@@ -15,6 +15,23 @@
   by earlier versions keep the addresses in their stored records until the
   resource is swept again, which replaces the record without them. Records for
   resources that are no longer swept are not rewritten.
+- Sweeps of ACM, ACM Private CA, AWS B2B Data Interchange, Amazon Chime SDK
+  Voice, Amazon Connect, Amazon Connect Outbound Campaigns (v1 and v2),
+  Detective, Macie, AWS User Notifications Contacts, Oracle Database@AWS, AWS
+  End User Messaging SMS (v2), Security Hub, SES (v1 and v2), Systems Manager
+  Incident Manager Contacts, and WorkMail omit these contact fields from stored
+  records: certificate validation emails and RFC 822 names, member,
+  invitation, user, group and resource emails, contact and customer-contact
+  addresses, sender addresses of custom verification templates and
+  deliverability reports, and the phone number fields of phone number,
+  partnership, profile and campaign records. Other fields that can hold a
+  contact value are still stored: SNS origination numbers and SES certificate
+  sender addresses (they identify the resource), Chime SIP rule trigger values
+  (a phone number or a hostname), Chime phone number IDs, and the Google Cloud
+  service account email on Config connectors. Databases written
+  by earlier versions keep the omitted values in their stored records until the
+  resource is swept again, which replaces the record without them. Records for
+  resources that are no longer swept are not rewritten.
 - VPC and subnet records carry the tags returned by `DescribeVpcs` and
   `DescribeSubnets`.
 - Seed bindings resolve outputs by step ID after rejected or skipped steps. A

@@ -52,6 +52,9 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 .into_iter()
                 .collect(),
                 queryable: vec![path("Arn")?],
+                exclude_response_members: vec![path(
+                    "CertificateAuthority.CertificateAuthorityConfiguration.CsrExtensions.SubjectInformationAccess.AccessLocation.Rfc822Name",
+                )?],
                 ..read(
                     "CertificateAuthority",
                     Identity::Arn(path("Arn")?),
@@ -106,6 +109,9 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListCertificateAuthorities",
             OperationOverlay {
                 queryable: vec![path("Arn")?],
+                exclude_response_members: vec![path(
+                    "CertificateAuthorities.CertificateAuthorityConfiguration.CsrExtensions.SubjectInformationAccess.AccessLocation.Rfc822Name",
+                )?],
                 ..read(
                     "CertificateAuthorities",
                     Identity::Arn(path("Arn")?),
