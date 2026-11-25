@@ -246,3 +246,52 @@ fn null_mx_retains_rdata_without_inventing_a_dns_destination()
     );
     Ok(())
 }
+
+#[test]
+fn cross_account_vpc_association_does_not_fabricate_the_scanning_accounts_vpc_arn()
+-> Result<(), Box<dyn std::error::Error>> {
+    use aws_sdk_route53::types::{Vpc, VpcRegion};
+    let (ctx, _rx) = context()?;
+    let zone = HostedZone::builder()
+        .id("/hostedzone/Z123")
+        .name("internal.example.")
+        .caller_reference("ref")
+        .build()?;
+    let details = GetHostedZoneOutput::builder()
+        .hosted_zone(zone.clone())
+        .vpcs(
+            Vpc::builder()
+                .vpc_id("vpc-0abc")
+                .vpc_region(VpcRegion::UsWest2)
+                .build(),
+        )
+        .build();
+    let body = map_zone(&ctx, &zone, Some(&details), None)?;
+    let edge = body
+        .edges
+        .iter()
+        .find(|edge| edge.relation == "ASSOCIATED_WITH_VPC")
+        .ok_or("missing VPC association edge")?;
+    assert!(
+        !edge.to_id.contains(&ctx.account),
+        "scanning account was presumed to own the VPC: {}",
+        edge.to_id
+    );
+    assert_eq!(edge.to_id, "arn:aws:ec2:us-west-2::vpc/vpc-0abc");
+    assert_eq!(
+        edge.properties.get("owner_resolution"),
+        Some(&json!("unresolved_vpc_owner"))
+    );
+    assert_eq!(
+        edge.properties.get("target_region"),
+        Some(&json!("us-west-2"))
+    );
+    assert_eq!(
+        edge.properties.get("target_resource_id"),
+        Some(&json!("vpc-0abc"))
+    );
+    let resource = body.resources.first().ok_or("missing zone resource")?;
+    let vpcs = resource.properties.get("vpcs").ok_or("missing vpcs")?;
+    assert!(!vpcs.to_string().contains("assumed_scanning_account"));
+    Ok(())
+}

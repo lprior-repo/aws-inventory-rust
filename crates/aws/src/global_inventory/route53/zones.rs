@@ -112,6 +112,15 @@ pub(super) fn zone_id(value: &str) -> Result<String, AwsScanError> {
     Ok(id.to_owned())
 }
 
+/// GetHostedZone reports a VPC id and region but not the VPC owner, and a zone
+/// may be associated with another account's VPC. The reference therefore keeps
+/// the owner segment empty instead of presuming the scanning account.
+const VPC_OWNER_UNRESOLVED: &str = "unresolved_vpc_owner";
+
+pub(super) fn unresolved_vpc_arn(ctx: &Context, region: &str, vpc_id: &str) -> String {
+    format!("arn:{}:ec2:{region}::vpc/{vpc_id}", ctx.partition)
+}
+
 pub(super) fn zone_arn(ctx: &Context, id: &str) -> String {
     format!("arn:{}:route53:::hostedzone/{id}", ctx.partition)
 }
@@ -134,7 +143,7 @@ pub(super) fn map_zone(
         "zone_id":id,"name":zone.name(),"private_zone":zone.config().map(|v| v.private_zone()),
         "comment":zone.config().and_then(|v| v.comment()),"resource_record_set_count":zone.resource_record_set_count(),
         "name_servers":nameservers,"linked_service_principal":zone.linked_service().and_then(|v| v.service_principal()),
-        "vpcs":vpcs.iter().map(|v| json!({"vpc_id":v.vpc_id(),"vpc_region":v.vpc_region().map(|r| r.as_str()),"owner_resolution":"assumed_scanning_account"})).collect::<Vec<_>>(),
+        "vpcs":vpcs.iter().map(|v| json!({"vpc_id":v.vpc_id(),"vpc_region":v.vpc_region().map(|r| r.as_str()),"owner_resolution":VPC_OWNER_UNRESOLVED})).collect::<Vec<_>>(),
         "details_available":details.is_some(),"tags_available":tags.is_some(),
         "observation_detail":if details.is_some() {"get_hosted_zone"} else {"list_only"}
     }), tags.unwrap_or_default())?;
@@ -151,11 +160,8 @@ pub(super) fn map_zone(
                 "invalid hosted zone VPC reference".into(),
             ));
         }
-        let target = format!(
-            "arn:{}:ec2:{region}:{}:vpc/{id}",
-            ctx.partition, ctx.account
-        );
-        edges.push(reference(ctx, &resource, &target, "ASSOCIATED_WITH_VPC", json!({"field":"VPCs","target_region":region,"target_resource_id":id,"owner_resolution":"assumed_scanning_account"}))?);
+        let target = unresolved_vpc_arn(ctx, region, &id);
+        edges.push(reference(ctx, &resource, &target, "ASSOCIATED_WITH_VPC", json!({"field":"VPCs","target_region":region,"target_resource_id":id,"owner_resolution":VPC_OWNER_UNRESOLVED}))?);
     }
     resource.validate()?;
     Ok(single(resource, edge_set(edges)?))
