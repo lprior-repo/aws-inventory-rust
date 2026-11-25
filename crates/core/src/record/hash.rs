@@ -5,6 +5,13 @@ use super::{
 use minicbor::{Encoder, data::Tag, encode::Write};
 use std::convert::Infallible;
 
+/// 32-byte BLAKE3 digest of a record's canonical representation.
+///
+/// To reproduce it: feed one `FORMAT_VERSION` byte, then the canonical CBOR
+/// encoding of the record root map, into BLAKE3. Map entries are visited in
+/// canonical key order, and any field path or map key named by the supplied
+/// `Exclusions` is omitted from the stream. Scalar-selected hashes wrap the
+/// value in a one-entry map keyed by `SCALAR_ITEM_NAME`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ContentHash([u8; 32]);
 

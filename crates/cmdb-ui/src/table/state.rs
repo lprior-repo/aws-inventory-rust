@@ -66,6 +66,7 @@ pub(super) fn apply_graph_data(data: &mut Data, graph: Graph, error: Option<Stri
         graph
     };
     data.set_graph(graph, error);
+    data.reconcile_selected_with_graph();
     true
 }
 
