@@ -33,6 +33,10 @@ pub(crate) struct SweepArgs {
     pub volume: String,
     pub build: String,
     pub services: Vec<String>,
+    pub concurrency: Option<usize>,
+    pub idle_timeout_ms: Option<u64>,
+    pub pool_idle_per_host: Option<usize>,
+    pub max_rps_milli: Option<u32>,
 }
 
 pub(crate) fn parse_proxy(text: &str) -> Result<ProxySpec, String> {
@@ -77,16 +81,7 @@ pub(crate) fn parse(args: &mut impl Iterator<Item = String>) -> Result<SweepArgs
     if !(1..=100).contains(&runs) {
         return Err("--runs must be in 1..=100".into());
     }
-    let proxy = options
-        .remove("--proxy")
-        .map(parse_proxy)
-        .transpose()?
-        .or_else(|| {
-            (profile == Profile::Proxy).then_some(ProxySpec {
-                latency_ms: 50,
-                rps: 20,
-            })
-        });
+    let settings = parse_settings(&mut options, profile)?;
     let out = options.remove("--out").map(PathBuf::from);
     let work = options.remove("--work").map(PathBuf::from);
     let catalog = options.remove("--catalog").map_or_else(
@@ -109,7 +104,7 @@ pub(crate) fn parse(args: &mut impl Iterator<Item = String>) -> Result<SweepArgs
         collector,
         profile,
         runs,
-        proxy,
+        proxy: settings.proxy,
         out,
         catalog,
         work,
@@ -117,7 +112,139 @@ pub(crate) fn parse(args: &mut impl Iterator<Item = String>) -> Result<SweepArgs
         volume,
         build,
         services,
+        concurrency: settings.concurrency,
+        idle_timeout_ms: settings.idle_timeout_ms,
+        pool_idle_per_host: settings.pool_idle_per_host,
+        max_rps_milli: settings.max_rps_milli,
     })
+}
+
+struct Settings {
+    proxy: Option<ProxySpec>,
+    concurrency: Option<usize>,
+    idle_timeout_ms: Option<u64>,
+    pool_idle_per_host: Option<usize>,
+    max_rps_milli: Option<u32>,
+}
+
+fn parse_settings(
+    options: &mut std::collections::BTreeMap<&str, &str>,
+    profile: Profile,
+) -> Result<Settings, String> {
+    let concurrency = options
+        .remove("--concurrency")
+        .map(str::parse::<usize>)
+        .transpose()
+        .map_err(|error| error.to_string())?;
+    if concurrency.is_some_and(|value| !(1..=4_096).contains(&value)) {
+        return Err("--concurrency must be in 1..=4096".into());
+    }
+    let idle_timeout_ms = options
+        .remove("--idle-timeout-ms")
+        .map(str::parse::<u64>)
+        .transpose()
+        .map_err(|error| error.to_string())?;
+    if idle_timeout_ms.is_some_and(|value| !(1..=90_000).contains(&value)) {
+        return Err("--idle-timeout-ms must be in 1..=90000".into());
+    }
+    let pool_idle_per_host = options
+        .remove("--pool-idle-per-host")
+        .map(str::parse::<usize>)
+        .transpose()
+        .map_err(|error| error.to_string())?;
+    if pool_idle_per_host
+        .is_some_and(|value| value == 0 || concurrency.is_some_and(|limit| value > limit))
+    {
+        return Err("--pool-idle-per-host must be at least 1 and at most --concurrency".into());
+    }
+    let max_rps_milli = options
+        .remove("--max-rps")
+        .map(parse_milli_rps)
+        .transpose()?;
+    let proxy = options
+        .remove("--proxy")
+        .map(parse_proxy)
+        .transpose()?
+        .or_else(|| {
+            (profile == Profile::Proxy).then_some(ProxySpec {
+                latency_ms: 50,
+                rps: 20,
+            })
+        });
+    Ok(Settings {
+        proxy,
+        concurrency,
+        idle_timeout_ms,
+        pool_idle_per_host,
+        max_rps_milli,
+    })
+}
+
+fn parse_milli_rps(value: &str) -> Result<u32, String> {
+    match value.split_once('.') {
+        Some(("0", fraction))
+            if (1..=3).contains(&fraction.len())
+                && fraction.bytes().all(|byte| byte.is_ascii_digit()) =>
+        {
+            let parsed = fraction.parse::<u32>().map_err(|error| error.to_string())?;
+            let scale: u32 = match fraction.len() {
+                1 => 100,
+                2 => 10,
+                _ => 1,
+            };
+            let milli = parsed
+                .checked_mul(scale)
+                .ok_or_else(|| "--max-rps is out of range".to_owned())?;
+            if !(4..=999).contains(&milli) {
+                return Err("--max-rps fraction must be in 0.004..=0.999".into());
+            }
+            Ok(milli)
+        }
+        Some(_) => Err("--max-rps accepts whole rates or rates below 1.0".into()),
+        None => {
+            let whole = value.parse::<u32>().map_err(|error| error.to_string())?;
+            if !(1..=100_000).contains(&whole) {
+                return Err("--max-rps must be in 1..=100000".into());
+            }
+            whole
+                .checked_mul(1_000)
+                .ok_or_else(|| "--max-rps is out of range".into())
+        }
+    }
+}
+
+pub(crate) fn collector_options(args: &SweepArgs) -> Vec<String> {
+    [
+        (
+            "--concurrency",
+            args.concurrency.map(|value| value.to_string()),
+        ),
+        (
+            "--idle-timeout-ms",
+            args.idle_timeout_ms.map(|value| value.to_string()),
+        ),
+        (
+            "--pool-idle-per-host",
+            args.pool_idle_per_host.map(|value| value.to_string()),
+        ),
+        ("--max-rps", args.max_rps_milli.map(rate_text)),
+    ]
+    .into_iter()
+    .filter_map(|(name, value)| value.map(|value| [name.to_owned(), value]))
+    .flatten()
+    .collect()
+}
+
+pub(crate) fn setting_text<T: ToString>(value: Option<T>) -> String {
+    value.map_or_else(|| "default".into(), |value| value.to_string())
+}
+
+pub(crate) fn rate_text(milli: u32) -> String {
+    if milli.is_multiple_of(1_000) {
+        (milli / 1_000).to_string()
+    } else {
+        format!("0.{milli:03}")
+    }
 }
 fn parse_profile(text: &str) -> Result<Profile, String> {
     match text {
@@ -176,7 +303,7 @@ mod tests {
             parse_proxy("rps=20,latency_ms=50")?,
             ProxySpec {
                 latency_ms: 50,
-                rps: 20
+                rps: 20,
             }
         );
         [
@@ -261,9 +388,92 @@ mod tests {
             parsed.proxy,
             Some(ProxySpec {
                 latency_ms: 50,
-                rps: 20
+                rps: 20,
             })
         );
+        Ok(())
+    }
+    #[test]
+    fn transport_options_parse_and_forward_to_collector() -> Result<(), String> {
+        let parsed = parse(
+            &mut [
+                "--collector",
+                "c",
+                "--profile",
+                "proxy",
+                "--concurrency",
+                "32",
+                "--idle-timeout-ms",
+                "90000",
+                "--pool-idle-per-host",
+                "32",
+                "--max-rps",
+                "0.5",
+            ]
+            .map(str::to_owned)
+            .into_iter(),
+        )?;
+        assert_eq!(parsed.concurrency, Some(32));
+        assert_eq!(parsed.idle_timeout_ms, Some(90_000));
+        assert_eq!(parsed.pool_idle_per_host, Some(32));
+        assert_eq!(parsed.max_rps_milli, Some(500));
+        assert_eq!(
+            collector_options(&parsed),
+            [
+                "--concurrency",
+                "32",
+                "--idle-timeout-ms",
+                "90000",
+                "--pool-idle-per-host",
+                "32",
+                "--max-rps",
+                "0.500",
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn omitted_transport_options_leave_collector_defaults_and_invalid_values_fail()
+    -> Result<(), String> {
+        let parsed = parse(
+            &mut ["--collector", "c", "--profile", "thin"]
+                .map(str::to_owned)
+                .into_iter(),
+        )?;
+        assert_eq!(collector_options(&parsed), [""; 0]);
+        let pool_only = parse(
+            &mut [
+                "--collector",
+                "c",
+                "--profile",
+                "thin",
+                "--pool-idle-per-host",
+                "2",
+            ]
+            .map(str::to_owned)
+            .into_iter(),
+        )?;
+        assert_eq!(collector_options(&pool_only), ["--pool-idle-per-host", "2"]);
+        [
+            ["--concurrency", "0", "--runs", "1"],
+            ["--idle-timeout-ms", "90001", "--runs", "1"],
+            ["--pool-idle-per-host", "0", "--runs", "1"],
+            ["--concurrency", "4", "--pool-idle-per-host", "5"],
+            ["--max-rps", "0.003", "--runs", "1"],
+        ]
+        .iter()
+        .for_each(|options| {
+            assert!(
+                parse(
+                    &mut ["--collector", "c", "--profile", "thin"]
+                        .into_iter()
+                        .chain(options.iter().copied())
+                        .map(str::to_owned)
+                )
+                .is_err()
+            )
+        });
         Ok(())
     }
 }

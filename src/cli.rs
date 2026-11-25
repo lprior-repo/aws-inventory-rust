@@ -231,6 +231,59 @@ mod tag_mapping;
 pub use tag_mapping::TagMappingCommand;
 
 mod traversal;
+pub(crate) fn parse_milli_rps(value: &str) -> Result<u32, String> {
+    let value = value.strip_prefix('+').unwrap_or(value);
+    let (whole, fraction) = match value.split_once('.') {
+        Some((_, "")) => return Err("max-rps decimal fraction is empty".into()),
+        Some(parts) => parts,
+        None => (value, ""),
+    };
+    let digits = |text: &str| text.bytes().all(|byte| byte.is_ascii_digit());
+    if whole.is_empty() || !digits(whole) || !digits(fraction) {
+        return Err("max-rps must be a decimal rate".into());
+    }
+    let whole = whole.parse::<u32>().map_err(|error| error.to_string())?;
+    let scale: u32 = match fraction.len() {
+        0 | 3 => 1,
+        1 => 100,
+        2 => 10,
+        _ => return Err("max-rps supports at most three decimal places".into()),
+    };
+    let fraction = if fraction.is_empty() {
+        0
+    } else {
+        fraction.parse::<u32>().map_err(|error| error.to_string())?
+    };
+    let milli = whole
+        .checked_mul(1_000)
+        .zip(fraction.checked_mul(scale))
+        .and_then(|(rate, part)| rate.checked_add(part))
+        .ok_or_else(|| "max-rps is out of range".to_owned())?;
+    if !milli.is_multiple_of(1_000) && milli >= 1_000 {
+        return Err("fractional max-rps must be below 1.0".into());
+    }
+    if !(4..=100_000_000).contains(&milli) {
+        return Err("max-rps must be in 0.004..=100000".into());
+    }
+    Ok(milli)
+}
+
+#[cfg(test)]
+mod rate_tests {
+    use super::parse_milli_rps;
+
+    #[test]
+    fn decimal_request_rates_parse_to_exact_milli_rates() -> Result<(), String> {
+        assert_eq!(parse_milli_rps("0.5")?, 500);
+        assert_eq!(parse_milli_rps("5")?, 5_000);
+        assert_eq!(parse_milli_rps("50.000")?, 50_000);
+        assert_eq!(parse_milli_rps("+5")?, 5_000);
+        ["0.003", "1.5", "5.0001", "100001", "1.", ".5", "-5", "++5"]
+            .iter()
+            .for_each(|value| assert!(parse_milli_rps(value).is_err()));
+        Ok(())
+    }
+}
 pub use traversal::TraversalArgs;
 
 mod sweep;

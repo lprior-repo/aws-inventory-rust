@@ -24,7 +24,11 @@ impl Resources {
         let lease_ms = lease_budget(settings)?;
         let executor = ApiExecutor::with_default_policy(
             settings,
-            rate::policy(config.max_rps, settings.per_bucket_concurrency),
+            rate::policy(
+                config.max_rps,
+                config.max_rps_milli,
+                settings.per_bucket_concurrency,
+            ),
             std::collections::BTreeMap::new(),
         )?;
         let home = RegionId::parse(credentials.region())

@@ -51,6 +51,7 @@ pub struct SweepConfig {
     pub pool_idle_per_host: Option<usize>,
     pub slice_timeout_secs: Option<u64>,
     pub max_rps: Option<u32>,
+    pub max_rps_milli: Option<u32>,
     pub max_page_size: Option<u32>,
 }
 

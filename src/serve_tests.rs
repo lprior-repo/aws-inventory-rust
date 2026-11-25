@@ -79,7 +79,7 @@ async fn given_zero_idle_timeout_when_serve_starts_then_it_fails_before_opening_
         result.err().map(|error| error.to_string()).as_deref(),
         Some(
             "invalid sweep configuration: --idle-timeout-ms (INVENTORY_SWEEP_IDLE_TIMEOUT_MS) \
-             was 0; allowed range is 1..=10000 ms"
+             was 0; allowed range is 1..=90000 ms"
         )
     );
     assert!(!database.exists());

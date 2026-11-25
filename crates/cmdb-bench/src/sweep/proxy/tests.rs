@@ -125,12 +125,16 @@ async fn exchange(front: &Front) -> TestResult<Vec<u8>> {
     let mut socket = connector
         .connect(ServerName::try_from("127.0.0.1")?, tcp)
         .await?;
+    if socket.get_ref().1.alpn_protocol() != Some(&b"http/1.1"[..]) {
+        return Err("proxy did not negotiate HTTP/1.1 by default".into());
+    }
     socket.write_all(REQUEST).await?;
     let mut bytes = Vec::new();
     (&mut socket).take(65_536).read_to_end(&mut bytes).await?;
     socket.shutdown().await?;
     Ok(bytes)
 }
+
 #[tokio::test(start_paused = true)]
 async fn bad_tls_connection_does_not_stop_later_round_trip_or_shutdown() -> TestResult {
     let directory = tempfile::tempdir()?;

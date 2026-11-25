@@ -37,11 +37,11 @@ pub struct ServeArgs {
     #[arg(long, default_value_t = 16, help = "Concurrency for each sweep")]
     pub concurrency: usize,
     #[arg(
-        long,
-        value_parser = clap::value_parser!(u32).range(1..=100_000),
-        help = "Most requests per second for any one account, region and service"
+        long = "max-rps",
+        value_parser = super::parse_milli_rps,
+        help = "Most requests per second for any one account, region and service; up to three decimal places, and a fractional rate must be below 1"
     )]
-    pub max_rps: Option<u32>,
+    pub max_rps_milli: Option<u32>,
     #[arg(long, requires = "ca_bundle", help = "Custom endpoint URL")]
     pub endpoint: Option<String>,
     #[arg(

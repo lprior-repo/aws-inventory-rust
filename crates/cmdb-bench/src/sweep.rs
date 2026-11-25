@@ -268,9 +268,8 @@ impl Session<'_> {
                 database.name(),
                 "--max-pages",
                 "100000",
-                "--concurrency",
-                "4",
             ]);
+        command.args(args::collector_options(self.args));
         self.plan.services.iter().for_each(|service| {
             command.args(["--service", service]);
         });
@@ -287,6 +286,10 @@ impl Session<'_> {
             || "none".into(),
             |spec| format!("latency_ms={},rps={}", spec.latency_ms, spec.rps),
         );
+        let max_rps = self
+            .args
+            .max_rps_milli
+            .map_or_else(|| "adaptive".into(), args::rate_text);
         headers.extend([
             ("profile".into(), self.args.profile.name().into()),
             ("runs".into(), self.args.runs.to_string()),
@@ -302,6 +305,19 @@ impl Session<'_> {
             ("seed_steps".into(), counts.1.to_string()),
             ("services".into(), self.plan.services.join(",")),
             ("proxy".into(), proxy),
+            (
+                "concurrency".into(),
+                args::setting_text(self.args.concurrency),
+            ),
+            (
+                "idle_timeout_ms".into(),
+                args::setting_text(self.args.idle_timeout_ms),
+            ),
+            (
+                "pool_idle_per_host".into(),
+                args::setting_text(self.args.pool_idle_per_host),
+            ),
+            ("max_rps".into(), max_rps),
             (
                 "wal_scope".into(),
                 "server-wide WAL; concurrent database writes may contribute".into(),

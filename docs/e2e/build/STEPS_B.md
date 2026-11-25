@@ -983,13 +983,14 @@ and queue update commit together or not at all, and the kill matrix proves it.
 - **Change:**
   1. The sweep sets `idle_timeout` explicitly. Measure 1, 15 and 90 seconds on
      the `proxy` profile at 0.5, 5 and 50 requests per second per bucket.
-     `validate` requires `idle_timeout <= request_deadline - idle_timeout`, so
-     with the 30-second deadline the largest valid value is 15 seconds; to
-     test 90, separate the two in `validate` (the reason for the coupling is
-     not written down; find it in the M2.3 review notes in ROADMAP before
-     changing it).
-  2. `pool_idle_per_host`: measure 2, 8 and 32 with HTTP/1.1; with HTTP/2 one
-     connection carries many streams, so record separately.
+     The M2.3 review records: “Idle sockets retain permits until eviction, so
+     another host can wait until its deadline; HTTP/2 checkout-age expiry can
+     retire a sender while an active stream retains its permit”
+     (`CHANGELOG.md:626-628`). The request deadline still bounds a waiting
+     request; idle lifetime is now independently capped at 90 seconds.
+  2. `pool_idle_per_host`: measure 2, 8 and 32 with HTTP/1.1. The HTTP/2
+     matrix is not currently implementable: `inventory-harness` parses
+     HTTP/1.1 requests directly with `httparse` and has no HTTP/2 server.
   3. Set the defaults from the rows. Idle connections hold a socket permit
      until eviction (an accepted limit recorded in ROADMAP M2.3), so cap idle
      sockets in total at half of `max_connections`.
@@ -1008,13 +1009,19 @@ and queue update commit together or not at all, and the kill matrix proves it.
 - **Scale (V76):** key the pool by endpoint and never by account. The host
   for a service in a region is the same for every account, so the number of
   connections must not grow with the number of accounts (S1.4).
-- **Status (2026-11-24):** steps 1 and 2 are settable but not measured:
-  `--idle-timeout-ms` (1 to 10,000) and `--pool-idle-per-host` exist, and the
-  defaults are unchanged (one second; the sweep keeps up to
-  `min(max_connections, 8)` idle sockets per endpoint, the bare transport 2).
-  No table of settings is recorded, so this step is not done. Step 3's total
-  cap on idle sockets is not implemented: `hyper-util` 0.1.21 exposes only
-  `pool_max_idle_per_host`, and its pool admission is private.
+- **Status (2026-11-25):** the collector now accepts idle timeouts from 1 to
+  90,000 ms, including the 15- and 90-second settings, and `--max-rps` accepts
+  decimal rates such as 0.5 without floating-point parsing. `cmdb-bench sweep`
+  forwards `--concurrency`, `--idle-timeout-ms`, `--pool-idle-per-host`, and
+  `--max-rps` to the collector only when they are given, and records each in
+  the result headers (`default` or `adaptive` when omitted); `compare` refuses
+  two results whose settings differ. Its proxy serves HTTP/1.1 only; the HTTP/2 rows
+  cannot be produced because `inventory-harness` parses HTTP/1.1 requests
+  directly with `httparse` (`crates/harness/src/proxy/http.rs:128-138`) and has
+  no HTTP/2 server dependency. No B7.2 measurements are recorded, so the step
+  is not done; defaults are unchanged. Step 3's total cap on idle sockets is
+  still blocked: `hyper-util` 0.1.21 exposes only `pool_max_idle_per_host`, and
+  its pool admission is private.
 
 ## B8 CPU on the hot path
 
