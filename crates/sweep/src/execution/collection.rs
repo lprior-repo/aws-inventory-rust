@@ -59,7 +59,7 @@ impl Resources {
         );
     }
 
-    fn bootstrap<'a, 'catalog, C: CredentialSource>(
+    pub(super) fn bootstrap<'a, 'catalog, C: CredentialSource>(
         &'a self,
         catalog: &'a RuntimeCatalog<'catalog>,
         config: &'a SweepConfig,

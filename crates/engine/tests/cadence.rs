@@ -566,3 +566,52 @@ async fn given_a_stop_and_a_restart_when_serving_then_no_profile_is_skipped_and_
     assert_eq!(order, vec![2, 0, 1]);
     Ok(())
 }
+
+#[tokio::test]
+async fn given_a_daemon_shutdown_during_a_profile_when_serving_then_no_further_profile_is_admitted()
+-> TestResult {
+    use inventory_engine::cadence::Shutdown;
+    struct Signalled {
+        shutdown: Shutdown,
+        started: RefCell<Vec<usize>>,
+    }
+    impl Environment for Signalled {
+        fn now(&self) -> Millis {
+            Millis::new(0)
+        }
+        async fn last_completed(&self, profiles: usize) -> Vec<Option<Millis>> {
+            vec![None; profiles]
+        }
+        fn stop_requested(&self) -> bool {
+            self.shutdown.is_requested()
+        }
+        async fn sleep_until(&self, _until: Millis) -> Wake {
+            Wake::Stop
+        }
+        async fn run_profile(&self, profile: usize) -> RunOutcome {
+            self.started.borrow_mut().push(profile);
+            self.shutdown.request();
+            RunOutcome::Failed
+        }
+    }
+    let env = Signalled {
+        shutdown: Shutdown::new(),
+        started: RefCell::new(Vec::new()),
+    };
+    let report = serve(&env, Duration::from_millis(100), 3).await?;
+    assert_eq!(*env.started.borrow(), vec![0]);
+    assert_eq!(report.failed, 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_a_requested_shutdown_then_every_clone_and_token_observes_it() {
+    use inventory_engine::cadence::Shutdown;
+    let shutdown = Shutdown::new();
+    let token = shutdown.token();
+    let clone = shutdown.clone();
+    assert!(!shutdown.is_requested() && !token.is_cancelled());
+    clone.request();
+    assert!(shutdown.is_requested() && token.is_cancelled());
+    shutdown.requested().await;
+}

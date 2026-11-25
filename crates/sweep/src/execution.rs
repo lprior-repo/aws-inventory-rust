@@ -76,6 +76,16 @@ pub async fn run<S: InventoryStore>(
     Ok(progress.finish(summary))
 }
 
+/// Resolve the account identity behind `credentials` without touching the store.
+pub async fn resolve_account(
+    catalog: &RuntimeCatalog<'_>,
+    config: &SweepConfig,
+    credentials: &impl CredentialSource,
+) -> Result<AccountId, SweepError> {
+    let runtime = collection::Resources::new(config, credentials)?;
+    bootstrap_account(&runtime.bootstrap(catalog, config, credentials)).await
+}
+
 fn _run_is_send<'a, S, C>(
     catalog: &'a RuntimeCatalog<'a>,
     store: &'a S,

@@ -51,7 +51,7 @@ fn serve_cli_requires_database() {
     assert!(result.is_err(), "expected parse error without --database");
 }
 
-#[cfg(feature = "aws")]
+#[cfg(feature = "sweep")]
 #[tokio::test]
 async fn given_zero_idle_timeout_when_serve_starts_then_it_fails_before_opening_the_store()
 -> anyhow::Result<()> {

@@ -1,19 +1,19 @@
 use crate::cli::ServeArgs;
 use std::process::ExitCode;
 
-#[cfg(feature = "aws")]
+#[cfg(feature = "sweep")]
 mod config;
-#[cfg(feature = "aws")]
+#[cfg(feature = "sweep")]
 mod enabled;
-#[cfg(feature = "aws")]
+#[cfg(feature = "sweep")]
 mod store;
 
-#[cfg(feature = "aws")]
+#[cfg(feature = "sweep")]
 pub async fn run(options: ServeArgs) -> anyhow::Result<ExitCode> {
     enabled::run(options).await
 }
 
-#[cfg(not(feature = "aws"))]
+#[cfg(not(feature = "sweep"))]
 pub async fn run(_options: ServeArgs) -> anyhow::Result<ExitCode> {
-    anyhow::bail!("serve requires a build with --features aws")
+    anyhow::bail!("serve requires a build with --features sweep")
 }
