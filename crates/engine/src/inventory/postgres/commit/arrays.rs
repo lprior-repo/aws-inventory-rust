@@ -50,7 +50,10 @@ fn collect<'a, T>(
         .collect()
 }
 
-fn value<'a>(row: &'a Observation, column: &Column) -> Result<Option<ValueRef<'a>>, StoreError> {
+pub(super) fn value<'a>(
+    row: &'a Observation,
+    column: &Column,
+) -> Result<Option<ValueRef<'a>>, StoreError> {
     if column.path().is_empty() {
         return Ok(inventory_core::record::scalar_item(row.record().root())?);
     }
@@ -63,7 +66,7 @@ fn value<'a>(row: &'a Observation, column: &Column) -> Result<Option<ValueRef<'a
     )
 }
 
-fn mismatch() -> StoreError {
+pub(super) fn mismatch() -> StoreError {
     StoreError::Invalid("record scalar does not match column schema")
 }
 

@@ -94,7 +94,7 @@ async fn persist(
     for state in states.values_mut().filter(|state| state.facet_changed) {
         resources::prepare(&store.registry, state, page.observed_at_ms)?;
     }
-    write(tx, &context, &states, &grants).await?;
+    write(tx, &context, &states, &grants, store.config.copy_min_rows()).await?;
     let tags = tags::persist(tx, page).await?;
     scope_members::persist(tx, page).await?;
     outbox::enqueue(tx, &projection(&states, tags)).await?;
@@ -148,9 +148,17 @@ async fn write(
     context: &Context<'_>,
     states: &BTreeMap<&ResourceKey, State<'_>>,
     grants: &[Grant<'_>],
+    copy_min_rows: Option<std::num::NonZeroUsize>,
 ) -> Result<(), StoreError> {
-    resource_write::persist(tx, states, context.page, &context.identity.source).await?;
-    kind_rows::persist(tx, context.registry, states).await?;
+    resource_write::persist(
+        tx,
+        states,
+        context.page,
+        &context.identity.source,
+        copy_min_rows,
+    )
+    .await?;
+    kind_rows::persist(tx, context.registry, states, copy_min_rows).await?;
     facet_write::persist(tx, states, context).await?;
     grants::persist(tx, grants, &context.identity.source).await?;
     references::persist(tx, context.registry, states).await

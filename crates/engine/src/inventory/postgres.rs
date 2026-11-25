@@ -2,6 +2,7 @@ mod commit;
 mod completion;
 mod config;
 mod connection;
+mod copy;
 mod lease;
 mod outbox;
 mod projection_api;

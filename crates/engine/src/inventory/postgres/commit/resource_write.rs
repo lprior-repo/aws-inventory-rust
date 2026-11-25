@@ -1,15 +1,26 @@
+use super::super::copy::{self, Field};
 use super::keys::Keys;
 use super::resources::{Prepared, State};
 use crate::inventory::{PageCommit, StoreError};
 use inventory_core::inventory::ResourceKey;
 use sqlx::{Postgres, QueryBuilder, Transaction};
 use std::collections::BTreeMap;
+use std::num::NonZeroUsize;
+
+const CREATE_STAGE: &str = "CREATE TEMPORARY TABLE IF NOT EXISTS stg_resources (LIKE inventory.resources, is_new boolean NOT NULL) ON COMMIT DELETE ROWS";
+const COPY_STAGE: &str = "COPY pg_temp.stg_resources FROM STDIN (FORMAT binary)";
+
+enum Input<'a> {
+    Unnest(&'a [&'a Prepared]),
+    Staging,
+}
 
 pub(super) async fn persist(
     tx: &mut Transaction<'_, Postgres>,
     states: &BTreeMap<&ResourceKey, State<'_>>,
     page: &PageCommit,
     scope: &[u8],
+    copy_min_rows: Option<NonZeroUsize>,
 ) -> Result<(), StoreError> {
     let mut changed = Vec::new();
     for row in states.values().filter_map(|state| state.prepared.as_ref()) {
@@ -17,18 +28,60 @@ pub(super) async fn persist(
             changed.push(row);
         }
     }
-    if !changed.is_empty() {
-        let mut query = statement(&changed, page, scope);
-        query.build().execute(&mut **tx).await?;
+    if changed.is_empty() {
+        return Ok(());
     }
+    let input = if copy_min_rows.is_some_and(|min| changed.len() >= min.get()) {
+        copy::load(tx, CREATE_STAGE, COPY_STAGE, &changed, |buffer, row| {
+            encode(buffer, row)
+        })
+        .await?;
+        Input::Staging
+    } else {
+        Input::Unnest(&changed)
+    };
+    statement(input, page, scope)
+        .build()
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 
-fn statement(rows: &[&Prepared], page: &PageCommit, scope: &[u8]) -> QueryBuilder<Postgres> {
-    let mut query = QueryBuilder::new("WITH input AS (SELECT * FROM UNNEST(");
-    keys(&mut query, rows);
-    metadata(&mut query, rows);
-    query.push(") u(account,region,kind,id,name,content_hash,first_seen,last_changed,is_new)), saved AS (INSERT INTO resources(account,region,kind,id,name,content_hash,first_seen,last_changed) SELECT account,region,kind,id,name,content_hash,first_seen,last_changed FROM input WHERE true ON CONFLICT(account,region,kind,id) DO UPDATE SET name=EXCLUDED.name,content_hash=EXCLUDED.content_hash,last_changed=EXCLUDED.last_changed WHERE resources.content_hash IS DISTINCT FROM EXCLUDED.content_hash OR resources.name IS DISTINCT FROM EXCLUDED.name RETURNING account,region,kind,id), observed AS (INSERT INTO resource_scopes(account,region,kind,id,scope_key,last_seen,missing_complete,observed_sweep) SELECT account,region,kind,id,");
+fn encode(buffer: &mut Vec<u8>, row: &Prepared) -> Result<(), StoreError> {
+    let observation = &row.aggregate.observation;
+    let key = observation.key();
+    copy::row(buffer, 9)?;
+    [
+        Field::Text(key.account.as_str()),
+        Field::Text(key.region.as_str()),
+        Field::Text(key.kind.as_str()),
+        Field::Text(key.id.as_str()),
+        observation.name().map_or(Field::Null, Field::Text),
+        Field::Bytes(&row.hash),
+        Field::Bigint(row.first_seen),
+        Field::Bigint(row.last_changed),
+        Field::Boolean(row.new),
+    ]
+    .into_iter()
+    .try_for_each(|field| copy::field(buffer, field))
+}
+
+fn statement(input: Input<'_>, page: &PageCommit, scope: &[u8]) -> QueryBuilder<Postgres> {
+    let mut query = QueryBuilder::new("WITH input AS (SELECT * FROM ");
+    match input {
+        Input::Unnest(rows) => {
+            query.push("UNNEST(");
+            keys(&mut query, rows);
+            metadata(&mut query, rows);
+            query.push(
+                ") u(account,region,kind,id,name,content_hash,first_seen,last_changed,is_new)",
+            );
+        }
+        Input::Staging => {
+            query.push("pg_temp.stg_resources");
+        }
+    }
+    query.push("), saved AS (INSERT INTO resources(account,region,kind,id,name,content_hash,first_seen,last_changed) SELECT account,region,kind,id,name,content_hash,first_seen,last_changed FROM input WHERE true ON CONFLICT(account,region,kind,id) DO UPDATE SET name=EXCLUDED.name,content_hash=EXCLUDED.content_hash,last_changed=EXCLUDED.last_changed WHERE resources.content_hash IS DISTINCT FROM EXCLUDED.content_hash OR resources.name IS DISTINCT FROM EXCLUDED.name RETURNING account,region,kind,id), observed AS (INSERT INTO resource_scopes(account,region,kind,id,scope_key,last_seen,missing_complete,observed_sweep) SELECT account,region,kind,id,");
     query
         .push_bind(scope)
         .push(",")
