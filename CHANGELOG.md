@@ -5,6 +5,11 @@
 - The emulator probe now calls parent-bound operations using the sweep's binding
   and wire code, sampling one parent item by default (`--child-samples 1..64`)
   and reporting why unbound children are skipped.
+- PostgreSQL COPY can be enabled at a positive row threshold; the opt-in direct
+  mode copies new-resource pages into target tables without staging and rolls
+  back to a page savepoint before staging fallback on a unique violation. The
+  direct mode requires `INVENTORY_POSTGRES_COPY_MIN_ROWS` and
+  `INVENTORY_POSTGRES_COPY_DIRECT=1`; the measurement is not yet recorded.
 - Sweeps no longer store a resource's own identifier as a reference to itself.
   The next sweep removes those edges; deliberate self-relationships, such as an
   IAM role that trusts itself, are unchanged.

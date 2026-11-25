@@ -12,6 +12,7 @@ mod scope_members;
 mod tags;
 mod validation;
 
+use super::config::DirectCopy;
 use super::{PgStore, completion, outbox, references as reconciliation};
 use crate::inventory::relation_permissions::{SourceAuthority, page_authority};
 use crate::inventory::{ChangeStats, CommitResult, PageCommit, StoreError, WorkLease};
@@ -19,7 +20,7 @@ use facets::Context;
 use grants::Grant;
 use inventory_core::inventory::{Observation, ResourceKey};
 use resources::State;
-use sqlx::{Postgres, Transaction};
+use sqlx::{Acquire, Postgres, Transaction};
 use std::collections::{BTreeMap, BTreeSet};
 
 impl PgStore {
@@ -91,7 +92,15 @@ async fn persist(
     for state in states.values_mut().filter(|state| state.facet_changed) {
         resources::prepare(&store.registry, state, page.observed_at_ms)?;
     }
-    write(tx, &context, &states, &grants, store.config.copy_min_rows()).await?;
+    write(
+        tx,
+        &context,
+        &states,
+        &grants,
+        store.config.copy_min_rows(),
+        store.config.direct_copy(),
+    )
+    .await?;
     let tags = tags::persist(tx, page).await?;
     scope_members::persist(tx, page).await?;
     outbox::enqueue(tx, &projection(&states, tags)).await?;
@@ -146,19 +155,81 @@ async fn write(
     states: &BTreeMap<&ResourceKey, State<'_>>,
     grants: &[Grant<'_>],
     copy_min_rows: Option<std::num::NonZeroUsize>,
+    direct_copy: DirectCopy,
 ) -> Result<(), StoreError> {
-    resource_write::persist(
-        tx,
-        states,
-        context.page,
-        &context.identity.source,
-        copy_min_rows,
-    )
-    .await?;
-    kind_rows::persist(tx, context.registry, states, copy_min_rows).await?;
+    let direct = if direct_copy == DirectCopy::Enabled
+        && copy_min_rows.is_some_and(|min| changed_rows(states) >= min.get())
+        && states.values().all(|state| state.old_hash.is_none())
+    {
+        try_direct(tx, context, states).await?
+    } else {
+        false
+    };
+    if !direct {
+        resource_write::persist(
+            tx,
+            states,
+            context.page,
+            &context.identity.source,
+            copy_min_rows,
+        )
+        .await?;
+        kind_rows::persist(tx, context.registry, states, copy_min_rows).await?;
+    }
     facet_write::persist(tx, states, context).await?;
     grants::persist(tx, grants, &context.identity.source).await?;
     references::persist(tx, context.registry, states).await
+}
+
+fn changed_rows(states: &BTreeMap<&ResourceKey, State<'_>>) -> usize {
+    states
+        .values()
+        .filter_map(|state| state.prepared.as_ref())
+        .filter(|row| row.content_changed)
+        .count()
+}
+
+async fn try_direct(
+    tx: &mut Transaction<'_, Postgres>,
+    context: &Context<'_>,
+    states: &BTreeMap<&ResourceKey, State<'_>>,
+) -> Result<bool, StoreError> {
+    let mut savepoint = tx.begin().await?;
+    let direct = async {
+        let changed: Vec<_> = states
+            .values()
+            .filter_map(|state| state.prepared.as_ref())
+            .filter(|row| row.content_changed)
+            .collect();
+        resource_write::direct(
+            &mut savepoint,
+            &changed,
+            context.page,
+            &context.identity.source,
+        )
+        .await?;
+        kind_rows::direct(&mut savepoint, context.registry, states).await
+    }
+    .await;
+    match direct {
+        Ok(()) => {
+            savepoint.commit().await?;
+            Ok(true)
+        }
+        Err(error) => {
+            let unique = unique_violation(&error);
+            savepoint.rollback().await?;
+            if unique { Ok(false) } else { Err(error) }
+        }
+    }
+}
+
+fn unique_violation(error: &StoreError) -> bool {
+    matches!(
+        error,
+        StoreError::Sqlite(sqlx::Error::Database(database))
+            if database.code().as_deref() == Some("23505")
+    )
 }
 
 fn projection<'a>(

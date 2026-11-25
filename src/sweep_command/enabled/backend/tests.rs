@@ -6,7 +6,7 @@ use std::time::Instant;
 
 #[test]
 fn given_copy_min_rows_unset_when_configured_then_copy_is_off() -> Result<()> {
-    let config = postgres_config_value(None)?;
+    let config = postgres_config_value(None, None)?;
     let default_config = PgWriteConfig::default();
     assert_eq!(config, default_config);
     Ok(())
@@ -14,7 +14,43 @@ fn given_copy_min_rows_unset_when_configured_then_copy_is_off() -> Result<()> {
 
 #[test]
 fn given_copy_min_rows_one_when_configured_then_copy_enabled_at_one_row() -> Result<()> {
-    let config = postgres_config_value(Some("1".to_owned()))?;
+    let config = postgres_config_value(Some("1".to_owned()), None)?;
+    let expected = PgWriteConfig::default().with_copy_min_rows(std::num::NonZeroUsize::MIN);
+    assert_eq!(config, expected);
+    Ok(())
+}
+
+#[test]
+fn given_direct_copy_without_threshold_when_configured_then_error_names_setting() -> Result<()> {
+    let error = postgres_config_value(None, Some("1".to_owned()))
+        .err()
+        .context("direct copy should require a threshold")?;
+    assert!(error.to_string().contains("INVENTORY_POSTGRES_COPY_DIRECT"));
+    Ok(())
+}
+
+#[test]
+fn given_invalid_direct_copy_value_when_configured_then_error_names_setting() -> Result<()> {
+    let error = postgres_config_value(Some("1".to_owned()), Some("true".to_owned()))
+        .err()
+        .context("invalid direct value should be rejected")?;
+    assert!(error.to_string().contains("INVENTORY_POSTGRES_COPY_DIRECT"));
+    Ok(())
+}
+
+#[test]
+fn given_direct_copy_one_with_threshold_when_configured_then_variant_enabled() -> Result<()> {
+    let config = postgres_config_value(Some("1".to_owned()), Some("1".to_owned()))?;
+    let expected = PgWriteConfig::default()
+        .with_copy_min_rows(std::num::NonZeroUsize::MIN)
+        .with_direct_copy()?;
+    assert_eq!(config, expected);
+    Ok(())
+}
+
+#[test]
+fn given_direct_copy_zero_with_threshold_when_configured_then_staging_is_enabled() -> Result<()> {
+    let config = postgres_config_value(Some("1".to_owned()), Some("0".to_owned()))?;
     let expected = PgWriteConfig::default().with_copy_min_rows(std::num::NonZeroUsize::MIN);
     assert_eq!(config, expected);
     Ok(())
@@ -22,28 +58,26 @@ fn given_copy_min_rows_one_when_configured_then_copy_enabled_at_one_row() -> Res
 
 #[test]
 fn given_copy_min_rows_zero_when_configured_then_error() -> Result<()> {
-    let error = postgres_config_value(Some("0".to_owned()))
+    let error = postgres_config_value(Some("0".to_owned()), None)
         .err()
         .context("zero should have been rejected")?;
     assert!(
         error
             .to_string()
-            .contains("INVENTORY_POSTGRES_COPY_MIN_ROWS"),
-        "error must name the variable"
+            .contains("INVENTORY_POSTGRES_COPY_MIN_ROWS")
     );
     Ok(())
 }
 
 #[test]
 fn given_copy_min_rows_non_numeric_when_configured_then_error() -> Result<()> {
-    let error = postgres_config_value(Some("abc".to_owned()))
+    let error = postgres_config_value(Some("abc".to_owned()), None)
         .err()
         .context("non-numeric should have been rejected")?;
     assert!(
         error
             .to_string()
-            .contains("INVENTORY_POSTGRES_COPY_MIN_ROWS"),
-        "error must name the variable"
+            .contains("INVENTORY_POSTGRES_COPY_MIN_ROWS")
     );
     Ok(())
 }

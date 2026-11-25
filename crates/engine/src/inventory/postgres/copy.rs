@@ -34,12 +34,21 @@ pub(super) async fn load<T>(
         .persistent(false)
         .execute(&mut **tx)
         .await?;
+    load_direct(tx, statement, rows, encode).await
+}
+
+pub(super) async fn load_direct<T>(
+    tx: &mut Transaction<'_, Postgres>,
+    statement: &str,
+    rows: &[T],
+    encode: impl Fn(&mut Vec<u8>, &T) -> Result<(), StoreError>,
+) -> Result<u64, StoreError> {
     let mut copy = tx.copy_in_raw(statement).await?;
     match send(&mut copy, rows, encode).await {
         Ok(()) => Ok(copy.finish().await?),
         Err(error) => {
-            if let Err(cleanup) = copy.abort("inventory staging COPY failed").await {
-                tracing::warn!(error = %cleanup, "could not abort PostgreSQL staging COPY");
+            if let Err(cleanup) = copy.abort("inventory COPY failed").await {
+                tracing::warn!(error = %cleanup, "could not abort PostgreSQL COPY");
             }
             Err(error)
         }
