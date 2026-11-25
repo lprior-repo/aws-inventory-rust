@@ -73,7 +73,14 @@ fn given_toml_lists_and_structures_when_prepared_then_request_uses_modeled_field
     let models = SeedModels::load(&runtime, &scenario)?;
     let parent = models.steps.first().ok_or("missing parent")?;
     let mut state = state()?;
-    record_output(&mut state, StepId::new(0), None, parent_output(parent)?)?;
+    record_output(
+        &mut state,
+        SeedOutput {
+            step: StepId::new(0),
+            resources: SeedResources::None,
+            record: parent_output(parent)?,
+        },
+    )?;
     let step = models.steps.get(1).ok_or("missing instance")?;
     let (record, body) = request(step, &state)?;
     let path = output_path(

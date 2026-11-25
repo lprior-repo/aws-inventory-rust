@@ -35,17 +35,20 @@ struct DeadlineInput<'a> {
 
 impl Read for DeadlineInput<'_> {
     fn read(&mut self, buffer: &mut [u8]) -> std::io::Result<usize> {
-        let duration = remaining(self.budget)
-            .map_err(|error| std::io::Error::new(std::io::ErrorKind::TimedOut, error))?;
-        self.input.set_read_timeout(Some(duration))?;
-        match self.input.read(buffer) {
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::TimedOut,
-                    "fixture download deadline exceeded",
-                ))
+        loop {
+            let duration = remaining(self.budget)
+                .map_err(|error| std::io::Error::new(std::io::ErrorKind::TimedOut, error))?;
+            self.input.set_read_timeout(Some(duration))?;
+            match self.input.read(buffer) {
+                Err(error) if error.kind() == std::io::ErrorKind::Interrupted => {}
+                Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::TimedOut,
+                        "fixture download deadline exceeded",
+                    ));
+                }
+                result => return result,
             }
-            result => result,
         }
     }
 }

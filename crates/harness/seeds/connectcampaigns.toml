@@ -14,6 +14,16 @@ InboundCallsEnabled = true
 OutboundCallsEnabled = true
 
 [[step]]
+id = "default-flows"
+service = "connect"
+operation = "ListContactFlows"
+kind = "AWS::Connect::ContactFlow"
+identity = { list = "ContactFlowSummaryList", member = "Arn", count = 9 }
+[step.input]
+InstanceId = { from = "instance", path = "Id" }
+MaxResults = 100
+
+[[step]]
 id = "onboard"
 operation = "StartInstanceOnboardingJob"
 kind = ""

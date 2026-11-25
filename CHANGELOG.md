@@ -794,6 +794,25 @@
   execution evidence never transfers SDK versions; receipts require matching
   source, version and module fingerprints. Current exact-version evidence
   credits 47 operations, not the former 76 cross-version rollup.
+- `inventory-harness head-to-head` times repeated collector runs against one
+  seeded emulator and a PostgreSQL database it creates and drops. It compares
+  results only when every tool reports the seeded scope and counts.
+- E2E seeds now record the nine default Connect flows the pinned emulator
+  creates with each instance, and use an explicitly seeded KMS key for
+  CodeArtifact domains.
+- E2E coverage reports distinguish unselected kinds, and count verification
+  reports unexpected kinds and pre-existing seeded identities.
+- Seed validation now rejects a relationship endpoint that names a step with a
+  response identity list, because such a step does not yield one resource.
+- E2E count verification now fails when the run adds resources of a kind that
+  the seed oracle does not list.
+- Head-to-head comparisons enforce exact seeded counts, except for the EC2
+  defaults documented for VPCs and subnets. They handle SIGINT, SIGTERM, SIGHUP
+  and SIGQUIT throughout startup and collection, settle database creation
+  before cleanup, and report a failed deletion.
+- Head-to-head samples report killed leftover processes, retain leaders until
+  group signalling, and stop the native stack on interruption.
+- Fixture downloads retry reads interrupted by a signal.
 
 ## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
 

@@ -12,7 +12,7 @@ mod blob_tests;
 #[cfg(test)]
 mod tests;
 use aws_wire::request::Protocol;
-pub(super) use identity::{PreparedIdentity, PreparedResource};
+pub(super) use identity::{Continuation, PreparedIdentity, PreparedResource};
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
     catalog::{Catalog, Member, Operation, Service, Target},
@@ -92,7 +92,7 @@ impl<'a> SeedModels<'a> {
         let steps = scenario
             .steps()
             .iter()
-            .map(|step| prepare_step(&operations, step))
+            .map(|step| prepare_step(catalog, &operations, step))
             .collect::<Result<Vec<_>, _>>()?;
         let relationships = scenario
             .relationships()
@@ -118,13 +118,14 @@ fn caller_path(caller: SeedOperation<'_>, field: &str) -> Result<Vec<Selector>, 
 }
 
 fn prepare_step<'a>(
+    catalog: Catalog<'a>,
     operations: &[SeedOperation<'a>],
     step: &SeedStep,
 ) -> Result<PreparedStep<'a>, SeedError> {
     let operation = *operations
         .get(usize::from(step.id.0))
         .ok_or(SeedError::Invalid("seed prepared operation is missing"))?;
-    let resource = identity::resource(operation, step)?;
+    let resource = identity::resource(catalog, operation, step)?;
     let (inputs, checks) = step_parts(operations, operation, step)?;
     Ok(PreparedStep {
         id: step.id,

@@ -1,6 +1,6 @@
 use crate::HarnessError;
 use futures_util::{StreamExt, TryStreamExt};
-use std::time::Instant;
+use std::{future::Future, time::Instant};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Stage {
@@ -28,10 +28,17 @@ pub(super) trait Session: Sized {
     async fn finish(self, interrupted: bool) -> Result<(), HarnessError>;
 }
 
-pub(super) async fn drive(mut session: impl Session) -> Result<(), HarnessError> {
+pub(super) async fn drive(session: impl Session) -> Result<(), HarnessError> {
+    drive_until(session, tokio::signal::ctrl_c()).await
+}
+
+async fn drive_until(
+    mut session: impl Session,
+    interrupt: impl Future<Output = std::io::Result<()>>,
+) -> Result<(), HarnessError> {
     let (result, interrupted) = tokio::select! {
         result = stages(&mut session) => (result, false),
-        signal = tokio::signal::ctrl_c() => (signal.and_then(|()| Err(std::io::Error::other("e2e run interrupted"))).map_err(HarnessError::from), true),
+        signal = interrupt => (signal.and_then(|()| Err(std::io::Error::other("e2e run interrupted"))).map_err(HarnessError::from), true),
     };
     let started = Instant::now();
     let stopped = session.finish(interrupted).await;
@@ -68,4 +75,42 @@ async fn stages(session: &mut impl Session) -> Result<(), HarnessError> {
 pub(super) fn report<T>(name: &str, started: Instant, result: &Result<T, HarnessError>) {
     let outcome = if result.is_ok() { "ok" } else { "failed" };
     println!("stage {name} {} {outcome}", started.elapsed().as_millis());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct InterruptedSession<'a> {
+        finished: &'a mut Option<bool>,
+    }
+
+    impl Session for InterruptedSession<'_> {
+        async fn stage(&mut self, _stage: Stage) -> Result<(), HarnessError> {
+            std::future::pending().await
+        }
+
+        async fn finish(self, interrupted: bool) -> Result<(), HarnessError> {
+            *self.finished = Some(interrupted);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn given_pending_stage_when_interrupted_then_cleanup_receives_interrupted()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let mut finished = None;
+        let error = drive_until(
+            InterruptedSession {
+                finished: &mut finished,
+            },
+            std::future::ready(Ok(())),
+        )
+        .await
+        .err()
+        .ok_or("interrupted run succeeded")?;
+        assert_eq!(error.to_string(), "e2e run interrupted");
+        assert_eq!(finished, Some(true));
+        Ok(())
+    }
 }

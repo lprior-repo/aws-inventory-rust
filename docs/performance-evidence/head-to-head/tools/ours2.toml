@@ -1,0 +1,3 @@
+collector = "../../../../target/release/aws-inventory"
+version = ["${H2H_COLLECTOR}", "--version"]
+compatibility = "Uses the native Stack endpoint, private CA, issued profile, fresh PostgreSQL database and cleared graph through the shared collector adapter."

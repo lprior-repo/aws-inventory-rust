@@ -1,10 +1,15 @@
 use crate::HarnessError;
 
+mod cleanup;
 pub mod command;
+mod creation;
 mod database;
 mod names;
 mod prune;
 pub mod runtime;
+pub(crate) mod worker;
+
+pub use cleanup::{CleanupFailure, CleanupFailures};
 
 pub use database::TestDatabase;
 pub use prune::prune;

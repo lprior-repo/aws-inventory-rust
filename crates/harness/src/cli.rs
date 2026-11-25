@@ -20,6 +20,10 @@ pub(super) fn parse_seed_draft(arguments: &[String]) -> Result<SeedDraftOptions,
 
 pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
     match arguments.first().map(String::as_str) {
+        Some("head-to-head") => inventory_harness::head_to_head::Args::parse(
+            arguments.get(1..).map_or(&[], |arguments| arguments),
+        )
+        .map(Command::HeadToHead),
         Some("snapshot") if arguments.get(1).map(String::as_str) == Some("freeze") => {
             parse_freeze(arguments.get(2..).unwrap_or_default())
         }

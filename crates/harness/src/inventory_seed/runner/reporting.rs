@@ -142,12 +142,10 @@ async fn execute(
 
 fn publish(state: &mut SeedState, attempt: Attempt) -> StepOutcome {
     match attempt {
-        Attempt::Output(output) => {
-            match record_output(state, output.step, output.resource, output.record) {
-                Ok(()) => StepOutcome::Accepted,
-                Err(error) => report::rejection(error),
-            }
-        }
+        Attempt::Output(output) => match record_output(state, output) {
+            Ok(()) => StepOutcome::Accepted,
+            Err(error) => report::rejection(error),
+        },
         Attempt::Outcome(outcome) => outcome,
     }
 }

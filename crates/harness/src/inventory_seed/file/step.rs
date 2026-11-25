@@ -61,6 +61,21 @@ fn seed_identity(value: &toml::Value) -> Result<super::super::SeedIdentity, Seed
         return Ok(SeedIdentity::Response(path(value)?));
     }
     let value = descriptor::table(value)?;
+    if value.contains_key("list") {
+        keys(value, &["list", "member", "count"])?;
+        let count = value
+            .get("count")
+            .and_then(toml::Value::as_integer)
+            .and_then(|count| usize::try_from(count).ok())
+            .ok_or(SeedError::Invalid(
+                "seed response identity count must be an integer",
+            ))?;
+        return Ok(SeedIdentity::ResponseList {
+            list: path(field(value, "list")?)?,
+            member: path(field(value, "member")?)?,
+            count,
+        });
+    }
     keys(value, &["input", "template"])?;
     let template = value
         .get("template")

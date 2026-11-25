@@ -27,7 +27,7 @@ fn output(
     };
     Ok(SeedOutput {
         step: StepId::new(u16::from(step)),
-        resource: Some(resource),
+        resources: SeedResources::One(resource),
         record,
     })
 }
@@ -40,9 +40,9 @@ fn state(observed: &str) -> Result<SeedState, SeedError> {
         3,
     );
     let target = output(&state, 0, "target-id", "target-id")?;
-    record_output(&mut state, target.step, target.resource, target.record)?;
+    record_output(&mut state, target)?;
     let source = output(&state, 1, "source-id", observed)?;
-    record_output(&mut state, source.step, source.resource, source.record)?;
+    record_output(&mut state, source)?;
     Ok(state)
 }
 
@@ -134,7 +134,7 @@ fn given_unavailable_step_between_outputs_when_bound_then_error_names_the_missin
     let mut state = state("target-id")?;
     *state.outputs.get_mut(1).ok_or("missing source slot")? = None;
     let later = output(&state, 2, "later-id", "later-id")?;
-    record_output(&mut state, later.step, later.resource, later.record)?;
+    record_output(&mut state, later)?;
     let input = PreparedInput {
         path: vec![FieldId::new(2)?],
         value: PreparedInputValue::PreviousOutput {

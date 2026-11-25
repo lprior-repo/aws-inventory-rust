@@ -1,32 +1,101 @@
+use super::oracle::optional_value;
 use super::*;
-use crate::inventory_seed::model::{PreparedIdentity, PreparedResource};
+use crate::inventory_seed::model::{Continuation, PreparedIdentity, PreparedResource, Selector};
 use crate::inventory_seed::{SeedIdentityEvidence, SeedResourceIdentity};
+use inventory_core::record::ListRef;
 
-pub(super) fn resource(
+pub(super) fn resources(
     state: &SeedState,
     step: super::super::StepId,
     spec: &PreparedResource,
     response: &Record,
     inputs: &[(Vec<FieldId>, Value)],
-) -> Result<SeedResourceIdentity, SeedError> {
+) -> Result<SeedResources, SeedError> {
     let (id, evidence) = match &spec.identity {
         PreparedIdentity::Response(path) => (
-            ResourceId::parse(&text_path(response.root(), path)?)?,
+            selected_id(ValueRef::Map(response.root()), path)?,
             SeedIdentityEvidence::Response,
         ),
+        PreparedIdentity::ResponseList {
+            list,
+            member,
+            count,
+            token,
+        } => {
+            let items = complete_list(response.root(), list, *count, token.as_ref())?;
+            return items
+                .iter()?
+                .map(|item| {
+                    let id = selected_id(item?, member)?;
+                    Ok(resource(
+                        state,
+                        step,
+                        spec,
+                        id,
+                        SeedIdentityEvidence::ServiceCreated,
+                    ))
+                })
+                .collect::<Result<_, SeedError>>()
+                .map(SeedResources::List);
+        }
         PreparedIdentity::Request {
             input_field,
             template,
         } => {
             let value = request_value(inputs, input_field)?;
-            let text = match template {
-                Some(template) => render(template, value, state)?,
-                None => value.to_owned(),
+            let id = match template {
+                Some(template) => ResourceId::parse(&render(template, value, state)?)?,
+                None => ResourceId::parse(value)?,
             };
-            (ResourceId::parse(&text)?, SeedIdentityEvidence::Request)
+            (id, SeedIdentityEvidence::Request)
         }
     };
     validate_exact_identity(spec.expected_identity.as_deref(), &id)?;
+    Ok(SeedResources::One(resource(
+        state, step, spec, id, evidence,
+    )))
+}
+
+fn complete_list<'a>(
+    root: MapRef<'a>,
+    list: &[Selector],
+    expected: usize,
+    token: Option<&Continuation>,
+) -> Result<ListRef<'a>, SeedError> {
+    let ValueRef::List(items) = value_path(root, list)? else {
+        return Err(SeedError::Invalid("seed response identity is not a list"));
+    };
+    let observed = items.count()?;
+    if observed != expected {
+        return Err(SeedError::ResponseListCount { expected, observed });
+    }
+    if let Some(token) = token
+        && optional_value(ValueRef::Map(root), &token.path)?.is_some()
+    {
+        return Err(SeedError::ResponseListContinuation {
+            member: token.member.clone(),
+        });
+    }
+    Ok(items)
+}
+
+fn selected_id(
+    root: ValueRef<'_>,
+    path: &[crate::inventory_seed::model::Selector],
+) -> Result<ResourceId, SeedError> {
+    match select_value(root, path)? {
+        ValueRef::Text(text) => Ok(ResourceId::parse(text)?),
+        _ => Err(SeedError::Invalid("modeled identity output is not text")),
+    }
+}
+
+fn resource(
+    state: &SeedState,
+    step: super::super::StepId,
+    spec: &PreparedResource,
+    id: ResourceId,
+    evidence: SeedIdentityEvidence,
+) -> SeedResourceIdentity {
     let kind = spec.kind.clone();
     let key = ResourceKey {
         account: state.account.clone(),
@@ -34,13 +103,13 @@ pub(super) fn resource(
         kind: kind.clone(),
         id: id.clone(),
     };
-    Ok(SeedResourceIdentity {
+    SeedResourceIdentity {
         step,
         kind,
         id,
         key,
         evidence,
-    })
+    }
 }
 
 pub(super) fn request_value<'a>(

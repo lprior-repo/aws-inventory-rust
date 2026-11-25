@@ -9,6 +9,12 @@ pub struct SweepTarget<'a> {
     pub timeout: Duration,
 }
 
+pub struct SweepInputs<'a> {
+    pub catalog: &'a Path,
+    pub database: &'a str,
+    pub services: &'a [String],
+}
+
 pub async fn sweep(
     stack: &Stack,
     collector: &Path,
@@ -61,6 +67,21 @@ pub async fn sweep_at_with_timeout(
     });
     stack.configure(&mut command);
     execute_with_timeout(command, log, target.timeout).await
+}
+
+pub fn command(
+    stack: &Stack,
+    collector: &Path,
+    inputs: &SweepInputs<'_>,
+    endpoint: &str,
+) -> Command {
+    let mut command = sweep_command(collector, inputs.catalog, inputs.database);
+    configure_request(stack, &mut command, endpoint);
+    inputs.services.iter().for_each(|service| {
+        command.args(["--service", service]);
+    });
+    stack.configure(&mut command);
+    command
 }
 
 fn sweep_command(collector: &Path, catalog: &Path, database: &str) -> Command {
