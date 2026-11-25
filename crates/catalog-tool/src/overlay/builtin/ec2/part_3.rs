@@ -138,6 +138,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         items: Some(ItemSelector::parse("InstanceEventWindows")?),
         identity: Some(Identity::Key(vec![path("InstanceEventWindowId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
+        tags: Some(path("Tags")?),
         ..empty()
     }),
 ("DescribeInstanceImageMetadata", OperationOverlay {

@@ -35,7 +35,7 @@
 - EC2 records now carry the tags returned on each item by the operations that
   list them, including VPCs, subnets, network interfaces, internet and NAT
   gateways, security groups, volumes, snapshots, images, and transit gateway
-  resources. Five operations are deliberately not covered because their `Tags`
+  resources. Four operations are deliberately not covered because their `Tags`
   member holds another resource's tags, such as `DescribeVpcClassicLink`, which
   returns the VPC's tags. Operations that are deferred or denied, such as
   `DescribeInstances`, store no records, so they carry no tags.
