@@ -410,6 +410,8 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         (
             "ListPhoneNumbers",
             OperationOverlay {
+                // The emulator rejects the modeled maximum of 100 for this operation.
+                page_size: Some(99),
                 queryable: vec![path("PhoneNumberArn")?],
                 ..read(
                     "PhoneNumbers",

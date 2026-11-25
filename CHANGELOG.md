@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Inventory requests use compatible page limits for EC2 Image Builder lists,
+  MediaPackage origin endpoints, and Chime SDK Voice phone numbers. Pagination
+  still follows each operation's continuation token.
 - Seed recipes for 23 services create more resources before the emulator
   probe. The regenerated reports record 390 accepted seed steps with none
   rejected and 335 list operations returning items, out of 2,237 probed.

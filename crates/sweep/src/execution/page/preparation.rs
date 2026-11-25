@@ -146,3 +146,6 @@ mod tests {
 #[cfg(test)]
 #[path = "preparation/wire_tests.rs"]
 mod wire_tests;
+
+#[cfg(test)]
+mod provider_page_sizes;

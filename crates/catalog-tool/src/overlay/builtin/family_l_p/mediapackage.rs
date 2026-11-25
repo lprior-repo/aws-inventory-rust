@@ -1,4 +1,5 @@
 // Pinned Smithy source: .local/aws-models/models/mediapackage/service/2017-10-12/mediapackage-2017-10-12.json
+use super::super::name;
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -53,10 +54,12 @@ const GROUPS: &[Group] = &[
     },
 ];
 
+const LIST_ORIGIN_ENDPOINTS: &str = "ListOriginEndpoints";
+
 const RESOURCES: &[Resource] = &[
     // Returns a collection of OriginEndpoint records.
     Resource {
-        operation: "ListOriginEndpoints",
+        operation: LIST_ORIGIN_ENDPOINTS,
         items: "OriginEndpoints",
         id: Id::Arn("Arn"),
         scope: Scope::Region,
@@ -69,5 +72,14 @@ const RESOURCES: &[Resource] = &[
 ];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    compile("mediapackage", GROUPS, RESOURCES)
+    let mut overlay = compile("mediapackage", GROUPS, RESOURCES)?;
+    let plan = overlay
+        .operations
+        .get_mut(&name(LIST_ORIGIN_ENDPOINTS)?)
+        .ok_or_else(|| NameError {
+            value: LIST_ORIGIN_ENDPOINTS.to_owned(),
+        })?;
+    // The emulator limits maxResults to 50 despite the model allowing up to 1,000.
+    plan.page_size = Some(50);
+    Ok(overlay)
 }

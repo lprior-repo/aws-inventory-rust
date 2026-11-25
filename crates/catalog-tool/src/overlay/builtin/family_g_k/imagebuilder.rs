@@ -1,21 +1,14 @@
 //! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/imagebuilder/service.
 //! Review is source-only; no live service or emulator support claim.
 use super::policy;
-use crate::overlay::{NameError, ServiceOverlay};
+use crate::overlay::{NameError, OperationOverlay, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let approved = vec![
         (
             "ListImagePipelines",
-            policy::query(
-                policy::tags(
-                    policy::enumerate(
-                        "imagePipelineList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "tags",
-                )?,
+            tagged(
+                "imagePipelineList",
                 &[
                     "arn",
                     "imageRecipeArn",
@@ -27,155 +20,35 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ),
         (
             "ListContainerRecipes",
-            policy::query(
-                policy::tags(
-                    policy::fixed(
-                        policy::enumerate(
-                            "containerRecipeSummaryList",
-                            policy::arn("arn")?,
-                            Some(("nextToken", "nextToken")),
-                        )?,
-                        "owner",
-                        "Self",
-                    )?,
-                    "tags",
-                )?,
-                &["arn"],
-            )?,
+            policy::tags(owned("containerRecipeSummaryList")?, "tags")?,
         ),
         (
             "ListImageRecipes",
-            policy::query(
-                policy::tags(
-                    policy::fixed(
-                        policy::enumerate(
-                            "imageRecipeSummaryList",
-                            policy::arn("arn")?,
-                            Some(("nextToken", "nextToken")),
-                        )?,
-                        "owner",
-                        "Self",
-                    )?,
-                    "tags",
-                )?,
-                &["arn"],
-            )?,
+            policy::tags(owned("imageRecipeSummaryList")?, "tags")?,
         ),
         (
             "ListDistributionConfigurations",
-            policy::query(
-                policy::tags(
-                    policy::enumerate(
-                        "distributionConfigurationSummaryList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "tags",
-                )?,
-                &["arn"],
-            )?,
+            tagged("distributionConfigurationSummaryList", &["arn"])?,
         ),
         (
             "ListInfrastructureConfigurations",
-            policy::query(
-                policy::tags(
-                    policy::enumerate(
-                        "infrastructureConfigurationSummaryList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "tags",
-                )?,
-                &["arn"],
-            )?,
+            tagged("infrastructureConfigurationSummaryList", &["arn"])?,
         ),
         (
             "ListLifecyclePolicies",
-            policy::query(
-                policy::tags(
-                    policy::enumerate(
-                        "lifecyclePolicySummaryList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "tags",
-                )?,
-                &["arn"],
-            )?,
+            tagged("lifecyclePolicySummaryList", &["arn"])?,
         ),
         (
             "ListComponentBuildVersions",
-            policy::query(
-                policy::tags(
-                    policy::enumerate(
-                        "componentSummaryList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "tags",
-                )?,
-                &["arn"],
-            )?,
+            tagged("componentSummaryList", &["arn"])?,
         ),
         (
             "ListWorkflowBuildVersions",
-            policy::query(
-                policy::tags(
-                    policy::enumerate(
-                        "workflowSummaryList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "tags",
-                )?,
-                &["arn"],
-            )?,
+            tagged("workflowSummaryList", &["arn"])?,
         ),
-        (
-            "ListComponents",
-            policy::query(
-                policy::fixed(
-                    policy::enumerate(
-                        "componentVersionList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "owner",
-                    "Self",
-                )?,
-                &["arn"],
-            )?,
-        ),
-        (
-            "ListImages",
-            policy::query(
-                policy::fixed(
-                    policy::enumerate(
-                        "imageVersionList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "owner",
-                    "Self",
-                )?,
-                &["arn"],
-            )?,
-        ),
-        (
-            "ListWorkflows",
-            policy::query(
-                policy::fixed(
-                    policy::enumerate(
-                        "workflowVersionList",
-                        policy::arn("arn")?,
-                        Some(("nextToken", "nextToken")),
-                    )?,
-                    "owner",
-                    "Self",
-                )?,
-                &["arn"],
-            )?,
-        ),
+        ("ListComponents", owned("componentVersionList")?),
+        ("ListImages", owned("imageVersionList")?),
+        ("ListWorkflows", owned("workflowVersionList")?),
     ];
     policy::finish(
         "imagebuilder",
@@ -187,6 +60,21 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             (policy::DenyReason::Content, CONTENT),
         ],
     )
+}
+
+fn listing(items: &str, members: &[&str]) -> Result<OperationOverlay, NameError> {
+    let mut plan = policy::enumerate(items, policy::arn("arn")?, Some(("nextToken", "nextToken")))?;
+    // The pinned model documents a default of 25; the emulator also enforces it as its limit.
+    plan.page_size = Some(25);
+    policy::query(plan, members)
+}
+
+fn owned(items: &str) -> Result<OperationOverlay, NameError> {
+    policy::fixed(listing(items, &["arn"])?, "owner", "Self")
+}
+
+fn tagged(items: &str, members: &[&str]) -> Result<OperationOverlay, NameError> {
+    policy::tags(listing(items, members)?, "tags")
 }
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
