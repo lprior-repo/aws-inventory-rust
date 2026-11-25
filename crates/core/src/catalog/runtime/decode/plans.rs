@@ -9,15 +9,16 @@ mod pagination_tests;
 use metadata_fields::*;
 mod binding_alternatives;
 mod bindings;
-pub(super) use bindings::{binding, read as bindings};
 mod bounds;
 mod capabilities;
 mod context;
+pub(crate) use context::producers;
 mod dependencies;
 mod emissions;
 mod fixed_input;
 mod identity_text;
 mod map_exclusions;
+mod member_exclusions;
 mod model_links;
 mod page_codec;
 mod protocol_check;
@@ -43,8 +44,9 @@ use super::super::types::{
 use super::{RuntimeCatalogError, list_value, map, metadata, services::Services};
 use crate::{
     inventory::Kind,
-    record::{Exclusions, ValueRef},
+    record::{Exclusions, FieldId, ValueRef},
 };
+use bindings::{binding, bindings};
 use bounds::{optional_u32, positive_u32};
 pub(super) fn read<'a>(
     services: &Services<'a>,
@@ -69,7 +71,8 @@ fn plan<'a>(
     metadata::only_fields(
         fields,
         &[
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            25,
         ],
     )?;
     let service_name = metadata::text(fields, 1)?;
@@ -84,7 +87,6 @@ fn plan<'a>(
         cache,
     )
 }
-
 fn decode_plan<'a>(
     fields: crate::record::MapRef<'_>,
     service: crate::catalog::Service<'a>,
@@ -104,8 +106,20 @@ fn decode_plan<'a>(
         purpose(purpose_fields)?
     };
     let emission = selection::emission(fields)?;
-    let identity = identity_for(metadata::map_field(fields, 6)?, &purpose, emission)?;
-    let bindings = bindings::read(metadata::list(fields, 7)?)?;
+    // Field 25 is the effective emit flag: 1 = work, 0 = resources.
+    // If the emit flag is 1, the effective emission is WorkOnly.
+    // The field is optional for backward compatibility.
+    let effective_emission = match fields.get_field(FieldId::new(25)?)? {
+        None | Some(ValueRef::Int(0)) => emission,
+        Some(ValueRef::Int(1)) => super::super::Emission::WorkOnly,
+        _ => return Err(RuntimeCatalogError::Capability),
+    };
+    let identity = identity_for(
+        metadata::map_field(fields, 6)?,
+        &purpose,
+        effective_emission,
+    )?;
+    let bindings = bindings(metadata::list(fields, 7)?)?;
     let pagination = page(metadata::map_field(fields, 8)?)?;
     validation::exclusions(service, operation, &items, metadata::list(fields, 9)?)?;
     let exclusions = map_exclusions::read(
@@ -169,11 +183,12 @@ fn decode_plan<'a>(
         branches: routing::branches(fields)?,
         projection,
         classification,
-        emission,
+        emission: effective_emission,
         resources,
         identity_text,
         row_policy: row_policy::read(fields)?,
         context_projection: selection::projection(fields)?,
+        excluded_members: member_exclusions::read(fields, service, operation)?,
     };
     validation::validate(&parts)?;
     Ok(CallablePlan::new(parts))
@@ -278,6 +293,9 @@ fn identity_part(value: ValueRef<'_>) -> Result<IdentityPart, RuntimeCatalogErro
     }
 }
 
+fn binding_value(value: ValueRef<'_>) -> Result<BindingValue, RuntimeCatalogError> {
+    fixed_input::decode(value)
+}
 
 fn exclusions(list: crate::record::ListRef<'_>) -> Result<Exclusions, RuntimeCatalogError> {
     let paths = metadata::bounded(

@@ -25,61 +25,93 @@ pub(in crate::runtime_catalog::plans) fn compile(
     let mut paths = Paths::default();
     for review in checked.services() {
         for callable in review.callable() {
-            let overlay = callable.plan();
-            for binding in overlay.bind.values().chain(
-                overlay
-                    .branches
-                    .iter()
-                    .flat_map(|branch| branch.bind.values()),
-            ) {
-                binding_paths(&mut paths, service, operation, review.service(), binding)?;
+            overlay_paths(&mut paths, service, operation, review, callable.plan())?;
+        }
+    }
+    encode_paths_map(paths, services)
+}
+
+fn overlay_paths(
+    paths: &mut Paths,
+    service: &str,
+    operation: &str,
+    review: &crate::overlay::ReviewedService,
+    overlay: &crate::overlay::OperationOverlay,
+) -> Result<(), RuntimeCatalogCompileError> {
+    for binding in overlay.bind.values().chain(
+        overlay
+            .branches
+            .iter()
+            .flat_map(|branch| branch.bind.values()),
+    ) {
+        binding_paths(paths, service, operation, review.service(), binding)?;
+    }
+    if let Some(identity) = &overlay.identity {
+        identity_paths(paths, service, operation, review.service(), identity);
+    }
+    if review.service() == service {
+        eligibility_paths(paths, operation, overlay);
+        tag_endpoint_paths(paths, operation, overlay);
+    }
+    Ok(())
+}
+
+fn eligibility_paths(
+    paths: &mut Paths,
+    operation: &str,
+    overlay: &crate::overlay::OperationOverlay,
+) {
+    for eligibility in std::iter::once(&overlay.row_policy)
+        .chain(
+            overlay
+                .branches
+                .iter()
+                .filter_map(|branch| branch.row_policy.as_ref()),
+        )
+        .filter_map(|policy| policy.child.as_ref())
+        .filter(|child| child.operation.as_str() == operation)
+    {
+        match &eligibility.predicate {
+            RowPredicate::Absent(operand) | RowPredicate::BooleanEquals { operand, .. } => {
+                insert(paths, operand.source, operand.path.as_str())
             }
-            if let Some(identity) = &overlay.identity {
-                identity_paths(&mut paths, service, operation, review.service(), identity);
-            }
-            if review.service() == service {
-                for eligibility in std::iter::once(&overlay.row_policy)
-                    .chain(
-                        overlay
-                            .branches
-                            .iter()
-                            .filter_map(|branch| branch.row_policy.as_ref()),
-                    )
-                    .filter_map(|policy| policy.child.as_ref())
-                    .filter(|child| child.operation.as_str() == operation)
-                {
-                    match &eligibility.predicate {
-                        RowPredicate::Absent(operand)
-                        | RowPredicate::BooleanEquals { operand, .. } => {
-                            insert(&mut paths, operand.source, operand.path.as_str())
-                        }
-                        RowPredicate::SelectedRequestEquals {
-                            selected, request, ..
-                        } => {
-                            insert(&mut paths, ContextSource::SelectedItem, selected.as_str());
-                            insert(&mut paths, ContextSource::Request, request.as_str());
-                        }
-                    }
-                }
-                if let Some(endpoint) = &overlay.tag_endpoint {
-                    for parent in &endpoint.parents {
-                        if parent.operation.as_str() != operation {
-                            continue;
-                        }
-                        match &parent.request {
-                            TagEndpointRequest::Member { parent, .. } => {
-                                paths.selected.insert(parent.to_string());
-                            }
-                            TagEndpointRequest::Context { parent, .. } => {
-                                paths.request.insert(parent.to_string());
-                            }
-                            TagEndpointRequest::None | TagEndpointRequest::Owner { .. } => {}
-                        }
-                    }
-                }
+            RowPredicate::SelectedRequestEquals {
+                selected, request, ..
+            } => {
+                insert(paths, ContextSource::SelectedItem, selected.as_str());
+                insert(paths, ContextSource::Request, request.as_str());
             }
         }
     }
+}
+
+fn tag_endpoint_paths(
+    paths: &mut Paths,
+    operation: &str,
+    overlay: &crate::overlay::OperationOverlay,
+) {
+    if let Some(endpoint) = &overlay.tag_endpoint {
+        for parent in &endpoint.parents {
+            if parent.operation.as_str() != operation {
+                continue;
+            }
+            match &parent.request {
+                TagEndpointRequest::Member { parent, .. } => {
+                    paths.selected.insert(parent.to_string());
+                }
+                TagEndpointRequest::Context { parent, .. } => {
+                    paths.request.insert(parent.to_string());
+                }
+                TagEndpointRequest::None | TagEndpointRequest::Owner { .. } => {}
+            }
+        }
+    }
+}
+
+fn encode_paths_map(
+    paths: Paths,
+    services: &ServiceIndex<'_>,
+) -> Result<Value, RuntimeCatalogCompileError> {
     let encode_paths = |paths: BTreeSet<String>| -> Result<Value, RuntimeCatalogCompileError> {
         if paths.len() > 64 {
             return Err(RuntimeCatalogCompileError::Path {
@@ -107,25 +139,10 @@ fn binding_paths(
     consumer_service: &str,
     binding: &Binding,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    let binding = match binding {
-        Binding::Transformed { binding, .. } => {
-            if matches!(binding.as_ref(), Binding::Transformed { .. }) {
-                return Err(RuntimeCatalogCompileError::Path {
-                    path: "binding transform nesting".to_owned(),
-                });
-            }
-            binding.as_ref()
-        }
-        binding => binding,
-    };
-    match binding {
+    let inner = binding_inner(binding)?;
+    match inner {
         Binding::FromAny(alternatives) if consumer_service == service => {
-            alternatives
-                .iter()
-                .filter(|alternative| alternative.operation.as_str() == operation)
-                .for_each(|alternative| {
-                    insert(paths, alternative.source, alternative.path.as_str())
-                });
+            from_any_paths(paths, operation, alternatives);
         }
         Binding::From {
             operation: source,
@@ -150,6 +167,19 @@ fn binding_paths(
         } if source_service == service && source.as_str() == operation => {
             paths.selected.insert(path.to_string());
         }
+        other => other_binding_paths(paths, service, operation, consumer_service, other),
+    }
+    Ok(())
+}
+
+fn other_binding_paths(
+    paths: &mut Paths,
+    service: &str,
+    operation: &str,
+    consumer_service: &str,
+    binding: &Binding,
+) {
+    match binding {
         Binding::Context {
             operation: source,
             source: namespace,
@@ -174,7 +204,31 @@ fn binding_paths(
         }
         _ => {}
     }
-    Ok(())
+}
+
+fn binding_inner(binding: &Binding) -> Result<&Binding, RuntimeCatalogCompileError> {
+    match binding {
+        Binding::Transformed { binding, .. } => {
+            if matches!(binding.as_ref(), Binding::Transformed { .. }) {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: "binding transform nesting".to_owned(),
+                });
+            }
+            Ok(binding.as_ref())
+        }
+        binding => Ok(binding),
+    }
+}
+
+fn from_any_paths(
+    paths: &mut Paths,
+    operation: &str,
+    alternatives: &[crate::overlay::BindingAlternative],
+) {
+    alternatives
+        .iter()
+        .filter(|alternative| alternative.operation.as_str() == operation)
+        .for_each(|alternative| insert(paths, alternative.source, alternative.path.as_str()));
 }
 
 fn identity_paths(
@@ -231,5 +285,6 @@ pub(in crate::runtime_catalog::plans) fn emission(overlay: &OperationOverlay) ->
     Value::Int(match overlay.emission {
         crate::overlay::Emission::EmitMetadata => 0,
         crate::overlay::Emission::DiscoveryOnly => 1,
+        crate::overlay::Emission::WorkOnly => 2,
     })
 }

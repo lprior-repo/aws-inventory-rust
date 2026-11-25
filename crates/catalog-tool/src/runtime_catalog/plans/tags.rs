@@ -80,10 +80,9 @@ fn list(
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let element = shape(
         service,
-        tags.element()?
-            .ok_or(RuntimeCatalogCompileError::Path {
-                path: "tags list element".to_owned(),
-            })?,
+        tags.element()?.ok_or(RuntimeCatalogCompileError::Path {
+            path: "tags list element".to_owned(),
+        })?,
     )?;
     if element.kind()? != "structure" {
         return Err(RuntimeCatalogCompileError::Path {

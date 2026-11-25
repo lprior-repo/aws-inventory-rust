@@ -101,12 +101,22 @@ fn token_value(
         model_path::terminal_member(service, inputs.operation.input()?, pair.input.as_str())?;
     let output =
         model_path::terminal_member(service, inputs.operation.output()?, pair.output.as_str())?;
-    let value_type = token_type(model_path::kind(service, input.1.target)?)?;
-    if (pair.optional && input.1.required)
-        || value_type != token_type(model_path::kind(service, output.1.target)?)?
-    {
+    let value_type = map_path_error(
+        pair.input.as_str(),
+        token_type(model_path::kind(service, input.1.target)?),
+    )?;
+    let output_type = map_path_error(
+        pair.output.as_str(),
+        token_type(model_path::kind(service, output.1.target)?),
+    )?;
+    if pair.optional && input.1.required {
         return Err(RuntimeCatalogCompileError::Path {
             path: pair.input.as_str().to_owned(),
+        });
+    }
+    if value_type != output_type {
+        return Err(RuntimeCatalogCompileError::Path {
+            path: pair.output.as_str().to_owned(),
         });
     }
     encode::map([
@@ -140,11 +150,9 @@ fn validate_ancestors(
     protocol: i64,
 ) -> Result<(), RuntimeCatalogCompileError> {
     path.match_indices('.').try_for_each(|(index, _)| {
-        let prefix = path
-            .get(..index)
-            .ok_or(RuntimeCatalogCompileError::Path {
-                path: path.to_owned(),
-            })?;
+        let prefix = path.get(..index).ok_or(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        })?;
         let (_, member) = model_path::terminal_member(service, target, prefix)?;
         let body = if matches!(protocol, 0..=2) {
             true
@@ -184,27 +192,17 @@ fn last_list_item(
         output_path,
         model_path::terminal_member(service, response_target, output_path),
     )?;
-    validate_ancestors(
-        service,
-        request_target,
-        input_path,
-        inputs.protocol,
-    )?;
-    validate_ancestors(
-        service,
-        response_target,
-        output_path,
-        inputs.protocol,
-    )?;
+    validate_ancestors(service, request_target, input_path, inputs.protocol)?;
+    validate_ancestors(service, response_target, output_path, inputs.protocol)?;
     let element = map_path_error(
         output_path,
         model_path::list_element(service, response.1.target),
     )?;
-    map_path_error(input_path, model_path::string_target(service, request.1.target))?;
     map_path_error(
-        output_path,
-        model_path::string_target(service, element.target),
+        input_path,
+        model_path::string_target(service, request.1.target),
     )?;
+    map_path_error(output_path, model_path::string_target(service, element))?;
     if request.1.required {
         return Err(RuntimeCatalogCompileError::Path {
             path: input_path.to_owned(),
@@ -229,10 +227,10 @@ fn map_path_error<T>(
     result: Result<T, RuntimeCatalogCompileError>,
 ) -> Result<T, RuntimeCatalogCompileError> {
     result.map_err(|error| match error {
-        RuntimeCatalogCompileError::Path { path: inner }
-            if inner != path =>
-        {
-            RuntimeCatalogCompileError::Path { path: path.to_owned() }
+        RuntimeCatalogCompileError::Capability | RuntimeCatalogCompileError::Path { .. } => {
+            RuntimeCatalogCompileError::Path {
+                path: path.to_owned(),
+            }
         }
         error => error,
     })

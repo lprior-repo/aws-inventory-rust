@@ -75,12 +75,10 @@ fn item_type(
         call.plan().items.as_ref(),
     )?;
     let model_kind = model_path::kind(service, target)?;
-    scalar_code(model_kind).map_err(|_| {
-        RuntimeCatalogCompileError::KindContext {
-            kind: kind.to_owned(),
-            path: model_kind.to_owned(),
-            reason: "unsupported item type",
-        }
+    scalar_code(model_kind).map_err(|_| RuntimeCatalogCompileError::KindContext {
+        kind: kind.to_owned(),
+        path: model_kind.to_owned(),
+        reason: "unsupported item type",
     })
 }
 

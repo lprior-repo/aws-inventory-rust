@@ -4,8 +4,9 @@ mod model_path;
 mod plan_validation;
 mod plans;
 mod provenance;
+mod relations;
 mod schemas;
-mod selection;
+pub(crate) mod selection;
 pub use provenance::CatalogSources;
 
 use inventory_core::catalog::MAX_CATALOG_BYTES;
@@ -32,6 +33,12 @@ pub enum RuntimeCatalogCompileError {
         path: String,
         reason: &'static str,
     },
+    #[error("model reference walk exceeds {limit} shape visits")]
+    ReferenceWalkLimit { limit: usize },
+    #[error("model reference declarations exceed {limit} entries")]
+    ReferenceDeclarationsLimit { limit: usize },
+    #[error("reference declaration on shape {shape} is invalid: {reason}")]
+    ReferenceShape { shape: String, reason: &'static str },
     #[error("path {path} failed")]
     Path { path: String },
     #[error("runtime capability metadata is invalid or unsupported")]
@@ -63,7 +70,7 @@ pub(super) struct ServiceIndex<'a> {
 }
 
 impl<'a> ServiceIndex<'a> {
-    fn build(
+    pub(crate) fn build(
         catalog: inventory_core::catalog::Catalog<'a>,
     ) -> Result<Self, RuntimeCatalogCompileError> {
         let (by_name, field_ids) = catalog.services()?.try_fold(
@@ -200,10 +207,11 @@ fn compile_extension(
     sources: &CatalogSources,
 ) -> Result<(Value, encode::RelationsResult), RuntimeCatalogCompileError> {
     let mut relations = encode::relations(kinds, services, checked)?;
+    let schemas = schemas::compile(kinds, services, Some(checked), &relations.rows)?;
     let rows = std::mem::take(&mut relations.rows);
     let extension = encode::extension(
         plans,
-        schemas::compile(kinds, services, Some(checked))?,
+        schemas,
         rows,
         encode::coverage(kinds)?,
         plans::decisions(checked, services)?,
@@ -219,33 +227,15 @@ mod tests {
 
     #[test]
     fn unknown_service_names_service_field() {
-        match unknown_service("iam") {
-            RuntimeCatalogCompileError::CapabilityContext {
-                service,
-                operation,
-                path,
-            } => {
-                assert_eq!(service, "iam");
-                assert_eq!(operation, "-");
-                assert_eq!(path, "-");
-            }
-            other => panic!("expected CapabilityContext, got {other:?}"),
-        }
+        assert!(matches!(unknown_service("iam"),
+            RuntimeCatalogCompileError::CapabilityContext { service, operation, path }
+                if service == "iam" && operation == "-" && path == "-"));
     }
 
     #[test]
     fn unknown_member_names_path_field() {
-        match unknown_member("Missing") {
-            RuntimeCatalogCompileError::CapabilityContext {
-                service,
-                operation,
-                path,
-            } => {
-                assert_eq!(service, "-");
-                assert_eq!(operation, "-");
-                assert_eq!(path, "Missing");
-            }
-            other => panic!("expected CapabilityContext, got {other:?}"),
-        }
+        assert!(matches!(unknown_member("Missing"),
+            RuntimeCatalogCompileError::CapabilityContext { service, operation, path }
+                if service == "-" && operation == "-" && path == "Missing"));
     }
 }

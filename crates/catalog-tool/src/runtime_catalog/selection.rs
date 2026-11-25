@@ -4,7 +4,7 @@ use crate::overlay::{ItemSelector, SelectionKind};
 pub(super) use identity::validate as validate_identity;
 use inventory_core::catalog::{Service, Target};
 
-pub(super) fn target(
+pub(crate) fn target(
     service: Service<'_>,
     output: Target,
     selector: Option<&ItemSelector>,
@@ -26,7 +26,7 @@ pub(super) fn target(
         None => {
             return Err(RuntimeCatalogCompileError::Path {
                 path: "item selector".to_owned(),
-            })
+            });
         }
     };
     let path_str = path.as_str();
@@ -42,11 +42,13 @@ pub(super) fn target(
             "string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean",
         ) => Ok(selected),
         (SelectionKind::List, "list") => model_path::list_element(service, selected),
-        (SelectionKind::MapKeys, "map") => shape(service, selected)?
-            .map_key()?
-            .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                path: path_str.to_owned(),
-            }),
+        (SelectionKind::MapKeys, "map") => {
+            shape(service, selected)?
+                .map_key()?
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: path_str.to_owned(),
+                })
+        }
         (SelectionKind::MapEntries | SelectionKind::MapValues, "map") => shape(service, selected)?
             .map_value()?
             .ok_or_else(|| RuntimeCatalogCompileError::Path {
