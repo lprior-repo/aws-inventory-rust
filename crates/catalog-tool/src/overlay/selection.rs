@@ -1,6 +1,5 @@
 use super::{MemberPath, NameError, OperationName};
 
-/// The modeled container being selected, not an inferred singleton batch.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SelectionKind {
     MapEntries,
@@ -26,7 +25,6 @@ pub enum ContextSource {
     Request,
 }
 
-/// Account and region are deliberately absent: those come only from trusted scope.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IdentityField {
     Selected(MemberPath),
@@ -98,13 +96,11 @@ impl IdentityBranch {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum IdentityChoice {
-    /// A present malformed ARN is an error, never permission to use the fallback.
     PreferArn {
         path: MemberPath,
         fallback: IdentityLeaf,
         review: String,
     },
-    /// Ordered, explicit predicates; an unmatched row is an error.
     Discriminated(Vec<IdentityBranch>),
 }
 
@@ -187,7 +183,6 @@ pub enum BindingTransform {
     StripPrefix(String),
 }
 
-/// A reviewed source in a bounded union of producer contexts.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BindingAlternative {
     pub operation: OperationName,

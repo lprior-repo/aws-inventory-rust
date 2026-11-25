@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/networkmanager/service/2019-07-05/networkmanager-2019-07-05.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -183,7 +182,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Describes one or more global networks. By default, all global networks are described. To describe the objects in your global network, you must use the appropriate Get* action. For
     Resource {
         operation: "DescribeGlobalNetworks",
         items: "GlobalNetworks",
@@ -195,7 +193,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of core network attachments.
     Resource {
         operation: "ListAttachments",
         items: "Attachments",
@@ -217,7 +214,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of core network Connect peers.
     Resource {
         operation: "ListConnectPeers",
         items: "ConnectPeers",
@@ -235,7 +231,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the peerings for a core network.
     Resource {
         operation: "ListPeerings",
         items: "Peerings",
@@ -255,7 +250,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Gets information about one or more of your sites in a global network.
     Resource {
         operation: "GetSites",
         items: "Sites",
@@ -271,7 +265,6 @@ const RESOURCES: &[Resource] = &[
         )],
         fixed: &[],
     },
-    // Gets information about one or more of your devices in a global network.
     Resource {
         operation: "GetDevices",
         items: "Devices",
@@ -294,7 +287,6 @@ const RESOURCES: &[Resource] = &[
         )],
         fixed: &[],
     },
-    // Gets information about one or more links in a specified global network. If you specify the site ID, you cannot specify the type or provider in the same request. You can specify the
     Resource {
         operation: "GetLinks",
         items: "Links",
@@ -317,7 +309,6 @@ const RESOURCES: &[Resource] = &[
         )],
         fixed: &[],
     },
-    // Gets information about one or more of your connections in a global network.
     Resource {
         operation: "GetConnections",
         items: "Connections",

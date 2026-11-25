@@ -15,9 +15,6 @@ impl VerifiedEndpoint {
     pub fn exceptions(&self) -> &[EndpointException] {
         &self.service.exceptions
     }
-    /// Missing evidence for an explicitly modeled operation never falls back to
-    /// the service route. Operations without static context retain that route,
-    /// which is unresolved when only operation constants complete the rule set.
     pub fn operation_endpoint(&self, operation: &str) -> Option<&DerivedEndpoint> {
         match self.operations.get(operation) {
             Some(endpoint) => endpoint.as_ref().map(DerivedService::endpoint),
@@ -30,9 +27,6 @@ impl VerifiedEndpoint {
             .insert(operation, endpoint.map(|endpoint| endpoint.service));
     }
 
-    /// Removes the placeholder host label a route was compiled with. The
-    /// runtime prepends a modeled host prefix itself, so a route leads with the
-    /// label exactly when that prefix supplies it and mentions it nowhere else.
     pub(super) fn without_host_label(mut self, label: &str, prefixed: bool) -> Option<Self> {
         let lead = format!("https://{label}.");
         let strip = |url: &mut String| {
@@ -98,8 +92,6 @@ impl CaseRun<'_> {
         }
     }
 
-    /// A service whose own route cannot resolve without operation constants
-    /// carries only its operation routes; its service route stays unresolved.
     pub(super) fn operation_carrier(&self, signing_name: Option<&str>) -> Option<VerifiedEndpoint> {
         let service = derive_run(self, signing_name).ok()?;
         (!matches!(&service.endpoint, DerivedEndpoint::Resolved { .. })).then(|| VerifiedEndpoint {

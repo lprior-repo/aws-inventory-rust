@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/sagemaker-geospatial/service/2020-05-27/sagemaker-geospatial-2020-05-27.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

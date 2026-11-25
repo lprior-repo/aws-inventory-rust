@@ -5,7 +5,6 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 #[tokio::test]
 async fn given_one_rejected_commit_when_round_fails_then_other_inflight_commit_is_drained()
 -> BenchResult {
-    // Given two actual SQLite page commits and one transactionally rejected scope.
     let directory = tempfile::tempdir()?;
     let bytes = crate::pipeline_test_catalog::bytes()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
@@ -28,7 +27,6 @@ async fn given_one_rejected_commit_when_round_fails_then_other_inflight_commit_i
         concurrency: 2,
         graph: None,
     };
-    // When the round encounters its first error, it must not cancel sibling work.
     let error = run_phase(&workload, &catalog, &store, Phase::Initial)
         .await
         .err()
@@ -37,7 +35,6 @@ async fn given_one_rejected_commit_when_round_fails_then_other_inflight_commit_i
         error.to_string().contains("fixture-rejected-scope"),
         "{error}"
     );
-    // Then the rejected scope rolled back and the other scope fully committed.
     let accounts: Vec<(String, i64)> =
         sqlx::query_as("SELECT account,COUNT(*) FROM resources GROUP BY account ORDER BY account")
             .fetch_all(&pool)
@@ -63,7 +60,6 @@ async fn stored_catalog(pool: &sqlx::SqlitePool) -> BenchResult<Vec<(String, Vec
 #[tokio::test]
 async fn given_catalog_above_sqlite_value_limit_when_persisted_then_chunks_roundtrip_and_stale_rows_are_replaced()
 -> BenchResult {
-    // Given a reviewed catalog larger than the 8 MiB SQLite value limit.
     const CHUNK: usize = 4 * 1024 * 1024;
     let directory = tempfile::tempdir()?;
     let bytes = crate::pipeline_test_catalog::bytes()?;
@@ -73,7 +69,6 @@ async fn given_catalog_above_sqlite_value_limit_when_persisted_then_chunks_round
     );
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let path = directory.path().join("inventory.sqlite");
-    // When the store is created, the catalog is split across ordered metadata rows.
     drop(
         BinaryStore::create(
             &path,
@@ -98,13 +93,10 @@ async fn given_catalog_above_sqlite_value_limit_when_persisted_then_chunks_round
             .collect::<Vec<u8>>(),
         bytes
     );
-    // Then reopening reassembles the chunks into the digest-checked catalog.
     drop(BinaryStore::open(&path).await?);
-    // Given a continuation row is corrupt while the commit marker is present.
     sqlx::query("UPDATE metadata SET value=x'00' WHERE key='reviewed_catalog.01'")
         .execute(&pool)
         .await?;
-    // Then the reassembled catalog is rejected instead of being skipped.
     let corrupt = BinaryStore::open(&path)
         .await
         .err()
@@ -116,19 +108,15 @@ async fn given_catalog_above_sqlite_value_limit_when_persisted_then_chunks_round
         ),
         "{corrupt}"
     );
-    // Given the commit marker is gone and rows from a larger earlier catalog remain.
     sqlx::query("INSERT INTO metadata(key,value) VALUES('reviewed_catalog.99',x'00')")
         .execute(&pool)
         .await?;
     sqlx::query("DELETE FROM metadata WHERE key='reviewed_catalog'")
         .execute(&pool)
         .await?;
-    // When the store opens without its head row, the stale continuations are ignored.
     drop(BinaryStore::open(&path).await?);
-    // Then supplying the catalog again replaces every stored row.
     drop(BinaryStore::open_with_catalog(&path, &bytes).await?);
     assert_eq!(stored_catalog(&pool).await?, rows);
-    // And supplying it to the intact store leaves the stored rows loadable and unchanged.
     drop(BinaryStore::open_with_catalog(&path, &bytes).await?);
     assert_eq!(stored_catalog(&pool).await?, rows);
     drop(BinaryStore::open(&path).await?);

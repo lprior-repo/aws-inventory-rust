@@ -1,4 +1,3 @@
-//! Comparison of raw benchmark tables; integer cross-products preserve exact bands.
 use std::{collections::BTreeSet, path::PathBuf};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Row {

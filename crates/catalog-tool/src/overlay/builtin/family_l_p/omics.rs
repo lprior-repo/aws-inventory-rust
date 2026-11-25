@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/omics/service/2022-11-28/omics-2022-11-28.json
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -214,7 +213,6 @@ const GROUPS: &[Group] = &[
             "Expansion requires request context (resourceArn); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
         ),
     },
-    // Read-set listings include clinical subject/sample identifiers and sequence-derived data.
     Group {
         operations: &["ListReadSets"],
         class: OverlayClass::Deny(DenyReason::Content),
@@ -223,7 +221,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Amazon Web Services HealthOmics variant stores and annotation stores are no longer open to new customers. Existing customers can continue to use the service as normal. For more inf
     Resource {
         operation: "ListAnnotationStores",
         items: "annotationStores",
@@ -235,7 +232,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of reference stores linked to your account and returns their metadata in JSON format. For more information, see Creating a reference store in the Amazon Web Servic
     Resource {
         operation: "ListReferenceStores",
         items: "referenceStores",
@@ -247,7 +243,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of sequence stores and returns each sequence store's metadata. For more information, see Creating a HealthOmics sequence store in the Amazon Web Services HealthOmi
     Resource {
         operation: "ListSequenceStores",
         items: "sequenceStores",
@@ -259,7 +254,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Amazon Web Services HealthOmics variant stores and annotation stores are no longer open to new customers. Existing customers can continue to use the service as normal. For more inf
     Resource {
         operation: "ListVariantStores",
         items: "variantStores",
@@ -271,7 +265,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of existing workflows. You can filter for specific workflows by their name and type. Using the type parameter, specify PRIVATE to retrieve a list of private workfl
     Resource {
         operation: "ListWorkflows",
         items: "items",
@@ -283,7 +276,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("type", "PRIVATE")],
     },
-    // Retrieves a list of all run groups and returns the metadata for each run group.
     Resource {
         operation: "ListRunGroups",
         items: "items",
@@ -295,7 +287,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a list of your run caches and the metadata for each cache.
     Resource {
         operation: "ListRunCaches",
         items: "items",

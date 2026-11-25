@@ -173,7 +173,6 @@ impl Fixture {
                 )?)
             })
             .collect::<TestResult<Vec<_>>>()?;
-        // Independent oracle: original writer observations, NOT reader/projection output.
         let expected = observations
             .iter()
             .map(|value| {
@@ -289,9 +288,6 @@ pub(crate) fn falkor_endpoint() -> String {
         .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_owned())
 }
 
-/// Availability gate for every test that needs a native FalkorDB graph.
-/// `Ok(true)`: reachable. Unreachable: `Ok(false)` with a stderr skip reason,
-/// unless `AWS_INVENTORY_REQUIRE_FALKOR=1`, which fails loudly.
 pub(crate) async fn falkor_available() -> TestResult<bool> {
     let endpoint = falkor_endpoint();
     let probe = async {
@@ -416,10 +412,7 @@ impl Drop for NativeGraph {
     }
 }
 
-// Real public drain, bounded by both a deadline and a poll count; no sleep or
-// injected events. Yielding only awaits the worker's actual output handshake.
 pub(crate) async fn await_event(worker: &DataWorker, snapshot: bool) -> TestResult<WorkerEvent> {
-    // GraphStatus is never terminal; retain its last value for deadline failures.
     let waited = tokio::time::timeout(Duration::from_secs(20), async {
         for _ in 0..20_000_000 {
             if let Some(event) = worker.test_event(snapshot)? {

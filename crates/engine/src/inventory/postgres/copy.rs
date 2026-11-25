@@ -11,14 +11,11 @@ use sqlx::{PgConnection, Postgres, SqlSafeStr, Transaction, postgres::PgCopyIn};
 
 const FLUSH_BYTES: usize = 65_536;
 
-/// Stage names are used only in pg_temp. Leave room for the prefix without
-/// permitting PostgreSQL to truncate long names.
 pub(super) fn kind_stage(table: &SqlName) -> Result<String, StoreError> {
     let table = table.as_str();
     if table.len() <= MAX_SQL_NAME_BYTES.saturating_sub("stg_".len()) {
         Ok(format!("stg_{table}"))
     } else {
-        // A colon cannot appear in a SqlName, so the two namespaces are disjoint.
         let mut hex = [0; 56];
         let suffix = base16ct::lower::encode_str(&Sha224::digest(table.as_bytes()), &mut hex)
             .map_err(|_| StoreError::Invalid("PostgreSQL staging name exceeds length limit"))?;
@@ -33,7 +30,6 @@ pub(super) async fn load<T>(
     rows: &[T],
     encode: impl Fn(&mut Vec<u8>, &T) -> Result<(), StoreError>,
 ) -> Result<u64, StoreError> {
-    // Callers use fixed SQL or assemble it from validated SqlName values.
     sqlx::query(create)
         .persistent(false)
         .execute(&mut **tx)
@@ -58,7 +54,6 @@ async fn send<T>(
     let mut buffer = Vec::new();
     binary::reserve(&mut buffer, FLUSH_BYTES)?;
     buffer.extend_from_slice(binary::HEADER);
-    // Keep one buffer, flushing at most one row past the byte watermark.
     let (copy, mut buffer) = stream::iter(rows.iter().map(Ok))
         .try_fold((copy, buffer), |(copy, mut buffer), row| {
             let encoded = encode(&mut buffer, row);

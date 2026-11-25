@@ -1,9 +1,3 @@
-//! Mutation testing harness.
-//!
-//! Keeps checked local AWS/Falkor fixtures alive while running a mutation
-//! command. The emulator, fixture seeding, two unmodified Cargo snapshot runs,
-//! and the supplied command share one process/network lifetime.
-
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -15,7 +9,6 @@ use sha2::Digest;
 
 use crate::HarnessError;
 
-/// Request configuration for execute_command.
 pub struct CommandRequest {
     pub arguments: Vec<String>,
     pub workspace: PathBuf,
@@ -27,25 +20,18 @@ pub struct CommandRequest {
     pub health_check: Option<Box<dyn Fn() -> Result<(), HarnessError> + Send + Sync>>,
 }
 
-/// Maximum command argument count.
 const MAX_COMMAND_ARGUMENTS: usize = 128;
 
-/// Maximum command argument bytes.
 const MAX_COMMAND_ARGUMENT_BYTES: usize = 32_768;
 
-/// Command drain seconds.
 const COMMAND_DRAIN_SECONDS: i64 = 35;
 
-/// Forced drain seconds.
 const FORCED_DRAIN_SECONDS: i64 = 5;
 
-/// Child drain reserve seconds.
 const CHILD_DRAIN_RESERVE_SECONDS: i64 = 27;
 
-/// Drain environment variable name.
 const DRAIN_ENVIRONMENT: &str = "INVENTORY_COMMAND_DRAIN_SECONDS";
 
-/// Command receipt with all execution metadata.
 #[derive(Debug, Clone)]
 pub struct Receipt {
     pub argv: Vec<String>,
@@ -148,11 +134,6 @@ pub fn command_drain_budget() -> Result<i64, HarnessError> {
     Ok(parsed)
 }
 
-/// Executes one command and persists its final receipt, including launch failures.
-///
-/// # Errors
-/// Returns an error if the request is invalid or the command cannot be prepared
-/// or its receipt written.
 pub async fn execute_command(request: CommandRequest) -> Result<Receipt, HarnessError> {
     let arguments = request.arguments;
     let workspace = request.workspace;
@@ -239,7 +220,6 @@ fn validate_arguments(arguments: &[String]) -> Result<(), HarnessError> {
     Ok(())
 }
 
-/// Builds the child command with stdout and stderr appended to a freshly truncated log.
 fn child_command(
     arguments: &[String],
     workspace: &Path,
@@ -277,7 +257,6 @@ fn command_deadline(start: Instant, deadline_seconds: i64) -> Result<Instant, Ha
         .ok_or(HarnessError::invalid("deadline overflow"))
 }
 
-/// Fixed inputs of one child supervision loop.
 struct Supervision<'a> {
     label: &'a str,
     health_check: Option<&'a (dyn Fn() -> Result<(), HarnessError> + Send + Sync)>,
@@ -285,8 +264,6 @@ struct Supervision<'a> {
     deadline: Instant,
 }
 
-/// Polls the child until it exits, the deadline passes, or a fixture health check fails,
-/// recording the outcome on the receipt. Returns the number of successful health checks.
 async fn supervise(
     child: &mut std::process::Child,
     supervision: &Supervision<'_>,
@@ -335,7 +312,6 @@ async fn supervise(
     Ok(health_checks)
 }
 
-/// Records a finished child or a failed wait on the receipt. Returns whether supervision ends.
 fn child_settled(child: &mut std::process::Child, receipt: &mut Receipt) -> bool {
     match child.try_wait() {
         Ok(Some(status)) => {
@@ -373,7 +349,6 @@ fn report_progress(supervision: &Supervision<'_>, now: Instant, last_health_chec
     }
 }
 
-/// Fills in elapsed time, health-check count, the supervisor exit code and the log digest.
 fn settle_receipt(receipt: &mut Receipt, start: Instant, health_checks: usize) {
     receipt.elapsed_seconds = Instant::now()
         .saturating_duration_since(start)
@@ -397,7 +372,6 @@ fn settle_receipt(receipt: &mut Receipt, start: Instant, health_checks: usize) {
     }
 }
 
-/// Mutation testing arguments.
 pub struct Args {
     pub emulator: PathBuf,
     pub binary: PathBuf,
@@ -410,7 +384,6 @@ pub struct Args {
     pub command: Vec<String>,
 }
 
-/// Run mutation testing campaign.
 pub async fn run(args: &Args) -> Result<Value, HarnessError> {
     let output = args.output.canonicalize()?;
     fs::create_dir_all(&output)?;
@@ -487,11 +460,9 @@ mod tests {
 
     #[tokio::test]
     async fn missing_program_persists_a_final_spawn_failure_receipt() -> Result<(), HarnessError> {
-        // Given an executable path that does not exist in an isolated workspace.
         let work = tempfile::tempdir()?;
         let program = work.path().join("missing-program");
 
-        // When the harness attempts to start the command.
         let receipt = execute_command(CommandRequest {
             arguments: vec![program.to_string_lossy().into_owned()],
             workspace: work.path().to_path_buf(),
@@ -504,7 +475,6 @@ mod tests {
         })
         .await?;
 
-        // Then both the return value and the file describe the settled failure.
         assert_eq!(receipt.status, "supervisor_error");
         assert_eq!(receipt.exit_code, Some(124));
         assert_eq!(receipt.pid, None);

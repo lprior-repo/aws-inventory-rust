@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/resiliencehubv2/service/2026-02-17/resiliencehubv2-2026-02-17.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

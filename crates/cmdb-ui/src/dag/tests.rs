@@ -24,10 +24,8 @@ fn duplicate_nodes_and_edges_collapse() {
     assert_eq!(first, second);
     assert!(!graph.is_empty());
     assert_eq!(graph.len(), 1);
-    // Self-loops are now allowed (UI-03).
     assert!(graph.add_edge(0, 0));
     assert_eq!(graph.edges().len(), 1);
-    // But duplicate self-loops are collapsed.
     assert!(!graph.add_edge(0, 0));
     assert_eq!(graph.edges().len(), 1);
     let mut graph = chain();
@@ -47,8 +45,6 @@ fn node_cap_truncates_explicitly() {
 
 #[test]
 fn edge_cap_drops_exact_overflow_and_layout_stays_acyclic() {
-    // Given a dense DAG (all forward pairs over 100 nodes = 4950 edges) that
-    // exceeds MAX_EDGES.
     let mut graph = DagGraph::default();
     for index in 0..100 {
         graph.add_node(NodeKind::Other, format!("e{index}"), "e");
@@ -58,10 +54,8 @@ fn edge_cap_drops_exact_overflow_and_layout_stays_acyclic() {
             graph.add_overlay_edge(from, to, "rel".to_owned(), String::new());
         }
     }
-    // Then admission stops exactly at the cap and the overflow is counted.
     assert_eq!(graph.edges().len(), MAX_EDGES);
     assert_eq!(graph.dropped_edges(), 4950 - MAX_EDGES);
-    // And layout consumes only admitted edges, with no cycle-induced back edges.
     let layout = DagLayout::compute(&graph);
     assert_eq!(layout.edges().len(), MAX_EDGES);
     assert_eq!(layout.dropped_edges(), 0);

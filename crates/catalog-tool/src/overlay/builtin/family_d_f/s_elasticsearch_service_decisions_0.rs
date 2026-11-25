@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/elasticsearch-service/service/2015-01-01/elasticsearch-service-2015-01-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AcceptInboundCrossClusterSearchConnection",

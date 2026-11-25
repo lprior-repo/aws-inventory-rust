@@ -1,7 +1,3 @@
-//! The generated AWS catalog. `scripts/bootstrap-catalog.sh` produces it, so it is read at run
-//! time: `inventory-core` is a dependency of `catalog-tool`, which generates this file, and must
-//! therefore build without it.
-
 use std::sync::LazyLock;
 
 static BYTES: LazyLock<Result<Vec<u8>, String>> = LazyLock::new(|| {

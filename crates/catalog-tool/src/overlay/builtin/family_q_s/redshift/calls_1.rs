@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/redshift/service/2012-12-01/redshift-2012-12-01.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

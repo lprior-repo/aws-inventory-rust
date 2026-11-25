@@ -8,8 +8,6 @@ use sha2::{Digest, Sha256};
 use sqlx::{Row, Sqlite, Transaction};
 use std::sync::Arc;
 
-/// The digest is carried by the strict codec; the facet identity comes only from
-/// the owning SQL row, never from an untrusted relation tuple.
 pub(in crate::inventory) struct ReferenceProvenance {
     pub(in crate::inventory) authority: [u8; 32],
     pub(in crate::inventory) source_facet: Arc<[u8]>,

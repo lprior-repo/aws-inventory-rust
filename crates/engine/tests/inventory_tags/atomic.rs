@@ -4,7 +4,6 @@ use inventory_engine::inventory::ChangeStats;
 
 #[tokio::test]
 async fn tags_invalid_member_rolls_back_entire_page_and_allows_same_lease_retry() -> TestResult {
-    // Given a literal baseline and a live lease whose cursor/children have not advanced.
     let (directory, store, _) = support::fixture().await?;
     state::commit_resources(
         &store,
@@ -29,7 +28,6 @@ async fn tags_invalid_member_rolls_back_entire_page_and_allows_same_lease_retry(
     let pool = state::pool(&directory).await?;
     let before = state::database_state(&pool).await?;
 
-    // When tag validation fails after a valid resource/tag prefix was already persisted.
     let mut invalid = support::page(
         lease.clone(),
         vec![support::observation("one", "changed")?],
@@ -48,10 +46,8 @@ async fn tags_invalid_member_rolls_back_entire_page_and_allows_same_lease_retry(
             "tag observation has no persisted resource"
         ))
     ));
-    // Then every persisted table, coverage, cursor, generation, lease and metadata is unchanged.
     assert_eq!(state::database_state(&pool).await?, before);
 
-    // Early validation failures are independently tested against otherwise legitimate targets.
     for foreign in [
         {
             let mut key = support::resource("one")?;
@@ -91,7 +87,6 @@ async fn tags_invalid_member_rolls_back_entire_page_and_allows_same_lease_retry(
     ));
     assert_eq!(state::database_state(&pool).await?, before);
 
-    // A corrected nonterminal page must still be accepted with precisely that lease.
     let mut corrected = support::page(
         lease.clone(),
         vec![support::observation("one", "changed")?],
@@ -143,7 +138,6 @@ async fn tags_invalid_member_rolls_back_entire_page_and_allows_same_lease_retry(
 #[tokio::test]
 async fn tags_late_checkpoint_failure_rolls_back_children_cursor_coverage_and_outbox() -> TestResult
 {
-    // Given a deterministic SQLite fault after the final lease checkpoint UPDATE.
     let (directory, store, _) = support::fixture().await?;
     state::commit_resources(
         &store,
@@ -188,7 +182,6 @@ async fn tags_late_checkpoint_failure_rolls_back_children_cursor_coverage_and_ou
         )?];
         Ok(page)
     };
-    // When resources, tags, coverage, outbox, child and token writes precede that fault.
     let error = store
         .commit_page(page()?)
         .await
@@ -198,7 +191,6 @@ async fn tags_late_checkpoint_failure_rolls_back_children_cursor_coverage_and_ou
         matches!(&error, StoreError::Sqlite(sqlx::Error::Database(error))
         if error.message() == "owned checkpoint fault")
     );
-    // Then the entire transaction, including the checkpoint itself, is rolled back.
     assert_eq!(state::database_state(&pool).await?, before);
     sqlx::query("DROP TRIGGER reject_checkpoint")
         .execute(&pool)

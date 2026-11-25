@@ -71,7 +71,6 @@ async fn repeat<'a, 'c>(
 #[tokio::test]
 async fn given_two_kinds_from_one_response_when_only_keys_disappear_then_completed_sources_retire_only_the_missing_kind_after_reopen()
 -> TestResult {
-    // Given native ListHostedZones -> GetDNSSEC, one atomic page, and a real reopened SQLite store.
     let catalog = fixture::catalog()?;
     let scenario = seeded(&catalog, "multi-kind-initial").await?;
     let (mut scenario, observed) = complete(scenario, &catalog, STATUS, KEY).await?;
@@ -90,7 +89,6 @@ async fn given_two_kinds_from_one_response_when_only_keys_disappear_then_complet
         .await?
         .ok_or("status projection absent")?
         .content_hash;
-    // When only keys disappear in two complete observations of the same operation source.
     scenario = repeat(
         scenario,
         &catalog,
@@ -114,7 +112,6 @@ async fn given_two_kinds_from_one_response_when_only_keys_disappear_then_complet
         "<KeySigningKeys/>",
     )
     .await?;
-    // Then retained status keeps its original hash while only the absent key retires.
     assert!(
         scenario
             .store
@@ -131,7 +128,6 @@ async fn given_two_kinds_from_one_response_when_only_keys_disappear_then_complet
             .content_hash,
         original
     );
-    // And when the key returns, only the key row reappears and the status row is untouched.
     scenario = repeat(scenario, &catalog, "multi-kind-key-returned", STATUS, KEY).await?;
     assert_eq!(
         scenario

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mailmanager/service/2023-10-17/mailmanager-2023-10-17.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -140,7 +139,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists all Add On instances in your account.
     Resource {
         operation: "ListAddonInstances",
         items: "AddonInstances",
@@ -157,7 +155,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all Add On subscriptions in your account.
     Resource {
         operation: "ListAddonSubscriptions",
         items: "AddonSubscriptions",
@@ -169,7 +166,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists address lists for this account.
     Resource {
         operation: "ListAddressLists",
         items: "AddressLists",
@@ -181,7 +177,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of all email archives in your account.
     Resource {
         operation: "ListArchives",
         items: "Archives",
@@ -193,7 +188,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List all ingress endpoint resources.
     Resource {
         operation: "ListIngressPoints",
         items: "IngressPoints",
@@ -205,7 +199,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all the existing relay resources.
     Resource {
         operation: "ListRelays",
         items: "Relays",
@@ -217,7 +210,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List rule sets for this account.
     Resource {
         operation: "ListRuleSets",
         items: "RuleSets",
@@ -229,7 +221,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List traffic policy resources.
     Resource {
         operation: "ListTrafficPolicies",
         items: "TrafficPolicies",

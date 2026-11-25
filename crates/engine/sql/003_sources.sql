@@ -1,5 +1,3 @@
--- The caller holds BEGIN IMMEDIATE with foreign_keys disabled. It retains and
--- restores all views/triggers and indexes on these tables in the transaction.
 CREATE TABLE new_scope_checkpoints (
     scan_id TEXT NOT NULL REFERENCES scans(scan_id),
     scope_key TEXT NOT NULL,

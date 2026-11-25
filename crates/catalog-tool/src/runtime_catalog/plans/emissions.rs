@@ -20,8 +20,6 @@ pub(super) struct Callable<'a> {
     pub operation: Operation<'a>,
 }
 
-/// Additional resource metadata uses the same numeric field meanings as the primary.
-/// Both are normalized into one nonempty ResourceEmissions collection by the decoder.
 pub(super) fn compile(
     callable: Callable<'_>,
     overlay: &OperationOverlay,
@@ -237,8 +235,6 @@ fn descriptor(
     )
 }
 
-/// A cold compiler view reuses the existing modeled validators and field codecs.
-/// It never contains bindings, branches, pagination or a second API operation.
 pub(in crate::runtime_catalog) fn resource_overlay(
     emission: &ResourceEmission,
 ) -> OperationOverlay {

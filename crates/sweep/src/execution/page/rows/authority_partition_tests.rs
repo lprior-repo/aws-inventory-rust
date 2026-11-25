@@ -77,7 +77,6 @@ async fn projected_page(
 #[tokio::test]
 async fn given_equal_bindings_with_different_unbound_selected_response_and_request_values_when_completed_then_they_share_one_authority_and_two_misses_retire_it()
 -> TestResult {
-    // Given a real projected frame with distinct values in all three namespaces.
     let bytes = compiled()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -92,7 +91,6 @@ async fn given_equal_bindings_with_different_unbound_selected_response_and_reque
     .await?;
     let second = projected_work(&SweepId::new("projection-two".to_owned())?, 9, None, "new")?;
     assert_ne!(first_scope.context(), second.scope().context());
-    // When unrelated projected values and ordinal change, only execution identity changes.
     assert_eq!(
         projected_page(
             &store,
@@ -129,7 +127,6 @@ async fn given_equal_bindings_with_different_unbound_selected_response_and_reque
         projected_page(&reopened, fourth, Vec::new(), 7).await?,
         bindings
     );
-    // Then no volatile historical owner remains to make the resource immortal.
     assert_eq!(reopened.projection_resource(&key()?).await?, None);
     assert_eq!(reopened.projection_resources(None, 100).await?, Vec::new());
     Ok(())
@@ -166,7 +163,6 @@ fn branch_observation(
 async fn given_two_branches_owning_the_same_resource_when_one_retires_then_only_its_facet_disappears_in_either_completion_order()
 -> TestResult {
     for reverse in [false, true] {
-        // Given two branch-specific facets for exactly the same canonical ResourceKey and operation.
         let bytes = fixture::compiled_branched()?;
         let catalog = RuntimeCatalog::from_bytes(&bytes)?;
         let (directory, store) = store(&catalog).await?;
@@ -199,7 +195,6 @@ async fn given_two_branches_owning_the_same_resource_when_one_retires_then_only_
         );
         assert_eq!(ownership(&directory).await?, (2, 0));
         let seen = first_seen(&directory).await?;
-        // When only alpha completes absent twice, omega remains an independent live owner.
         projected_page(
             &store,
             projected_work(
@@ -230,7 +225,6 @@ async fn given_two_branches_owning_the_same_resource_when_one_retires_then_only_
             7,
         )
         .await?;
-        // Then exact canonical values, first_seen, and the surviving facet prove there was no cascade or overwrite.
         assert_eq!(reopened_name(&reopened).await?, "branch-B");
         assert_eq!(
             field(&state(&directory, &catalog).await?.0, 3)?,

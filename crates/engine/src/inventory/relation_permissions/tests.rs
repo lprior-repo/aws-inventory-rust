@@ -184,7 +184,6 @@ pub(super) fn declared_rule() -> TestResult<RelationshipPlan> {
 fn given_identical_relation_shapes_when_provenance_differs_then_authority_does_not_match()
 -> TestResult {
     use inventory_core::inventory::{EdgeSource, ReferenceTarget};
-    // Given identical source, label, kind, path and target value.
     let mut rule = declared_rule()?;
     let source = source(Region::parse("us-east-1")?)?;
     let mut reference = UnresolvedReference {
@@ -200,7 +199,6 @@ fn given_identical_relation_shapes_when_provenance_differs_then_authority_does_n
             rule.target_mode,
         )?,
     };
-    // When provenance changes, then only matching provenance admits the reference.
     assert!(matches_reference(&rule, &reference));
     rule.edge_source = EdgeSource::Model;
     assert!(!matches_reference(&rule, &reference));

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/drs/service/2020-02-26/drs-2020-02-26.json
 use super::support::{arn, bound, inventory, queried, reviewed, tagged, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "drs",
         vec![
-            // Returns a list of Jobs.
             queried(
                 tagged(
                     inventory(
@@ -19,7 +17,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["arn", "jobID", "type", "status"],
             )?,
-            // Lists all Launch Configuration Templates, filtered by Launch Configuration Template IDs
             queried(
                 tagged(
                     inventory(
@@ -36,7 +33,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "targetInstanceTypeRightSizingMethod",
                 ],
             )?,
-            // Lists all Recovery Instances or multiple Recovery Instances by ID.
             queried(
                 tagged(
                     inventory(
@@ -56,7 +52,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "sourceServerID",
                 ],
             )?,
-            // Lists all ReplicationConfigurationTemplates, filtered by Source Server IDs.
             queried(
                 tagged(
                     inventory(
@@ -76,7 +71,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "defaultLargeStagingDiskType",
                 ],
             )?,
-            // Lists all Source Networks or multiple Source Networks filtered by ID.
             queried(
                 tagged(
                     inventory(
@@ -98,7 +92,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "launchedVpcID",
                 ],
             )?,
-            // Lists all Source Servers or multiple Source Servers filtered by ID.
             queried(
                 tagged(
                     inventory(
@@ -116,7 +109,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "sourceNetworkID",
                 ],
             )?,
-            // Lists all Recovery Plans in the account.
             queried(
                 inventory(
                     "ListRecoveryPlans",
@@ -126,7 +118,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["recoveryPlanArn", "name", "status"],
             )?,
-            // Lists executions of Recovery Plans, optionally filtered by plan or status.
             queried(
                 inventory(
                     "ListRecoveryPlanExecutions",
@@ -136,7 +127,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["recoveryPlanExecutionArn", "status"],
             )?,
-            // Step configurations contain server ARN references or wait durations, not executable scripts.
             queried(
                 bound(
                     inventory(

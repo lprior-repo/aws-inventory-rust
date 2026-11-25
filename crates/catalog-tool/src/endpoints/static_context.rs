@@ -11,20 +11,13 @@ pub(super) struct Parameter {
     value: Value,
 }
 
-/// Stands in for the host label value every request supplies. It is a valid
-/// DNS label that names no region, so a compiled route shows where the rules
-/// place the label without resembling any real one.
 const HOST_LABEL: &str = "request-host-label";
 
-/// The one required input member that both forms a host label and binds an
-/// endpoint parameter. `prefixed` when the operation's modeled host prefix is
-/// exactly that label, which the runtime then prepends to the route itself.
 pub(super) struct HostLabel {
     pub(super) parameter: String,
     pub(super) prefixed: bool,
 }
 
-/// What an operation's model fixes about its endpoint before any request.
 pub(super) struct Operation {
     pub(super) context: Context,
     pub(super) label: Option<HostLabel>,
@@ -45,9 +38,6 @@ pub(super) fn compile(
     if let Some(label) = label {
         validate_label(&rules, document, context, label)?;
     }
-    // An operation's constants select only matching modeled endpoint evidence.
-    // Omitting a constant is equivalent only when its original default matches.
-    // A case without the required host label describes no request at all.
     let matched = filter_matching_cases(&rules, cases, context, label);
     set_fixed_parameters(&mut rules, file, context, label)?;
     let cases = matched
@@ -127,9 +117,6 @@ fn run_verification(
     }
 }
 
-/// Restates a published case as the request the runtime makes for `operation`:
-/// constants and declared defaults are implied, the host label is whatever the
-/// request carries, and inputs naming only this operation add no parameters.
 fn scoped(rules: &RuleSet, case: &Case, name: &str, operation: &Operation) -> Case {
     let declared = |name: &str| rules.document.parameters.get(name);
     let params = case
@@ -156,10 +143,6 @@ fn scoped(rules: &RuleSet, case: &Case, name: &str, operation: &Operation) -> Ca
     }
 }
 
-/// Restates the case's own host label value as the placeholder the route is
-/// compiled with, including where the published URL leads with it. A published
-/// error is restated only when the placeholder reproduces it; an error about
-/// one particular value stays that case's own and proves nothing here.
 fn with_placeholder(
     rules: &RuleSet,
     label: &HostLabel,
@@ -191,9 +174,6 @@ fn with_placeholder(
     }
 }
 
-/// An optional flag published as `false` is not the unset flag the runtime
-/// sends. It is dropped only when the rules prove the two requests resolve to
-/// the published expectation alike; otherwise the case keeps its parameters.
 fn without_inert_flags(
     rules: &RuleSet,
     expect: &Outcome,
@@ -220,8 +200,6 @@ fn without_inert_flags(
     }
 }
 
-/// A case's parameters are the complete rule inputs of the requests it names,
-/// so inputs naming only this operation describe nothing its parameters lack.
 fn describes_only(case: &Case, operation: &str) -> bool {
     case.operation_inputs
         .iter()
@@ -253,8 +231,6 @@ fn validate(rules: &RuleSet, document: &Value, context: &Context) -> Result<(), 
     Ok(())
 }
 
-/// The label binds a string parameter the client never configures and the
-/// operation does not also fix to a constant.
 fn validate_label(
     rules: &RuleSet,
     document: &Value,

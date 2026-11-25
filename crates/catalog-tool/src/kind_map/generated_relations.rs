@@ -12,11 +12,6 @@ pub(super) fn load(root: &Path, map: KindMap) -> Result<KindMap, KindMapError> {
 }
 
 impl KindMap {
-    /// Adds generated scalar relations without replacing a reviewed source selector.
-    /// List-crossing `relation-held` rows are parsed but not installed until E2.2.
-    ///
-    /// # Errors
-    /// Rejects oversized input, malformed or duplicate rows and unknown endpoint kinds.
     pub fn with_generated_relations(mut self, bytes: &[u8]) -> Result<Self, KindMapError> {
         if bytes.len() > super::MAX_BYTES {
             return Err(KindMapError::TooLarge);

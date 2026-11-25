@@ -1,11 +1,8 @@
-// Pinned operation purposes: .local/aws-models/models/snow-device-management/service/2021-08-04/snow-device-management-2021-08-04.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Sends a cancel request for a specified task. You can cancel a task only if it's still in a QUEUED state. Tasks that are already running can't be cancelled. A task might still run if it's processed from the queue before the CancelTask operation changes the task's state.
     ("CancelTask", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Instructs one or more devices to start a task, such as unlocking or rebooting.
     ("CreateTask", Decision::Denied(DenyReason::Mutating)),
     (
         "DescribeDevice",
@@ -49,8 +46,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: resourceArn. Pinned purpose: Returns a list of tags for a managed device or task.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds or replaces tags on a device or task.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes a tag from a device or task.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
 ];

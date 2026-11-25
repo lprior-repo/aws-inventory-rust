@@ -1,7 +1,6 @@
 use crate::overlay::{ContextSource, Identity, IdentityChoice, IdentityField, IdentityLeaf};
 use crate::runtime_catalog::RuntimeCatalogCompileError;
 
-/// Independent response selections have no one-to-one mapping to primary discovery rows.
 pub(super) fn validate(
     identity: &Identity,
     operation: &str,

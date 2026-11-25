@@ -45,7 +45,6 @@ struct Scenario<'a, 'catalog> {
 }
 
 async fn exercise(case: Case, parents: [Parent; 2]) -> TestResult {
-    // Given: the embedded policy and canonical map compile against the real pinned service model.
     let operations = [case.root, case.operation]
         .into_iter()
         .chain(case.forbidden.iter().copied())
@@ -77,7 +76,6 @@ async fn exercise(case: Case, parents: [Parent; 2]) -> TestResult {
         json!({(cases::wire(&case, case.root_items)):parents.iter().map(|parent| parent.row.clone()).collect::<Vec<_>>()}), 2).await?;
     let scenario =
         consume_children(scenario, &catalog, child, &compiled.fields, &case, &parents).await?;
-    // Then: duplicate child-local IDs survive as separate queryable SQLite nodes and parent edges.
     let reader = scenario.reader().await?;
     assert_persisted(&reader, &compiled.fields, &case, &parents).await?;
     reader.close().await;
@@ -95,7 +93,6 @@ async fn consume_children<'a, 'catalog>(
     let input = fields.id(case.input).ok_or("parent binding field absent")?;
     let token = fields.id(case.token).ok_or("continuation field absent")?;
     let mut pages = 0_u32;
-    // Exactly two parents, each with an empty continuation page and two populated pages.
     for _ in 0..6 {
         let lease = scenario
             .store
@@ -155,7 +152,6 @@ async fn consume_children<'a, 'catalog>(
         scenario
             .apply(catalog, child, lease, &request, body, 0)
             .await?;
-        // Drop the writer and reload persisted work/cursor state before the next claim.
         scenario = scenario.reopen().await?;
         pages = pages.checked_add(1).ok_or("test page count overflow")?;
     }

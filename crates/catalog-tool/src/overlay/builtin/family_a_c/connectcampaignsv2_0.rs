@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/connectcampaignsv2/service/2024-04-23/connectcampaignsv2-2024-04-23.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -58,7 +56,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires connectInstanceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Delete the Connect Campaigns onboarding job for the specified Amazon Connect instance.",
             ),
         ),
-        // Model: Describes the specific campaign.
         (
             "DescribeCampaign",
             OperationOverlay {
@@ -112,7 +109,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires connectInstanceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Get the specific instance onboarding job status.",
             ),
         ),
-        // Model: Provides summary information about the campaigns under the specified Amazon Connect account.
         (
             "ListCampaigns",
             OperationOverlay {

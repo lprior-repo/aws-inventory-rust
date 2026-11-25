@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/supplychain/service/2024-01-01/supplychain-2024-01-01.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

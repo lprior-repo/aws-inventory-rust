@@ -1,12 +1,3 @@
--- resource_roles: derived owner, team and application for every resource (M8.2).
--- Each resource has exactly three rows, one per role. A role takes the value of
--- the first tag key in its tag_mapping priority order whose tag value is not blank
--- (whitespace-only counts as blank). A role with no such tag is unassigned:
--- tag_key and value are NULL.
---
--- The view is computed from the observed tags table, so a changed mapping or a
--- changed tag applies on the next read with no AWS call. It never writes to the
--- observed record. Recreated on every open, like scope_freshness.
 CREATE VIEW resource_roles(account,region,kind,id,role,tag_key,value) AS
 WITH candidates AS (
   SELECT t.account,t.region,t.kind,t.id,m.role,m.position,t.tag_key,t.tag_value

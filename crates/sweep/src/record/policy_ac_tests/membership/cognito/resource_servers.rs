@@ -9,7 +9,6 @@ enum Mode {
 }
 
 async fn exercise(mode: Mode) -> TestResult {
-    // Given two pools, actual pinned ResourceServer shapes, and their embedded ownership/correlation policy.
     let compiled = compile(
         "cognito-identity-provider",
         "2016-04-18",
@@ -50,7 +49,6 @@ async fn exercise(mode: Mode) -> TestResult {
     let mut filtered_pages = 0_u8;
     let mut owned_pages = 0_u8;
     let mut rejected = false;
-    // When native wire pages traverse the production row predicate before projection and atomic SQLite commits.
     for at in 0..5 {
         let lease = store
             .claim(&sweep, at, 10_000)
@@ -219,7 +217,6 @@ async fn exercise(mode: Mode) -> TestResult {
         drop(store);
         store = BinaryStore::open(&path).await?;
     }
-    // Then only customer-created canonical rows can persist; a bad second row cannot partially commit its good predecessor.
     drop(store);
     let store = BinaryStore::open(&path).await?;
     let resources = store.projection_resources(None, 100).await?;

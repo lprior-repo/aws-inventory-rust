@@ -204,7 +204,6 @@ fn response(operation: &str, second: bool, wire: &Wire) -> TestResult<Vec<u8>> {
                 }
                 _ => {}
             }
-            // An empty nonterminal page must still schedule its continuation.
             let rows = if operation == "ListAgents" && !second {
                 vec![]
             } else if operation == "ListAgents" {

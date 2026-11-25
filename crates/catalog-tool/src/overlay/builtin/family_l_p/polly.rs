@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/polly/service/2016-06-10/polly-2016-06-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -56,20 +55,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Returns a list of pronunciation lexicons stored in an Amazon Web Services Region. For more information, see Managing Lexicons .
-    Resource {
-        operation: "ListLexicons",
-        items: "Lexicons",
-        id: Id::Arn("Attributes.LexiconArn"),
-        scope: Scope::Region,
-        tokens: Some(("NextToken", "NextToken")),
-        query: &["Attributes.LexiconArn", "Name", "Name"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListLexicons",
+    items: "Lexicons",
+    id: Id::Arn("Attributes.LexiconArn"),
+    scope: Scope::Region,
+    tokens: Some(("NextToken", "NextToken")),
+    query: &["Attributes.LexiconArn", "Name", "Name"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("polly", GROUPS, RESOURCES)

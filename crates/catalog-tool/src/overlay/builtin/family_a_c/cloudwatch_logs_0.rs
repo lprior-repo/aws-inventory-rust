@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudwatch-logs/service/2014-03-28/cloudwatch-logs-2014-03-28.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::{
     ExecutionBranch, IdentityBranch, IdentityChoice, IdentityLeaf, IdentityPredicate,
@@ -217,7 +215,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is configurationTemplates; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Use this operation to return the valid and default values that are used when creating delivery sources, delivery destinations, and deliveries. For more information about deliveries, see CreateDelivery .",
             ),
         ),
-        // Model: Retrieves a list of the deliveries that have been created in the account. A delivery is a connection between a delivery source and a delivery destination . A delivery source represents an Amazon Web…
         (
             "DescribeDeliveries",
             OperationOverlay {
@@ -236,7 +233,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Retrieves a list of the delivery destinations that have been created in the account.
         (
             "DescribeDeliveryDestinations",
             OperationOverlay {
@@ -250,7 +246,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list of the delivery sources that have been created in the account.
         (
             "DescribeDeliverySources",
             OperationOverlay {
@@ -264,7 +259,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all your destinations. The results are ASCII-sorted by destination name.
         (
             "DescribeDestinations",
             OperationOverlay {
@@ -277,7 +271,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the specified export tasks. You can list all your export tasks or filter the results based on task ID or task status.
         (
             "DescribeExportTasks",
             OperationOverlay {
@@ -302,7 +295,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires importId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets detailed information about the individual batches within an import task, including their status and any error messages. For CloudTrail Event Data Store sources, a batch refers to a subset of stored events grouped by their…",
             ),
         ),
-        // Model: Lists and describes import tasks, with optional filtering by import status and source ARN.
         (
             "DescribeImportTasks",
             OperationOverlay {
@@ -321,7 +313,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires logGroupIdentifiers. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the field index policies of the specified log group. For more information about field index policies, see PutIndexPolicy . If a specified log group has a log-group level index policy, that policy is returned by this…",
             ),
         ),
-        // Model: Returns information about log groups, including data sources that ingest into each log group. You can return all your log groups or filter the results by prefix. The results are ASCII-sorted by log…
         (
             "DescribeLogGroups",
             OperationOverlay {
@@ -334,7 +325,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the log streams for the specified log group. You can list all the log streams or filter the results by prefix. You can also control how the results are ordered. You can specify the log group to…
         (
             "DescribeLogStreams",
             OperationOverlay {
@@ -362,7 +352,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Retrieves metadata about lookup tables in your account. You can optionally filter the results by table name prefix. Results are sorted by table name in ascending order.
         (
             "DescribeLookupTables",
             OperationOverlay {
@@ -375,7 +364,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the specified metric filters. You can list all of the metric filters or filter the results by log name, prefix, metric name, or metric namespace. The results are ASCII-sorted by filter name.
         (
             "DescribeMetricFilters",
             OperationOverlay {
@@ -400,7 +388,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is queryDefinitions; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This operation returns a paginated list of your saved CloudWatch Logs Insights query definitions. You can retrieve query definitions from the current account or from a source account that is linked to the current account. You can…",
             ),
         ),
-        // Model: Lists the resource policies in this account.
         (
             "DescribeResourcePolicies",
             OperationOverlay {
@@ -514,7 +501,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires anomalyDetectorArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about the log anomaly detector that you specify. The KMS key ARN detected is valid.",
             ),
         ),
-        // Model: Lists log events from the specified log stream. You can list all of the log events or filter using a time range. GetLogEvents is a paginated operation. Each page returned can contain up to 1 MB of…
         ("GetLogEvents", denied(DenyReason::Content)),
         (
             "GetLogFields",
@@ -587,9 +573,7 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of anomalies that log anomaly detectors have found. For details about the structure format of each anomaly object that is returned, see the example in this section.
         ("ListAnomalies", denied(DenyReason::Content)),
-        // Model: Returns a list of integrations between CloudWatch Logs and other services in this account. Currently, only one integration can be created in an account, and this integration must be with OpenSearch…
         (
             "ListIntegrations",
             OperationOverlay {
@@ -602,7 +586,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list of the log anomaly detectors in the account.
         (
             "ListLogAnomalyDetectors",
             OperationOverlay {
@@ -633,7 +616,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires queryId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of the log groups that were analyzed during a single CloudWatch Logs Insights query. This can be useful for queries that use log group name prefixes or the filterIndex command, because the log groups are…",
             ),
         ),
-        // Model: Lists all scheduled queries in your account and region. You can filter results by state to show only enabled or disabled queries.
         (
             "ListScheduledQueries",
             OperationOverlay {

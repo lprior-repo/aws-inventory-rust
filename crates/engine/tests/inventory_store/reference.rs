@@ -169,8 +169,6 @@ async fn assert_reopened_dependency_edges(
 #[tokio::test]
 async fn given_two_independent_paths_prove_one_edge_when_either_column_changes_then_only_loss_of_the_last_proof_retracts()
 -> TestResult {
-    // KindSchema sorts columns by path. Swap which path becomes invalid so the
-    // surviving proof is visited both before and after the invalidating proof.
     for name_changes_first in [false, true] {
         let (directory, store) = dual_fixture().await?;
         commit_beta_page(
@@ -243,8 +241,6 @@ async fn given_an_ambiguous_proof_and_an_independent_unique_proof_when_target_co
         )
         .await?;
         assert_dependency_edges(&store, &["target"]).await?;
-        // Change a modeled non-proof revision so a real target-column refresh
-        // runs while both proof values remain unchanged.
         commit_beta_page(
             &store,
             "refresh-both",
@@ -295,8 +291,6 @@ async fn given_two_explicit_same_value_targets_and_an_ambiguous_wildcard_when_co
         vec![dependency(1)?],
     )
     .await?;
-    // The third same-name candidate must not acquire an edge from the ambiguous
-    // wildcard, and ambiguity must not erase either explicit identity proof.
     assert_dependency_edges(&store, &["target-a", "target-b"]).await?;
     assert_reopened_dependency_edges(&directory, &["target-a", "target-b"]).await?;
     Ok(())

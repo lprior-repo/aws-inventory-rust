@@ -73,7 +73,6 @@ impl Database {
         sqlx::query("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
             .execute(&mut *tx)
             .await?;
-        // PostgreSQL pins a repeatable-read snapshot on its first data query.
         sqlx::query_scalar::<_, bool>("SELECT EXISTS(SELECT 1 FROM inventory.resources)")
             .fetch_one(&mut *tx)
             .await?;

@@ -118,7 +118,6 @@ async fn given_idle_can_exceed_connect_timeout_when_configured_then_rejected() -
         result => result?,
     };
 
-    // If construction succeeds, demonstrate why the configuration is rejected.
     let clock = Clock::pause();
     let Active {
         send: one,

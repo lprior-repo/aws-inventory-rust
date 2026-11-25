@@ -6,7 +6,6 @@ use crate::{
     },
 };
 
-/// A borrowed compiler view; discovery bindings and pagination stay on the operation.
 pub(super) struct ResourceSource<'a> {
     pub service: &'a str,
     pub operation: &'a str,
@@ -87,10 +86,8 @@ fn callable<'a>(
 }
 
 fn emits(overlay: &OperationOverlay) -> bool {
-    // Overlay emission is always set (default EmitMetadata).
     overlay.emission == Emission::EmitMetadata
         || overlay.branches.iter().any(|branch| {
-            // Branch emission overrides overlay emission; None falls back to overlay.
             let effective = match branch.emission {
                 Some(e) => e,
                 None => overlay.emission,

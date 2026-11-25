@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/aiops/service/2018-05-10/aiops-2018-05-10.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -22,7 +20,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires identifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the IAM resource policy from being associated with the investigation group that you specify.",
             ),
         ),
-        // Model: Returns the configuration information for the specified investigation group.
         (
             "GetInvestigationGroup",
             OperationOverlay {
@@ -51,7 +48,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires identifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the JSON of the IAM resource policy associated with the specified investigation group in a string. For example,…",
             ),
         ),
-        // Model: Returns the ARN and name of each investigation group in the account.
         (
             "ListInvestigationGroups",
             OperationOverlay {

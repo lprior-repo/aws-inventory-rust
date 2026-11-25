@@ -149,7 +149,6 @@ fn expected_requests() -> Vec<(String, String, u32)> {
 #[tokio::test]
 async fn given_both_source_formats_when_empty_profile_and_version_pages_resume_then_draft_and_published_versions_keep_their_profile()
 -> TestResult {
-    // Given both pinned source-format branches and real embedded plans.
     let catalog = catalog()?;
     let root = fixture::plan(&catalog, "healthlake", "ListDataTransformationProfiles")?;
     let versions = fixture::plan(
@@ -174,7 +173,6 @@ async fn given_both_source_formats_when_empty_profile_and_version_pages_resume_t
     );
     let mut scenario = Scenario::new(&catalog, "healthlake-source-format-versions").await?;
     seed_formats(&scenario, root).await?;
-    // When empty root/version pages resume through real encoded requests.
     let mut requested = Vec::new();
     for _ in 0..10 {
         let lease = scenario
@@ -221,7 +219,6 @@ async fn given_both_source_formats_when_empty_profile_and_version_pages_resume_t
     requested.sort();
     let expected_requests = expected_requests();
     assert_eq!(requested, expected_requests);
-    // Then persisted identities and graph edges retain source, profile and numeric version.
     let profiles = saved(&scenario, root.kind().as_str()).await?;
     assert_eq!(
         profiles

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/qbusiness/service/2023-11-27/qbusiness-2023-11-27.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

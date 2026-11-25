@@ -256,7 +256,6 @@ async fn given_reviewed_text_list_when_exact_members_commit_then_both_edges_surv
             ),
             (RelationTargetMode::CanonicalId, 4, ["target", "other"]),
         ] {
-            // Given a checked selected-output or bound-request text-list rule and two real targets.
             let (directory, store) = fixture(source, wire_mode).await?;
             let values = Value::List(
                 std::iter::once(Value::Null)
@@ -269,9 +268,7 @@ async fn given_reviewed_text_list_when_exact_members_commit_then_both_edges_surv
                 .iter()
                 .map(|value| reference(value, mode))
                 .collect::<TestResult<Vec<_>>>()?;
-            // When each exact list member is committed through the public persistence API.
             store.commit_page(page).await?;
-            // Then persisted authority resolves both members, rather than stringifying or dropping the list.
             let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
             assert_edges(
                 &reopened,
@@ -291,7 +288,6 @@ async fn given_reviewed_text_list_when_direct_edge_names_a_member_then_its_exact
 -> TestResult {
     for source in [0, 1] {
         for (wire_mode, value) in [(0, "target-name"), (4, "target")] {
-            // Given a list whose second member, not its first or a stringified value, identifies the target.
             let (directory, store) = fixture(source, wire_mode).await?;
             let mut page = list_page(
                 &store,
@@ -308,9 +304,7 @@ async fn given_reviewed_text_list_when_direct_edge_names_a_member_then_its_exact
                 relation: Relation::parse("references")?,
                 source: EdgeSource::ReviewedRule,
             });
-            // When an existing supported same-page direct edge is persisted.
             store.commit_page(page).await?;
-            // Then target-mode matching selects the member even when target Name differs from its canonical ID.
             let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
             assert_edges(&reopened, &[("target", EdgeSource::ReviewedRule)]).await?;
         }
@@ -341,7 +335,6 @@ async fn given_reviewed_list_when_member_is_absent_or_a_later_element_is_malform
                     "relationship source list element is not modeled text",
                 ),
             ] {
-                // Given a real checked list source and a snapshot of durable state before the attempted page.
                 let (directory, store) = fixture(source, 0).await?;
                 let mut page = list_page(&store, source, Value::List(values)).await?;
                 let pool = sqlx::sqlite::SqlitePoolOptions::new()
@@ -365,9 +358,7 @@ async fn given_reviewed_list_when_member_is_absent_or_a_later_element_is_malform
                         RelationTargetMode::SelectedFields,
                     )?);
                 }
-                // When absent-member forgery or malformed trailing elements reach persistence.
                 let result = store.commit_page(page).await;
-                // Then full-list validation rejects the exact error and no resource, lease or edge mutates.
                 assert!(matches!(result, Err(StoreError::Invalid(message)) if message == expected));
                 assert_eq!(snapshot::read_durable_state(&pool).await?, before);
                 pool.close().await;
@@ -382,7 +373,6 @@ async fn given_scalar_guard_or_component_when_only_a_list_contains_its_value_the
 -> TestResult {
     for component in [false, true] {
         for direct in [false, true] {
-            // Given an independently checked scalar guard or compound component, not a primary membership term.
             let directory = tempfile::tempdir()?;
             let bytes = scalar_term_catalog(component)?;
             let catalog = RuntimeCatalog::from_bytes(&bytes)?;
@@ -445,9 +435,7 @@ async fn given_scalar_guard_or_component_when_only_a_list_contains_its_value_the
                 )
                 .await?;
             let before = snapshot::read_durable_state(&pool).await?;
-            // When matching text occurs only inside a list at a scalar-only selector.
             let result = store.commit_page(page).await;
-            // Then primary membership support cannot authorize guards or compound terms and writes remain atomic.
             assert!(matches!(
                 result,
                 Err(StoreError::Invalid(

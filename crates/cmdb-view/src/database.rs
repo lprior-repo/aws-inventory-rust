@@ -28,7 +28,6 @@ enum SnapshotBackend {
     Postgres(postgres::Snapshot),
 }
 
-/// Reports whether a target has a PostgreSQL URL scheme, ignoring ASCII case.
 pub fn is_postgres_url(target: &str) -> bool {
     target.split_once("://").is_some_and(|(scheme, _)| {
         scheme.eq_ignore_ascii_case("postgres") || scheme.eq_ignore_ascii_case("postgresql")
@@ -36,7 +35,6 @@ pub fn is_postgres_url(target: &str) -> bool {
 }
 
 impl Database {
-    /// Opens a PostgreSQL URL or a read-only SQLite path.
     pub async fn open(target: &str) -> Result<Self, ViewError> {
         let backend = if is_postgres_url(target) {
             Backend::Postgres(postgres::Database::open(target).await?)

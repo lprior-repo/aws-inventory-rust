@@ -133,16 +133,13 @@ fn one_byte_over_sixteen_mebibytes_is_rejected_by_both_constructors() -> TestRes
 
 #[test]
 fn container_bound_admits_an_oversized_record_only_up_to_its_own_limit() -> TestResult {
-    // Given: a map one payload larger than any record may be.
     let value = envelope(Value::Bytes(vec![0xA5; MAX_RECORD_BYTES]));
     let limit = MAX_RECORD_BYTES.checked_mul(2).ok_or("limit overflow")?;
 
-    // When: it is encoded as a trusted container.
     let bytes = encode_container(&value, limit)?;
     let exact = bytes.len();
     let short = exact.checked_sub(1).ok_or("empty container")?;
 
-    // Then: the container bound governs it, exactly, in both directions.
     assert!(exact > MAX_RECORD_BYTES);
     assert_eq!(encode_container(&value, exact)?, bytes);
     assert_eq!(encode_container(&value, short), Err(RecordError::SizeLimit));
@@ -155,7 +152,6 @@ fn container_bound_admits_an_oversized_record_only_up_to_its_own_limit() -> Test
         MapRef::from_container_bytes(&bytes, short).map(|_| ()),
         Err(RecordError::SizeLimit)
     );
-    // And: the record bound still refuses the same bytes and value.
     assert_eq!(Record::encode(&value), Err(RecordError::SizeLimit));
     assert_eq!(
         MapRef::from_bytes_bounded(&bytes).map(|_| ()),

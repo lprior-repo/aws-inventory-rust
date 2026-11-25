@@ -79,7 +79,6 @@ fn receiver_service(
 ) -> Result<String, HarnessError> {
     let scope = &masked[function_start..offset];
 
-    // Check for qualified client assignment: let sdk = aws_sdk_<service>::Client::new(...)
     let pattern = format!("{} = aws_sdk_", receiver);
     if let Some(pos) = scope.find(&pattern) {
         let after_start = pos.saturating_add(pattern.len());
@@ -90,7 +89,6 @@ fn receiver_service(
         return Ok(after[..service_end].to_string());
     }
 
-    // Check for type-annotated parameter: fn foo(sdk: &aws_sdk_<service>::Client)
     let pattern2 = format!("{}: &aws_sdk_", receiver);
     if let Some(pos) = scope.find(&pattern2) {
         let after_start = pos.saturating_add(pattern2.len());
@@ -101,7 +99,6 @@ fn receiver_service(
         return Ok(after[..service_end].to_string());
     }
 
-    // Check for import: use aws_sdk_<service>::Client
     let use_pattern = "use aws_sdk_";
     let mut imports: Vec<String> = Vec::new();
     for use_match in masked.match_indices(use_pattern) {
@@ -114,7 +111,6 @@ fn receiver_service(
         imports.push(service.to_string());
     }
 
-    // Deduplicate imports
     imports.sort();
     imports.dedup();
 
@@ -180,13 +176,9 @@ struct SendScan<'a> {
     source: &'a str,
 }
 
-/// Outcome of inspecting the token triple that starts at one index.
 enum Step {
-    /// The token stream ended; the scan returns what it has collected.
     Stop,
-    /// Not an empty `.send()` call.
     Skip,
-    /// A `.send(...)` call with arguments.
     NonEmpty,
     Call(Callsite),
 }
@@ -210,7 +202,6 @@ impl<'a> SendScan<'a> {
         }
 
         let (last_method, cursor) = self.method_chain(index);
-        // Python uses methods[-1] (last method found)
         let Some((operation, last_open)) = last_method else {
             return Err(source_error(
                 self.path,
@@ -242,10 +233,7 @@ impl<'a> SendScan<'a> {
         }))
     }
 
-    /// Returns the last method found with its opening delimiter, and the receiver cursor.
     fn method_chain(&self, index: usize) -> (Option<(&'a str, usize)>, usize) {
-        // Walk backwards through the method call chain
-        // Python: cursor = index - 1, walk while token is ")"
         let mut cursor = index.saturating_sub(1);
         let mut last = None;
         while let Some(tok) = self.tokens.get(cursor) {

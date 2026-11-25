@@ -16,9 +16,6 @@ async fn connect(database: &Path) -> TestResult<SqlitePool> {
 }
 
 pub(super) async fn request_rebuild(database: &Path) -> TestResult {
-    // There is no public request-rebuild API. This transparent fixture operation
-    // supplies only the persisted control marker normally created at outbox
-    // overflow; every resource, tag and edge still comes from the real collector.
     let pool = connect(database).await?;
     let mut transaction = pool.begin().await?;
     let pending: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM projection_outbox")
@@ -49,11 +46,6 @@ pub(super) async fn deliver_without_ack(
     database: &Path,
 ) -> TestResult {
     let pool = connect(database).await?;
-    // Fault injection is at SQLite acknowledgement, never at the graph client:
-    // run_projection has already performed its genuine native writes when this
-    // trigger aborts deletion. Replaying the unacked revision must be idempotent.
-    // Persistent only in this fresh owned database so the separate production
-    // writer observes the injected fault; removed before the retry.
     sqlx::query("CREATE TRIGGER native_ack_failure BEFORE DELETE ON projection_outbox BEGIN SELECT RAISE(ABORT,'owned-native-ack-failure'); END")
         .execute(&pool).await?;
     let backend = inventory_graph::falkor::FalkorDb::connect(graph.endpoint(), graph.name())?;

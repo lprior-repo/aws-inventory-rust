@@ -20,7 +20,6 @@ async fn given_legacy_store_without_catalog_when_plain_open_commits_unrelated_ob
         downgrade_oam(&mut tx, version).await?;
         tx.commit().await?;
         pool.close().await;
-        // Given no reviewed catalog at all, empty proof storage is bookkeeping, not permission.
         let reopened = BinaryStore::open(&path).await?;
         persist_oam(&reopened, &catalog, "ListSinks", "210987654321", 2).await?;
         assert_eq!(

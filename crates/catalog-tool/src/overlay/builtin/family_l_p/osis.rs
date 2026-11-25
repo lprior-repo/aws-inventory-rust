@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/osis/service/2022-01-01/osis-2022-01-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -68,7 +67,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists all OpenSearch Ingestion pipelines in the current Amazon Web Services account and Region. For more information, see Viewing Amazon OpenSearch Ingestion pipelines .
     Resource {
         operation: "ListPipelines",
         items: "Pipelines",
@@ -80,7 +78,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all pipeline endpoints in your account.
     Resource {
         operation: "ListPipelineEndpoints",
         items: "PipelineEndpoints",

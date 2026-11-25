@@ -137,7 +137,6 @@ async fn given_an_undecodable_page_when_settled_then_the_reason_names_the_respon
     Ok(())
 }
 
-/// The reason column of every stored scope outcome, read through SQL.
 async fn stored_reasons(directory: &tempfile::TempDir) -> TestResult<Vec<Option<String>>> {
     let pool = sqlx::SqlitePool::connect(&format!(
         "sqlite://{}",

@@ -29,7 +29,6 @@ async fn given_paged_role_tags_when_process_reopens_then_pending_pairs_finish_as
         input.root().get_field(role_name)?,
         Some(ValueRef::Text("owner"))
     ));
-    // Given: the first decoded AWS page is partial and cannot remove an existing pair.
     let parts = consume(
         &catalog,
         &lease,
@@ -44,7 +43,6 @@ async fn given_paged_role_tags_when_process_reopens_then_pending_pairs_finish_as
         vec![("known".into(), "old".into())]
     );
     drop(store);
-    // When: a new store handle resumes only persisted work/cursor/accumulation bytes.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     assert_eq!(store.discover_active_sweep().await?.as_ref(), Some(&sweep));
     let lease = claim(&store, &sweep, 4).await?;
@@ -59,7 +57,6 @@ async fn given_paged_role_tags_when_process_reopens_then_pending_pairs_finish_as
     assert_eq!(pair(&parts.tags)?.coverage(), TagCoverage::Complete);
     assert_eq!(pair(&parts.tags)?.tags().len(), 2);
     commit(&store, lease, parts, 5).await?;
-    // Then: the old pair is removed only after both pages become the complete snapshot.
     assert_eq!(
         tags(&store, &owner).await?,
         vec![("alpha".into(), "one".into()), ("omega".into(), "".into())]
@@ -150,7 +147,6 @@ async fn given_partial_tag_pages_when_denied_repeated_or_capped_then_known_pairs
                     .finish_scope(lease, ScopeOutcome::Partial, 7, None)
                     .await?;
             } else {
-                // Repetition is rejected by durable token-digest admission, not a fabricated completion.
                 let result = commit(&store, lease, parts, 5).await?;
                 assert!(result.repeated_token);
             }

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codepipeline/service/2015-07-09/codepipeline-2015-07-09.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -76,9 +74,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires jobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about a job. Used for custom actions only. When this API is called, CodePipeline returns temporary credentials for the S3 bucket used to store artifacts for the pipeline, if the action requires access to that…",
             ),
         ),
-        // Model: Returns the metadata, structure, stages, and actions of a pipeline. Can be used to return the entire structure of a pipeline in JSON format, which can then be modified and used to update the pipeline…
         ("GetPipeline", denied(DenyReason::Secret)),
-        // Model: Returns information about an execution of a pipeline, including details about artifacts, the pipeline execution ID, and the name, version, and status of the pipeline.
         ("GetPipelineExecution", denied(DenyReason::Secret)),
         (
             "GetPipelineState",
@@ -116,7 +112,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires pipelineName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets a summary of the most recent executions for a pipeline. When applying the filter for pipeline executions that have succeeded in the stage, the operation returns all executions in the current pipeline version beginning on…",
             ),
         ),
-        // Model: Gets a summary of all of the pipelines associated with your account.
         (
             "ListPipelines",
             OperationOverlay {
@@ -147,7 +142,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the set of key-value pairs (metadata) that are used to manage the resource.",
             ),
         ),
-        // Model: Gets a listing of all the webhooks in this Amazon Web Services Region for this account. The output lists all webhooks and includes the webhook URL and ARN and the configuration for each webhook. If a…
         (
             "ListWebhooks",
             OperationOverlay {

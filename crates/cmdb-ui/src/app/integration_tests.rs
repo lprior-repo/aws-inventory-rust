@@ -1,5 +1,3 @@
-//! Headless native widget construction plus real App actions and DataWorker I/O.
-//! Rendering/hit testing remains the separate native screenshot acceptance gate.
 use super::super::*;
 use crate::data::{Graph, Row};
 use crate::worker::DEFAULT_GRAPH_LIMITS;
@@ -140,7 +138,6 @@ fn shutdown(app: &mut App, cx: &mut Cx) {
 fn given_tag_input_actions_when_real_app_filters_then_exact_empty_and_key_only_have_distinct_results()
 -> TestResult {
     supervised(|| {
-        // Given real committed tags and the complete production widget tree.
         let runtime = runtime()?;
         let fixture = runtime.block_on(Fixture::new())?;
         let tagged = |id, value| -> TestResult<TagObservation> {
@@ -167,7 +164,6 @@ fn given_tag_input_actions_when_real_app_filters_then_exact_empty_and_key_only_h
         wait_for(&mut app, &mut cx, |app, cx| {
             status(app, cx) == "3 matching · 3 loaded"
         })?;
-        // When key and checkbox actions pass through AppMain/handle_tag_filter.
         text_action(&mut app, &mut cx, ids!(tag_key_input), "owner");
         assert_eq!(status(&app, &mut cx), "Loading inventory…");
         assert_eq!(
@@ -185,7 +181,6 @@ fn given_tag_input_actions_when_real_app_filters_then_exact_empty_and_key_only_h
         wait_for(&mut app, &mut cx, |app, cx| {
             status(app, cx) == "1 matching · 1 loaded"
         })?;
-        // Then both stored metadata and visible control state retain exact empty.
         assert_eq!(
             app.filter(&mut cx).tag,
             Some(cmdb_view::TagFilter {
@@ -239,12 +234,10 @@ fn given_real_native_graph_when_app_receives_resource_action_then_selected_root_
         let edge = fixtures::edge(&fixtures::root(), &neighbor, "references", "model");
         let native = runtime.block_on(NativeGraph::new(std::slice::from_ref(&edge)))?;
         let result: TestResult = (|| {
-            // Given an initialized App consuming its real worker's native graph.
             let (mut cx, mut app) = app()?;
             app.worker = Some(fixture.worker(Some(&native)));
             wait_for(&mut app, &mut cx, |app, cx| graph(app, cx).edges.len() == 1)?;
             let root_key = fixtures::digest(&fixtures::root())?;
-            // When the actual graph action crosses App's enqueue boundary.
             graph_action(&mut app, &mut cx, &root_key);
             wait_for(&mut app, &mut cx, |app, cx| {
                 graph(app, cx).tag_root.as_deref() == Some(root_key.as_str())
@@ -258,7 +251,6 @@ fn given_real_native_graph_when_app_receives_resource_action_then_selected_root_
             wait_for(&mut app, &mut cx, |app, cx| {
                 graph(app, cx).tag_root.as_deref() == Some(neighbor_key.as_str())
             })?;
-            // Then the real expansion, native relationship, and SQL row agree.
             assert_eq!(
                 selected(&app, &mut cx),
                 expected.iter().find(|row| row.id == "b").cloned()
@@ -304,11 +296,9 @@ fn given_saturated_real_intake_when_app_rejects_actions_then_inputs_selection_an
             64,
         );
         app.worker = Some(worker);
-        // Given one real accepted filter occupies the entire command budget.
         text_action(&mut app, &mut cx, ids!(search_input), "accepted");
         assert_eq!(status(&app, &mut cx), "Loading inventory…");
         let accepted = app.filter(&mut cx);
-        // When the real filter and selection calls are rejected, inputs roll back.
         text_action(&mut app, &mut cx, ids!(tag_key_input), "rejected-key");
         assert_eq!(app.filter(&mut cx), accepted);
         assert_eq!(app.ui.text_input(&cx, ids!(tag_key_input)).text(), "");
@@ -328,7 +318,6 @@ fn given_saturated_real_intake_when_app_rejects_actions_then_inputs_selection_an
         graph_action(&mut app, &mut cx, &rejected.key);
         assert_eq!(selected(&app, &mut cx), Some(previous));
         assert_eq!(graph(&app, &mut cx), previous_graph);
-        // Then releasing the real runner delivers the still-accepted revision.
         start.send(())?;
         wait_for(&mut app, &mut cx, |app, cx| {
             status(app, cx) == "2 matching · 2 loaded"
@@ -352,11 +341,9 @@ fn given_failed_startup_with_accepted_filter_when_app_drains_then_unrevisioned_e
         let (mut cx, mut app) = app()?;
         let QueuedWorker { worker, start } = support::queued(WorkerConfig::default(), 2, 64);
         app.worker = Some(worker);
-        // Given an actual admitted action before startup failure is produced.
         text_action(&mut app, &mut cx, ids!(search_input), "recovered");
         assert_eq!(status(&app, &mut cx), "Loading inventory…");
         start.send(())?;
-        // When unrevisioned real producer errors reach App's normal drain path.
         wait_for(&mut app, &mut cx, |app, cx| {
             status(app, cx) == "Database error · missing --database PATH"
         })?;
@@ -387,12 +374,10 @@ fn given_live_app_blocked_query_when_shutdown_event_arrives_then_worker_joins_an
         assert!(!app.completion_poll.is_empty());
         wait_for_condition(&mut app, &mut cx, |app, cx| selected(app, cx).is_some())?;
         peer.await_query()?;
-        // When shutdown dispatch occurs while App and Cx remain strongly alive.
         let started = Instant::now();
         shutdown(&mut app, &mut cx);
         assert!(started.elapsed() < Duration::from_secs(2));
         peer.finish()?;
-        // Then delayed completion/actions/startup cannot resurrect its owners.
         app.handle_event(&mut cx, &Event::Signal);
         app.handle_event(&mut cx, &Event::Startup);
         text_action(&mut app, &mut cx, ids!(search_input), "after close");
@@ -421,8 +406,6 @@ fn given_live_app_with_blocked_output_when_shutdown_event_arrives_then_timer_and
             0,
         )
         .release()?;
-        // The real runner has delivered its graph and cannot deliver its
-        // following snapshot through this unconsumed rendezvous receiver.
         support::receive_startup_graph(&worker)?;
         app.worker = Some(worker);
         app.completion_poll = cx.start_interval(0.05);

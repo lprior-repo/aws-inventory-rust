@@ -58,8 +58,6 @@ impl AdaptiveRate {
         }
     }
 
-    /// Whether the rate has moved from where its policy starts it, so that
-    /// eviction must remember it. A seeking rate moves on every result.
     pub(super) fn is_learned(self) -> bool {
         match self {
             Self::Seeking(_) => true,
@@ -70,8 +68,6 @@ impl AdaptiveRate {
         }
     }
 
-    /// Whole requests per second and results seen, for a rate that rises
-    /// until throttled. Fixed policies learn nothing and give `None`.
     pub(super) fn seeking(self) -> Option<(u32, u64)> {
         match self {
             Self::Seeking(rate) => Some((rate.whole_rps(), rate.samples)),

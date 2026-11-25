@@ -52,9 +52,7 @@ fn given_json_and_cbor_null_tag_entries_when_inventory_presence_is_required_then
             status: http::StatusCode::OK,
             limits: DecodeLimits::default(),
         };
-        // Given: SDK compatibility deliberately elides non-sparse null entries.
         assert!(response::decode(context).is_ok());
-        // When/Then: inventory decoding rejects their loss instead of authorizing tag deletion.
         assert!(
             response::decode(ResponseContext {
                 limits: DecodeLimits::default().preserve_field_presence(),

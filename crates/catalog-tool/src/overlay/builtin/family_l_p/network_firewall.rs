@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/network-firewall/service/2020-11-12/network-firewall-2020-11-12.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -116,7 +115,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves the metadata for the firewalls that you have defined. If you provide VPC identifiers in your request, this returns only the firewalls for those VPCs. Depending on your se
     Resource {
         operation: "ListFirewalls",
         items: "Firewalls",
@@ -128,7 +126,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves the metadata for the firewall policies that you have defined. Depending on your setting for max results and the number of firewall policies, a single call might not retur
     Resource {
         operation: "ListFirewallPolicies",
         items: "FirewallPolicies",
@@ -151,7 +148,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves the metadata for the rule groups that you have defined. Depending on your setting for max results and the number of rule groups, a single call might not return the full l
     Resource {
         operation: "ListRuleGroups",
         items: "RuleGroups",
@@ -163,7 +159,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves the metadata for the TLS inspection configurations that you have defined. Depending on your setting for max results and the number of TLS inspection configurations, a sin
     Resource {
         operation: "ListTLSInspectionConfigurations",
         items: "TLSInspectionConfigurations",
@@ -175,7 +170,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves the metadata for the VPC endpoint associations that you have defined. If you specify a fireawll, this returns only the endpoint associations for that firewall. Depending
     Resource {
         operation: "ListVpcEndpointAssociations",
         items: "VpcEndpointAssociations",

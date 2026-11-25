@@ -2,7 +2,6 @@ use super::*;
 #[tokio::test]
 async fn given_two_memberships_tables_models_and_namespaces_when_association_pages_resume_then_each_persisted_edge_keeps_both_exact_endpoints()
 -> TestResult {
-    // Given actual pinned producers from all three services and independently specified association endpoints.
     let association_ops = [
         "ListConfiguredTableAssociations",
         "ListConfiguredAudienceModelAssociations",
@@ -140,7 +139,6 @@ async fn given_two_memberships_tables_models_and_namespaces_when_association_pag
             )?)
             .await?;
     }
-    // When real root and resumed child requests decode native responses and atomically commit resources and joins.
     let mut child_pages = 0_u8;
     for at in 0..16 {
         let lease = store
@@ -260,7 +258,6 @@ async fn given_two_memberships_tables_models_and_namespaces_when_association_pag
         drop(store);
         store = BinaryStore::open(&path).await?;
     }
-    // Then SQLite reopen proves exact source, destination, relation, authority and scope, not merely edge counts.
     assert_eq!(child_pages, 12);
     assert!(store.claim(&sweep, 17, 10_000).await?.is_none());
     let resources = store.projection_resources(None, 100).await?;

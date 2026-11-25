@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/freetier/service/2023-09-07/freetier-2023-09-07.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "GetAccountActivity",

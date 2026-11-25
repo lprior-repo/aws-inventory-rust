@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/connectcases/service/2022-10-03/connectcases-2022-10-03.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -136,7 +134,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domainId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the case event publishing configuration.",
             ),
         ),
-        // Model: Returns information about a specific domain if it exists.
         (
             "GetDomain",
             OperationOverlay {
@@ -190,7 +187,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domainId, contactArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists cases for a given contact.",
             ),
         ),
-        // Model: Lists all cases domains in the Amazon Web Services account. Each list item is a condensed summary object of the domain.
         (
             "ListDomains",
             OperationOverlay {
@@ -220,7 +216,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Readonly POST returns condensed identity/name metadata, never layout content.
         (
             "ListLayouts",
             OperationOverlay {
@@ -249,7 +244,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires arn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists tags for a resource.",
             ),
         ),
-        // Full summary closure includes tag-propagation settings, not case values or template content.
         (
             "ListTemplates",
             OperationOverlay {

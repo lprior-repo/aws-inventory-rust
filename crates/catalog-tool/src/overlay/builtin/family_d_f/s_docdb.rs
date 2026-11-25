@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/docdb/service/2014-10-31/docdb-2014-10-31.json
 use super::support::{arn, inventory, queried, reviewed, scoped, tagged, token};
 use crate::classes::DenyReason;
 use crate::overlay::{FixedValue, MemberPath, NameError, Scope, ServiceOverlay};
@@ -33,7 +32,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "docdb",
         vec![
-            // Returns a list of DBClusterParameterGroup descriptions.
             queried(
                 inventory(
                     "DescribeDBClusterParameterGroups",
@@ -43,7 +41,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["DBClusterParameterGroupArn", "DBClusterParameterGroupName"],
             )?,
-            // Returns information about cluster snapshots.
             queried(
                 inventory(
                     "DescribeDBClusterSnapshots",
@@ -61,9 +58,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "StorageType",
                 ],
             )?,
-            // Returns information about provisioned Amazon DocumentDB clusters.
             clusters,
-            // Returns a list of DBSubnetGroup descriptions.
             queried(
                 inventory(
                     "DescribeDBSubnetGroups",
@@ -78,7 +73,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "SubnetGroupStatus",
                 ],
             )?,
-            // Lists all the subscription descriptions for a customer account.
             queried(
                 inventory(
                     "DescribeEventSubscriptions",
@@ -94,7 +88,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "SourceType",
                 ],
             )?,
-            // Returns information about Amazon DocumentDB global clusters.
             queried(
                 scoped(
                     tagged(
@@ -120,9 +113,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             super::s_docdb_decisions_0::ENTRIES,
             super::s_docdb_decisions_1::ENTRIES,
         ],
-        &[
-            // DBInstances.PendingModifiedValues.MasterUserPassword is reachable and its pinned output docs do not guarantee redaction.
-            ("DescribeDBInstances", DenyReason::Secret),
-        ],
+        &[("DescribeDBInstances", DenyReason::Secret)],
     )
 }

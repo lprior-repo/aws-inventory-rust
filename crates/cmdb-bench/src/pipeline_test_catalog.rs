@@ -6,8 +6,6 @@ use inventory_core::{
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
-// Reuse the checked-in real AWS wire model; only benchmark runtime policy is
-// generated as typed binary data. No source TOML/JSON or compiler dependency.
 fn find_table_names_field(catalog: &Catalog) -> BenchResult<FieldId> {
     let service = catalog
         .service("dynamodb")?
@@ -72,7 +70,6 @@ pub(super) fn bytes() -> BenchResult<Vec<u8>> {
     };
     let extension = Key::Field(FieldId::new(60_000)?);
     root.remove(&extension);
-    // The receipt names this fixture as an assembled catalog, never as an upstream source pin.
     let models = Sha256::digest(encode_container(
         &Value::Map(root.clone()),
         MAX_CATALOG_BYTES,

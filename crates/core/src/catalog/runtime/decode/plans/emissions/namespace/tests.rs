@@ -21,11 +21,9 @@ fn field(
 #[test]
 fn given_current_discovery_context_when_extra_identity_decodes_then_implicit_row_pairing_is_rejected()
 -> TestResult {
-    // Given an extra descriptor that tries to borrow an unrelated primary selected row.
     let identity = IdentityPlan::CorrelatedKey(
         vec![field("service", "GetThings", ContextSource::SelectedItem)?].into_boxed_slice(),
     );
-    // When decoded, then no implicit ordinal-based pairing authority exists.
     assert!(matches!(
         validate(&identity, "service", "GetThings"),
         Err(RuntimeCatalogError::Capability)
@@ -36,7 +34,6 @@ fn given_current_discovery_context_when_extra_identity_decodes_then_implicit_row
 #[test]
 fn given_explicit_current_request_response_or_distinct_producer_when_decoded_then_supported_context_is_not_narrowed()
 -> TestResult {
-    // Given either current response-level authority or a real ancestor producer.
     [
         field("service", "GetThings", ContextSource::Request)?,
         field("service", "GetThings", ContextSource::Response)?,
@@ -46,7 +43,6 @@ fn given_explicit_current_request_response_or_distinct_producer_when_decoded_the
     .into_iter()
     .try_for_each(|value| -> TestResult {
         let identity = IdentityPlan::CorrelatedKey(vec![value].into_boxed_slice());
-        // When decoded, then only same-service/same-operation selected borrowing is forbidden.
         assert!(matches!(
             validate(&identity, "service", "GetThings"),
             Ok(())
@@ -59,7 +55,6 @@ fn given_explicit_current_request_response_or_distinct_producer_when_decoded_the
 #[test]
 fn given_choice_identity_when_ambiguous_fields_hide_in_any_arm_then_decoding_still_rejects()
 -> TestResult {
-    // Given ambiguous context hidden behind otherwise supported identity choices.
     let fields = IdentityLeafPlan::Fields(
         vec![field("service", "GetThings", ContextSource::SelectedItem)?].into_boxed_slice(),
     );
@@ -76,7 +71,6 @@ fn given_choice_identity_when_ambiguous_fields_hide_in_any_arm_then_decoding_sti
         }]
         .into_boxed_slice(),
     ));
-    // When both encodings decode, then neither choice form bypasses namespace admission.
     [prefer, branches].iter().for_each(|identity| {
         assert!(matches!(
             validate(identity, "service", "GetThings"),

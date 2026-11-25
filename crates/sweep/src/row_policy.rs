@@ -10,7 +10,6 @@ use inventory_core::{
     record::{FieldId, MapRef, Record, ValueRef},
 };
 
-/// Evaluate assertions before ownership: a hostile row may never hide behind a filter.
 pub(crate) fn selected(
     plan: &CallablePlan<'_>,
     branch: Option<&ExecutionBranch>,
@@ -63,7 +62,6 @@ fn select<'policy, 'value>(
     })
 }
 
-/// The row and newest frame are the exact producer used by child binding resolution.
 pub(crate) fn child(
     plan: &CallablePlan<'_>,
     branch: Option<&ExecutionBranch>,

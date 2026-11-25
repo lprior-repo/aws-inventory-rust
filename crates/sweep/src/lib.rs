@@ -53,21 +53,10 @@ pub struct SweepConfig {
     pub resume: bool,
     pub endpoint: Option<String>,
     pub ca_bundle: Option<PathBuf>,
-    /// Idle lifetime for pooled connections. `None` uses the sweep default.
     pub idle_timeout: Option<std::time::Duration>,
-    /// Maximum idle connections per endpoint. `None` uses the sweep default.
     pub pool_idle_per_host: Option<usize>,
-    /// Optional slice timeout in seconds. When set, the sweep runs for at most
-    /// this duration per invocation, then stops and leaves remaining work in the
-    /// queue for the next slice. A later invocation with resume=true continues
-    /// where this slice stopped.
     pub slice_timeout_secs: Option<u64>,
-    /// Most requests per second any one limiter bucket may reach. `None`
-    /// leaves the limiter's own maximum as the bound.
     pub max_rps: Option<u32>,
-    /// Largest page size to ask for. An enumeration asks for
-    /// `min(model maximum, max_page_size)`; `None` asks for the model's
-    /// maximum. Operations with no page-size member send nothing either way.
     pub max_page_size: Option<u32>,
 }
 
@@ -88,7 +77,6 @@ pub struct SweepSummary {
     pub scopes: u64,
     pub outcomes: ScopeOutcomes,
     pub graph_pending: u64,
-    /// Scopes still queued when a time-bounded slice ended; zero for a drained sweep.
     pub work_remaining: u64,
     pub metrics: SweepMetrics,
 }

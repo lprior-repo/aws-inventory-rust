@@ -157,15 +157,10 @@ async fn check_path_and_blast(graph: &GraphConnection) -> TestResult {
     if !matches!(shallow, cmdb_view::PathResult::NotFound) {
         return Err(format!("expected NotFound, got {shallow:?}").into());
     }
-    // UI-04: Same node returns SameNode variant (zero-hop path).
     let same = graph.path(&b, &b, bounds).await?;
     if !matches!(same, cmdb_view::PathResult::SameNode) {
         return Err(format!("expected SameNode, got {same:?}").into());
     }
-    // UI-04: Directed blast radius - follow incoming edges to find
-    // upstream dependents. For graph A->B, A->C, B->C, C->D (edges
-    // represent "source depends on target"), blast radius of D should
-    // find all 4 edges (everything depends on D transitively).
     let [_, _, _, d] = nodes();
     let blast = graph.blast_radius(&d, bounds).await?;
     if blast.truncated

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/clouddirectory/service/2017-01-11/clouddirectory-2017-01-11.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -214,7 +212,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires DirectoryArn, TargetReference. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists indices attached to the specified object.",
             ),
         ),
-        // Model: Retrieves each Amazon Resource Name (ARN) of schemas in the development state.
         (
             "ListDevelopmentSchemaArns",
             OperationOverlay {
@@ -232,7 +229,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists directories created within an account.
         (
             "ListDirectories",
             OperationOverlay {
@@ -275,7 +271,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is SchemaArns; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the major version families of each managed schema. If a major version ARN is provided as SchemaArn, the minor version revisions in that family are listed instead.",
             ),
         ),
-        // Model: Lists all attributes that are associated with an object.
         ("ListObjectAttributes", denied(DenyReason::Content)),
         (
             "ListObjectChildren",
@@ -313,7 +308,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires DirectoryArn, PolicyReference. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns all of the ObjectIdentifiers to which a given policy is attached.",
             ),
         ),
-        // Model: Lists the major version families of each published schema. If a major version ARN is provided as SchemaArn , the minor version revisions in that family are listed instead.
         (
             "ListPublishedSchemaArns",
             OperationOverlay {

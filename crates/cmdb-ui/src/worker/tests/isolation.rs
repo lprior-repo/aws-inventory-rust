@@ -1,4 +1,3 @@
-//! A hung App case is a reaped child process, never a detached Rust thread.
 use super::real::fixtures::TestResult;
 use std::{
     fs::OpenOptions,
@@ -64,7 +63,6 @@ pub(crate) fn supervised(job: impl FnOnce() -> TestResult) -> TestResult {
             .spawn()?,
     );
     let result = await_child(&mut child);
-    // Reap before deleting graph fixtures, including on wait/kill failures.
     drop(child);
     let cleanup = cleanup_ledger(&ledger);
     match (result, cleanup) {

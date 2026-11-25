@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bedrock-agentcore-control/service/2023-06-05/bedrock-agentcore-control-2023-06-05.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -393,7 +391,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about an API key credential provider.",
             ),
         ),
-        // Model: Gets information about a custom browser.
         (
             "GetBrowser",
             OperationOverlay {
@@ -428,7 +425,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires capacityProviderId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a capacity provider, including its status, permissions configuration, and compute configuration.",
             ),
         ),
-        // Model: Gets information about a custom code interpreter.
         (
             "GetCodeInterpreter",
             OperationOverlay {
@@ -522,7 +518,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires harnessId, endpointName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Operation to get a single harness endpoint.",
             ),
         ),
-        // Model: Retrieve an existing Amazon Bedrock AgentCore Memory resource.
         ("GetMemory", denied(DenyReason::Content)),
         (
             "GetOauth2CredentialProvider",
@@ -638,7 +633,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires capacityProviderId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the agent runtime versions that are associated with a capacity provider. Use this operation to identify the runtimes you must disassociate before you can delete the capacity provider. Results are paginated; use the…",
             ),
         ),
-        // Model: Lists all Amazon Secure Agents in your account.
         (
             "ListAgentRuntimes",
             OperationOverlay {
@@ -657,7 +651,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is credentialProviders; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists all API key credential providers in your account.",
             ),
         ),
-        // Model: Lists all browser profiles in your account.
         (
             "ListBrowserProfiles",
             OperationOverlay {
@@ -675,7 +668,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists all custom browsers in your account.
         (
             "ListBrowsers",
             OperationOverlay {
@@ -691,7 +683,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the capacity providers in your account and returns summary information for each one. To retrieve the full configuration for a specific capacity provider, use GetCapacityProvider . Results are…
         (
             "ListCapacityProviders",
             OperationOverlay {
@@ -704,7 +695,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all custom code interpreters in your account.
         (
             "ListCodeInterpreters",
             OperationOverlay {
@@ -726,7 +716,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires bundleId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all versions of a configuration bundle, with optional filtering by branch name or creation source.",
             ),
         ),
-        // Model: Lists all configuration bundles in the account.
         (
             "ListConfigurationBundles",
             OperationOverlay {
@@ -739,7 +728,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all of the consent portals in your account.
         (
             "ListConsentPortals",
             OperationOverlay {
@@ -764,7 +752,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires datasetId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all published versions of a dataset, sorted by version number descending (newest first). Does not include the DRAFT working copy.",
             ),
         ),
-        // Model: Lists all datasets in the caller's account, paginated.
         (
             "ListDatasets",
             OperationOverlay {
@@ -777,7 +764,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all available evaluators, including both builtin evaluators provided by the service and custom evaluators created by the user.
         (
             "ListEvaluators",
             deferred(
@@ -807,7 +793,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists all gateways in the account.
         (
             "ListGateways",
             OperationOverlay {
@@ -832,7 +817,6 @@ pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires harnessId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Operation to list the versions of a Harness.",
             ),
         ),
-        // Model: Operation to list harnesses.
         (
             "ListHarnesses",
             OperationOverlay {
@@ -845,7 +829,6 @@ pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the available Amazon Bedrock AgentCore Memory resources in the current Amazon Web Services Region.
         (
             "ListMemories",
             OperationOverlay {
@@ -894,7 +877,6 @@ pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires policyEngineId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves a list of policies within the AgentCore Policy engine. This operation supports pagination and filtering to help administrators manage and discover policies across policy engines. Results can be filtered by policy engine…",
             ),
         ),
-        // Model: Retrieves a paginated list of metadata-only policy engine summaries without decrypting customer content. This lightweight read operation returns resource identifiers, status, and timestamps for each…
         (
             "ListPolicyEngineSummaries",
             OperationOverlay {
@@ -937,7 +919,6 @@ pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires policyEngineId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves a paginated list of metadata-only policy summaries within a policy engine without decrypting customer content. This lightweight read operation returns resource identifiers, status, and timestamps for each policy, but…",
             ),
         ),
-        // Model: Lists all registries in the account. You can optionally filter results by status using the status parameter, or by authorizer type using the authorizerType parameter.
         (
             "ListRegistries",
             OperationOverlay {

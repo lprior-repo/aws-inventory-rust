@@ -1,10 +1,3 @@
-//! Frame-time recording for performance profiling (M6.3).
-//!
-//! When `CMDB_UI_FRAME_LOG` names a file, every drawn frame appends one line
-//! `frame_index,elapsed_ms,node_count` to it. The file is truncated at start so a
-//! run's trace is self-contained. A write failure disables recording and is
-//! reported once on stderr; it never interrupts the UI.
-
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
@@ -17,7 +10,6 @@ pub struct FrameTimeRecorder {
 }
 
 impl FrameTimeRecorder {
-    /// Reads `CMDB_UI_FRAME_LOG`; recording is off when it is unset.
     pub fn from_env() -> Result<Self, String> {
         match std::env::var_os("CMDB_UI_FRAME_LOG") {
             Some(path) => Self::to_path(Path::new(&path)),
@@ -43,8 +35,6 @@ impl FrameTimeRecorder {
         }
     }
 
-    /// Records one frame that drew `node_count` nodes; returns the elapsed milliseconds
-    /// since the previous frame.
     pub fn frame(&mut self, node_count: usize) -> u64 {
         let elapsed = u64::try_from(self.last_frame.elapsed().as_millis()).unwrap_or(u64::MAX);
         self.last_frame = Instant::now();

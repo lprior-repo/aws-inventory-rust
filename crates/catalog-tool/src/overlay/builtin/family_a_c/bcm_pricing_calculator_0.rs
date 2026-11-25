@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bcm-pricing-calculator/service/2024-06-19/bcm-pricing-calculator-2024-06-19.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -142,7 +140,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires billEstimateId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the line items associated with a bill estimate.",
             ),
         ),
-        // Model: Lists all bill estimates for the account.
         (
             "ListBillEstimates",
             OperationOverlay {
@@ -167,7 +164,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires billScenarioId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the usage modifications associated with a bill scenario.",
             ),
         ),
-        // Model: Lists all bill scenarios for the account.
         (
             "ListBillScenarios",
             OperationOverlay {
@@ -192,7 +188,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires workloadEstimateId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the usage associated with a workload estimate.",
             ),
         ),
-        // Model: Lists all workload estimates for the account.
         (
             "ListWorkloadEstimates",
             OperationOverlay {

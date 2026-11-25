@@ -153,10 +153,8 @@ mod tests {
 
     #[test]
     fn root_text_and_canonical_identity_are_not_fictitious_modeled_paths() -> TestResult {
-        // Given explicit root-text and canonical-ID declarations, when normalizing selectors.
         let root = RelationSource::SelectedOutput(RelationPath::RootText).owned(0)?;
         let canonical = RelationTarget::CanonicalId.owned(0)?;
-        // Then each remains a distinct typed selector without an invented field name.
         assert_eq!(
             root,
             ReviewedRelationSource::SelectedOutput(ReviewedValuePath::RootText)
@@ -177,14 +175,11 @@ mod tests {
 
     #[test]
     fn request_and_bound_context_namespaces_remain_distinct_from_selected_output() -> TestResult {
-        // Given the same field spelling in three independent data namespaces.
         let path = RelationPath::Fields("farmId");
-        // When normalizing, source origin and target context are part of the contract.
         let output = RelationSource::SelectedOutput(path).owned(0)?;
         let request = RelationSource::Request(path).owned(0)?;
         let selected_target = RelationTarget::SelectedOutput(path).owned(0)?;
         let context_target = RelationTarget::BoundContext(path).owned(0)?;
-        // Then equality cannot conflate a bound value with a modeled output field.
         assert_ne!(output, request);
         assert_ne!(selected_target, context_target);
         assert_eq!(

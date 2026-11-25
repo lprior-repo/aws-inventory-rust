@@ -69,7 +69,6 @@ fn masked_record(endpoint: &str, purpose: &str) -> TestResult<Record> {
 #[tokio::test]
 async fn given_named_map_hash_mask_when_facets_reload_then_only_that_exact_entry_remains_excluded()
 -> TestResult {
-    // Given a reviewed named-map mask whose sibling entry still affects the canonical hash.
     let bytes = compiled()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -87,7 +86,6 @@ async fn given_named_map_hash_mask_when_facets_reload_then_only_that_exact_entry
     )
     .await?;
     assert_eq!(state(&directory, &catalog).await?.2, expected);
-    // When only the excluded entry changes, and a sparse sibling commits after reopening.
     commit_masked(
         &store,
         &catalog,
@@ -107,7 +105,6 @@ async fn given_named_map_hash_mask_when_facets_reload_then_only_that_exact_entry
         3,
     )
     .await?;
-    // Then stored mask decoding preserves hash and last_changed across the unrelated facet.
     let current = state(&directory, &catalog).await?;
     assert_eq!(current.2, expected);
     assert_eq!(current.1, 1);
@@ -115,7 +112,6 @@ async fn given_named_map_hash_mask_when_facets_reload_then_only_that_exact_entry
         current.0.as_bytes(),
         masked_record("secret-b", "inventory")?.as_bytes()
     );
-    // When an unmasked sibling entry changes, it is not accidentally hidden.
     commit_masked(
         &reopened,
         &catalog,

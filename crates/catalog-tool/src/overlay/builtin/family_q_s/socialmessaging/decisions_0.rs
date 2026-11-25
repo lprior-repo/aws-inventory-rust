@@ -1,43 +1,33 @@
-// Pinned operation purposes: .local/aws-models/models/socialmessaging/service/2024-01-01/socialmessaging-2024-01-01.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: This is only used through the Amazon Web Services console during sign-up to associate your WhatsApp Business Account to your Amazon Web Services account.
     (
         "AssociateWhatsAppBusinessAccount",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a Meta Conversions API dataset for a WhatsApp Business Account.
     (
         "CreateWhatsAppDataset",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new WhatsApp Flow. Flows enable businesses to create rich, interactive forms and experiences that users can complete without leaving WhatsApp. The Flow is created in DRAFT status. If publish is set to true and a valid flowJson is provided, the Flow is published immediately.
     ("CreateWhatsAppFlow", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new WhatsApp message template from a custom definition. Amazon Web Services End User Messaging Social does not store any WhatsApp message template content.
     (
         "CreateWhatsAppMessageTemplate",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new WhatsApp message template using a template from Meta's template library.
     (
         "CreateWhatsAppMessageTemplateFromLibrary",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Uploads media for use in a WhatsApp message template.
     (
         "CreateWhatsAppMessageTemplateMedia",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a WhatsApp Flow permanently. Only Flows in DRAFT status can be deleted. Published or deprecated Flows cannot be deleted.
     ("DeleteWhatsAppFlow", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Delete a media object from the WhatsApp service. If the object is still in an Amazon S3 bucket you should delete it from there too.
     (
         "DeleteWhatsAppMessageMedia",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a WhatsApp message template.
     (
         "DeleteWhatsAppMessageTemplate",
         Decision::Denied(DenyReason::Mutating),
@@ -48,7 +38,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors id, flowId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members . Pinned purpose: Deprecates a published WhatsApp Flow, marking it as no longer recommended for use. The Flow must be in PUBLISHED status. This is an irreversible operation.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Disassociate a WhatsApp Business Account (WABA) from your Amazon Web Services account.
     (
         "DisassociateWhatsAppBusinessAccount",
         Decision::Denied(DenyReason::Mutating),
@@ -143,48 +132,37 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors id, flowId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members . Pinned purpose: Publishes a WhatsApp Flow, making it available for use in template messages. The Flow must be in DRAFT status with valid Flow JSON that passes Meta's validation. This is an irreversible operation.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Add an event destination to log event data from WhatsApp for a WhatsApp Business Account (WABA). A WABA can only have one event destination at a time. All resources associated with the WABA use the same event destination.
     (
         "PutWhatsAppBusinessAccountEventDestinations",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Sets the business public key used to encrypt the data exchanged with the endpoint of a data exchange Flow.
     (
         "PutWhatsAppBusinessPublicKey",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Sends a WhatsApp calling event, such as connecting or terminating a call, for a business phone number. This operation passes the event through to Meta. To use this operation, the origination phone number must belong to a WhatsApp Business Account that is linked to your Amazon Web Services account.
     (
         "SendWhatsAppCallEvent",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Sends a conversion event to Meta's Conversions API for the specified WhatsApp Business Account dataset.
     (
         "SendWhatsAppConversionEvent",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Send a WhatsApp message. For examples of sending a message using the Amazon Web Services CLI, see Sending messages in the Amazon Web Services End User Messaging Social User Guide .
     (
         "SendWhatsAppMessage",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds or overwrites only the specified tags for the specified resource. When you specify an existing tag key, the value is overwritten with the new value.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes the specified tags from a resource.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the calling settings for a linked WhatsApp business phone number, such as whether calling is enabled and the hours during which the business accepts calls.
     (
         "UpdateLinkedWhatsAppBusinessAccountPhoneNumber",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the metadata of a WhatsApp Flow, such as its name or categories. This does not update the Flow JSON definition. Use UpdateWhatsAppFlowAssets to update the Flow JSON.
     ("UpdateWhatsAppFlow", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the Flow JSON definition (assets) of a WhatsApp Flow. Updating a published Flow's assets reverts it to DRAFT status, requiring re-publishing.
     (
         "UpdateWhatsAppFlowAssets",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates an existing WhatsApp message template.
     (
         "UpdateWhatsAppMessageTemplate",
         Decision::Denied(DenyReason::Mutating),

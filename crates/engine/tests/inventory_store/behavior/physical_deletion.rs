@@ -66,10 +66,8 @@ async fn given_vanished_resource_when_two_complete_sweeps_miss_it_then_sqlite_ro
 -> TestResult {
     let (directory, store, _) = fixture().await?;
 
-    // Seed: one sweep that observes both resources and one edge
     seed_with_edge(&store).await?;
 
-    // Drain projection outbox
     for pending in store.drain_projection(100).await? {
         store
             .ack_projection(match pending.key {
@@ -89,13 +87,11 @@ async fn given_vanished_resource_when_two_complete_sweeps_miss_it_then_sqlite_ro
         )
         .await?;
 
-    // After seed: gone exists with edge, keep exists
     let (gone_rows, edge_rows, typed_rows) = counts(&pool).await?;
     assert_eq!(gone_rows, 1);
     assert!(edge_rows >= 1);
     assert_eq!(typed_rows, 2);
 
-    // First miss: resource still stored (deletion requires two misses)
     miss_store(&store, "s2", 200).await?;
     assert!(
         store
@@ -108,7 +104,6 @@ async fn given_vanished_resource_when_two_complete_sweeps_miss_it_then_sqlite_ro
     assert_eq!(edge1, edge_rows);
     assert_eq!(typed1, 2);
 
-    // Second miss: resource deleted
     miss_store(&store, "s3", 300).await?;
     assert!(
         store

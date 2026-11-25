@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/config-service/service/2014-11-12/config-service-2014-11-12.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -142,7 +140,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ConfigurationAggregatorName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of the existing and deleted conformance packs and their associated compliance status with the count of compliant and noncompliant Config rules within each conformance pack. Also returns the total rule count which…",
             ),
         ),
-        // Model: Returns a list of authorizations granted to various aggregator accounts and regions.
         (
             "DescribeAggregationAuthorizations",
             OperationOverlay {
@@ -179,7 +176,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns details about your Config rules.
         (
             "DescribeConfigRules",
             OperationOverlay {
@@ -198,7 +194,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ConfigurationAggregatorName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns status information for sources within an aggregator. The status includes information about the last time Config verified authorization between the source account and an aggregator account. In case of a failure, the status…",
             ),
         ),
-        // Model: Returns the details of one or more configuration aggregators. If the configuration aggregator is not specified, this operation returns the details for all the configuration aggregators associated…
         (
             "DescribeConfigurationAggregators",
             OperationOverlay {
@@ -228,7 +223,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns details for the configuration recorder you specify. If a configuration recorder is not specified, this operation returns details for the customer managed configuration recorder configured for…
         (
             "DescribeConfigurationRecorders",
             OperationOverlay {
@@ -259,7 +253,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of one or more conformance packs.
         (
             "DescribeConformancePacks",
             OperationOverlay {
@@ -278,7 +271,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is DeliveryChannelsStatus; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the current status of the specified delivery channel. If a delivery channel is not specified, this operation returns the current status of all delivery channels associated with the account. Currently, you can specify only…",
             ),
         ),
-        // Model: Returns details about the specified delivery channel. If a delivery channel is not specified, this operation returns the details of all delivery channels associated with the account. Currently, you…
         (
             "DescribeDeliveryChannels",
             OperationOverlay {
@@ -297,7 +289,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is OrganizationConfigRuleStatuses; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Provides organization Config rule deployment status for an organization. The status is not considered successful until organization Config rule is successfully deployed in all the member accounts with an exception of excluded…",
             ),
         ),
-        // Model: Returns a list of organization Config rules. When you specify the limit and the next token, you receive a paginated response. Limit and next token are not applicable if you specify organization…
         (
             "DescribeOrganizationConfigRules",
             OperationOverlay {
@@ -316,7 +307,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is OrganizationConformancePackStatuses; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Provides organization conformance pack deployment status for an organization. The status is not considered successful until organization conformance pack is successfully deployed in all the member accounts with an exception of…",
             ),
         ),
-        // Model: Returns a list of organization conformance packs. When you specify the limit and the next token, you receive a paginated response. Limit and next token are not applicable if you specify organization…
         (
             "DescribeOrganizationConformancePacks",
             OperationOverlay {
@@ -353,7 +343,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ConfigRuleName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides a detailed view of a Remediation Execution for a set of resources including state, timestamps for when steps for the remediation execution occur, and any error messages for steps that have failed. When you specify the…",
             ),
         ),
-        // Model: Returns the details of one or more retention configurations. If the retention configuration name is not specified, this operation returns the details for all the retention configurations for that…
         (
             "DescribeRetentionConfigurations",
             OperationOverlay {
@@ -521,7 +510,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is ConformancePackComplianceScores; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a list of conformance pack compliance scores. A compliance score is the percentage of the number of compliant rule-resource combinations in a conformance pack compared to the number of total possible rule-resource…",
             ),
         ),
-        // Model: Returns a list of connectors depending on the filters you specify.
         (
             "ListConnectors",
             OperationOverlay {
@@ -540,7 +528,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires resourceType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of resource resource identifiers for the specified resource types for the resources of that type. A resource identifier includes the resource type, ID, and (if available) the custom resource name. The results…",
             ),
         ),
-        // Model: Returns a list of proactive resource evaluations.
         (
             "ListResourceEvaluations",
             OperationOverlay {
@@ -553,7 +540,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the stored queries for a single Amazon Web Services account and a single Amazon Web Services Region. The default is 100.
         (
             "ListStoredQueries",
             OperationOverlay {

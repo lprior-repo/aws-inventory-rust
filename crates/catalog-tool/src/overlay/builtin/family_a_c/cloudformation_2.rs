@@ -1,8 +1,6 @@
-// Pinned CloudFormation operation decisions continued.
 use super::support::*;
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns the summary information for stacks whose status matches the specified StackStatusFilter . Summary information for stacks that have been deleted is kept for 90 days after the stack is deleted.…
         (
             "ListStacks",
             OperationOverlay {

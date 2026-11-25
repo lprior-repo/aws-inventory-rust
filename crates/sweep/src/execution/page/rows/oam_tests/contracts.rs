@@ -2,7 +2,6 @@ use super::*;
 #[tokio::test]
 async fn given_actual_oam_link_in_account_a_when_foreign_sink_arrives_in_either_order_then_only_observed_account_b_resolves()
 -> TestResult {
-    // Given real pinned OAM models, embedded policy/kind/relation mappings, and wire decoding.
     let bytes = oam_fixture::compiled(
         "oam",
         "2022-06-10",
@@ -12,7 +11,6 @@ async fn given_actual_oam_link_in_account_a_when_foreign_sink_arrives_in_either_
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     for sink_first in [false, true] {
         let (_directory, store) = store(&catalog).await?;
-        // When the B-owned sink and A-owned link commit in either order.
         let operations = if sink_first {
             [("ListSinks", "210987654321"), ("ListLinks", "123456789012")]
         } else {
@@ -30,7 +28,6 @@ async fn given_actual_oam_link_in_account_a_when_foreign_sink_arrives_in_either_
             )
             .await?;
         }
-        // Then no source-account sink placeholder is invented and the foreign target is exact.
         let resources = store.projection_resources(None, 100).await?;
         assert_eq!(resources.len(), 2);
         assert_eq!(
@@ -58,7 +55,6 @@ async fn given_actual_oam_link_in_account_a_when_foreign_sink_arrives_in_either_
 async fn given_reviewed_oam_page_when_public_store_receives_forged_relationships_then_every_transaction_is_rejected()
 -> TestResult {
     use inventory_core::inventory::{Edge, EdgeSource, Kind, Relation};
-    // Given a checked native catalog and source observation decoded from the real OAM model.
     let bytes = oam_fixture::compiled(
         "oam",
         "2022-06-10",
@@ -168,7 +164,6 @@ async fn given_reviewed_oam_page_when_public_store_receives_forged_relationships
             }
             _ => return Err("unknown permission attack".into()),
         }
-        // When an untrusted public caller bypasses the producer, no forged page may commit.
         let pool = sqlx::SqlitePool::connect(&format!(
             "sqlite://{}",
             directory.path().join("inventory.sqlite").display()
@@ -189,7 +184,6 @@ async fn given_reviewed_oam_page_when_public_store_receives_forged_relationships
             ),
             "{attack}"
         );
-        // Then rejection rolls back resources, graph evidence, and retained unresolved candidates.
         assert!(
             store.projection_resources(None, 100).await?.is_empty(),
             "{attack}"

@@ -62,9 +62,6 @@ async fn seed_baseline(store: &BinaryStore) -> TestResult {
 }
 
 async fn downgrade_empty_relations(pool: &SqlitePool) -> TestResult {
-    // With no relationship entries, field 2's empty list is also the exact V2
-    // codec: no V3 authority cell needs truncating or fabricating. Rebuild the
-    // actual old schema/marker, preserving every durable cursor and lease epoch.
     let relations: Vec<Vec<u8>> = sqlx::query_scalar("SELECT relations FROM resource_facets")
         .fetch_all(pool)
         .await?;

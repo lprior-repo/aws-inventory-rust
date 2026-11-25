@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/license-manager-linux-subscriptions/service/2018-05-10/license-manager-linux-subscriptions-2018-05-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -42,7 +41,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the running Amazon EC2 instances that were discovered with commercial Linux subscriptions.
     Resource {
         operation: "ListLinuxSubscriptionInstances",
         items: "Instances",
@@ -62,7 +60,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the Linux subscriptions that have been discovered. If you have linked your organization, the returned results will include data aggregated across your accounts in Organizatio
     Resource {
         operation: "ListLinuxSubscriptions",
         items: "Subscriptions",
@@ -74,7 +71,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List Bring Your Own License (BYOL) subscription registration resources for your account.
     Resource {
         operation: "ListRegisteredSubscriptionProviders",
         items: "RegisteredSubscriptionProviders",

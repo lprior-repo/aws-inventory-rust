@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/ssm-contacts/service/2021-05-03/ssm-contacts-2021-05-03.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

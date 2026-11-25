@@ -14,7 +14,6 @@ use std::collections::BTreeMap;
 #[tokio::test]
 async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_when_prepared_then_assertion_aborts_page_and_reopen_has_no_prefix_or_cursor()
 -> TestResult {
-    // Given actual Cognito Smithy and production ownership plus parent-correlation policies.
     let compiled = fixture::compile(
         "cognito-identity-provider",
         "2016-04-18",
@@ -41,7 +40,6 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
         consumers: ConsumerIndex::build(&catalog)?,
         progress: &progress,
     };
-    // When the real persistence caller sees a hostile row after a complete valid chunk.
     let summary = super::super::commit_response(
         &context,
         page.lease,
@@ -58,7 +56,6 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
         },
     )
     .await?;
-    // Then it records a failed scope, not a partial prefix or continuation.
     assert_eq!(summary.summary.outcomes.failed, 1);
     assert_eq!(summary.summary.rows, 0);
     assert_eq!(summary.summary.resource_writes, 0);
@@ -140,7 +137,6 @@ fn hostile_response(plan: &CallablePlan<'_>) -> TestResult<call::DecodedResponse
             "UserPoolId":"us-east-1_Parent","Identifier":format!("owned-{ordinal}"),"Name":"customer owned",
         }))
         .collect::<Vec<_>>();
-    // A provider-reference filter must not conceal its contradictory returned parent.
     wire_rows.push(serde_json::json!({"UserPoolId":"us-east-1_Unrelated","Identifier":"provider","ManagedBy":"COGNITO"}));
     let bytes = serde_json::to_vec(
         &serde_json::json!({"ResourceServers":wire_rows,"NextToken":"must-not-commit"}),

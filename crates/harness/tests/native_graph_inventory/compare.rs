@@ -176,7 +176,6 @@ async fn assert_native(database: &Path, graph: &NativeGraph, expected: &Expected
             .detail(&node(key))
             .await?
             .ok_or("metadata resource missing")?;
-        // Names are explicitly absent in the independently frozen fixture policy.
         assert_eq!(detail.name, None, "fixture display-name contract: {key:?}");
         metadata.insert(
             key_fields(key)

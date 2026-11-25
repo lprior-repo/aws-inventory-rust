@@ -156,7 +156,6 @@ fn committed_models(source: &Path, commit: &str) -> Result<(), CompileError> {
     let mut expected = committed_model_objects(&tree)?;
     let files =
         crate::model_source::discover_models(&source.join("models")).map_err(commit_error)?;
-    // Read bytes directly, without index stat caches, sparse flags, clean filters, or external diffs.
     for batch in files.chunks(32) {
         let relative = batch
             .iter()

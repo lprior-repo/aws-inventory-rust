@@ -33,8 +33,6 @@ fn given_eks_cluster_names_when_the_policy_compiles_then_the_key_matches_describ
             .into_boxed_slice()
         )
     );
-    // DescribeCluster is denied. The admitted child still binds the raw cluster
-    // name, not the key derived from that name for storage.
     assert!(catalog.lookup("eks", "DescribeCluster").is_none());
     let capabilities = catalog
         .lookup("eks", "ListCapabilities")

@@ -70,8 +70,6 @@ fn protocol_expansion(worker: &DataWorker, node: GraphNode) -> Result<Command, S
 fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expansion_uses_last_committed_session()
 -> TestResult {
     supervised(|| {
-        // Enter the real process boundary after admission, then accept a newer
-        // refresh before completion. No outputs or QuerySession values are injected.
         let runtime = runtime()?;
         if !runtime.block_on(falkor_available())? {
             return Ok(());
@@ -168,9 +166,6 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
 fn given_obsolete_selection_queued_before_latest_refresh_when_real_runner_drains_then_last_selection_is_not_mutated()
 -> TestResult {
     supervised(|| {
-        // Admission filtering has observable state semantics even though emit and
-        // drain also reject stale results: a skipped selection must not become the
-        // selection re-expanded by the following current refresh.
         let runtime = runtime()?;
         if !runtime.block_on(falkor_available())? {
             return Ok(());
@@ -261,8 +256,6 @@ fn given_obsolete_selection_queued_before_latest_refresh_when_real_runner_drains
 fn given_selection_superseded_after_admission_when_native_query_completes_then_producer_does_not_publish_it()
 -> TestResult {
     supervised(|| {
-        // A producer-boundary test, NOT drain filtering: all observations below are
-        // real process/query_graph/native transport outputs before current_events.
         let runtime = runtime()?;
         if !runtime.block_on(falkor_available())? {
             return Ok(());
@@ -308,7 +301,6 @@ fn given_selection_superseded_after_admission_when_native_query_completes_then_p
 fn given_full_queue_when_refresh_is_rejected_then_real_runner_commits_accepted_snapshot()
 -> TestResult {
     supervised(|| {
-        // Given a retained session before a real writer update and one queue slot.
         let runtime = runtime()?;
         let _entered = runtime.enter();
         let fixture = runtime.block_on(Fixture::new())?;
@@ -337,7 +329,6 @@ fn given_full_queue_when_refresh_is_rejected_then_real_runner_commits_accepted_s
         ))?;
         let (worker, mut runner) = context(1);
         worker.refresh(Filter::default())?;
-        // When a second refresh is rejected, only the accepted command is processed.
         assert_eq!(
             worker.refresh(Filter {
                 query: "rejected".into(),
@@ -361,7 +352,6 @@ fn given_full_queue_when_refresh_is_rejected_then_real_runner_commits_accepted_s
                 _ => None,
             })
             .ok_or("accepted real snapshot lost after rejected refresh")?;
-        // Then the UI receives the accepted writer values, not an empty drain.
         assert_eq!(page, (expected, 2));
         Ok(())
     })
@@ -395,7 +385,6 @@ fn given_full_queue_when_expansion_is_rejected_then_real_graph_is_delivered_unti
                 config(&fixture, &native),
             ))?;
             let (worker, mut runner) = context(1);
-            // Given an accepted expansion, rejection must not revoke its revision.
             worker.expand(a.clone())?;
             assert_eq!(
                 worker.expand(b),
@@ -416,7 +405,6 @@ fn given_full_queue_when_expansion_is_rejected_then_real_graph_is_delivered_unti
                 worker.drain().is_empty(),
                 "deselect must reject already queued native output"
             );
-            // When deselect happens after admission, the real producer is suppressed.
             worker.expand(a)?;
             let command = runner.commands.try_recv()?;
             worker.invalidate_graph()?;

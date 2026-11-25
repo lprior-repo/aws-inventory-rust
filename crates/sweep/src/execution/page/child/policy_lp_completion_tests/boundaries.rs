@@ -93,7 +93,6 @@ async fn given_a_persisted_child_page_when_a_mixed_native_continuation_is_reject
         valid,
     ) in rejected_cases()
     {
-        // Given real compiled plans and discovered native parents, not synthetic child work.
         let mut operations = vec![root];
         if let Some((operation, _)) = &middle {
             operations.push(operation);
@@ -142,7 +141,6 @@ async fn reject_continuation<'a, 'catalog>(
     field: &str,
     valid: &str,
 ) -> TestResult<Scenario<'a, 'catalog>> {
-    // Given a successfully committed child page and a nonempty durable continuation.
     let lease = scenario.claim().await?;
     assert_eq!(
         lease.scope().operation().as_str(),
@@ -178,7 +176,6 @@ async fn reject_continuation<'a, 'catalog>(
     assert_eq!(saved.1.len(), 1);
     let (request, wire) = scenario.request(callable, &lease)?;
     assert_boundary_cursor(&wire, token_field, &token)?;
-    // When a different valid row precedes an empty identity on the continuation.
     let fresh = match field {
         "botAliasId" => "ALIAS00002",
         "botVersion" => "2",
@@ -199,7 +196,6 @@ async fn reject_continuation<'a, 'catalog>(
             .contains("modeled identity text operand is empty"),
         "{error}"
     );
-    // Then every previous row, reference, edge and checkpoint byte survives reopening.
     let scenario = scenario.reopen().await?;
     assert_eq!(boundary_snapshot(&scenario).await?, before);
     assert_eq!(scenario.stored(child_kind).await?, saved);

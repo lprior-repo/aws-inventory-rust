@@ -37,9 +37,6 @@ pub(super) fn from_fixture(
 
 fn fields(step: &SeedStep, key: &ResourceKey) -> TestResult<BTreeMap<String, Value>> {
     let mut expected = BTreeMap::new();
-    // Only metadata actually supplied by the fixture or its separately checked
-    // identity receipt is asserted. Provider timestamps/opaque values are not
-    // invented; list-only resources deliberately expose fewer safe fields.
     let inputs: &[(&str, &str)] = match key.kind.as_str() {
         "AWS::EC2::VPC" | "AWS::EC2::Subnet" => &[("CidrBlock", "CidrBlock")],
         "AWS::EC2::SecurityGroup" => &[("GroupName", "GroupName"), ("Description", "Description")],
@@ -144,9 +141,6 @@ fn fields(step: &SeedStep, key: &ResourceKey) -> TestResult<BTreeMap<String, Val
         }
         "AWS::StepFunctions::Activity" => &[("name", "name")],
         "AWS::StepFunctions::StateMachine" => &[("name", "name"), ("type", "type")],
-        // The fixture reads the emulator's existing organization and root, so
-        // it supplies no configured literal. Only the identity receipt, which
-        // the oracle checks against account and partition, is asserted.
         "AWS::Organizations::Organization" | "AWS::ApiOnly::OrganizationsRoot" => {
             expected.insert("Arn".into(), Value::Text(key.id.as_str().into()));
             &[]
@@ -223,8 +217,6 @@ pub(super) fn assert_detail(
             "generated signing-profile version must reference the independently seeded publisher"
         );
     }
-    // Each fixture explicitly expects no display name under the frozen mapping;
-    // do not let a runtime name-path change choose its own expected value.
     assert_eq!(
         detail.name, None,
         "independent absent display name: {:?}",
@@ -307,8 +299,6 @@ pub(super) fn assert_oracle_rejects_mutations() -> TestResult {
     )]));
     super::safe_shape::validate("AWS::EC2::VPC", &original)?;
     validate_expected(&original, &expected)?;
-    // Given valid independently specified metadata, bypassing safe filtering
-    // with an extra secret or dropping a configured field must fail the oracle.
     for field in ["SecretAccessKey", "UnreviewedProviderMember"] {
         let Value::Map(mut leaked) = original.clone() else {
             return Err("mutation fixture is not a map".into());

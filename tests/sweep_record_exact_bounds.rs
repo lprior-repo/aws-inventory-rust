@@ -7,8 +7,6 @@ use std::collections::BTreeMap;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
-// Each envelope is independently specified CBOR: a one-entry map with the text
-// key "$". Expected bytes never come from the scalar encoder under test.
 fn scalar_cases() -> TestResult<Vec<(ValueRef<'static>, Vec<u8>)>> {
     Ok(vec![
         (ValueRef::Null, vec![0xa1, 0x61, 0x24, 0xf6]),
@@ -51,15 +49,11 @@ fn scalar_cases() -> TestResult<Vec<(ValueRef<'static>, Vec<u8>)>> {
 #[test]
 fn scalar_decoder_preserves_each_native_scalar_in_an_independently_encoded_envelope() -> TestResult
 {
-    // Given independently encoded scalar envelopes, including both polarities,
-    // signed extrema, null and scalar kinds that are not AWS identity strings.
     for (expected, bytes) in scalar_cases()? {
         let record = Record::from_bytes(bytes)?;
-        // When the public selected-item decoder reads the envelope.
         let actual = scalar_item(record.root())?
             .map(|value| value.to_value())
             .transpose()?;
-        // Then native type and value are exact, without paired-encoder oracles.
         assert_eq!(actual, Some(expected.to_value()?));
     }
     Ok(())
@@ -68,9 +62,7 @@ fn scalar_decoder_preserves_each_native_scalar_in_an_independently_encoded_envel
 #[test]
 fn scalar_encoder_emits_exactly_one_dollar_entry_with_independently_expected_bytes() -> TestResult {
     for (value, expected) in scalar_cases()? {
-        // Given a native scalar; when wrapped by the public scalar encoder.
         let record = scalar_record(value)?;
-        // Then the bytes and entry count match the independent envelope oracle.
         assert_eq!(record.as_bytes(), expected.as_slice());
         assert_eq!(
             record.root().iter()?.collect::<Result<Vec<_>, _>>()?.len(),
@@ -82,9 +74,6 @@ fn scalar_encoder_emits_exactly_one_dollar_entry_with_independently_expected_byt
 
 #[test]
 fn scalar_decoder_refuses_extra_entries_containers_and_non_dollar_structures() -> TestResult {
-    // All are valid records, but none is a selected-scalar envelope. In
-    // particular "$" comes first in the two-entry named map, exercising the
-    // second-entry guard rather than rejection of the first key alone.
     let cases: &[(&str, &[u8])] = &[
         (
             "extra named entry",
@@ -106,9 +95,7 @@ fn scalar_decoder_refuses_extra_entries_containers_and_non_dollar_structures() -
         ("ordinary field structure", &[0xa1, 0x01, 0x61, b'a']),
     ];
     for (name, bytes) in cases {
-        // Given a hostile shape encoded without scalar_record.
         let record = Record::from_bytes(bytes.to_vec())?;
-        // When decoded, then it is exactly absent, not a scalar or parse error.
         assert_eq!(
             scalar_item(record.root())?
                 .map(|value| value.to_value())
@@ -120,25 +107,19 @@ fn scalar_decoder_refuses_extra_entries_containers_and_non_dollar_structures() -
     Ok(())
 }
 
-// These helpers are also attached to the private production record module by
-// two #[test] wrappers. The standalone integration target above needs no seam;
-// only those wrappers can call the real private extraction boundary below.
 pub(crate) fn accepts_exact_page<E>(
     extract: impl FnOnce(&Record, &ItemPlan) -> Result<Vec<Record>, E>,
 ) -> TestResult
 where
     E: std::error::Error + 'static,
 {
-    // Given a real compiled scalar enumeration and precisely 100000 items.
     let bytes = compiled_scalar_catalog()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog
         .lookup("bounds", "ListThings")
         .ok_or("compiled plan missing")?;
     let response = response(100_000)?;
-    // When the production extraction consumer uses the loaded selector.
     let rows = extract(&response, plan.items())?;
-    // Then every accepted row is preserved in order with its full native value.
     assert_eq!(rows.len(), 100_000);
     for (index, row) in rows.iter().enumerate() {
         let actual = scalar_item(row.root())?
@@ -160,14 +141,12 @@ pub(crate) fn rejects_oversized_page<E>(
 where
     E: std::error::Error + 'static,
 {
-    // Given the same compiled plan, with precisely one additional valid item.
     let bytes = compiled_scalar_catalog()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog
         .lookup("bounds", "ListThings")
         .ok_or("compiled plan missing")?;
     let response = response(100_001)?;
-    // When extracting the page, then no successful partial Vec can escape.
     match extract(&response, plan.items()) {
         Err(error) => {
             assert_eq!(

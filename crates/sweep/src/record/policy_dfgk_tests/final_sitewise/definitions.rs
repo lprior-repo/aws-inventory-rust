@@ -10,7 +10,6 @@ const IDS: [&str; 2] = [
 #[tokio::test]
 async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume_then_every_definition_is_queryable_without_execution_calls()
 -> TestResult {
-    // Given real embedded plans: applications are an independent root, not a workspace child.
     let catalog = catalog()?;
     let mut scenario = Scenario::new(&catalog, "sitewise-definitions").await?;
     for operation in [
@@ -24,7 +23,6 @@ async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume
             .await?;
     }
     let mut requests = BTreeSet::new();
-    // When durable empty first pages resume, both source branches and workspace children run.
     for _ in 0..24 {
         let Some(lease) = scenario.store.claim(&scenario.sweep, 1001, 10_000).await? else {
             break;
@@ -102,7 +100,6 @@ async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume
             );
         }
     }
-    // Then every producer has visible SQL rows and canonical graph nodes after reopen.
     assert_eq!(requests.len(), 18);
     assert!(
         scenario

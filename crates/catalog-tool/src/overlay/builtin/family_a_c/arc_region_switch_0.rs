@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/arc-region-switch/service/2022-07-26/arc-region-switch-2022-07-26.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -64,7 +62,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires planArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the executions of a Region switch plan. This operation returns information about both current and historical executions.",
             ),
         ),
-        // Model: Lists all Region switch plans in your Amazon Web Services account.
         (
             "ListPlans",
             OperationOverlay {

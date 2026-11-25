@@ -127,14 +127,12 @@ fn given_typed_page_limits_when_decoded_then_only_string_and_integer_are_seriali
 #[test]
 fn given_a_cap_when_the_page_size_is_built_then_it_is_the_smaller_of_cap_and_model_maximum()
 -> TestResult {
-    // Given one integer and one string page-size member, each with a model maximum of 100.
     let integer = page(page_with_size(Some(Value::Int(1)), 100)?.root())?
         .page_size
         .ok_or("integer page size")?;
     let text = page(page_with_size(Some(Value::Int(0)), 100)?.root())?
         .page_size
         .ok_or("string page size")?;
-    // When no cap, a cap below, at, just above and far above the maximum is applied.
     for (cap, expected) in [
         (None, 100_i64),
         (Some(1), 1),
@@ -143,7 +141,6 @@ fn given_a_cap_when_the_page_size_is_built_then_it_is_the_smaller_of_cap_and_mod
         (Some(101), 100),
         (Some(u32::MAX), 100),
     ] {
-        // Then the value is never above the model maximum and keeps its wire type.
         assert_eq!(integer.capped(cap), Value::Int(expected));
         assert_eq!(text.capped(cap), Value::Text(expected.to_string()));
     }

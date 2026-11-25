@@ -6,7 +6,6 @@ const OTHER_PORTAL: &str = "arn:aws:workspaces-web:us-east-1:123456789012:portal
 #[tokio::test]
 async fn given_a_context_free_legacy_child_when_recollected_with_context_then_same_binding_releases_baseline_and_two_misses_retire_only_detail()
 -> TestResult {
-    // Given actual pre-context ownership and an archived nonempty child request.
     let bytes = compiled()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -46,7 +45,6 @@ async fn given_a_context_free_legacy_child_when_recollected_with_context_then_sa
     assert_eq!(state(&directory, &catalog).await?, before);
     assert_eq!(reopened.unattributed_authority_count().await?, 1);
     drop(reopened);
-    // When fresh contextual work has the same real binding, it certifies the historical authority.
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     child_run(
         &reopened,
@@ -103,7 +101,6 @@ async fn given_a_context_free_legacy_child_when_recollected_with_context_then_sa
         40,
     )
     .await?;
-    // Then the old context-free child is not immortal and its independent lower list facet survives.
     assert_eq!(
         reopened
             .projection_resource(&key()?)
@@ -132,7 +129,6 @@ async fn given_a_context_free_legacy_child_when_recollected_with_context_then_sa
 #[tokio::test]
 async fn given_one_old_scope_with_nonchronological_archives_and_distinct_bindings_when_only_one_binding_misses_then_other_resource_authority_survives()
 -> TestResult {
-    // Given two resources sharing an old execution scope, but each last observed under a different request.
     let bytes = compiled()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
@@ -166,7 +162,6 @@ async fn given_one_old_scope_with_nonchronological_archives_and_distinct_binding
     downgrade(&directory, 15).await?;
     let reopened =
         BinaryStore::open_with_catalog(&directory.path().join("inventory.sqlite"), &bytes).await?;
-    // When migration uses each row's exact last-positive archive, both semantic owner keys differ.
     let db = pool(&directory).await?;
     assert_eq!(sqlx::query_scalar::<_, i64>("SELECT count(DISTINCT scope_key) FROM resource_scopes WHERE observed_sweep IN('z-old','a-new')").fetch_one(&db).await?, 2);
     assert_eq!(
@@ -206,7 +201,6 @@ async fn given_one_old_scope_with_nonchronological_archives_and_distinct_binding
         30,
     )
     .await?;
-    // Then A falls back to its root facet without incorrectly expiring B or its parent link.
     assert_eq!(
         reopened
             .projection_resource(&key()?)

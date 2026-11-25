@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/billingconductor/service/2021-07-30/billingconductor-2021-07-30.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -112,7 +110,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is BillingGroupCostReports; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: A paginated call to retrieve a summary report of actual Amazon Web Services charges and the calculated Amazon Web Services charges based on the associated pricing plan of a billing group.",
             ),
         ),
-        // Model: A paginated call to retrieve a list of billing groups for the given billing period. If you don't provide a billing group, the current billing period is used.
         (
             "ListBillingGroups",
             OperationOverlay {
@@ -131,7 +128,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Arn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: A paginated call to get a list of all custom line item versions.",
             ),
         ),
-        // Model: A paginated call to get a list of all custom line items (FFLIs) for the given billing period. If you don't provide a billing period, the current billing period is used.
         (
             "ListCustomLineItems",
             OperationOverlay {
@@ -144,7 +140,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: A paginated call to get pricing plans for the given billing period. If you don't provide a billing period, the current billing period is used.
         (
             "ListPricingPlans",
             OperationOverlay {
@@ -163,7 +158,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires PricingRuleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: A list of the pricing plans that are associated with a pricing rule.",
             ),
         ),
-        // Model: Describes a pricing rule that can be associated to a pricing plan, or set of pricing plans.
         (
             "ListPricingRules",
             OperationOverlay {

@@ -25,8 +25,6 @@ fn role(id: &str, role: &str, key: Option<&str>, value: Option<&str>) -> RoleRow
     )
 }
 
-/// Observations and tag snapshots for three resources: all tags, a case-variant owner
-/// only, and no tags. Plain data: nothing here reaches a service.
 fn baseline() -> TestResult<(Vec<Observation>, Vec<TagObservation>)> {
     Ok((
         vec![
@@ -53,21 +51,17 @@ fn baseline() -> TestResult<(Vec<Observation>, Vec<TagObservation>)> {
 
 #[tokio::test]
 async fn seeded_tags_derive_literal_roles_and_unmapped_roles_are_unassigned() -> TestResult {
-    // Given three resources: all tags, a case-variant owner only, and no tags.
     let (directory, store, _) = support::fixture().await?;
     let (observations, tags) = baseline()?;
     state::commit_resources(&store, "baseline", observations, tags, 100).await?;
     let pool = state::pool(&directory).await?;
 
-    // When the mapping lists owner keys in priority order and an empty team list.
     store
         .replace_tag_mapping(&TagMapping::parse(
             "owner = [\"owner\", \"Owner\"]\napplication = [\"app\"]\n",
         )?)
         .await?;
 
-    // Then owner takes the first key, the empty-valued team tag is unassigned,
-    // and the resource with no tags has every role unassigned.
     assert_eq!(
         roles(&pool, "one").await?,
         vec![
@@ -97,8 +91,6 @@ async fn seeded_tags_derive_literal_roles_and_unmapped_roles_are_unassigned() ->
 
 #[tokio::test]
 async fn mapping_change_recomputes_roles_without_fetch_and_sweeps_keep_it() -> TestResult {
-    // Given observed resources committed once. The fixture data is plain values:
-    // no fetch seam is involved, and replace_tag_mapping takes only a store and a mapping.
     let (directory, store, _) = support::fixture().await?;
     let (observations, tags) = baseline()?;
     state::commit_resources(&store, "baseline", observations, tags, 100).await?;
@@ -110,15 +102,12 @@ async fn mapping_change_recomputes_roles_without_fetch_and_sweeps_keep_it() -> T
     let tags_before = state::read_tags(&store, &support::resource("one")?).await?;
     let coverage_before = coverage(&directory).await?;
 
-    // When the mapping changes: owner is now found under team-style keys.
     store
         .replace_tag_mapping(&TagMapping::parse(
             "team = [\"owner\", \"Owner\"]\napplication = [\"app\"]\n",
         )?)
         .await?;
 
-    // Then the derived roles follow the new mapping, with no fetch.
-    // The mapping write is store-only: no fetch seam exists to call here.
     assert_eq!(
         roles(&pool, "one").await?,
         vec![
@@ -135,7 +124,6 @@ async fn mapping_change_recomputes_roles_without_fetch_and_sweeps_keep_it() -> T
             role("two", "team", Some("Owner"), Some("carol")),
         ]
     );
-    // The observed record, tags and coverage are untouched by the mapping change.
     assert_eq!(state::resource_image(&pool).await?, image);
     assert_eq!(
         state::read_tags(&store, &support::resource("one")?).await?,
@@ -143,7 +131,6 @@ async fn mapping_change_recomputes_roles_without_fetch_and_sweeps_keep_it() -> T
     );
     assert_eq!(coverage(&directory).await?, coverage_before);
 
-    // When a later sweep changes a tag value, it reflects under the same mapping.
     state::commit_tags(
         &store,
         "tags-2",
@@ -164,7 +151,6 @@ async fn mapping_change_recomputes_roles_without_fetch_and_sweeps_keep_it() -> T
         ]
     );
 
-    // When the mapping is emptied, every role is unassigned again.
     store.replace_tag_mapping(&TagMapping::parse("")?).await?;
     assert_eq!(
         roles(&pool, "one").await?,
@@ -179,7 +165,6 @@ async fn mapping_change_recomputes_roles_without_fetch_and_sweeps_keep_it() -> T
 
 #[tokio::test]
 async fn whitespace_only_tag_value_is_blank_and_falls_through_to_next_key() -> TestResult {
-    // Given one resource whose first owner key is whitespace-only.
     let (directory, store, _) = support::fixture().await?;
     let observations = vec![support::observation("one", "a")?];
     let tags = vec![snapshot(
@@ -190,12 +175,10 @@ async fn whitespace_only_tag_value_is_blank_and_falls_through_to_next_key() -> T
     state::commit_resources(&store, "baseline", observations, tags, 100).await?;
     let pool = state::pool(&directory).await?;
 
-    // When owner lists the blank key first, then Owner.
     store
         .replace_tag_mapping(&TagMapping::parse("owner = [\"owner\", \"Owner\"]\n")?)
         .await?;
 
-    // Then the blank value is not an owner and the next key supplies it.
     assert_eq!(
         roles(&pool, "one").await?,
         vec![

@@ -59,8 +59,6 @@ pub(super) async fn drain_work(
     Ok(summary)
 }
 
-/// Whether the drain may ask the store for more work. Once the slice budget
-/// is spent it stays spent, even if the wall clock steps back.
 fn may_claim(
     executor: &ApiExecutor,
     budget: SliceBudget,
@@ -70,7 +68,6 @@ fn may_claim(
     if slice_exhausted.load(Relaxed) || executor.is_cancelled() {
         return false;
     }
-    // A clock failure is left for the claim itself to report.
     let Ok(now) = now_ms() else { return true };
     let exhausted = budget.exhausted(now);
     slice_exhausted.store(exhausted, Relaxed);

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mediatailor/service/2018-04-23/mediatailor-2018-04-23.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -126,7 +125,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves information about the channels that are associated with the current AWS account.
     Resource {
         operation: "ListChannels",
         items: "Items",
@@ -138,7 +136,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the source locations for a channel. A source location defines the host server URL, and contains a list of sources.
     Resource {
         operation: "ListSourceLocations",
         items: "Items",

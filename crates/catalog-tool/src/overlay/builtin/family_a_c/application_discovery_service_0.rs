@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/application-discovery-service/service/2015-11-01/application-discovery-service-2015-11-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -46,7 +44,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires configurationIds. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the association between configuration items and one or more tags. This API accepts a list of multiple configuration items.",
             ),
         ),
-        // Model: Lists agents or collectors as specified by ID or other filters. All agents/collectors associated with your user can be listed if you call DescribeAgents as is without passing any parameters.
         (
             "DescribeAgents",
             OperationOverlay {
@@ -71,7 +68,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires configurationIds. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves attributes for a list of configuration item IDs. All of the supplied IDs must be for the same asset type from one of the following: server application process connection Output fields are specific to the asset type…",
             ),
         ),
-        // Model: Lists exports as specified by ID. All continuous exports associated with your user can be listed if you call DescribeContinuousExports as is without passing any parameters.
         (
             "DescribeContinuousExports",
             OperationOverlay {
@@ -84,11 +80,8 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: DescribeExportConfigurations is deprecated. Use DescribeExportTasks , instead.
         ("DescribeExportConfigurations", denied(DenyReason::Secret)),
-        // Model: Retrieve status of one or more export tasks. You can retrieve the status of up to 100 export tasks.
         ("DescribeExportTasks", denied(DenyReason::Secret)),
-        // Model: Returns an array of import tasks for your account, including status information, times, IDs, the Amazon S3 Object URL for the import file, and more.
         ("DescribeImportTasks", denied(DenyReason::Secret)),
         (
             "DescribeTags",

@@ -83,7 +83,6 @@ fn observed<'a>(parts: &'a PageParts, kind: &str) -> TestResult<&'a Observation>
 #[tokio::test]
 async fn given_empty_status_when_key_exists_then_zone_identified_status_and_key_both_emit()
 -> TestResult {
-    // Given an actual public hosted-zone child request and a modeled-but-empty Status.
     let catalog = fixture::catalog()?;
     let scenario = seeded(&catalog, "multi-emission-empty-primary").await?;
     let lease = scenario
@@ -91,9 +90,7 @@ async fn given_empty_status_when_key_exists_then_zone_identified_status_and_key_
         .claim(&scenario.sweep, 1001, 10_000)
         .await?
         .ok_or("DNSSEC child absent")?;
-    // When the production atomic page assembler consumes one decoded response.
     let parts = prepare(&scenario, &catalog, &lease, EMPTY_STATUS, KEY).await?;
-    // Then the status row is identified by the bound zone alone and the key still emits beside it.
     assert_eq!(parts.observations.len(), 2);
     assert_eq!(
         observed(&parts, "AWS::Route53::DNSSEC")?
@@ -117,7 +114,6 @@ async fn given_empty_status_when_key_exists_then_zone_identified_status_and_key_
 #[tokio::test]
 async fn given_no_keys_when_status_exists_then_primary_emitter_survives_empty_additional_selection()
 -> TestResult {
-    // Given a real child lease and an explicitly empty key collection.
     let catalog = fixture::catalog()?;
     let scenario = seeded(&catalog, "multi-emission-empty-additional").await?;
     let lease = scenario
@@ -125,9 +121,7 @@ async fn given_no_keys_when_status_exists_then_primary_emitter_survives_empty_ad
         .claim(&scenario.sweep, 1001, 10_000)
         .await?
         .ok_or("DNSSEC child absent")?;
-    // When selecting both resource descriptors from the same response.
     let parts = prepare(&scenario, &catalog, &lease, STATUS, "<KeySigningKeys/>").await?;
-    // Then an empty sibling never erases or substitutes for the status resource.
     assert_eq!(parts.observations.len(), 1);
     assert_eq!(
         observed(&parts, "AWS::Route53::DNSSEC")?
@@ -142,7 +136,6 @@ async fn given_no_keys_when_status_exists_then_primary_emitter_survives_empty_ad
 #[tokio::test]
 async fn given_two_emissions_when_only_key_metadata_changes_then_status_identity_record_and_hash_remain_independent()
 -> TestResult {
-    // Given the same bound request and complete status/key response.
     let catalog = fixture::catalog()?;
     let scenario = seeded(&catalog, "multi-emission-independent-hashes").await?;
     let lease = scenario
@@ -151,10 +144,8 @@ async fn given_two_emissions_when_only_key_metadata_changes_then_status_identity
         .await?
         .ok_or("DNSSEC child absent")?;
     let before = prepare(&scenario, &catalog, &lease, STATUS, KEY).await?;
-    // When only the sibling key's metadata changes.
     let changed = KEY.replace("ACTIVE", "INACTIVE");
     let after = prepare(&scenario, &catalog, &lease, STATUS, &changed).await?;
-    // Then descriptor-local records and content hashes remain independent.
     assert_eq!(before.observations.len(), 2);
     assert_eq!(after.observations.len(), 2);
     let primary = observed(&before, "AWS::Route53::DNSSEC")?;
@@ -273,7 +264,6 @@ async fn given_valid_status_and_key_when_later_key_identity_is_missing_then_atom
             .count(),
         2
     );
-    // Given retained native metadata, then a new real leased refresh of that source.
     scenario.sweep = SweepId::new("multi-emission-atomic-failure".to_owned())?;
     seed_zone(&scenario, &catalog).await?;
     let lease = scenario
@@ -282,15 +272,12 @@ async fn given_valid_status_and_key_when_later_key_identity_is_missing_then_atom
         .await?
         .ok_or("refresh DNSSEC child absent")?;
     let expected = atomic::snapshot(&scenario, atomic::Checkpoint::AfterFailure).await?;
-    // Earlier items would change status/key-a and insert key-b if any prefix escaped.
     let status = "<Status><ServeSignature>NOT_SIGNING</ServeSignature></Status>";
     let keys = "<KeySigningKeys><member><Name>key-a</Name><Status>INACTIVE</Status></member><member><Name>key-b</Name><Status>ACTIVE</Status></member><member><Status>ACTIVE</Status></member></KeySigningKeys>";
-    // When the real post-response driver encounters the later missing identity.
     let result = driver
         .commit(&scenario, &catalog, lease, status, keys)
         .await?;
     assert_eq!(result, atomic::failed());
-    // Then real failure finalization survives BinaryStore close/reopen, but no prefix does.
     let scenario = scenario.reopen(&catalog).await?;
     atomic::assert_finalized(&scenario).await?;
     assert_eq!(

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pinpoint-email/service/2018-07-26/pinpoint-email-2018-07-26.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -116,7 +115,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // List all of the configuration sets associated with your Amazon Pinpoint account in the current region. In Amazon Pinpoint, configuration sets are groups of rules that you can apply
     Resource {
         operation: "ListConfigurationSets",
         items: "ConfigurationSets",
@@ -128,7 +126,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List all of the dedicated IP pools that exist in your Amazon Pinpoint account in the current AWS Region.
     Resource {
         operation: "ListDedicatedIpPools",
         items: "DedicatedIpPools",
@@ -140,7 +137,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of all of the email identities that are associated with your Amazon Pinpoint account. An identity can be either an email address or a domain. This operation returns
     Resource {
         operation: "ListEmailIdentities",
         items: "EmailIdentities",
@@ -152,7 +148,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Preserve the singleton metadata response, including its inline tag snapshot.
     Resource {
         operation: "GetConfigurationSet",
         items: "$",

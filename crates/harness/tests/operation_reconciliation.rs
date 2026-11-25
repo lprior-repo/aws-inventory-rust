@@ -143,7 +143,6 @@ fn test_unterminated_literals_and_comments_report_original_path_and_line() {
     }
 }
 
-// Non-ASCII tests
 #[test]
 fn test_non_ascii_string_literal() -> TestResult {
     let source = "use aws_sdk_ec2::Client;\nfn collect(client: &Client) {\n    let greeting = \"héllo wörld\";\n    client.describe_vpcs().send().await;\n}\n";
@@ -168,7 +167,6 @@ fn test_multibyte_char_does_not_hide_call() -> TestResult {
     Ok(())
 }
 
-// Nested comments
 #[test]
 fn test_nested_block_comments() -> TestResult {
     let source = "use aws_sdk_ec2::Client;\nfn collect(client: &Client) {\n    /* outer /* inner */ still outer */\n    client.describe_vpcs().send().await;\n}\n";
@@ -177,7 +175,6 @@ fn test_nested_block_comments() -> TestResult {
     Ok(())
 }
 
-// Raw strings
 #[test]
 fn test_raw_string_delimiters() -> TestResult {
     let source = "use aws_sdk_ec2::Client;\nfn collect(client: &Client) {\n    let s = r\"client.fake().send()\";\n    let s2 = r##\"client.fake().send()\"##;\n    client.describe_vpcs().send().await;\n}\n";
@@ -186,7 +183,6 @@ fn test_raw_string_delimiters() -> TestResult {
     Ok(())
 }
 
-// Character literals
 #[test]
 fn test_char_literal_apostrophe() -> TestResult {
     let source = "use aws_sdk_ec2::Client;\nfn collect(client: &Client) {\n    let quote = '\\'';\n    client.describe_vpcs().send().await;\n}\n";
@@ -195,7 +191,6 @@ fn test_char_literal_apostrophe() -> TestResult {
     Ok(())
 }
 
-// Error message assertions
 #[test]
 fn test_unterminated_string_has_location() -> TestResult {
     let source = "fn collect() {\n    let s = \"unterminated\n}";
@@ -276,9 +271,7 @@ fn test_debug_non_ascii_masking() -> TestResult {
 
 #[test]
 fn test_token_budget_exceeded() {
-    // Create source with many tokens
     let source = "let a=1;let b=2;let c=3;let d=4;let e=5;";
     let result = calls_in_source_with_budget("sample.rs", source, 5);
-    // Should fail with tight budget
     assert!(result.is_err());
 }

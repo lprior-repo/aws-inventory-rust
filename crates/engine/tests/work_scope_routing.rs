@@ -52,7 +52,6 @@ fn scoped_work(sweep: &SweepId, branch: &str, ancestry: &DiscoveryContext) -> Te
 #[tokio::test]
 async fn given_two_branches_when_pages_restart_then_each_keeps_its_context_cursor_and_completion()
 -> TestResult {
-    // Given two semantic branches sharing service, operation, region and cursor digest.
     let (directory, store, _) = declared_branch_fixture(&["ACCOUNT", "RESOURCE"]).await?;
     let sweep = SweepId::new("branches".to_owned())?;
     let account = context("account-parent")?;
@@ -79,7 +78,6 @@ async fn given_two_branches_when_pages_restart_then_each_keeps_its_context_curso
         checkpoint.continuation_digest = Some([7; 32]);
         assert!(!store.commit_page(checkpoint).await?.repeated_token);
     }
-    // When the real SQLite store is closed and reopened after lease expiry.
     drop(store);
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let mut branches = BTreeSet::new();
@@ -106,7 +104,6 @@ async fn given_two_branches_when_pages_restart_then_each_keeps_its_context_curso
             .await?;
         branches.insert(branch);
     }
-    // Then both independent scopes completed, and neither digest was mistaken for a repeat.
     assert_eq!(
         branches,
         BTreeSet::from(["ACCOUNT".to_owned(), "RESOURCE".to_owned()])
@@ -143,7 +140,6 @@ async fn complete_branch(
 #[tokio::test]
 async fn given_branch_owned_resources_when_other_branch_is_empty_twice_then_deletion_stays_isolated()
 -> TestResult {
-    // Given independent resources observed by the two branches of one modeled operation.
     let (_directory, store, _) = declared_branch_fixture(&["ACCOUNT", "RESOURCE"]).await?;
     complete_branch(
         &store,
@@ -161,7 +157,6 @@ async fn given_branch_owned_resources_when_other_branch_is_empty_twice_then_dele
         200,
     )
     .await?;
-    // When only RESOURCE has two complete empty observations.
     complete_branch(&store, "resource-miss-1", "RESOURCE", Vec::new(), 300).await?;
     assert!(
         store
@@ -170,7 +165,6 @@ async fn given_branch_owned_resources_when_other_branch_is_empty_twice_then_dele
             .is_some()
     );
     complete_branch(&store, "resource-miss-2", "RESOURCE", Vec::new(), 400).await?;
-    // Then RESOURCE's missing resource is deleted without marking ACCOUNT missing.
     assert!(
         store
             .projection_resource(&resource("resource-policy")?)
@@ -188,16 +182,13 @@ async fn given_branch_owned_resources_when_other_branch_is_empty_twice_then_dele
 #[tokio::test]
 async fn given_context_without_matching_scope_digest_when_seeded_then_no_work_is_committed()
 -> TestResult {
-    // Given a valid minimal ancestry paired with an unrelated trusted scope identity.
     let (_directory, store, _) = declared_branch_fixture(&["ACCOUNT", "RESOURCE"]).await?;
     let sweep = SweepId::new("context-mismatch".to_owned())?;
     let ancestry = context("real-parent")?;
     let invalid_scope = scope("us-east-1")?.with_branch("RESOURCE".to_owned())?;
     let invalid = WorkSpec::new(sweep.clone(), invalid_scope, None, Vec::new())?
         .with_context(ancestry.encode()?)?;
-    // When the durable public API validates the work before opening its transaction.
     let result = store.seed_work(invalid).await;
-    // Then the mismatch is explicit and no lease can be claimed.
     assert!(matches!(
         result,
         Err(StoreError::Invalid(
@@ -251,7 +242,6 @@ async fn complete_context(
 #[tokio::test]
 async fn given_reordered_parent_context_when_detail_is_missing_twice_then_volatile_old_owner_cannot_block_deletion()
 -> TestResult {
-    // Given the same semantic request observed before and after its parent moves in a list.
     let (directory, store, _) = declared_branch_fixture(&["ACCOUNT", "RESOURCE"]).await?;
     let before = context_at("stable-parent", 0)?;
     let reordered = context_at("stable-parent", 1)?;
@@ -272,7 +262,6 @@ async fn given_reordered_parent_context_when_detail_is_missing_twice_then_volati
         200,
     )
     .await?;
-    // When the persisted current detail scope completes twice without that resource.
     drop(store);
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     complete_context(&store, "detail-missing-once", &reordered, Vec::new(), 300).await?;
@@ -283,7 +272,6 @@ async fn given_reordered_parent_context_when_detail_is_missing_twice_then_volati
             .is_some()
     );
     complete_context(&store, "detail-missing-twice", &reordered, Vec::new(), 400).await?;
-    // Then the old execution ancestry does not retain immortal resource ownership.
     assert!(
         store
             .projection_resource(&resource("detail")?)

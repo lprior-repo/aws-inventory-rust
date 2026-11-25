@@ -38,8 +38,6 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     }
 }
 
-// Pin: swf/service/2012-01-25/swf-2012-01-25.json. Registered type metadata only;
-// execution/history/poll bodies remain excluded. DEPRECATED domains may remain in use.
 fn swf(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut domains = arn(
         "domainInfos",
@@ -75,8 +73,6 @@ fn swf(service: &mut ServiceOverlay) -> Result<(), NameError> {
     })
 }
 
-// Pin: ssm/service/2014-11-06/ssm-2014-11-06.json. Owner=Self excludes public/shared
-// documents. Only identifiers/review metadata and configured target selectors are returned.
 fn ssm(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut documents = qualified(
         "DocumentIdentifiers",
@@ -114,9 +110,6 @@ fn ssm(service: &mut ServiceOverlay) -> Result<(), NameError> {
     put(service, "DescribeMaintenanceWindowTargets", targets)
 }
 
-// Pin: route53globalresolver/service/2022-09-27/route53globalresolver-2022-09-27.json.
-// All six operations explicitly require the us-east-2 control plane. Managed/shared lists
-// and access-token reads remain excluded. Association resourceArn is its DNS VIEW, not ID.
 fn globalresolver(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
         ("ListGlobalResolvers", "globalResolvers", Some("arn"), None),
@@ -164,8 +157,6 @@ fn globalresolver(service: &mut ServiceOverlay) -> Result<(), NameError> {
     })
 }
 
-// Pin: route53-recovery-control-config/service/2020-11-02/route53-recovery-control-config-2020-11-02.json.
-// Rule has two optional structure arms. Each arm is identified by its own nested ARN.
 fn safety_rules(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let arms = ["ASSERTION", "GATING"]
         .into_iter()

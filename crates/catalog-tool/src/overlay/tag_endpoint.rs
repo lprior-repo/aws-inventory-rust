@@ -3,7 +3,6 @@ use super::{
     Scope,
 };
 
-/// Reviewed parent sources for a single-owner endpoint. Bulk ARN joins are not represented.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TagEndpoint {
     pub parents: Vec<TagEndpointParent>,
@@ -32,7 +31,6 @@ pub enum TagEndpointRequest {
     },
 }
 
-/// Paths are relative to the response root, never to an invented tag resource.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TagEndpointSelector {
     Map {

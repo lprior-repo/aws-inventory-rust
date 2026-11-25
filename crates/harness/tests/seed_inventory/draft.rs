@@ -4,7 +4,6 @@ use std::{path::Path, process::Command};
 
 #[tokio::test(flavor = "current_thread")]
 async fn given_sns_model_when_cli_draft_is_run_then_create_topic_is_accepted() -> TestResult {
-    // Given an owned emulator and a draft directory outside checked-in seeds.
     let _permit = NATIVE_SLOT.acquire().await?;
     let native = NativeRuntime::start()?;
     let seeds = native.work().join("drafts");
@@ -20,10 +19,8 @@ async fn given_sns_model_when_cli_draft_is_run_then_create_topic_is_accepted() -
         "{}",
         String::from_utf8_lossy(&draft.stderr)
     );
-    // When the exact generated file is passed through the seed run command.
     let matrix = native.work().join("draft-matrix.tsv");
     let result = seed_run(&native, &seeds, &matrix)?;
-    // Then the generated topic step has an accepted matrix entry.
     assert_eq!(
         result.status.code(),
         Some(0),

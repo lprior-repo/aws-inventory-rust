@@ -272,7 +272,6 @@ fn describe_rule_disambiguates_by_event_bus() -> Result<(), Box<dyn std::error::
         .get(&overlay::OperationName::new("DescribeRule")?)
         .ok_or("DescribeRule operation not found")?;
 
-    // DescribeRule must bind Name from ListRules
     let name_binding = describe_rule
         .bind
         .get(&overlay::MemberPath::new("Name")?)
@@ -285,7 +284,6 @@ fn describe_rule_disambiguates_by_event_bus() -> Result<(), Box<dyn std::error::
         }
     );
 
-    // DescribeRule must bind EventBusName from ListRules to disambiguate across event buses
     let event_bus_binding = describe_rule
         .bind
         .get(&overlay::MemberPath::new("EventBusName")?)

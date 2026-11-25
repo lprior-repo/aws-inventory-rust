@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudcontrol/service/2021-09-30/cloudcontrol-2021-09-30.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

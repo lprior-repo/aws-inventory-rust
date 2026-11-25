@@ -4,7 +4,6 @@ use sha2::Digest;
 use std::collections::BTreeMap;
 
 pub(super) fn checkpoint() -> TestResult<Vec<u8>> {
-    // The exact same canonical native tuple is deliberately reused across scopes/sweeps.
     Ok(Record::encode(&Value::Map(BTreeMap::from([
         (
             Key::Field(FieldId::new(1)?),
@@ -38,7 +37,6 @@ pub(super) async fn claim_pair(
     sweep: &str,
     now: i64,
 ) -> TestResult<[WorkLease; 2]> {
-    // Claim both before committing: a nonfinal first page becomes immediately claimable again.
     let east = claim(store, sweep, now).await?;
     let west = claim(store, sweep, now).await?;
     assert_eq!(east.scope(), &support::scope("us-east-1")?);
@@ -306,8 +304,6 @@ async fn accept_same_cursor_in_later_sweep(
 #[tokio::test]
 async fn given_equal_native_cursors_in_two_regions_when_reopened_resumed_and_reused_then_only_same_scope_repetition_is_partial()
 -> TestResult {
-    // Given: both regions insert identical nonfinal native tuples in one database/sweep.
-    // Kills HISTORY-SWEEP-WIDE and HISTORY-GLOBAL, whose second insert would conflict.
     let (directory, store) = create_store().await?;
     seed_two_regions(&store, "history").await?;
     commit_shared_pages(
@@ -345,7 +341,6 @@ async fn given_equal_native_cursors_in_two_regions_when_reopened_resumed_and_reu
     pool.close().await;
     drop(store);
 
-    // When: resume both durable in-flight checkpoints, then repeat in only the east.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(&directory).await?;
     assert_eq!(stored_state(&pool).await?, before_restart);
@@ -357,7 +352,6 @@ async fn given_equal_native_cursors_in_two_regions_when_reopened_resumed_and_reu
     store.resume_sweep(&sweep, &account).await?;
     finish_resumed_regions(&store, &pool, &east, &west).await?;
 
-    // Then: the west completes normally and both scopes accept the digest in a later sweep.
     accept_same_cursor_in_later_sweep(&store, &pool, &east, &west).await?;
     let finished = stored_state(&pool).await?;
     pool.close().await;
@@ -365,7 +359,6 @@ async fn given_equal_native_cursors_in_two_regions_when_reopened_resumed_and_reu
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(&directory).await?;
     assert_eq!(stored_state(&pool).await?, finished);
-    // No active sweep to resume.
     store
         .resume_sweep(
             &SweepId::new("dummy".to_owned())?,

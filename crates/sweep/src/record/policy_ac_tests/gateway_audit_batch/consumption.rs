@@ -1,6 +1,5 @@
 use super::*;
 pub(super) async fn consume_family(family: &Family) -> TestResult {
-    // Given: two real parent rows and the embedded, pinned-model-compiled child plans.
     let excluded: &[&str] = match family.service {
         "api-gateway" => &[
             "GetIntegration",
@@ -138,7 +137,6 @@ pub(super) async fn consume_family(family: &Family) -> TestResult {
         })
         .await?;
     let mut seen = expected_roots;
-    // When: durable child requests and their continuation pages are encoded, decoded, projected and committed.
     for at in 1..=32 {
         let Some(lease) = store.claim(&sweep, at, 10_000).await? else {
             break;
@@ -251,7 +249,6 @@ pub(super) async fn consume_family(family: &Family) -> TestResult {
         drop(store);
         store = BinaryStore::open(&path).await?;
     }
-    // Then: both parents retain every distinct canonical child, including later pages and all seven Batch statuses.
     assert!(store.claim(&sweep, 33, 10_000).await?.is_none());
     let resources = store.projection_resources(None, 100).await?;
     assert_eq!(seen, expected_resources);

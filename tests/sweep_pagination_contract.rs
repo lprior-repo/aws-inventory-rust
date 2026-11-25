@@ -47,14 +47,9 @@ const KIND: &str = "AWS::ApiOnly::PaginationScalar";
 #[tokio::test]
 async fn sweep_persists_every_scalar_when_full_tuple_advances_and_optional_token_disappears()
 -> Result<()> {
-    // Given four immutable pages: name stays constant, identifier disappears,
-    // then type changes. Comparing only the first token would stop too early.
     let fixture = Fixture::create()?;
     let peer = Peer::start(fixture.root.path(), Pages::Advancing, None).await?;
-    // When the public CLI collects through its actual signed TLS transport.
     let output = fixture.collect(&peer, false).await?;
-    // Then both the invocation summary and independently reopened durable data
-    // contain all six scalars, with no replayed pages or lost scalar identities.
     assert_summary(
         &output,
         Summary {
@@ -82,13 +77,9 @@ async fn sweep_persists_every_scalar_when_full_tuple_advances_and_optional_token
 #[tokio::test]
 async fn sweep_reports_partial_and_stops_when_the_entire_continuation_tuple_repeats() -> Result<()>
 {
-    // Given a service repeating exactly the same name/type/identifier tuple.
     let fixture = Fixture::create()?;
     let peer = Peer::start(fixture.root.path(), Pages::Repeated, None).await?;
-    // When two real responses have been decoded and committed.
     let output = fixture.collect(&peer, false).await?;
-    // Then repetition is explicitly partial, not success or an endless replay;
-    // observations on the final received page remain durably visible.
     assert_summary(
         &output,
         Summary {
@@ -112,12 +103,9 @@ async fn sweep_reports_partial_and_stops_when_the_entire_continuation_tuple_repe
 #[tokio::test]
 async fn sweep_rejects_a_truncated_page_missing_a_required_tuple_component_atomically() -> Result<()>
 {
-    // Given IsTruncated=true with a name but no required type token.
     let fixture = Fixture::create()?;
     let peer = Peer::start(fixture.root.path(), Pages::MissingRequired, None).await?;
-    // When request assembly, transport and decoding feed that page to the runtime.
     let output = fixture.collect(&peer, false).await?;
-    // Then its scalar is not committed and the scope is failed, not complete.
     assert_summary(
         &output,
         Summary {
@@ -141,9 +129,6 @@ async fn sweep_rejects_a_truncated_page_missing_a_required_tuple_component_atomi
 #[tokio::test]
 async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committed_scalar_pages()
 -> Result<()> {
-    // Given a gate at page three, after two committed pages and after the
-    // optional identifier disappeared. Receiving this request proves the prior
-    // durable checkpoint was committed, without timing guesses or sleeps.
     let fixture = Fixture::create()?;
     let (arrived_tx, arrived_rx) = oneshot::channel();
     let (release_tx, release_rx) = oneshot::channel();
@@ -163,14 +148,10 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
     release_tx
         .send(())
         .map_err(|_| anyhow::anyhow!("checkpoint gate stopped before release"))?;
-    // Then a new process cannot reclaim the killed process's lease while it is
-    // still live (ES-02). The refused attempt must leave the durable queue intact.
     let refused = fixture.collect(&peer, true).await?;
     assert!(!refused.status.success());
     assert!(String::from_utf8_lossy(&refused.stderr).contains("sweep has live leases"));
     assert_queue(&fixture.database, 1, &[], 2).await?;
-    // The lease lapses only after its full budget (about an hour at concurrency 1).
-    // Lapse it directly; resume's live-lease predicate is `lease_until > now`.
     expire_leases(&fixture.database).await?;
     let output = fixture.collect(&peer, true).await?;
     assert_summary(

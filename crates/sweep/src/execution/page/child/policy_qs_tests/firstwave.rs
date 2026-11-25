@@ -95,7 +95,6 @@ async fn given_public_and_private_zones_when_one_dnssec_response_per_public_zone
                 let path=wire.uri().path();
                 assert!(matches!(path,"/2013-04-01/hostedzone/ZA/dnssec"|"/2013-04-01/hostedzone/ZB/dnssec"), "unexpected path: {path}");
                 assert!(zones.insert(path.to_owned()));
-                // AWS API response syntax uses KeySigningKey, not an invented top-level ARN.
                 Ok("<GetDNSSECResponse><Status><ServeSignature>SIGNING</ServeSignature></Status><KeySigningKeys><member><Name>same-key-name</Name><KmsArn>arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555</KmsArn><Status>ACTIVE</Status><PublicKey>PUBLIC-DNSSEC-MATERIAL</PublicKey><DSRecord>PUBLIC-DS</DSRecord><DNSKEYRecord>PUBLIC-DNSKEY</DNSKEYRecord></member></KeySigningKeys></GetDNSSECResponse>".as_bytes().to_vec())
             }
             _=>Err("unreviewed DNSSEC operation".into()),

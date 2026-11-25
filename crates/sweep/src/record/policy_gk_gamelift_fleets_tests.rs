@@ -25,7 +25,6 @@ const KIND: &str = "AWS::GameLift::ContainerFleet";
 #[tokio::test]
 async fn given_owned_container_fleets_when_empty_continuation_reopens_then_distinct_native_rows_and_graph_nodes_survive_without_detail_calls()
 -> TestResult {
-    // Given the actual pinned model, embedded production policy and canonical CFN kind map.
     let catalog = fixture::catalog()?;
     let mut scenario = scenario::Scenario::new(&catalog, "container-fleets-restart").await?;
     scenario.page(&catalog, 0, 0, fixture::response(0)?).await?;
@@ -33,7 +32,6 @@ async fn given_owned_container_fleets_when_empty_continuation_reopens_then_disti
         scenario.store.projection_resources(None, 10).await?.len(),
         0
     );
-    // When the BinaryStore itself is reopened, claim must recover the persisted empty-page cursor.
     drop(scenario.store);
     scenario.store = BinaryStore::open(&scenario.path).await?;
     scenario.page(&catalog, 1, 1, fixture::response(1)?).await?;
@@ -49,7 +47,6 @@ async fn given_owned_container_fleets_when_empty_continuation_reopens_then_disti
             .await?
             .is_none(),
     );
-    // Then query the real SQLite facets, not a second mock/projection of the response.
     let reader = scenario.reader().await?;
     let saved: Vec<(String, String, Vec<u8>)> =
         sqlx::query_as("SELECT kind,id,record FROM resource_facets ORDER BY id")
@@ -91,7 +88,6 @@ async fn given_owned_container_fleets_when_empty_continuation_reopens_then_disti
             .map(|id| (KIND, id.as_str()))
             .collect::<BTreeSet<_>>()
     );
-    // IAM/container-definition/log references are metadata, not independently owned observations.
     assert_eq!(
         scenario.store.projection_edges(None, 10).await?.edges.len(),
         0
@@ -102,10 +98,8 @@ async fn given_owned_container_fleets_when_empty_continuation_reopens_then_disti
 #[test]
 fn given_reviewed_container_metadata_when_embedded_plan_compiles_then_detail_content_credentials_and_mutations_remain_uncallable()
 -> TestResult {
-    // Given ListContainerFleets returns configuration references, never container definitions/log bytes.
     let catalog = fixture::catalog()?;
     assert_eq!(scenario::plan(&catalog)?.kind().as_str(), KIND);
-    // Then neither a public reference nor a nested configuration authorizes more API calls.
     for operation in fixture::FORBIDDEN {
         assert!(
             catalog.lookup("gamelift", operation).is_none(),
@@ -131,14 +125,12 @@ async fn given_actual_request_scope_when_a_fleet_arn_is_hostile_then_the_whole_p
             "arn:aws-cn:gamelift:us-east-1:123456789012:containerfleet/containerfleet-bad",
             "modeled ARN does not match trusted request scope",
         ),
-        // us-west-2 is the runner home region; only actual request region us-east-1 is authority.
         (
             "foreign-request-region",
             "arn:aws:gamelift:us-west-2:123456789012:containerfleet/containerfleet-bad",
             "modeled ARN does not match trusted request scope",
         ),
     ] {
-        // Given a genuine durable empty page followed by one good and one hostile native row.
         let scenario = scenario::Scenario::new(&catalog, ordinal).await?;
         scenario.page(&catalog, 0, 0, fixture::response(0)?).await?;
         let mut hostile = fixture::row("bad");
@@ -146,7 +138,6 @@ async fn given_actual_request_scope_when_a_fleet_arn_is_hostile_then_the_whole_p
             .as_object_mut()
             .ok_or("hostile row is not an object")?
             .insert("FleetArn".to_owned(), json!(arn));
-        // When the real row gate processes the mixed page, no partial observation can commit.
         let error = scenario
             .page(
                 &catalog,

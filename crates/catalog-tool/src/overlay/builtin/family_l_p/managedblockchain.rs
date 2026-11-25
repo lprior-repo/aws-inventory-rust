@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/managedblockchain/service/2018-09-24/managedblockchain-2018-09-24.json
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -77,7 +76,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of the accessors and their properties. Accessor objects are containers that have the information required for token based access to your Ethereum nodes.
     Resource {
         operation: "ListAccessors",
         items: "Accessors",
@@ -89,7 +87,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the networks in which the current Amazon Web Services account participates. Applies to Hyperledger Fabric and Ethereum.
     Resource {
         operation: "ListNetworks",
         items: "Networks",
@@ -101,7 +98,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of the members in a network and properties of their configurations. Applies only to Hyperledger Fabric.
     Resource {
         operation: "ListMembers",
         items: "Members",

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/servicediscovery/service/2017-03-14/servicediscovery-2017-03-14.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

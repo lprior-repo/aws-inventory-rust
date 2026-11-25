@@ -3,14 +3,12 @@ use super::*;
 #[test]
 fn given_documented_required_agreement_type_when_pinned_search_compiles_then_filter_is_model_shaped()
 -> TestResult {
-    // Given: filters is modeled optional, but its documentation requires AgreementType.
     let bytes = compile_pinned(
         "marketplace-agreement",
         "2020-03-01",
         &["SearchAgreements"],
         "AWS::ApiOnly::MarketplaceAgreement",
     )?;
-    // When: the checked overlay is encoded and loaded through the runtime catalog.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .lookup("marketplace-agreement", "SearchAgreements")
@@ -21,7 +19,6 @@ fn given_documented_required_agreement_type_when_pinned_search_compiles_then_fil
         .iter()
         .find(|binding| binding.path.as_ref() == [filters])
         .ok_or("agreement type filter absent")?;
-    // Then: lowercase modeled members retain the mandatory type without narrowing party/status.
     assert_eq!(binding.source, expected_filter(&runtime)?);
     Ok(())
 }

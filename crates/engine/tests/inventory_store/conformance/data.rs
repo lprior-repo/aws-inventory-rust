@@ -338,7 +338,6 @@ async fn given_vanishing_resource_when_two_complete_sweeps_miss_it_then_it_is_de
 >(
     store: &S,
 ) -> TestResult {
-    // First sweep: observe resource.
     seed(store, work("s1", "us-east-1")?).await?;
     let sweep1 = SweepId::new("s1".to_owned())?;
     let lease1 = store
@@ -355,7 +354,6 @@ async fn given_vanishing_resource_when_two_complete_sweeps_miss_it_then_it_is_de
     let result1 = store.commit_page(commit1).await?;
     assert_eq!(result1.stats.resources_inserted, 2);
 
-    // Both resources should be in the projection after draining.
     let gone_key = resource("gone")?;
     let keep_key = resource("keep")?;
     let first_drain = store.drain_projection(100).await?;
@@ -368,7 +366,6 @@ async fn given_vanishing_resource_when_two_complete_sweeps_miss_it_then_it_is_de
     assert!(store.projection_resource(&gone_key).await?.is_some());
     assert!(store.projection_resource(&keep_key).await?.is_some());
 
-    // Second sweep: complete, misses the resource (only "keep" observed).
     seed(store, work("s2", "us-east-1")?).await?;
     let sweep2 = SweepId::new("s2".to_owned())?;
     let lease2 = store
@@ -378,10 +375,8 @@ async fn given_vanishing_resource_when_two_complete_sweeps_miss_it_then_it_is_de
     let commit2 = page(lease2, vec![observation("keep", "beta")?], true, None, 201);
     let result2 = store.commit_page(commit2).await?;
     assert_eq!(result2.stats.resources_deleted, 0);
-    // After first complete miss, resource is still stored.
     assert!(store.projection_resource(&gone_key).await?.is_some());
 
-    // Third sweep: complete, misses the resource again.
     seed(store, work("s3", "us-east-1")?).await?;
     let sweep3 = SweepId::new("s3".to_owned())?;
     let lease3 = store
@@ -392,11 +387,9 @@ async fn given_vanishing_resource_when_two_complete_sweeps_miss_it_then_it_is_de
     let result3 = store.commit_page(commit3).await?;
     assert_eq!(result3.stats.resources_deleted, 1);
 
-    // After two complete misses, the resource should be gone.
     assert!(store.projection_resource(&gone_key).await?.is_none());
     assert!(store.projection_resource(&keep_key).await?.is_some());
 
-    // The deletion outbox should carry an entry for the removed resource.
     let second_drain = store.drain_projection(100).await?;
     let mut found_deletion = false;
     for pending in second_drain {
@@ -421,7 +414,6 @@ async fn given_deleted_resource_with_edge_when_two_complete_sweeps_miss_it_then_
 >(
     store: &S,
 ) -> TestResult {
-    // Sweep 1: observe "gone" with unresolved reference to "keep".
     seed_source_with_target_name(store, "gone", "keep").await?;
 
     let gone_key = resource("gone")?;
@@ -434,8 +426,6 @@ async fn given_deleted_resource_with_edge_when_two_complete_sweeps_miss_it_then_
             .is_empty()
     );
 
-    // Sweep 2: observe "keep" and "gone" again. The reference is now resolved
-    // and an edge is created.
     observe_source_and_target(store, "s2", "gone", "keep").await?;
     assert!(
         !store
@@ -445,20 +435,17 @@ async fn given_deleted_resource_with_edge_when_two_complete_sweeps_miss_it_then_
             .is_empty()
     );
 
-    // Sweep 3: complete, misses "gone".
     let lease3 = seed_claim(store, "s3", 300).await?;
     let commit3 = page(lease3, vec![observation("keep", "keep")?], true, None, 301);
     let result3 = store.commit_page(commit3).await?;
     assert_eq!(result3.stats.resources_deleted, 0);
     assert!(store.projection_resource(&gone_key).await?.is_some());
 
-    // Sweep 4: complete, misses "gone" again.
     let lease4 = seed_claim(store, "s4", 400).await?;
     let commit4 = page(lease4, vec![observation("keep", "keep")?], true, None, 401);
     let result4 = store.commit_page(commit4).await?;
     assert_eq!(result4.stats.resources_deleted, 1);
 
-    // Drain the projection outbox: it must carry the deletion for "gone".
     let drain = store.drain_projection(100).await?;
     let mut gone_deleted = false;
     for pending in drain {
@@ -476,7 +463,6 @@ async fn given_deleted_resource_with_edge_when_two_complete_sweeps_miss_it_then_
         "outbox must carry the deletion event for the removed resource"
     );
 
-    // After two complete misses, the resource is gone and its edges are cleared.
     assert!(!has(store, "gone").await?);
     assert!(store.projection_resource(&gone_key).await?.is_none());
     assert!(

@@ -514,7 +514,8 @@
   Both size guards pass after integration (778 Rust files); the isolated
   benchmark's locked release run passes both fixtures and its cross-codec
   field assertions. Original result tables remain unchanged.
-- M0.7a: `inventory-engine` and `cmdb-view` deny `missing_docs`. 378 public
+- M0.7a: `inventory-engine` and `cmdb-view` public items are documented; no
+  `missing_docs` lint is configured for either crate. 378 public
   items are documented from their bodies, 22 are narrowed to crate visibility,
   and unused public functions are deleted (`Store::visit_edges`,
   `CoverageState::is_terminal_success`, three `LodLimits` getters and two
@@ -522,7 +523,8 @@
   stated behavior the code does not have; all were corrected. Rust lines: 727
   added, 207 deleted.
 - M0.7b (core/harness/benchmark half): documented the remaining public core
-  types and errors; core, harness and benchmark deny `missing_docs`. Legacy
+  types and errors in core, harness and benchmark; no `missing_docs` lint is
+  configured for them. Legacy
   JSON types moved to a private module without changing their root API.
   Review corrected six misleading or overexposed declarations. Core's 193
   tests, all-target Clippy and warnings-denied rustdoc for these crates pass.

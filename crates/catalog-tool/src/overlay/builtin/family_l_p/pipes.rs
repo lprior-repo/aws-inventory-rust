@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pipes/service/2015-10-07/pipes-2015-10-07.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -36,20 +35,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Get the pipes associated with this account. For more information about pipes, see Amazon EventBridge Pipes in the Amazon EventBridge User Guide.
-    Resource {
-        operation: "ListPipes",
-        items: "Pipes",
-        id: Id::Arn("Arn"),
-        scope: Scope::Region,
-        tokens: Some(("NextToken", "NextToken")),
-        query: &["Arn", "Name", "DesiredState", "CurrentState"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListPipes",
+    items: "Pipes",
+    id: Id::Arn("Arn"),
+    scope: Scope::Region,
+    tokens: Some(("NextToken", "NextToken")),
+    query: &["Arn", "Name", "DesiredState", "CurrentState"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("pipes", GROUPS, RESOURCES)

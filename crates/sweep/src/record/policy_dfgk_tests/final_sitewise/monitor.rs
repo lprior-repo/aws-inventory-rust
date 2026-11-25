@@ -15,14 +15,12 @@ const POLICY: &str = "66666666-6666-4666-8666-666666666666";
 #[tokio::test]
 async fn given_two_portals_when_empty_child_pages_resume_then_monitor_resources_and_guarded_access_policies_survive_sqlite_reopen()
 -> TestResult {
-    // Given pinned embedded policies and a real durable child queue, not synthetic plans.
     let catalog = catalog()?;
     let mut scenario = Scenario::new(&catalog, "sitewise-monitor-lineage").await?;
     scenario
         .seed(plan(&catalog, "iotsitewise", "ListPortals")?)
         .await?;
     let mut requests = BTreeSet::new();
-    // When each first page is empty with a cursor, parent-bound work must still resume.
     for _ in 0..24 {
         let Some(lease) = scenario.store.claim(&scenario.sweep, 1001, 10_000).await? else {
             break;
@@ -112,8 +110,6 @@ async fn given_two_portals_when_empty_child_pages_resume_then_monitor_resources_
             );
         }
     }
-    // Then every page/parent request ran, both identically named dashboards remain queryable,
-    // and the real relationship resolver links each child to its canonical owner.
     assert_eq!(requests.len(), 18);
     assert!(
         scenario

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudtrail/service/2013-11-01/cloudtrail-2013-11-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -82,7 +80,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is QueryId, QueryString, QueryStatus, QueryStatistics, ErrorMessage, DeliveryS3Uri, DeliveryStatus, Prompt, EventDataStoreOwnerAccountId; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
             ),
         ),
-        // Model: Retrieves settings for one or more trails associated with the current Region for your account.
         (
             "DescribeTrails",
             OperationOverlay {
@@ -116,7 +113,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires EventDataStores, Prompt. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
             ),
         ),
-        // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
         (
             "GetChannel",
             OperationOverlay {
@@ -151,7 +147,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is TrailARN, EventDataStoreArn, MaxEventSize, ContextKeySelectors, AggregationConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the current event configuration settings for the specified event data store or trail. The response includes maximum event size configuration, the context key selectors configured for the event data store, and any…",
             ),
         ),
-        // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
         (
             "GetEventDataStore",
             OperationOverlay {
@@ -209,7 +204,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the JSON text of the resource-based policy document attached to the CloudTrail event data store, dashboard, or channel.",
             ),
         ),
-        // Model: Returns settings information for a specified trail.
         (
             "GetTrail",
             OperationOverlay {
@@ -238,7 +232,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a JSON-formatted list of information about the specified trail. Fields include information on delivery errors, Amazon SNS and Amazon S3 errors, and start and stop logging times for each trail. This operation returns trail…",
             ),
         ),
-        // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
         (
             "ListChannels",
             OperationOverlay {
@@ -251,7 +244,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
         (
             "ListDashboards",
             OperationOverlay {
@@ -267,7 +259,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
         (
             "ListEventDataStores",
             OperationOverlay {
@@ -286,7 +277,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ImportId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
             ),
         ),
-        // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
         (
             "ListImports",
             OperationOverlay {

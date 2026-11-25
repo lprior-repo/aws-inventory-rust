@@ -1,25 +1,19 @@
-// Pinned source: .local/aws-models/models/application-auto-scaling/service/2016-02-06/application-auto-scaling-2016-02-06.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Describes scalable targets for a specific service namespace.
         ("DescribeScalableTargets", OperationOverlay {
             queryable: vec![path("ServiceNamespace")?, path("ScalableDimension")?],
             ..read("ScalableTargets", Identity::Arn(path("ScalableTargetARN")?), Scope::Region, token("NextToken", "NextToken")?)?
         }),
-        // Model: Describes scaling activities for a specific service namespace.
         ("DescribeScalingActivities", OperationOverlay {
             queryable: vec![path("ServiceNamespace")?],
             ..read("ScalingActivities", Identity::Correlated(path("ResourceId")?, path("ScalableDimension")?), Scope::Region, token("NextToken", "NextToken")?)?
         }),
-        // Model: Describes scaling policies for a specific service namespace.
         ("DescribeScalingPolicies", OperationOverlay {
             queryable: vec![path("ServiceNamespace")?],
             ..read("ScalingPolicies", Identity::Arn(path("PolicyARN")?), Scope::Region, token("NextToken", "NextToken")?)?
         }),
-        // Model: Describes scheduled actions for a specific service namespace.
         ("DescribeScheduledActions", OperationOverlay {
             queryable: vec![path("ServiceNamespace")?],
             ..read("ScheduledActions", Identity::Arn(path("ScheduledActionARN")?), Scope::Region, token("NextToken", "NextToken")?)?

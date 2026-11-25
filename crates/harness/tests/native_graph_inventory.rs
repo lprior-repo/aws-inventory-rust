@@ -48,7 +48,6 @@ const REGION: &str = "us-east-1";
 #[tokio::test(flavor = "current_thread")]
 async fn given_shared17_and_tags_when_native_pipeline_runs_then_exact_sql_graph_and_view_sets_survive_removal_and_replay()
 -> TestResult {
-    // Given: a fresh owned emulator and independently checked typed seed recipes.
     let _permit = runtime::NATIVE_SLOT.acquire().await?;
     let prepared_graph = native::PreparedGraph::install()?;
     let emulator = NativeRuntime::start()?;
@@ -69,8 +68,6 @@ async fn given_shared17_and_tags_when_native_pipeline_runs_then_exact_sql_graph_
     let mut graph = prepared_graph.start(&emulator).await?;
     let database = emulator.work().join("native-inventory.sqlite");
 
-    // When: the actual collector writes SQLite and the public outbox consumer
-    // delivers it to the pinned native FalkorDB module (not an echoed client).
     safe_fields::assert_oracle_rejects_mutations()?;
     let started = tags::now_ms()?;
     native::collect(&emulator, &database, "initial").await?;
@@ -88,14 +85,10 @@ async fn given_shared17_and_tags_when_native_pipeline_runs_then_exact_sql_graph_
     )
     .await?;
 
-    // Then: all full-key resource/edge sets and scoped tag associations agree
-    // with the seed oracle, including isolated resources and provenance.
     compare::all(&database, &store, &graph, &expected).await?;
     tags::assert_all(&database, &graph, &expected, &tagged, true).await?;
     tags::replay(&store, &graph, &database, &expected, &tagged, true).await?;
 
-    // When: the real API removes one resource's complete tag snapshot and
-    // replaces another's value, a second collector sweep must remove stale links.
     tags::replace_and_remove(&emulator, &tagged).await?;
     let started = tags::now_ms()?;
     native::collect(&emulator, &database, "updated").await?;

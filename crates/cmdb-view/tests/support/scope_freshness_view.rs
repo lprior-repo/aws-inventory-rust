@@ -1,5 +1,3 @@
-//! Reads the `scope_freshness` SQL view and checks its ages against the SQLite clock.
-
 use crate::script::{Expected, TestResult};
 use sqlx::Row;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions, SqliteRow};
@@ -25,7 +23,6 @@ pub struct ViewRow {
     pub complete_age_ms: Option<i64>,
 }
 
-/// Reads the view with the SQLite clock bracketed around the query.
 pub async fn view_rows(path: &Path) -> TestResult<(Vec<ViewRow>, i64, i64)> {
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -76,7 +73,6 @@ pub fn assert_view_row(row: &ViewRow, want: &Expected) {
     assert_eq!(row.last_complete_at, want.last_complete_at_ms);
 }
 
-/// The view's ages come from the SQLite clock read during the query.
 pub fn assert_view_ages(row: &ViewRow, before: i64, after: i64) -> TestResult {
     let lower = before.saturating_sub(row.observed_at);
     let upper = after.saturating_sub(row.observed_at);

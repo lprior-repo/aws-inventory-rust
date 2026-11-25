@@ -23,7 +23,6 @@ pub(super) async fn read_detail(
         .ok_or(ViewError::StoredRow)
 }
 
-/// Batched lookup of table names for multiple kinds in one query.
 pub(super) async fn tables_for_kinds(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     kinds: &[&str],
@@ -60,8 +59,6 @@ pub(super) async fn tables_for_kinds(
     Ok(tables)
 }
 
-/// Batched record length query for multiple rows of the same kind.
-/// Takes a table name and a list of (account, region, id) tuples.
 pub(super) async fn record_byte_lengths(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     table: &SqlName,

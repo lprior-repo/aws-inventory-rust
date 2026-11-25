@@ -218,7 +218,6 @@ pub(super) fn apply(mut services: Vec<ServiceOverlay>) -> Result<Vec<ServiceOver
                 };
             }
             if spec.service == "wafv2" {
-                // Tag APIs lack a Scope input, but must retain the owner's regional/CloudFront route.
                 plan.branches = super::endpoint_plans::branches(false)?;
             }
             service

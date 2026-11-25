@@ -420,7 +420,6 @@ fn string_template(
         .take(prefix)
         .map(|c| if allowed.contains(&c) { c } else { filler })
         .collect::<String>();
-    // Replacing one character by a u16 repeat number can add four characters.
     if size.saturating_add(4) <= maximum
         && (b'0'..=b'9').all(|digit| allowed.contains(&char::from(digit)))
     {

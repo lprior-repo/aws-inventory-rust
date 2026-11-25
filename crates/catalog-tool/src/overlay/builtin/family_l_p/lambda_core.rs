@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lambda-core/service/2026-04-30/lambda-core-2026-04-30.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -48,20 +47,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Returns a paginated list of network connectors in your account for the current Region. You can optionally filter results by connector state. Use the Marker parameter from a previou
-    Resource {
-        operation: "ListNetworkConnectors",
-        items: "NetworkConnectors",
-        id: Id::Arn("Arn"),
-        scope: Scope::Region,
-        tokens: Some(("Marker", "NextMarker")),
-        query: &["Arn", "Name", "Id", "Type", "State", "LatestVersionArn"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListNetworkConnectors",
+    items: "NetworkConnectors",
+    id: Id::Arn("Arn"),
+    scope: Scope::Region,
+    tokens: Some(("Marker", "NextMarker")),
+    query: &["Arn", "Name", "Id", "Type", "State", "LatestVersionArn"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("lambda-core", GROUPS, RESOURCES)

@@ -1,5 +1,3 @@
-//! Expected delivery model for one finalized scan, read from its SQLite snapshot.
-
 use serde_json::{Value, json};
 use sqlx::Row;
 

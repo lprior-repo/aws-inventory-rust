@@ -20,9 +20,6 @@ fn operation<'a>(
 
 #[test]
 fn public_checker_accepts_the_real_ecr_parent_and_composite_image_plan() -> TestResult {
-    // Given ECR's DescribeImages returns a list of ImageIds where each item carries
-    // an ImageManifest that is not the resource itself but a reference to a manifest
-    // in the registry.
     let policies = overlay::embedded()?;
     let plan = operation(&policies, "ecr", "DescribeImages")?;
     assert_eq!(plan.class, Some(OverlayClass::Expand));
@@ -77,7 +74,6 @@ fn databrew_identity_uses_required_unique_names_not_optional_arns() -> TestResul
 #[test]
 fn selected_scalar_helpers_preserve_strict_request_domains() -> TestResult {
     use super::support;
-    // Given a scalar identity and a parent-selected scalar binding.
     let entry = support::inventory(
         "ListChildren",
         "names",
@@ -85,7 +81,6 @@ fn selected_scalar_helpers_preserve_strict_request_domains() -> TestResult {
         Paginator::None,
     )?;
     let bound = support::bound(entry.clone(), &[("parent", "ListParents", "$")])?;
-    // Then only the selected side accepts the root marker.
     assert_eq!(
         bound.1.bind.get(&MemberPath::new("parent")?),
         Some(&Binding::From {

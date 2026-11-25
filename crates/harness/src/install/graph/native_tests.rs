@@ -239,7 +239,6 @@ fn given_owner_without_execute_when_reusing_cache_then_other_class_bits_do_not_a
         .try_for_each(|mode| -> TestResult {
             fs::set_permissions(&layout.server, fs::Permissions::from_mode(mode))?;
             if fs::metadata(&layout.server)?.uid() == 0 {
-                // Root's effective execution permission includes any execute bit.
                 assert_eq!(
                     install(&layout.root, DEFAULT_JOBS)?,
                     serde_json::from_slice::<Value>(&receipt_before)?,

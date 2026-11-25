@@ -59,8 +59,6 @@ pub(in crate::inventory) async fn initialize(
     Ok(())
 }
 
-/// Called only by the atomic pre-v3 migration. Archive complete typed row images
-/// before disabling them; neither a matching catalog nor a tuple recertifies them.
 pub(in crate::inventory) async fn invalidate_prior_authority(
     tx: &mut Transaction<'_, Sqlite>,
 ) -> Result<(), StoreError> {

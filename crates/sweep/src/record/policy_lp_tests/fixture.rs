@@ -84,7 +84,6 @@ pub(crate) fn compiled_with_operation(
 }
 
 fn endpoint(service: &str) -> TestResult<endpoints::VerifiedEndpoint> {
-    // Only transport is a local fixture: all policy, model, decoder and identity code is production.
     let url = format!("https://{service}.test");
     let properties =
         json!({"authSchemes":[{"name":"sigv4","signingName":service,"signingRegion":"us-east-1"}]});

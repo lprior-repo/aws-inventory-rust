@@ -33,7 +33,6 @@ struct Run {
     success: bool,
 }
 
-/// Owns the private stack and each fresh cold/warm database; false means a collector failed.
 pub(crate) async fn run(mut args: SweepArgs) -> Result<bool, String> {
     args.collector = args.collector.canonicalize().map_err(text)?;
     args.catalog = args.catalog.canonicalize().map_err(text)?;

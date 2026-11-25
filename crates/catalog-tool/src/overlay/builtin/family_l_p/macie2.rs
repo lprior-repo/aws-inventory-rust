@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/macie2/service/2020-01-01/macie2-2020-01-01.json
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -141,7 +140,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves a subset of information about all the allow lists for an account.
     Resource {
         operation: "ListAllowLists",
         items: "allowLists",
@@ -153,7 +151,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a subset of information about one or more classification jobs.
     Resource {
         operation: "ListClassificationJobs",
         items: "items",
@@ -165,7 +162,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a subset of information about the custom data identifiers for an account.
     Resource {
         operation: "ListCustomDataIdentifiers",
         items: "items",
@@ -177,7 +173,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves a subset of information about all the findings filters for an account.
     Resource {
         operation: "ListFindingsFilters",
         items: "findingsFilterListItems",

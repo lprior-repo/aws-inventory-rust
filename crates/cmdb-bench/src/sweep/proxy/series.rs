@@ -1,5 +1,3 @@
-//! Arithmetic on recorded cumulative proxy response/throttle samples.
-//! Cutoffs interpolate counts downwards; admitted rates are per second and shares ppm.
 pub(super) type Sample = (u64, u64, u64);
 fn validate(samples: &[Sample]) -> Result<(), String> {
     if samples.first().is_some_and(|sample| sample.0 != 0) {

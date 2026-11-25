@@ -16,7 +16,6 @@ fn maximum_edges() -> Result<(NodeKey, Vec<EdgeRow>), Box<dyn std::error::Error>
 
 #[tokio::test]
 async fn maximum_width_2000_edge_replacement_emits_only_bounded_queries() -> TestResult {
-    // Given: 2,000 edges with maximum-length labels and maximally escaped provenance.
     let (key, edges) = maximum_edges()?;
     let error = cypher::replace_edges(&key, &edges)
         .err()
@@ -35,7 +34,6 @@ async fn maximum_width_2000_edge_replacement_emits_only_bounded_queries() -> Tes
     })?;
     let graph = FalkorDb::connect(&peer.endpoint, "maximum_width")?;
     graph.claim_projection(1).await?;
-    // When: the adapter sends the complete replacement through its fenced connection.
     graph.replace_edges(&key, &edges).await?;
     drop(graph);
     let queries = peer
@@ -44,7 +42,6 @@ async fn maximum_width_2000_edge_replacement_emits_only_bounded_queries() -> Tes
         .into_iter()
         .filter(|query| !matches!(query.as_str(), cypher::RESOURCE_INDEX | cypher::TAG_INDEX))
         .collect::<Vec<_>>();
-    // Then: one clear and two complete append batches each fit the encoded byte bound.
     assert_eq!(queries.len(), 3);
     assert_eq!(queries.first(), Some(&cypher::replace_edges(&key, &[])?));
     assert_eq!(
@@ -69,7 +66,6 @@ async fn maximum_width_2000_edge_replacement_emits_only_bounded_queries() -> Tes
 
 #[tokio::test]
 async fn a_foreign_edge_in_a_large_replacement_is_rejected_before_the_clear() -> TestResult {
-    // Given: the last edge in a maximum-size batch is not incident to the owner.
     let (key, mut edges) = maximum_edges()?;
     let mut foreign = key.clone();
     foreign.id = ResourceId::parse("foreign")?;
@@ -77,13 +73,11 @@ async fn a_foreign_edge_in_a_large_replacement_is_rejected_before_the_clear() ->
     edge.from = foreign.clone();
     edge.to = foreign;
     let graph = FalkorDb::connect("redis://127.0.0.1:1/", "no_io")?;
-    // When: replacement is requested without any usable connection.
     let error = graph
         .replace_edges(&key, &edges)
         .await
         .err()
         .ok_or("expected an unrelated edge")?;
-    // Then: validation fails before even the clear can touch the backend.
     assert_eq!(
         error.to_string(),
         "replacement edge is not incident to its owner"
@@ -94,7 +88,6 @@ async fn a_foreign_edge_in_a_large_replacement_is_rejected_before_the_clear() ->
 #[tokio::test]
 async fn mixed_relation_replacement_preserves_labels_and_order_without_clause_chains() -> TestResult
 {
-    // Given: a short incident set with nonconsecutive repeated relation labels.
     let key = owner()?;
     let edges = ["FIRST", "SECOND", "FIRST"]
         .into_iter()
@@ -118,10 +111,8 @@ async fn mixed_relation_replacement_preserves_labels_and_order_without_clause_ch
     })?;
     let graph = FalkorDb::connect(&peer.endpoint, "mixed-relations")?;
     graph.claim_projection(1).await?;
-    // When: the adapter compiles the mixed-label set, rather than rejecting it.
     graph.replace_edges(&key, &edges).await?;
     drop(graph);
-    // Then: each label retains its position and every statement has fixed depth.
     let expected = [
         cypher::RESOURCE_INDEX.to_owned(),
         cypher::TAG_INDEX.to_owned(),

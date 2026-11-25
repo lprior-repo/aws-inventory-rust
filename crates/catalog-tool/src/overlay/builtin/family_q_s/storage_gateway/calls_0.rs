@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/storage-gateway/service/2013-06-30/storage-gateway-2013-06-30.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

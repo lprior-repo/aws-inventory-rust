@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/opensearch/service/2021-01-01/opensearch-2021-01-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -245,7 +244,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns the names of all Amazon OpenSearch Service domains owned by the current user in the active Region.
     Resource {
         operation: "ListDomainNames",
         items: "DomainNames",
@@ -257,7 +255,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all OpenSearch applications under your account.
     Resource {
         operation: "ListApplications",
         items: "ApplicationSummaries",
@@ -269,7 +266,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves all Amazon OpenSearch Service-managed VPC endpoints in the current Amazon Web Services account and Region.
     Resource {
         operation: "ListVpcEndpoints",
         items: "VpcEndpointSummaryList",
@@ -281,7 +277,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists an inventory of all the direct query data sources that you have configured within Amazon OpenSearch Service.
     Resource {
         operation: "ListDirectQueryDataSources",
         items: "DirectQueryDataSources",

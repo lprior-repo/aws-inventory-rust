@@ -35,8 +35,6 @@ pub(super) fn validate(bindings: &[FixedBinding], request: &[u8]) -> Result<(), 
     if bindings.is_empty() {
         return Ok(());
     }
-    // Empty request bytes denote a legacy empty Record; treat as empty map so
-    // the failure is unreviewed (missing fixed) rather than Missing at offset 0.
     let root = if request.is_empty() {
         MapRef::from_bytes_bounded(&[0xA0])?
     } else {
@@ -79,8 +77,6 @@ fn fixed_value(source: &BindingSource) -> Result<Option<BindingValue>, StoreErro
     }
 }
 
-// Fixed trees are already depth/node bounded by the catalog decoder. Sort object
-// keys once here so checking a leased request walks each bounded tree only once.
 fn normalize(value: &mut BindingValue) {
     match value {
         BindingValue::List(values) => values.iter_mut().for_each(normalize),

@@ -1,5 +1,3 @@
-//! Delivery verification tests.
-
 use std::fs::File;
 use std::io::Write;
 
@@ -59,7 +57,6 @@ fn create_receipt_file(
         }
     });
 
-    // Write delivery.json
     let dir = output.join(format!("delivery-{}", scan_id));
     std::fs::create_dir_all(&dir)?;
     let path = dir.join("delivery.json");
@@ -67,7 +64,6 @@ fn create_receipt_file(
     let mut file = File::create(path)?;
     file.write_all(content.as_bytes())?;
 
-    // Write falkor plan
     let plan_path = output.join("falkor-plan.json");
     let plan_content = serde_json::to_string(&json!({
         "graph": "test-graph",
@@ -414,11 +410,9 @@ fn test_verify_push_first_partial_with_replayed_batches() -> Result<(), Box<dyn 
         "counts": { "resources": 1, "edges": 1 }
     });
 
-    // First delivery must apply all batches
     let result = verify_delivery::verify_push(&receipt, &model, "test-graph", false);
     assert!(result.is_err());
 
-    // Resume delivery with complete status and correct batch counts passes
     let receipt = json!({
         "outputs": {
             "falkor": {
@@ -468,7 +462,6 @@ fn test_verify_push_first_partial_without_replayed_batches()
         "counts": { "resources": 1, "edges": 1 }
     });
 
-    // First delivery: partial with no applied_batches is a failure
     let result = verify_delivery::verify_push(&receipt, &model, "test-graph", false);
     assert!(result.is_err());
     Ok(())
@@ -529,7 +522,6 @@ fn test_verify_push_resume_incomplete() -> Result<(), Box<dyn std::error::Error>
         "counts": { "resources": 1, "edges": 1 }
     });
 
-    // Resume delivery must be complete
     let result = verify_delivery::verify_push(&receipt, &model, "test-graph", true);
     assert!(result.is_err());
     Ok(())
@@ -571,13 +563,11 @@ fn test_strict_json_invalid() -> Result<(), Box<dyn std::error::Error>> {
 async fn test_build_expected() -> Result<(), Box<dyn std::error::Error>> {
     let temp = create_temp_dir("verify-build-expected-")?;
     let db_path = temp.path().join("test.sqlite");
-    // Create empty database file
     std::fs::write(&db_path, "")?;
     let url = format!("file:{}", db_path.display());
 
     let pool = sqlx::SqlitePool::connect(&url).await?;
 
-    // Create schema
     sqlx::query(
         "CREATE TABLE scans(scan_id TEXT, status TEXT, started_at INTEGER, finished_at INTEGER)",
     )
@@ -600,7 +590,6 @@ async fn test_build_expected() -> Result<(), Box<dyn std::error::Error>> {
     .execute(&pool)
     .await?;
 
-    // Seed data
     sqlx::query("INSERT INTO scans VALUES (?, 'complete', 100, 200)")
         .bind(SCAN)
         .execute(&pool)
@@ -633,10 +622,8 @@ async fn test_build_expected() -> Result<(), Box<dyn std::error::Error>> {
     .execute(&pool)
     .await?;
 
-    // Build expected model
     let model = verify_delivery::build_expected(&pool, SCAN).await?;
 
-    // Verify counts
     assert_eq!(
         model.get("counts").and_then(|c| c.get("resources")),
         Some(&json!(1))
@@ -662,14 +649,12 @@ async fn test_build_expected() -> Result<(), Box<dyn std::error::Error>> {
         Some(&json!("complete"))
     );
 
-    // Verify node rows contain the resource
     let node_rows = model
         .get("node_rows")
         .and_then(serde_json::Value::as_array)
         .ok_or("missing node_rows")?;
     assert_eq!(node_rows.len(), 2);
 
-    // Verify edge rows
     let edge_rows = model
         .get("edge_rows")
         .and_then(serde_json::Value::as_array)
@@ -685,13 +670,11 @@ async fn test_build_expected() -> Result<(), Box<dyn std::error::Error>> {
 async fn test_build_expected_partial_scan() -> Result<(), Box<dyn std::error::Error>> {
     let temp = create_temp_dir("verify-build-partial-")?;
     let db_path = temp.path().join("test.sqlite");
-    // Create empty database file
     std::fs::write(&db_path, "")?;
     let url = format!("file:{}", db_path.display());
 
     let pool = sqlx::SqlitePool::connect(&url).await?;
 
-    // Create schema
     sqlx::query(
         "CREATE TABLE scans(scan_id TEXT, status TEXT, started_at INTEGER, finished_at INTEGER)",
     )
@@ -714,7 +697,6 @@ async fn test_build_expected_partial_scan() -> Result<(), Box<dyn std::error::Er
     .execute(&pool)
     .await?;
 
-    // Seed data with failed scope
     sqlx::query("INSERT INTO scans VALUES (?, 'partial', 100, 150)")
         .bind(SCAN)
         .execute(&pool)
@@ -756,7 +738,6 @@ async fn test_build_expected_partial_scan() -> Result<(), Box<dyn std::error::Er
 async fn test_build_expected_invalid_scan_status() -> Result<(), Box<dyn std::error::Error>> {
     let temp = create_temp_dir("verify-build-invalid-")?;
     let db_path = temp.path().join("test.sqlite");
-    // Create empty database file
     std::fs::write(&db_path, "")?;
     let url = format!("file:{}", db_path.display());
 

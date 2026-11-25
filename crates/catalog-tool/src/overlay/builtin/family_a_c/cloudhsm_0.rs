@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cloudhsm/service/2014-05-30/cloudhsm-2014-05-30.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -46,7 +44,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ClientArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This is documentation for AWS CloudHSM Classic . For more information, see AWS CloudHSM Classic FAQs , the AWS CloudHSM Classic User Guide , and the AWS CloudHSM Classic API Reference . For information about the current version…",
             ),
         ),
-        // Model: This is documentation for AWS CloudHSM Classic . For more information, see AWS CloudHSM Classic FAQs , the AWS CloudHSM Classic User Guide , and the AWS CloudHSM Classic API Reference . For…
         (
             "DescribeHapg",
             OperationOverlay {
@@ -69,7 +66,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: This is documentation for AWS CloudHSM Classic . For more information, see AWS CloudHSM Classic FAQs , the AWS CloudHSM Classic User Guide , and the AWS CloudHSM Classic API Reference . For…
         (
             "DescribeHsm",
             OperationOverlay {
@@ -92,8 +88,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // The pinned DescribeLunaClient response includes the complete Certificate body.
-        // Safe ListLunaClients ARN summaries do not authorize reading that content.
         ("DescribeLunaClient", denied(DenyReason::Content)),
         (
             "GetConfig",
@@ -107,7 +101,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is AZList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This is documentation for AWS CloudHSM Classic . For more information, see AWS CloudHSM Classic FAQs , the AWS CloudHSM Classic User Guide , and the AWS CloudHSM Classic API Reference . For information about the current version…",
             ),
         ),
-        // Model: This is documentation for AWS CloudHSM Classic . For more information, see AWS CloudHSM Classic FAQs , the AWS CloudHSM Classic User Guide , and the AWS CloudHSM Classic API Reference . For…
         (
             "ListHapgs",
             OperationOverlay {
@@ -120,7 +113,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: This is documentation for AWS CloudHSM Classic . For more information, see AWS CloudHSM Classic FAQs , the AWS CloudHSM Classic User Guide , and the AWS CloudHSM Classic API Reference . For…
         (
             "ListHsms",
             OperationOverlay {
@@ -138,7 +130,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: This is documentation for AWS CloudHSM Classic . For more information, see AWS CloudHSM Classic FAQs , the AWS CloudHSM Classic User Guide , and the AWS CloudHSM Classic API Reference . For…
         (
             "ListLunaClients",
             OperationOverlay {

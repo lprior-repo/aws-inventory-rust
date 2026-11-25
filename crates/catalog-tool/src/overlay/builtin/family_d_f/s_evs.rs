@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/evs/service/2023-07-27/evs-2023-07-27.json
 use super::support::{arn, bound, correlated, inventory, queried, reviewed, token};
 use crate::overlay::{Identity, IdentityField, MemberPath, NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "evs",
         vec![
-            // Lists the Amazon EVS environments in your Amazon Web Services account in the specified Amazon Web Services Region.
             queried(
                 inventory(
                     "ListEnvironments",
@@ -22,7 +20,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "environmentState",
                 ],
             )?,
-            // Key names and secret ARN references are metadata; no key material or secret retrieval.
             queried(
                 bound(
                     inventory(
@@ -54,7 +51,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "status",
                 ],
             )?,
-            // VlanId is an unconstrained Smithy integer: retain its signed 32-bit modeled domain.
             queried(
                 bound(
                     inventory(

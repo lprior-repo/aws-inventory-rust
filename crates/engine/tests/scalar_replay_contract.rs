@@ -265,12 +265,10 @@ async fn assert_scalar(
 #[tokio::test]
 async fn given_same_canonical_scalar_key_in_two_regions_when_reopened_and_reobserved_then_rows_stay_separate_and_idempotent()
 -> TestResult {
-    // Given: two scopes deliberately share the same canonical singleton identity.
     let (directory, store) = create_store().await?;
     commit_two_regions(&store, "initial").await?;
     drop(store);
 
-    // When: reopen the actual SQLite file, then replay identical observations in a new sweep.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(&directory).await?;
     assert_scalar(&store, &pool, "us-east-1", "on", "Enabled", 101, ON_CBOR).await?;
@@ -317,7 +315,6 @@ async fn given_same_canonical_scalar_key_in_two_regions_when_reopened_and_reobse
         );
     }
 
-    // Then: work seeding and duplicate observations do not create rows or projection revisions.
     let after = stored_state(&pool).await?;
     assert_eq!(after.typed, before.typed);
     assert_eq!(after.resources, before.resources);
@@ -360,7 +357,6 @@ async fn given_same_canonical_scalar_key_in_two_regions_when_reopened_and_reobse
 #[tokio::test]
 async fn given_regional_scalar_rows_when_one_value_and_source_change_then_reopened_projection_and_cbor_update_only_that_scope()
 -> TestResult {
-    // Given: equal canonical IDs are persisted independently in two regions.
     let (directory, store) = create_store().await?;
     commit_two_regions(&store, "initial").await?;
     let pool = read_pool(&directory).await?;
@@ -368,7 +364,6 @@ async fn given_regional_scalar_rows_when_one_value_and_source_change_then_reopen
     pool.close().await;
     drop(store);
 
-    // When: after reopen, only the east value, display name, and source tag change.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     store
         .seed_work(support::work("change", "us-east-1")?)
@@ -389,7 +384,6 @@ async fn given_regional_scalar_rows_when_one_value_and_source_change_then_reopen
     );
     drop(store);
 
-    // Then: SQLite typed rows, canonical CBOR, projection names/hashes and provenance agree.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(&directory).await?;
     assert_scalar(&store, &pool, "us-east-1", "off", "Disabled", 201, OFF_CBOR).await?;
@@ -443,7 +437,6 @@ async fn given_regional_scalar_rows_when_one_value_and_source_change_then_reopen
 #[tokio::test]
 async fn given_inflight_scalar_work_when_reopened_and_resumed_then_old_lease_cannot_overwrite_reclaimed_observation()
 -> TestResult {
-    // Given: durable scalar rows and an unfinished next-sweep lease.
     let (directory, store) = create_store().await?;
     commit_two_regions(&store, "initial").await?;
     store
@@ -453,7 +446,6 @@ async fn given_inflight_scalar_work_when_reopened_and_resumed_then_old_lease_can
     assert_eq!(old.generation(), 1);
     drop(store);
 
-    // When: restart fencing invalidates the old lease and a new worker commits a change.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let sweep = SweepId::new("inflight".to_owned())?;
     let account = inventory_core::inventory::AccountId::parse("111111111111")?;
@@ -493,7 +485,6 @@ async fn given_inflight_scalar_work_when_reopened_and_resumed_then_old_lease_can
         }
     );
 
-    // Then: replaying either the completed lease or its predecessor has no durable side effects.
     let committed = stored_state(&pool).await?;
     for lease in [old, current] {
         assert!(matches!(
@@ -515,7 +506,6 @@ async fn given_inflight_scalar_work_when_reopened_and_resumed_then_old_lease_can
 #[tokio::test]
 async fn given_scalar_page_with_foreign_region_when_committed_then_exact_scope_error_leaves_all_state_unchanged()
 -> TestResult {
-    // Given: a live east lease over existing regional scalar rows.
     let (directory, store) = create_store().await?;
     commit_two_regions(&store, "initial").await?;
     store
@@ -525,7 +515,6 @@ async fn given_scalar_page_with_foreign_region_when_committed_then_exact_scope_e
     let pool = read_pool(&directory).await?;
     let before = stored_state(&pool).await?;
 
-    // When: a page includes both a legitimate change and an out-of-region observation.
     let mut invalid = scalar_page(lease.clone(), "off", "Disabled", "replacement", 201)?;
     invalid
         .observations
@@ -537,7 +526,6 @@ async fn given_scalar_page_with_foreign_region_when_committed_then_exact_scope_e
         ))
     ));
 
-    // Then: no row, work generation, timestamp, source tag, or projection revision changes.
     assert_eq!(stored_state(&pool).await?, before);
     assert_eq!(
         store
@@ -562,7 +550,6 @@ async fn given_scalar_page_with_foreign_region_when_committed_then_exact_scope_e
 #[tokio::test]
 async fn given_scalar_parent_from_another_account_when_work_scope_is_constructed_then_parent_account_error_preserves_store()
 -> TestResult {
-    // Given: stored scalar identities and a foreign-account parent candidate.
     let (directory, store) = create_store().await?;
     commit_two_regions(&store, "initial").await?;
     let pool = read_pool(&directory).await?;
@@ -572,7 +559,6 @@ async fn given_scalar_parent_from_another_account_when_work_scope_is_constructed
     foreign.account = AccountId::parse("999999999999")?;
     foreign.id = ResourceId::parse("foreign-parent")?;
 
-    // When/Then: the public constructor prevents malformed parent-scoped work.
     assert!(matches!(
         ScopeKey::new(
             scope.account().clone(),
@@ -593,7 +579,6 @@ async fn given_scalar_parent_from_another_account_when_work_scope_is_constructed
 #[tokio::test]
 async fn given_parent_scoped_scalar_work_when_resumed_then_fenced_replay_cannot_change_child_or_parent_metadata()
 -> TestResult {
-    // Given: a real persisted parent and duplicate seeding of its child enumeration.
     let (directory, store) = create_store().await?;
     commit_two_regions(&store, "initial").await?;
     let parent = key("us-east-1")?;
@@ -613,7 +598,6 @@ async fn given_parent_scoped_scalar_work_when_resumed_then_fenced_replay_cannot_
     };
     drop(store);
 
-    // When: resume the persisted parent-specific work and reject its pre-restart lease.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let sweep = SweepId::new("child".to_owned())?;
     let account = inventory_core::inventory::AccountId::parse("111111111111")?;
@@ -660,7 +644,6 @@ async fn given_parent_scoped_scalar_work_when_resumed_then_fenced_replay_cannot_
         }
     );
 
-    // Then: exactly one scalar child is linked to the exact parent and persisted scope.
     let after = stored_state(&pool).await?;
     let scope_bytes = before
         .work
@@ -671,13 +654,10 @@ async fn given_parent_scoped_scalar_work_when_resumed_then_fenced_replay_cannot_
         .clone();
     assert_eq!(lease.scope().branch(), None);
     assert_eq!(lease.scope().context(), None);
-    // The execution key stays unchanged across resume, but a parented source
-    // owns metadata under the semantic authority of its actual input bindings.
-    // Derive that authority rather than pinning an opaque persisted byte blob.
     let mut source_key = scope_bytes;
-    source_key.push(1); // Scope extension.
-    source_key.extend_from_slice(&0_u32.to_be_bytes()); // No named branch.
-    source_key.push(1); // Input authority is present.
+    source_key.push(1);
+    source_key.extend_from_slice(&0_u32.to_be_bytes());
+    source_key.push(1);
     let mut authority = <sha2::Sha256 as sha2::Digest>::new();
     sha2::Digest::update(&mut authority, b"aws-inventory/semantic-authority/v1\0");
     sha2::Digest::update(&mut authority, lease.bindings());

@@ -153,7 +153,6 @@ pub(super) async fn snapshot(
     .into_iter()
     .map(str::to_owned)
     .collect::<Vec<_>>();
-    // Include actual canonical kind records, not only resource IDs or their hashes.
     tables.extend(sqlx::query_scalar::<_, String>(
         "SELECT table_name FROM kinds WHERE kind IN(SELECT kind FROM resources) ORDER BY table_name")
         .fetch_all(&reader).await?);
@@ -172,7 +171,6 @@ pub(super) async fn snapshot(
         let projection = columns
             .iter()
             .map(|column| match (finalize, column.as_str()) {
-                // finish_scope intentionally closes the lease; every other persisted byte must survive.
                 (true, "state") => {
                     "quote(CASE WHEN sweep_id=?1 AND state=1 THEN 2 ELSE state END)".to_owned()
                 }

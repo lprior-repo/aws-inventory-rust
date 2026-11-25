@@ -84,7 +84,6 @@ fn append_row(output: &mut String, row: &[String], widths: &[usize]) -> std::fmt
 }
 
 fn cell(value: &SqlValue, remaining: &mut usize) -> anyhow::Result<String> {
-    // The longest f64 decimal, capped byte preview and scalar literals fit here.
     let mut buffer = Cursor::new([0_u8; 384]);
     match value {
         SqlValue::Null => buffer.write_all(b"NULL")?,

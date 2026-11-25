@@ -15,19 +15,16 @@ use futures_util::{TryStreamExt, stream};
 use inputs::{Inputs, Target};
 use std::{fmt::Write, path::PathBuf};
 
-/// Inputs for the read-only Cloud Control identity cross-check.
 #[derive(Clone, Debug)]
 pub struct Args {
     pub database: String,
     pub endpoint: String,
     pub ca_bundle: PathBuf,
     pub region: String,
-    /// Inventory account to compare when a kind exists in multiple accounts.
     pub account: Option<String>,
     pub report: PathBuf,
     pub catalog: PathBuf,
     pub universal: PathBuf,
-    /// Read-only TSV of explanation rules.
     pub differences: PathBuf,
     pub seeds: PathBuf,
     pub oracle: Option<PathBuf>,
@@ -46,15 +43,6 @@ impl Report {
     }
 }
 
-/// List every mapped CloudFormation kind and compare without changing inventory state.
-///
-/// # Errors
-/// Returns an error for invalid inputs, exhausted pagination bounds, failed
-/// reads or list calls, or an unwritable report. Differences are returned in
-/// the report rather than as an error.
-///
-/// The report is replaced atomically only after comparison completes.
-/// The differences input is never changed.
 pub async fn run(args: &Args) -> Result<Report, HarnessError> {
     let owned = args.clone();
     let mut inputs = tokio::task::spawn_blocking(move || {

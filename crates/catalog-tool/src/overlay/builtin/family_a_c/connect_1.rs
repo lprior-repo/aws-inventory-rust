@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/connect/service/2017-08-08/connect-2017-08-08.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -16,7 +14,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, ContactFlowModuleId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves a paginated list of all versions for a specific contact flow module.",
             ),
         ),
-        // Model: Provides information about the flow modules for the specified Connect Customer instance.
         (
             "ListContactFlowModules",
             OperationOverlay {
@@ -45,7 +42,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, ContactFlowId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns all the available versions for the specified Connect Customer instance and flow identifier.",
             ),
         ),
-        // Model: Provides information about the flows for the specified Connect Customer instance. You can also create and update flows using the Connect Customer Flow language . For more information about flows, see…
         (
             "ListContactFlows",
             OperationOverlay {
@@ -80,9 +76,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, DataTableId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns all attributes for a specified data table. A maximum of 100 attributes per data table is allowed. Customers can request an increase by using Amazon Web Services Service Quotas. The response can be filtered by specific…",
             ),
         ),
-        // Model: Lists all primary value combinations for a given data table. Returns the unique combinations of primary attribute values that identify records in the table. Up to 100 records are returned per request.
         ("ListDataTablePrimaryValues", denied(DenyReason::Content)),
-        // Model: Lists values stored in a data table with optional filtering by record IDs or primary attribute values. Returns the raw stored values along with metadata such as lock versions and modification…
         ("ListDataTableValues", denied(DenyReason::Content)),
         (
             "ListDataTables",
@@ -138,7 +132,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, HoursOfOperationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: List the hours of operation overrides.",
             ),
         ),
-        // Model: Provides information about the hours of operation for the specified Connect Customer instance. For more information about hours of operation, see Set the Hours of Operation for a Queue in the Connect…
         (
             "ListHoursOfOperations",
             OperationOverlay {
@@ -178,7 +171,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: This API is in preview release for Connect Customer and is subject to change. Return a list of instances which are in active state, creation-in-progress state, and failed state. Instances that aren't…
         (
             "ListInstances",
             OperationOverlay {
@@ -227,7 +219,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides information about the phone numbers for the specified Connect Customer instance. For more information about phone numbers, see Set Up Phone Numbers for Your Contact Center in the Connect Customer Administrator Guide . We…",
             ),
         ),
-        // Model: Lists phone numbers claimed to your Connect Customer instance or traffic distribution group. If the provided TargetArn is a traffic distribution group, you can call this API in both Amazon Web…
         (
             "ListPhoneNumbersV2",
             OperationOverlay {
@@ -246,7 +237,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists predefined attributes for the specified Connect Customer instance. A predefined attribute is made up of a name and a value. You can use predefined attributes for: Routing proficiency (for example, agent certification) that…",
             ),
         ),
-        // Model: Provides information about the prompts for the specified Connect Customer instance.
         (
             "ListPrompts",
             OperationOverlay {
@@ -281,7 +271,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, QueueId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the quick connects associated with a queue.",
             ),
         ),
-        // Model: Provides information about the queues for the specified Connect Customer instance. If you do not specify a QueueTypes parameter, both standard and agent queues are returned. This might cause an…
         (
             "ListQueues",
             OperationOverlay {
@@ -326,7 +315,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Provides a list of analysis segments for a real-time chat analysis session. This API supports CHAT channels only. This API does not support VOICE. If you attempt to use it for VOICE, an…
         (
             "ListRealtimeContactAnalysisSegmentsV2",
             denied(DenyReason::Content),
@@ -354,7 +342,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Provides summary information about the routing profiles for the specified Connect Customer instance. For more information about routing profiles, see Routing Profiles and Create a Routing Profile in…
         (
             "ListRoutingProfiles",
             OperationOverlay {
@@ -413,7 +400,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires SecurityProfileId, InstanceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the permissions granted to a security profile. For information about security profiles, see Security Profiles in the Connect Customer Administrator Guide . For a mapping of the API name and user interface name of the…",
             ),
         ),
-        // Model: Provides summary information about the security profiles for the specified Connect Customer instance. For more information about security profiles, see Security Profiles in the Connect Customer…
         (
             "ListSecurityProfiles",
             OperationOverlay {
@@ -472,7 +458,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires TrafficDistributionGroupId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists traffic distribution group users.",
             ),
         ),
-        // Model: Lists traffic distribution groups.
         (
             "ListTrafficDistributionGroups",
             OperationOverlay {
@@ -525,7 +510,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, UserId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists proficiencies associated with a user.",
             ),
         ),
-        // UserSummary is identity/username/modification metadata, not profile attributes or credentials.
         (
             "ListUsers",
             OperationOverlay {
@@ -554,7 +538,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires InstanceId, ViewId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns all the available versions for the specified Connect Customer instance and view identifier. Results will be sorted from highest to lowest.",
             ),
         ),
-        // ViewSummary has metadata only; exclude AWS-managed references and never retrieve view content.
         (
             "ListViews",
             OperationOverlay {

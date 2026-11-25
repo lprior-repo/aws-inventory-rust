@@ -4,17 +4,14 @@ use minicbor::{Decoder, data::Type};
 #[tokio::test]
 async fn given_agreement_search_when_fake_transport_pages_then_required_filter_survives_resume()
 -> TestResult {
-    // Given: the actual pinned model and reviewed search overlay, without an emulator.
     let compiled = compiled()?;
     let catalog = RuntimeCatalog::from_bytes(&compiled)?;
     let scenario = seeded(&catalog).await?;
-    // When: a continuation page is decoded, committed, reopened and requested.
     let (scenario, seen) = scenario
         .drain(&catalog, "marketplace-agreement", |_, _, wire, resumed| {
             respond(wire, resumed)
         })
         .await?;
-    // Then: both requests retain the filter and both canonical account-global IDs persist.
     assert_eq!(seen.get("SearchAgreements"), Some(&2));
     assert_agreements(&scenario).await?;
     assert_complete(&scenario).await

@@ -10,7 +10,6 @@ pub(super) async fn run(
     cases: Vec<Case>,
 ) -> TestResult {
     let (service, date) = model;
-    // Given the actual pinned model, embedded policy, mappings, and two independently selected parents.
     let compiled = if service == "cleanrooms" {
         let mut operations = operations.to_vec();
         operations.push("ListConfiguredTables");
@@ -200,7 +199,6 @@ pub(super) async fn run(
     .consume(store, &expected)
     .await?;
     store = returned;
-    // Then every exact canonical/API-only row survives SQLite reopen, and no forbidden work remains.
     assert_eq!(seen, expected);
     assert!(store.claim(&sweep, 1000, 10_000).await?.is_none());
     let resources = store.projection_resources(None, 1000).await?;

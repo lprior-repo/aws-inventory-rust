@@ -13,20 +13,17 @@ const ROOTS: &[(&str, &str)] = &[
 #[tokio::test]
 async fn given_wafv2_scope_branches_when_sweeping_then_only_matching_child_requests_persist()
 -> TestResult {
-    // Given: real pinned policies, both branches, and a home distinct from CloudFront's endpoint.
     let catalog = RuntimeCatalog::from_bytes(catalog::bytes()?)?;
     let mut scenario = Scenario::new(&catalog, "wafv2-branch-provenance").await?;
     scenario.home = RegionId::parse("eu-west-1")?;
     seed_roots(&scenario, &catalog).await?;
     let mut transport = transport::FakeTransport::default();
-    // When: native requests and durable child work pass through the existing sweep harness.
     let (scenario, seen) = scenario
         .drain(&catalog, "wafv2", |plan, _, wire, resumed| {
             assert!(!resumed);
             transport.respond(plan, wire)
         })
         .await?;
-    // Then: exactly one request per operation/branch, never a wrong-scope sibling.
     assert_requests(&transport, &seen);
     assert_durable_web_acls(&scenario).await?;
     Ok(())

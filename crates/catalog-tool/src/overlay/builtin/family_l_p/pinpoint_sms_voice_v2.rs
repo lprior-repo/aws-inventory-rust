@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pinpoint-sms-voice-v2/service/2022-03-31/pinpoint-sms-voice-v2-2022-03-31.json
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -197,7 +196,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Describes the specified configuration sets or all in your account. If you specify configuration set names, the output includes information for only the specified configuration sets
     Resource {
         operation: "DescribeConfigurationSets",
         items: "ConfigurationSets",
@@ -233,7 +231,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Describes the specified opt-out list or all opt-out lists in your account. If you specify opt-out list names, the output includes information for only the specified opt-out lists.
     Resource {
         operation: "DescribeOptOutLists",
         items: "OptOutLists",
@@ -245,7 +242,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("Owner", "SELF")],
     },
-    // Describes the specified origination phone number, or all the phone numbers in your account. If you specify phone number IDs, the output includes information for only the specified
     Resource {
         operation: "DescribePhoneNumbers",
         items: "PhoneNumbers",
@@ -267,7 +263,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("Owner", "SELF")],
     },
-    // Retrieves the specified pools or all pools associated with your Amazon Web Services account. If you specify pool IDs, the output includes information for only the specified pools.
     Resource {
         operation: "DescribePools",
         items: "Pools",
@@ -286,7 +281,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("Owner", "SELF")],
     },
-    // Retrieves the protect configurations that match any of filters. If a filter isn’t provided then all protect configurations are returned.
     Resource {
         operation: "DescribeProtectConfigurations",
         items: "ProtectConfigurations",
@@ -315,7 +309,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("Owner", "SELF")],
     },
-    // Retrieves the specified registrations.
     Resource {
         operation: "DescribeRegistrations",
         items: "Registrations",
@@ -332,7 +325,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Describes the specified SenderIds or all SenderIds associated with your Amazon Web Services account. If you specify SenderIds, the output includes information for only the specifie
     Resource {
         operation: "DescribeSenderIds",
         items: "SenderIds",
@@ -344,7 +336,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[Input::String("Owner", "SELF")],
     },
-    // Retrieves the specified verified destination numbers.
     Resource {
         operation: "DescribeVerifiedDestinationNumbers",
         items: "VerifiedDestinationNumbers",

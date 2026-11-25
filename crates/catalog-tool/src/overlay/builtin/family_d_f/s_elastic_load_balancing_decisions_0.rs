@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/elastic-load-balancing/service/2012-06-01/elastic-load-balancing-2012-06-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AddTags",

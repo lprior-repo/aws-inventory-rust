@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/deadline/service/2023-10-12/deadline-2023-10-12.json
 use super::support::{bound, correlated, inherited, inventory, key, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "deadline",
         vec![
-            // Lists farms.
             queried(
                 inventory(
                     "ListFarms",
@@ -16,7 +14,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["farmId", "kmsKeyArn", "displayName"],
             )?,
-            // Lists license endpoints.
             queried(
                 inventory(
                     "ListLicenseEndpoints",
@@ -26,7 +23,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["licenseEndpointId", "status", "statusMessage", "vpcId"],
             )?,
-            // Gets a list of your monitors in Deadline Cloud.
             queried(
                 inventory(
                     "ListMonitors",
@@ -36,7 +32,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["monitorId", "roleArn", "displayName"],
             )?,
-            // Lists fleets.
             queried(
                 bound(
                     inventory(
@@ -56,7 +51,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "autoScalingStatus",
                 ],
             )?,
-            // Lists queues.
             queried(
                 bound(
                     inventory(
@@ -69,7 +63,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["farmId", "queueId", "displayName", "status"],
             )?,
-            // List summaries contain configuration metadata, not environment scripts or job payloads.
             queried(
                 bound(
                     inventory(

@@ -66,7 +66,6 @@ fn primary_matches(
                 return Ok(false);
             }
             let mut found = false;
-            // Validate every member, including those after a matching value.
             for member in values.iter()? {
                 match member? {
                     ValueRef::Null => {}

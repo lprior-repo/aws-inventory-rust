@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bedrock-agent-runtime/service/2023-07-26/bedrock-agent-runtime-2023-07-26.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -112,7 +110,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires foundationModel, instruction, sessionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invokes an inline Amazon Bedrock agent using the configurations you provide with the request. Specify the following fields for security purposes. (Optional) customerEncryptionKeyArn – The Amazon Resource Name (ARN) of a KMS key…",
             ),
         ),
-        // Model: Lists events that occurred during a flow execution. Events provide detailed information about the execution progress, including node inputs and outputs, flow inputs and outputs, condition results,…
         ("ListFlowExecutionEvents", denied(DenyReason::Content)),
         (
             "ListFlowExecutions",

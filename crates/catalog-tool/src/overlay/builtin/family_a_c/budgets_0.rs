@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/budgets/service/2016-10-20/budgets-2016-10-20.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -94,7 +92,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AccountId, BudgetName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the history for DAILY , MONTHLY , and QUARTERLY budgets. Budget history isn't available for ANNUAL budgets.",
             ),
         ),
-        // Model: Lists the budgets that are associated with an account. The Request Syntax section shows the BudgetLimit syntax. For PlannedBudgetLimits , see the Examples section.
         (
             "DescribeBudgets",
             OperationOverlay {

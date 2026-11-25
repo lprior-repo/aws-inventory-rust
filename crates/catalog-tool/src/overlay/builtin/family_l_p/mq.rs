@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mq/service/2017-11-27/mq-2017-11-27.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -71,7 +70,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of all brokers.
     Resource {
         operation: "ListBrokers",
         items: "BrokerSummaries",
@@ -90,7 +88,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of all configurations.
     Resource {
         operation: "ListConfigurations",
         items: "Configurations",
@@ -102,7 +99,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns information about the specified broker.
     Resource {
         operation: "DescribeBroker",
         items: "$",

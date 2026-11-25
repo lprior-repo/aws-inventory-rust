@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pca-connector-scep/service/2018-05-10/pca-connector-scep-2018-05-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -48,7 +47,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the connectors belonging to your Amazon Web Services account.
     Resource {
         operation: "ListConnectors",
         items: "Connectors",
@@ -60,7 +58,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves the challenge metadata for the specified ARN.
     Resource {
         operation: "ListChallengeMetadata",
         items: "Challenges",

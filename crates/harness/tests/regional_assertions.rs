@@ -1,5 +1,3 @@
-//! Negative controls for the regional architecture assertion oracle.
-
 use serde_json::json;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteConnection};
 use sqlx::{Connection, Executor};

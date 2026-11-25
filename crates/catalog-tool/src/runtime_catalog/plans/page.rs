@@ -75,8 +75,6 @@ fn validate_items(
     }
 }
 
-/// The response collection one page contributes. A single-owner tag endpoint
-/// selects the response root, so its paged collection is the tag selector.
 fn selected_items(overlay: &OperationOverlay) -> Option<&crate::overlay::MemberPath> {
     use crate::overlay::{ItemSelector, TagEndpointSelector};
     match overlay.items.as_ref()? {
@@ -148,9 +146,6 @@ fn path_value(path: Vec<inventory_core::record::FieldId>) -> Value {
             .collect(),
     )
 }
-/// Smithy ignores request-only bindings (`httpLabel`, `httpQuery`,
-/// `httpQueryParams`) on output members, so the wire decoder reads those
-/// members from the response body like any unbound member.
 fn response_placement(
     member: inventory_core::catalog::Member<'_>,
     path: Vec<inventory_core::record::FieldId>,

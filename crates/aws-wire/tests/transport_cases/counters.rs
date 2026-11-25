@@ -39,8 +39,6 @@ async fn multiple_connections_have_exact_reuse_and_plaintext_byte_totals() -> Te
         counted(&client)?,
         snapshot(2, 2, 3, 0, GOOD.len().saturating_mul(3), 2)
     );
-    // The second request to the first endpoint reused its connection, so
-    // each authority has exactly one.
     let mut expected = vec![host(&first.url, 1)?, host(&second.url, 1)?];
     expected.sort_by(|left, right| left.authority.cmp(&right.authority));
     assert_eq!(client.hosts(), expected);
@@ -71,8 +69,6 @@ async fn failed_connection_records_one_attempt_and_no_socket_or_timeout() -> Tes
         watch(client.send(request(&url)?)).await?,
         Err(TransportError::Connect(_))
     ));
-    // The refused attempt took time and names its authority, with no
-    // connection counted for it.
     assert_eq!(counted(&client)?, snapshot(0, 0, 1, 0, 0, 1));
     assert_eq!(client.hosts(), vec![host(&url, 0)?]);
     Ok(())
@@ -124,9 +120,6 @@ async fn eof(stream: &mut wire::Io) -> TestResult {
     Ok(())
 }
 
-/// The client's statistics with the connect time removed, so the rest can be
-/// compared exactly. Connect time is wall-clock and differs per run; a zero
-/// means it was never recorded, which fails here.
 fn counted(client: &Client) -> Result<Statistics, TestError> {
     let statistics = client.statistics();
     if statistics.handshake_ns == 0 {
@@ -138,7 +131,6 @@ fn counted(client: &Client) -> Result<Statistics, TestError> {
     })
 }
 
-/// The authority of a test URL of the form `http://<authority>/`.
 fn host(url: &str, connections: usize) -> Result<HostConnections, TestError> {
     let authority = url
         .strip_prefix("http://")

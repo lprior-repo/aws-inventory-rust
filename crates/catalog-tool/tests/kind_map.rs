@@ -315,7 +315,6 @@ fn typed_source_order_does_not_change_mapping_or_fingerprint() -> TestResult {
 #[test]
 fn reviewed_target_groups_preserve_exact_candidates_and_bind_the_mapping_fingerprint() -> TestResult
 {
-    // Given one reviewed scalar relation with two explicitly registered target kinds.
     let base = RelationTargetsMapping {
         source_kind: SUBNET,
         source: RelationSource::SelectedOutput(RelationPath::Fields("VpcId")),
@@ -327,7 +326,6 @@ fn reviewed_target_groups_preserve_exact_candidates_and_bind_the_mapping_fingerp
         target_kinds: &[SUBNET, VPC],
         ..base
     }];
-    // When compiling either input order.
     let baseline = MAP.compile(&Exceptions::none())?;
     let mapped = MappingSource {
         relation_targets: &first,
@@ -343,7 +341,6 @@ fn reviewed_target_groups_preserve_exact_candidates_and_bind_the_mapping_fingerp
         .relations()
         .first()
         .ok_or("missing fixture relation")?;
-    // Then both candidates survive, order is canonical, and the group changes provenance.
     assert_eq!(relation.target_kinds.primary(), VPC);
     assert_eq!(
         relation.target_kinds.iter().collect::<Vec<_>>(),
@@ -434,7 +431,6 @@ fn reference_target_groups_reject_unknown_duplicate_missing_default_and_orphan_c
 
 #[test]
 fn target_group_bounds_and_reviewed_path_syntax_are_enforced_before_registration() {
-    // Given empty, singleton, oversized, and syntactically invalid target group declarations.
     let base = RelationTargetsMapping {
         source_kind: SUBNET,
         source: RelationSource::SelectedOutput(RelationPath::Fields("VpcId")),
@@ -468,7 +464,6 @@ fn target_group_bounds_and_reviewed_path_syntax_are_enforced_before_registration
         },
     ];
     for group in cases {
-        // When compiling the typed source, then it fails with the specific declaration error.
         let rows = [group];
         assert!(
             matches!(
@@ -489,7 +484,6 @@ fn target_group_bounds_and_reviewed_path_syntax_are_enforced_before_registration
 
 #[test]
 fn request_relation_origin_is_explicit_and_changes_the_review_fingerprint() -> TestResult {
-    // Given the same parent-link metadata, when its origin is the bound request.
     let selected = MAP.compile(&Exceptions::none())?;
     let relation = MAP
         .relations
@@ -512,7 +506,6 @@ fn request_relation_origin_is_explicit_and_changes_the_review_fingerprint() -> T
         .relations()
         .first()
         .ok_or("missing request relation")?;
-    // Then its typed origin survives and provenance cannot alias selected output.
     assert_eq!(
         selected_row.source,
         ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields("VpcId".to_owned()))
@@ -528,7 +521,6 @@ fn request_relation_origin_is_explicit_and_changes_the_review_fingerprint() -> T
 #[test]
 fn request_and_selected_sources_remain_distinct_and_target_groups_bind_the_exact_namespace()
 -> TestResult {
-    // Given two otherwise identical declarations whose only difference is the actual data origin.
     let selected = MAP
         .relations
         .first()
@@ -545,7 +537,6 @@ fn request_and_selected_sources_remain_distinct_and_target_groups_bind_the_exact
         relation: "IN_VPC",
         target_kinds: &[VPC, SUBNET],
     }];
-    // When folding an explicitly request-origin group, selected output must stay a singleton.
     let map = MappingSource {
         relations: &relations,
         relation_targets: &groups,
@@ -563,7 +554,6 @@ fn request_and_selected_sources_remain_distinct_and_target_groups_bind_the_exact
             }
         }
     }
-    // Then repeating the exact declaration still fails rather than silently deduplicating.
     let duplicate = [selected, selected];
     assert!(
         matches!(MappingSource { relations: &duplicate, ..MAP }.compile(&Exceptions::none()),

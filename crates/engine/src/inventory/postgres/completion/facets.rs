@@ -58,8 +58,6 @@ async fn apply(
     resources::retained(tx, &mut states).await?;
     let changed = prepare(&store.registry, &mut states, at)?;
     resource_write::retire(tx, &states).await?;
-    // Retirement runs inside the page transaction: its staging rows would
-    // survive from the earlier write until commit. Keep retirement on UNNEST.
     kind_rows::persist(tx, &store.registry, &states, None).await?;
     references::persist(tx, &store.registry, &states).await?;
     Ok(changed)

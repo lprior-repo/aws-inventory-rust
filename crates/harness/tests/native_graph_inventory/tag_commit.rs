@@ -36,8 +36,6 @@ pub(crate) async fn observe(
         "AWS::S3::Bucket" => ("s3", "ListBuckets"),
         _ => ("ec2", "DescribeVpcs"),
     };
-    // Parent-owned scope avoids claiming a complete account-wide enumeration
-    // when this page reports only tags for an already collected resource.
     let scope = ScopeKey::new(
         resource.account.clone(),
         resource.region.clone(),

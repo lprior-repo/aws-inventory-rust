@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/fsx/service/2018-03-01/fsx-2018-03-01.json
 use super::support::{arn, inventory, key, queried, reviewed, tagged, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "fsx",
         vec![
-            // Returns the description of a specific Amazon FSx backup, if a BackupIds value is provided for that backup.
             queried(
                 tagged(
                     inventory(
@@ -27,7 +25,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "ResourceType",
                 ],
             )?,
-            // Returns the description of specific Amazon FSx for Lustre or Amazon File Cache data repository associations, if one or more AssociationIds values are provided in the request, or if
             queried(
                 tagged(
                     inventory(
@@ -45,7 +42,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "FileCacheId",
                 ],
             )?,
-            // Returns the description of a specific Amazon File Cache resource, if a FileCacheIds value is provided for that cache.
             queried(
                 inventory(
                     "DescribeFileCaches",
@@ -64,7 +60,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "KmsKeyId",
                 ],
             )?,
-            // Returns the description of specific Amazon FSx file systems, if a FileSystemIds value is provided for that file system.
             queried(
                 tagged(
                     inventory(
@@ -88,7 +83,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "NetworkType",
                 ],
             )?,
-            // Describes one or more S3 access points attached to Amazon FSx volumes.
             queried(
                 inventory(
                     "DescribeS3AccessPointAttachments",
@@ -98,7 +92,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Name", "Type"],
             )?,
-            // Returns the description of specific Amazon FSx for OpenZFS snapshots, if a SnapshotIds value is provided.
             queried(
                 tagged(
                     inventory(
@@ -111,7 +104,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ResourceARN", "SnapshotId", "Name", "VolumeId"],
             )?,
-            // Describes one or more Amazon FSx for NetApp ONTAP storage virtual machines (SVMs).
             queried(
                 tagged(
                     inventory(
@@ -131,7 +123,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "UUID",
                 ],
             )?,
-            // Describes one or more Amazon FSx for NetApp ONTAP or Amazon FSx for OpenZFS volumes.
             queried(
                 tagged(
                     inventory(
@@ -150,7 +141,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "VolumeType",
                 ],
             )?,
-            // Metadata for existing repository tasks, not the exported files or report contents.
             queried(
                 tagged(
                     inventory(

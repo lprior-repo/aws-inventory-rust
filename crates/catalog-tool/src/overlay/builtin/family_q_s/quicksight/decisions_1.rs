@@ -1,103 +1,75 @@
-// Pinned operation purposes: .local/aws-models/models/quicksight/service/2018-04-01/quicksight-2018-04-01.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a DLP setting configuration from an Amazon Web Services account.
     ("DeleteDlpSetting", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Permanently deletes a flow from the specified Amazon Web Services account. This operation cannot be undone.
     ("DeleteFlow", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an empty folder.
     ("DeleteFolder", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes an asset, such as a dashboard, analysis, or dataset, from a folder.
     (
         "DeleteFolderMembership",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes a user group from Amazon Quick Sight.
     ("DeleteGroup", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes a user from a group so that the user is no longer a member of the group.
     (
         "DeleteGroupMembership",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an existing IAM policy assignment.
     (
         "DeleteIAMPolicyAssignment",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes all access scopes and authorized targets that are associated with a service from the Quick Sight IAM Identity Center application. This operation is only supported for Quick Sight accounts that use IAM Identity Center.
     (
         "DeleteIdentityPropagationConfig",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a knowledge base.
     (
         "DeleteKnowledgeBase",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a limits profile.
     (
         "DeleteLimitsProfile",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a namespace and the users and groups that are associated with the namespace. This is an asynchronous process. Assets including dashboards, analyses, datasets and data sources are not deleted. To delete these assets, you use the API operations for the relevant asset.
     ("DeleteNamespace", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an OAuthClientApplication.
     (
         "DeleteOAuthClientApplication",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a refresh schedule from a dataset.
     (
         "DeleteRefreshSchedule",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes custom permissions from the role.
     (
         "DeleteRoleCustomPermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes a group from a role.
     (
         "DeleteRoleMembership",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon QuickSight space.
     ("DeleteSpace", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a template.
     ("DeleteTemplate", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the item that the specified template alias points to. If you provide a specific alias, you delete the version of the template that the alias points to.
     (
         "DeleteTemplateAlias",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a theme.
     ("DeleteTheme", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the version of the theme that the specified theme alias points to. If you provide a specific alias, you delete the version of the theme that the alias points to.
     ("DeleteThemeAlias", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a topic.
     ("DeleteTopic", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a topic refresh schedule.
     (
         "DeleteTopicRefreshSchedule",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a Q topic.
     ("DeleteTopicV2", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the Amazon Quick Sight user that is associated with the identity of the IAM user or role that's making the call. The IAM user isn't deleted as a result of this call.
     ("DeleteUser", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a user identified by its principal ID.
     (
         "DeleteUserByPrincipalId",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a custom permissions profile from a user.
     (
         "DeleteUserCustomPermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a VPC connection.
     (
         "DeleteVPCConnection",
         Decision::Denied(DenyReason::Mutating),
@@ -192,7 +164,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors AwsAccountId, AssetBundleExportJobId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members JobStatus, DownloadUrl, Errors, Arn, CreatedTime, AssetBundleExportJobId, AwsAccountId, ResourceArns, IncludeAllDependencies, ExportFormat, CloudFormationOverridePropertyConfiguration, RequestId, Status, IncludePermissions, IncludeTags, ValidationStrategy, Warnings, IncludeFolderMemberships, IncludeFolderMembers. Pinned purpose: Describes an existing export job. Poll job descriptions after a job starts to know the status of the job. When a job succeeds, a URL is provided to download the exported assets' data from. Download URLs are valid for five minutes after they are gener",
         ),
     ),
-    // Full modeled response contains authentication/secret material OverrideParameters.DataSources[].Credentials.CredentialPair.Password. Pinned purpose: Describes an existing import job. Poll job descriptions after starting a job to know when it has succeeded or failed. Job descriptions are available for 14 days after job starts.. Projection cannot authorize this call.
     (
         "DescribeAssetBundleImportJob",
         Decision::Denied(DenyReason::Secret),

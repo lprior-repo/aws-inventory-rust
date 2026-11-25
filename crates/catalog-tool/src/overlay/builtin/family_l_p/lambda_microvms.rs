@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lambda-microvms/service/2025-09-09/lambda-microvms-2025-09-09.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -52,7 +51,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists MicroVMs in the account with optional filtering by image and version. We recommend using pagination to ensure that the operation returns quickly and successfully.
     Resource {
         operation: "ListMicrovms",
         items: "items",
@@ -64,7 +62,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists MicroVM images in the account with optional name filtering. We recommend using pagination to ensure that the operation returns quickly and successfully.
     Resource {
         operation: "ListMicrovmImages",
         items: "items",

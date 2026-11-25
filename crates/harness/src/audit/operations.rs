@@ -91,7 +91,6 @@ fn load_historical_matrix(
 }
 
 fn matrix_callsites(matrix: &serde_json::Value) -> HashMap<String, Vec<(String, String)>> {
-    // Compare calls against matrix operations
     let mut matrix_ops = HashMap::new();
     if let Some(ops) = matrix
         .get("operations")
@@ -119,7 +118,6 @@ fn matrix_callsites(matrix: &serde_json::Value) -> HashMap<String, Vec<(String, 
 }
 
 fn observed_callsites(calls: &[calls::Callsite]) -> HashMap<String, Vec<(String, String)>> {
-    // Build multiset of observed calls
     let mut observed = HashMap::new();
     for call in calls {
         observed
@@ -134,7 +132,6 @@ fn check_matrix_against_observed(
     matrix_ops: &HashMap<String, Vec<(String, String)>>,
     observed: &HashMap<String, Vec<(String, String)>>,
 ) -> Result<(), HarnessError> {
-    // Compare: every matrix operation must be observed, and vice versa
     for (id, expected_calls) in matrix_ops {
         let actual = observed.get(id.as_str());
         match actual {
@@ -165,7 +162,6 @@ fn check_matrix_against_observed(
         }
     }
 
-    // Check for unexpected observed calls not in matrix
     for id in observed.keys() {
         if !matrix_ops.contains_key(id) {
             return Err(HarnessError::invalid(format!(
@@ -389,7 +385,6 @@ pub fn write_reconciliation(
 ) -> Result<(), HarnessError> {
     let output = output.to_path_buf();
 
-    // Validate output is within root
     let output = output
         .canonicalize()
         .map_err(|e| HarnessError::invalid(format!("failed to canonicalize output path: {}", e)))?;
@@ -402,7 +397,6 @@ pub fn write_reconciliation(
         ));
     }
 
-    // Check protected historical paths
     let protected = [
         root.join("catalog/aws-operations.toml"),
         root.join("catalog/aws-operation-additions.json"),
@@ -417,7 +411,6 @@ pub fn write_reconciliation(
         }
     }
 
-    // Atomic write: write to .partial temp, then rename
     let temp = output.with_extension("partial");
     let content = serde_json::to_string_pretty(report)?;
     std::fs::write(&temp, content + "\n")

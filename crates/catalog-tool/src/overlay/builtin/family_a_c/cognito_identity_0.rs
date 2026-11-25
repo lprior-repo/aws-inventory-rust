@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cognito-identity/service/2014-06-30/cognito-identity-2014-06-30.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -28,7 +26,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata related to the given identity, including when the identity was created and any associated linked logins. You must use Amazon Web Services developer credentials to call this operation.",
             ),
         ),
-        // Model: Gets details about a particular identity pool, including the pool name, ID description, creation date, and current number of users. You must use Amazon Web Services developer credentials to call this…
         (
             "DescribeIdentityPool",
             OperationOverlay {
@@ -58,7 +55,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns credentials for the provided identity ID. Any provided logins will be validated against supported login providers. If the token is for cognito-identity.amazonaws.com , it will be passed through to Security Token Service…",
             ),
         ),
-        // Model: Generates (or retrieves) IdentityID. Supplying multiple logins will create an implicit linked account. This is a public API. You do not need any credentials to call this API.
         ("GetId", denied(DenyReason::Mutating)),
         (
             "GetIdentityPoolRoles",
@@ -90,7 +86,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires IdentityPoolId, MaxResults. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the identities in an identity pool. You must use Amazon Web Services developer credentials to call this operation.",
             ),
         ),
-        // Model: Lists all of the Cognito identity pools registered for your account. You must use Amazon Web Services developer credentials to call this operation.
         (
             "ListIdentityPools",
             OperationOverlay {
