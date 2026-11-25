@@ -1,0 +1,10 @@
+format = 1
+service = "pca-connector-ad"
+
+[[step]]
+id = "resource"
+operation = "CreateDirectoryRegistration"
+kind = "AWS::PCAConnectorAD::DirectoryRegistration"
+identity = "DirectoryRegistrationArn"
+[step.input]
+"DirectoryId" = "d-0123456789"

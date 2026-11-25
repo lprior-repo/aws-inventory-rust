@@ -4,6 +4,13 @@ mod cursors;
 mod graph_live;
 #[path = "database/graph_offline.rs"]
 mod graph_offline;
+#[path = "database/parity.rs"]
+mod parity;
+#[path = "database/postgres.rs"]
+mod postgres;
+#[path = "database/postgres_freshness.rs"]
+mod postgres_freshness;
+mod postgres_support;
 #[path = "database/snapshots.rs"]
 mod snapshots;
 #[path = "database/support.rs"]
@@ -203,7 +210,7 @@ async fn populated(path: &Path) -> Result<Database, Box<dyn Error>> {
     )
     .await?;
     pool.close().await;
-    Ok(Database::open(path).await?)
+    Ok(Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?)
 }
 
 #[tokio::test]
@@ -285,13 +292,17 @@ async fn counts_are_database_derived_and_version_mismatch_fails_closed() -> Test
     let path = dir.path().join("inventory.sqlite");
     let pool = schema15(&path).await?;
     pool.close().await;
-    let db = Database::open(&path).await?;
+    let db = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     assert_eq!(db.counts().await?.resources, 0);
     let wrong_path = dir.path().join("wrong.sqlite");
     let wrong = writer(&wrong_path).await?;
     query("PRAGMA user_version=13").execute(&wrong).await?;
     wrong.close().await;
-    assert!(Database::open(&wrong_path).await.is_err());
+    assert!(
+        Database::open(wrong_path.to_str().ok_or("non-UTF-8 database path")?)
+            .await
+            .is_err()
+    );
     Ok(())
 }
 

@@ -16,10 +16,23 @@ pub(super) fn create_parent(path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
+pub fn write_text(path: &Path, text: &str) -> Result<String, Box<dyn std::error::Error>> {
+    create_parent(path)?;
+    std::fs::write(path, text.as_bytes())?;
+    Ok(file_sha256(path)?)
+}
+
 pub fn write_json(path: &Path, value: &Value) -> Result<String, Box<dyn std::error::Error>> {
     create_parent(path)?;
     let mut encoded = serde_json::to_string_pretty(value)?;
     encoded.push('\n');
+    std::fs::write(path, encoded.as_bytes())?;
+    Ok(file_sha256(path)?)
+}
+
+pub fn write_toml(path: &Path, value: &Value) -> Result<String, Box<dyn std::error::Error>> {
+    create_parent(path)?;
+    let encoded = inventory_harness::catalog::toml_doc::render(value)?;
     std::fs::write(path, encoded.as_bytes())?;
     Ok(file_sha256(path)?)
 }

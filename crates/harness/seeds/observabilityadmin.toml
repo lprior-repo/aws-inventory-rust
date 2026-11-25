@@ -1,0 +1,11 @@
+format = 1
+service = "observabilityadmin"
+
+[[step]]
+id = "resource"
+operation = "CreateCentralizationRuleForOrganization"
+kind = "AWS::ObservabilityAdmin::OrganizationCentralizationRule"
+identity = "RuleArn"
+[step.input]
+"RuleName" = "inventory-thin-observabilityadmin"
+"Rule" = { "Source" = { "Regions" = ["us-east-1"] }, "Destination" = { "Region" = "us-east-1" } }

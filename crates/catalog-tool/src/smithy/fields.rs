@@ -1,4 +1,4 @@
-pub(super) mod publish;
+pub(crate) mod publish;
 
 use inventory_core::record::FieldId;
 use std::collections::BTreeSet;

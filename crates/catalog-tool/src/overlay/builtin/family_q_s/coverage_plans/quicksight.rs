@@ -4,6 +4,14 @@ use super::*;
 // These summary closures contain identifiers/configuration, not definitions, credentials or rows.
 // Topic and TopicV2 have separate create/read contracts; preserve both canonical kinds.
 pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    basic_operations(service)?;
+    dlp_to_oauth_operations(service)?;
+    spaces_to_topics_operations(service)?;
+    groups(service)?;
+    schedules(service)
+}
+
+fn basic_operations(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
         (
             "ListActionConnectors",
@@ -27,6 +35,17 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
             "NextToken",
         ),
         ("ListBrands", "Brands", "Arn", "AwsAccountId", "NextToken"),
+    ]
+    .into_iter()
+    .try_for_each(|(operation, items, field, account, token)| {
+        let mut plan = arn(items, field, Some((token, token)))?;
+        plan.bind.insert(path(account)?, Binding::Account);
+        put(service, operation, plan)
+    })
+}
+
+fn dlp_to_oauth_operations(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    [
         (
             "ListDlpSettings",
             "DlpSettingSummaries",
@@ -55,6 +74,17 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
             "AwsAccountId",
             "NextToken",
         ),
+    ]
+    .into_iter()
+    .try_for_each(|(operation, items, field, account, token)| {
+        let mut plan = arn(items, field, Some((token, token)))?;
+        plan.bind.insert(path(account)?, Binding::Account);
+        put(service, operation, plan)
+    })
+}
+
+fn spaces_to_topics_operations(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    [
         (
             "ListSpaces",
             "SpaceSummaries",
@@ -89,9 +119,7 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
         let mut plan = arn(items, field, Some((token, token)))?;
         plan.bind.insert(path(account)?, Binding::Account);
         put(service, operation, plan)
-    })?;
-    groups(service)?;
-    schedules(service)
+    })
 }
 
 fn groups(service: &mut ServiceOverlay) -> Result<(), NameError> {

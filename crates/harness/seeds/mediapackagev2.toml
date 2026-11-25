@@ -1,0 +1,10 @@
+format = 1
+service = "mediapackagev2"
+
+[[step]]
+id = "resource"
+operation = "CreateChannelGroup"
+kind = "AWS::MediaPackageV2::ChannelGroup"
+identity = "Arn"
+[step.input]
+"ChannelGroupName" = "inventory-thin-mediapackagev2"

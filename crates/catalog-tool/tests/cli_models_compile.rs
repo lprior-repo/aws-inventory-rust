@@ -2,6 +2,8 @@
 mod drift;
 #[path = "../src/smithy/compile/tests/git.rs"]
 mod git;
+#[path = "cli_models_compile/kinds.rs"]
+mod kinds;
 #[path = "cli_models_compile/provenance.rs"]
 mod provenance;
 use inventory_core::catalog::Catalog;
@@ -36,6 +38,7 @@ fn root() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
         catalog.join("cloudcontrol-universal.json"),
         include_bytes!("../../../catalog/cloudcontrol-universal.json"),
     )?;
+    fs::write(root.path().join(catalog_tool::relations::ROWS_PATH), b"")?;
     Ok(root)
 }
 fn compile(source: &Path, root: &Path, flags: &[&str]) -> std::io::Result<Output> {
@@ -66,9 +69,12 @@ fn write_twice_and_check_publish_identical_reader_visible_bytes() -> TestResult 
     let path = root.path().join("catalog/aws-api.catalog");
     let first = compile(source.path(), root.path(), &["--write"])?;
     let bytes = fs::read(&path)?;
+    let report_path = root.path().join("catalog/aws-relations.report");
+    let report = fs::read(&report_path)?;
     success(&first);
     success(&compile(source.path(), root.path(), &["--write"])?);
     assert_eq!(fs::read(&path)?, bytes);
+    assert_eq!(fs::read(&report_path)?, report);
     success(&compile(source.path(), root.path(), &["--check"])?);
     Ok(())
 }
@@ -176,5 +182,72 @@ fn pending_report_is_deterministic_and_default_compile_is_silent() -> TestResult
     assert_eq!(first, fs::read(second)?);
     assert!(!first.is_empty());
     success(&compile(source.path(), root.path(), &["--write"])?);
+    Ok(())
+}
+
+#[test]
+fn given_committed_catalog_when_reviewed_then_every_plan_is_read_only_and_not_must_deny()
+-> TestResult {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let checked = catalog_tool::overlay::check(&root, &root.join(".local/aws-models"))?;
+    let text = fs::read_to_string(root.join("catalog/overlay/must-deny.txt"))?;
+    let deny = catalog_tool::classes::DenyList::parse(&text)?;
+    let bytes = fs::read(root.join("catalog/aws-api.catalog"))?;
+    prove_catalog(&checked, &bytes, &deny)
+}
+
+fn prove_catalog(
+    checked: &catalog_tool::overlay::CheckedOverlays,
+    bytes: &[u8],
+    deny: &catalog_tool::classes::DenyList<'_>,
+) -> TestResult {
+    let classes: std::collections::BTreeMap<_, _> = checked
+        .services()
+        .iter()
+        .flat_map(|service| service.callable())
+        .map(|plan| ((plan.service(), plan.operation()), plan.class()))
+        .collect();
+    let catalog = inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(bytes)?;
+    let builtin = catalog_tool::classes::DenyList::builtin();
+    assert!(!catalog.plans().is_empty());
+    for plan in catalog.plans() {
+        let key = (plan.service_name(), plan.operation_name());
+        prove_plan(key, classes.get(&key), deny, &builtin)?;
+    }
+    Ok(())
+}
+
+fn prove_plan(
+    key: (&str, &str),
+    class: Option<&catalog_tool::overlay::EffectiveClass>,
+    deny: &catalog_tool::classes::DenyList<'_>,
+    builtin: &catalog_tool::classes::DenyList<'_>,
+) -> TestResult {
+    use catalog_tool::overlay::EffectiveClass;
+    assert!(
+        matches!(
+            class,
+            Some(EffectiveClass::Enumerate | EffectiveClass::Expand)
+        ),
+        "{key:?}"
+    );
+    must_allow(key, deny)?;
+    must_allow(key, builtin)
+}
+
+fn must_allow(key: (&str, &str), deny: &catalog_tool::classes::DenyList<'_>) -> TestResult {
+    let facts = catalog_tool::classes::OperationFacts {
+        service: key.0,
+        name: key.1,
+        has_required_input: false,
+        readonly: true,
+    };
+    assert!(
+        !matches!(
+            catalog_tool::classes::classify(&facts, deny),
+            catalog_tool::classes::Class::Denied(_)
+        ),
+        "{key:?}"
+    );
     Ok(())
 }

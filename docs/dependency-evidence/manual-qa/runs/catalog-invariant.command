@@ -1,1 +1,0 @@
-jq -e .aws_feature_enabled\ and\ .sdk_catalog.service_crates==437\ and\ .native_resource_kind_count==32 /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/catalog.stdout 

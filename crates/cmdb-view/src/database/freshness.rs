@@ -144,17 +144,3 @@ impl DatabaseSnapshot {
         })
     }
 }
-
-impl super::Database {
-    /// Stalest-first scope freshness; see [`DatabaseSnapshot::scope_freshness`].
-    pub async fn scope_freshness(
-        &self,
-        now_ms: i64,
-        limit: usize,
-    ) -> Result<ScopeFreshnessReport, ViewError> {
-        let mut snapshot = self.snapshot().await?;
-        let report = snapshot.scope_freshness(now_ms, limit).await?;
-        snapshot.finish().await?;
-        Ok(report)
-    }
-}

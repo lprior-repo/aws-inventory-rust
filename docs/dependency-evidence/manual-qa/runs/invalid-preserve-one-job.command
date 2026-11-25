@@ -1,1 +1,0 @@
-jq -e .returned==1\ and\ .jobs\[0\].job_id==\"qa-cancel-retry\"\ and\ .jobs\[0\].state==\"queued\"\ and\ .jobs\[0\].attempt==0 /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/job-list-after-invalid.stdout 

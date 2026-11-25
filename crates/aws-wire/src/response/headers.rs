@@ -22,6 +22,9 @@ pub(super) fn decode_member(
     member: Member<'_>,
     builder: &mut RecordBuilder,
 ) -> Result<(), DecodeError> {
+    if context.limits.excluded_members.contains(member.id) {
+        return Ok(());
+    }
     let wire = member.wire()?;
     match wire.binding()? {
         HttpBinding::Header(name) => single_header(context, name, member, builder),

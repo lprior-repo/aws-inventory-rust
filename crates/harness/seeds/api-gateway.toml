@@ -1,0 +1,10 @@
+format = 1
+service = "api-gateway"
+
+[[step]]
+id = "resource"
+operation = "CreateApiKey"
+kind = "AWS::ApiGateway::ApiKey"
+identity = "id"
+[step.input]
+"name" = "inventory-thin-api-gateway"

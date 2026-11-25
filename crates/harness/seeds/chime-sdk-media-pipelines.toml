@@ -1,0 +1,35 @@
+format = 1
+service = "chime-sdk-media-pipelines"
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-chime-sdk-media-pipelines"
+
+[[step]]
+id = "meeting"
+service = "chime-sdk-meetings"
+operation = "CreateMeeting"
+kind = "AWS::ChimeSDKMeetings::Meeting"
+identity = "Meeting.MeetingArn"
+[step.input]
+ClientRequestToken = "12345678-1234-4234-8234-123456789abc"
+MediaRegion = "us-east-1"
+ExternalMeetingId = "inventory-thin-meeting"
+
+[[step]]
+id = "pipeline"
+operation = "CreateMediaCapturePipeline"
+kind = "AWS::ApiOnly::ChimeSDKMediaPipelinesMediaPipeline"
+identity = "MediaCapturePipeline.MediaPipelineArn"
+[step.input]
+SourceType = "ChimeSdkMeeting"
+SourceArn = { "from" = "meeting", "path" = "Meeting.MeetingArn" }
+SinkType = "S3Bucket"
+SinkArn = "arn:aws:s3:::inventory-thin-chime-sdk-media-pipelines"
+ClientRequestToken = "12345678-1234-4234-8234-123456789abc"

@@ -1,7 +1,7 @@
 use super::*;
 use cmdb_view::{GraphConnection, GraphEdge, GraphLimits, GraphNode};
-use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
-use std::fmt::Write;
+use inventory_core::inventory::{AccountId, Kind, Region, Relation, ResourceId, ResourceKey};
+use inventory_graph::{EdgeRow, NodeRow, Provenance};
 
 fn node(account: &str, region: &str, kind: &str) -> GraphNode {
     GraphNode {
@@ -35,33 +35,45 @@ fn expected() -> Vec<GraphEdge> {
     vec![edge(&a, &b), edge(&a, &c), edge(&b, &c), edge(&c, &d)]
 }
 
-fn resource_node(alias: &str, node: &GraphNode) -> Result<String, Box<dyn Error>> {
-    let key = ResourceKey {
+fn resource_key(node: &GraphNode) -> Result<ResourceKey, Box<dyn Error>> {
+    Ok(ResourceKey {
         account: AccountId::parse(&node.account)?,
         region: Region::parse(&node.region)?,
         kind: Kind::parse(&node.kind)?,
         id: ResourceId::parse(&node.id)?,
-    };
-    let mut digest = String::with_capacity(64);
-    key.digest()
-        .as_bytes()
-        .iter()
-        .try_for_each(|byte| write!(digest, "{byte:02x}"))?;
-    Ok(format!(
-        "({alias}:Resource {{key:'{digest}',account:'{}',region:'{}',kind:'{}',id:'{}'}})",
-        node.account, node.region, node.kind, node.id
-    ))
+    })
 }
 
-fn seed_query() -> Result<String, Box<dyn Error>> {
-    let [a, b, c, d] = nodes();
-    Ok(format!(
-        "CREATE {},{},{},{},(a)-[:replica {{relation:'replica',provenance:'catalog'}}]->(b),(a)-[:replica {{relation:'replica',provenance:'catalog'}}]->(c),(b)-[:replica {{relation:'replica',provenance:'catalog'}}]->(c),(c)-[:replica {{relation:'replica',provenance:'catalog'}}]->(d)",
-        resource_node("a", &a)?,
-        resource_node("b", &b)?,
-        resource_node("c", &c)?,
-        resource_node("d", &d)?
-    ))
+async fn seed_graph(connection: &mut redis::aio::MultiplexedConnection, name: &str) -> TestResult {
+    let nodes = nodes()
+        .iter()
+        .map(|node| {
+            Ok(NodeRow {
+                key: resource_key(node)?,
+                name: None,
+                content_hash: [0; 32],
+            })
+        })
+        .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
+    let edges = expected()
+        .iter()
+        .map(|edge| {
+            Ok(EdgeRow {
+                from: resource_key(&edge.from)?,
+                to: resource_key(&edge.to)?,
+                relation: Relation::parse(&edge.relation)?,
+                provenance: Provenance::parse(&edge.provenance)?,
+            })
+        })
+        .collect::<Result<Vec<_>, Box<dyn Error>>>()?;
+    for query in inventory_graph::cypher::diagnostics::resource_fixture(&nodes, &edges) {
+        redis::cmd(inventory_graph::cypher::COMMAND)
+            .arg(name)
+            .arg(query?)
+            .query_async::<redis::Value>(&mut *connection)
+            .await?;
+    }
+    Ok(())
 }
 
 async fn check_neighbors(graph: &GraphConnection) -> TestResult {
@@ -94,9 +106,10 @@ async fn check_neighbors(graph: &GraphConnection) -> TestResult {
         .await?;
     let [a, b, c, _] = nodes();
     if !shallow.truncated
-        || shallow.edges.len() != 2
+        || shallow.edges.len() != 3
         || !shallow.edges.contains(&edge(&a, &b))
         || !shallow.edges.contains(&edge(&a, &c))
+        || !shallow.edges.contains(&edge(&b, &c))
     {
         return Err(format!("inexact shallow neighborhood: {shallow:?}").into());
     }
@@ -207,11 +220,7 @@ async fn given_seeded_native_graph_when_reading_then_neighbors_paths_blast_and_s
         .await?;
     let graph = GraphConnection::connect(&endpoint, &name)?;
     let result = async {
-        redis::cmd("GRAPH.QUERY")
-            .arg(&name)
-            .arg(seed_query()?)
-            .query_async::<redis::Value>(&mut connection)
-            .await?;
+        seed_graph(&mut connection, &name).await?;
         let dir = tempdir()?;
         let db = populated(&dir.path().join("inventory.sqlite")).await?;
         check_neighbors(&graph).await?;

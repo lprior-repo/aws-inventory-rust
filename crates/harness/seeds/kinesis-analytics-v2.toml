@@ -1,0 +1,12 @@
+format = 1
+service = "kinesis-analytics-v2"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::KinesisAnalyticsV2::Application"
+identity = "ApplicationDetail.ApplicationARN"
+[step.input]
+"ApplicationName" = "inventory-thin-kinesis-analytics-v2"
+"RuntimeEnvironment" = "FLINK-1_6"
+"ServiceExecutionRole" = "arn:aws:iam::000000000000:role/inventory-thin"

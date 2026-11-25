@@ -8,9 +8,7 @@ use std::collections::BTreeMap;
 
 // Reuse the checked-in real AWS wire model; only benchmark runtime policy is
 // generated as typed binary data. No source TOML/JSON or compiler dependency.
-pub(super) fn bytes() -> BenchResult<Vec<u8>> {
-    let base = include_bytes!("../../../catalog/aws-api.catalog");
-    let catalog = Catalog::borrow(base)?;
+fn find_table_names_field(catalog: &Catalog) -> BenchResult<FieldId> {
     let service = catalog
         .service("dynamodb")?
         .ok_or("DynamoDB wire model is absent")?;
@@ -24,13 +22,16 @@ pub(super) fn bytes() -> BenchResult<Vec<u8>> {
         return Err("ListTables output is not a structure".into());
     };
     let shape = service.shape(index)?.ok_or("output shape missing")?;
-    let field = shape
+    Ok(shape
         .members()?
         .collect::<Result<Vec<_>, _>>()?
         .into_iter()
         .find(|member| matches!(member.name(), Ok("TableNames")))
         .ok_or("TableNames member missing")?
-        .id;
+        .id)
+}
+
+fn build_bench_policy(field: FieldId) -> BenchResult<Value> {
     let schema = map([
         (1, text("AWS::DynamoDB::Table")),
         (2, text("benchmark_tables")),
@@ -49,14 +50,21 @@ pub(super) fn bytes() -> BenchResult<Vec<u8>> {
         (4, Value::Null),
         (5, Value::Bool(true)),
     ])?;
-    let mut metadata = map([
-        (1, Value::Int(2)),
+    map([
+        (1, Value::Int(3)),
         (2, Value::List(vec![plan(field)?])),
         (3, Value::List(vec![schema])),
         (4, Value::List(vec![])),
         (5, Value::List(vec![coverage])),
         (6, Value::List(vec![decision])),
-    ])?;
+    ])
+}
+
+pub(super) fn bytes() -> BenchResult<Vec<u8>> {
+    let base = include_bytes!("../../../catalog/aws-api.catalog");
+    let catalog = Catalog::borrow(base)?;
+    let field = find_table_names_field(&catalog)?;
+    let mut metadata = build_bench_policy(field)?;
     let Value::Map(mut root) =
         ValueRef::Map(MapRef::from_container_bytes(base, MAX_CATALOG_BYTES)?).to_value()?
     else {
@@ -109,8 +117,8 @@ fn literal(value: &str) -> BenchResult<Value> {
 fn context(kind: i64) -> BenchResult<Value> {
     map([(1, Value::Int(kind))])
 }
-fn plan(field: FieldId) -> BenchResult<Value> {
-    let identity = map([
+fn dynamodb_identity() -> BenchResult<Value> {
+    map([
         (1, Value::Int(1)),
         (
             2,
@@ -125,7 +133,34 @@ fn plan(field: FieldId) -> BenchResult<Value> {
                 map([(1, Value::Int(1)), (2, Value::List(vec![]))])?,
             ]),
         ),
-    ])?;
+    ])
+}
+
+fn dynamodb_endpoint() -> BenchResult<Value> {
+    map([
+        (1, text("https://dynamodb.{region}.amazonaws.com")),
+        (2, text("{region}")),
+        (3, text("dynamodb")),
+        (4, Value::Int(1)),
+        (5, Value::Int(0)),
+    ])
+}
+
+fn dynamodb_metadata() -> BenchResult<Value> {
+    map([
+        (1, text("typed benchmark fixture")),
+        (2, text("benchmark")),
+        (3, text("2026-11-15")),
+        (4, text("fixture")),
+        (5, Value::Int(0)),
+        (6, Value::Int(0)),
+        (7, Value::Int(0)),
+        (8, Value::Int(0)),
+    ])
+}
+
+fn plan(field: FieldId) -> BenchResult<Value> {
+    let identity = dynamodb_identity()?;
     map([
         (1, text("dynamodb")),
         (2, text("ListTables")),
@@ -154,29 +189,8 @@ fn plan(field: FieldId) -> BenchResult<Value> {
             ])?,
         ),
         (9, Value::List(vec![])),
-        (
-            10,
-            map([
-                (1, text("https://dynamodb.{region}.amazonaws.com")),
-                (2, text("{region}")),
-                (3, text("dynamodb")),
-                (4, Value::Int(1)),
-                (5, Value::Int(0)),
-            ])?,
-        ),
-        (
-            11,
-            map([
-                (1, text("typed benchmark fixture")),
-                (2, text("benchmark")),
-                (3, text("2026-11-15")),
-                (4, text("fixture")),
-                (5, Value::Int(0)),
-                (6, Value::Int(0)),
-                (7, Value::Int(0)),
-                (8, Value::Int(0)),
-            ])?,
-        ),
+        (10, dynamodb_endpoint()?),
+        (11, dynamodb_metadata()?),
         (12, map([(1, Value::Int(0))])?),
         (13, Value::Int(0)),
     ])

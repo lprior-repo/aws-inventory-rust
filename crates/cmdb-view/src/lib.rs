@@ -9,7 +9,7 @@ pub use database::{
     Database, DatabaseCounts, DatabaseSnapshot, EdgeCursor, EdgePage, EdgePageRequest, LodSummary,
     MAX_PAGE_LIMIT, PageCursor, PageRequest, ResourceFilter, ResourcePage, ResourceRow,
     ResourceRowPage, ResourceTag, ScopeFreshness, ScopeFreshnessReport, ScopeOutcomeCounts,
-    StoredResource, StoredTagObservation, TagFilter,
+    StoredResource, StoredTagObservation, TagFilter, is_postgres_url,
 };
 pub use error::ViewError;
 pub use graph::{
@@ -17,3 +17,4 @@ pub use graph::{
     TagAffiliation, TagAffiliations,
 };
 pub use inventory_core::inventory::{ScopeOutcome, TagCoverage};
+pub use inventory_graph::GraphError;

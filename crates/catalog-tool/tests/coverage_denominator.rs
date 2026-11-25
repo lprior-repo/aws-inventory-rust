@@ -12,9 +12,9 @@ const INPUTS: [&str; 7] = [
     "catalog/aws-plans.report",
     "catalog/aws-classes.report",
     "catalog/aws-overlay.report",
-    "catalog/aws-operations.json",
-    "catalog/cloudcontrol-capabilities.json",
-    "catalog/cloudcontrol-resources.json",
+    "catalog/aws-operations.toml",
+    "catalog/cloudcontrol-capabilities.toml",
+    "catalog/cloudcontrol-resources.toml",
 ];
 
 fn real_root() -> PathBuf {
@@ -109,7 +109,7 @@ fn digest_changes_when_a_catalog_input_changes() -> TestResult {
     let dir = copy_inputs()?;
     let before = coverage::build(dir.path())?;
 
-    let target = dir.path().join("catalog/cloudcontrol-capabilities.json");
+    let target = dir.path().join("catalog/cloudcontrol-capabilities.toml");
     let mut bytes = std::fs::read(&target)?;
     bytes.push(b'\n');
     std::fs::write(&target, bytes)?;
@@ -130,15 +130,28 @@ fn digest_is_stable_for_identical_inputs() -> TestResult {
     Ok(())
 }
 
+fn inflated_enumerate_total(text: &str) -> Result<(&str, u64), Box<dyn std::error::Error>> {
+    let field = text
+        .split_whitespace()
+        .find(|field| field.starts_with("callable_enumerate="))
+        .ok_or("missing enumeration total")?;
+    let (_, value) = field.split_once('=').ok_or("missing total separator")?;
+    let inflated = value
+        .parse::<u64>()?
+        .checked_add(1)
+        .ok_or("total overflow")?;
+    Ok((field, inflated))
+}
+
 #[test]
 fn overlay_totals_that_disagree_with_rows_are_refused() -> TestResult {
     let dir = copy_inputs()?;
     let target = dir.path().join("catalog/aws-overlay.report");
     let text = std::fs::read_to_string(&target)?;
-    assert!(text.contains("callable_enumerate=1565"));
+    let (field, inflated) = inflated_enumerate_total(&text)?;
     std::fs::write(
         &target,
-        text.replacen("callable_enumerate=1565", "callable_enumerate=1566", 1),
+        text.replacen(field, &format!("callable_enumerate={inflated}"), 1),
     )?;
     assert!(matches!(
         coverage::build(dir.path()),
@@ -150,7 +163,7 @@ fn overlay_totals_that_disagree_with_rows_are_refused() -> TestResult {
 #[test]
 fn missing_catalog_input_is_refused() -> TestResult {
     let dir = copy_inputs()?;
-    std::fs::remove_file(dir.path().join("catalog/aws-operations.json"))?;
+    std::fs::remove_file(dir.path().join("catalog/aws-operations.toml"))?;
     assert!(matches!(coverage::build(dir.path()), Err(Error::Io { .. })));
     Ok(())
 }

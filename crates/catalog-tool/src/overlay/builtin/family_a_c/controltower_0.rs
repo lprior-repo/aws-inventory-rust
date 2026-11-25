@@ -121,6 +121,9 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         (
             "ListEnabledControls",
             OperationOverlay {
+                fixed: [(path("includeChildren")?, FixedValue::Boolean(true))]
+                    .into_iter()
+                    .collect(),
                 queryable: vec![path("arn")?],
                 ..read(
                     "enabledControls",

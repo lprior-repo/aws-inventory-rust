@@ -1,5 +1,21 @@
+mod binding_types;
+mod directory;
+pub mod generate;
+mod merge;
+mod parse;
+pub use binding_types::{Batch, Binding, GenerationBlocker};
+pub use directory::{OverlayError, load, load_generated_dir};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Origin {
+    Hand,
+    Generated,
+}
+
 mod builtin;
 mod check;
+pub(crate) use check::orchestration::{check_model_policies, read_model_values};
+pub(crate) use generate::selection::deny_text;
 mod emission;
 mod error;
 mod policy;
@@ -24,6 +40,8 @@ mod types;
 pub use row_policy::{
     ChildEligibility, MissingSelected, RowOperand, RowPolicy, RowPredicate, RowValueType,
 };
+mod emit_rule;
+pub use emit_rule::{ExpansionBinding, expansion_conditions_met, infer_work_only};
 
 pub use check::{
     CallableOperation, CheckError, CheckedOverlays, EffectiveClass, ReviewDisposition,
@@ -32,8 +50,8 @@ pub use check::{
 };
 pub use error::NameError;
 pub use types::{
-    Batch, Binding, Identity, ItemSelector, MemberPath, OperationName, OperationOverlay,
-    OverlayClass, Paginator, ReviewEvidence, Scope, ServiceOverlay, TokenPair,
+    Identity, ItemSelector, MemberPath, OperationName, OperationOverlay, OverlayClass, Paginator,
+    ReviewEvidence, Scope, ServiceOverlay, TokenPair,
 };
 
 pub fn embedded() -> Result<Vec<ServiceOverlay>, NameError> {

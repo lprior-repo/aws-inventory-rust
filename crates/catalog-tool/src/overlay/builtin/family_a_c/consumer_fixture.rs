@@ -16,11 +16,13 @@ pub(super) struct Compiled {
 }
 
 fn root() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR")).join(if env!("CARGO_PKG_NAME") == "catalog-tool" {
-        "../.."
-    } else {
-        "."
-    })
+    Path::new(env!("CARGO_MANIFEST_DIR")).join(
+        if matches!(env!("CARGO_PKG_NAME"), "catalog-tool" | "inventory-sweep") {
+            "../.."
+        } else {
+            "."
+        },
+    )
 }
 
 fn selected_policy(service: &str, operations: &[&str]) -> TestResult<overlay::ServiceOverlay> {

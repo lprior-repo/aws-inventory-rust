@@ -1,0 +1,9 @@
+format = 1
+service = "iotsecuretunneling"
+
+[[step]]
+id = "resource"
+operation = "OpenTunnel"
+kind = "AWS::IoTSecureTunneling::Tunnel"
+identity = "tunnelArn"
+[step.input]

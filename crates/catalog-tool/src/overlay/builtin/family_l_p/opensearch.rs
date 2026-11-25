@@ -1,5 +1,5 @@
 // Pinned Smithy source: .local/aws-models/models/opensearch/service/2021-01-01/opensearch-2021-01-01.json
-use super::policy::{Group, Id, Input, Resource, compile};
+use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
     classes::DenyReason,
@@ -255,7 +255,7 @@ const RESOURCES: &[Resource] = &[
         query: &["DomainName", "EngineType"],
         tags: None,
         bindings: &[],
-        fixed: &[Input::String("EngineType", "OpenSearch")],
+        fixed: &[],
     },
     // Lists all OpenSearch applications under your account.
     Resource {

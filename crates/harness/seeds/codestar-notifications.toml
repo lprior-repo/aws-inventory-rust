@@ -1,0 +1,33 @@
+format = 1
+service = "codestar-notifications"
+
+[[step]]
+id = "repository"
+service = "codecommit"
+operation = "CreateRepository"
+kind = "AWS::CodeCommit::Repository"
+identity = "repositoryMetadata.repositoryId"
+[step.input]
+repositoryName = "inventory-thin-codestar-notifications"
+
+[[step]]
+id = "topic"
+service = "sns"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = "TopicArn"
+[step.input]
+Name = "inventory-thin-codestar-notifications"
+
+[[step]]
+id = "notification"
+operation = "CreateNotificationRule"
+kind = "AWS::CodeStarNotifications::NotificationRule"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-codestar-notifications"
+EventTypeIds = ["codecommit-repository-branches-and-tags-created"]
+Resource = { "from" = "repository", "path" = "repositoryMetadata.Arn" }
+Targets = [{ "TargetType" = "SNS", "TargetAddress" = { "from" = "topic", "path" = "TopicArn" } }]
+DetailType = "FULL"
+ClientRequestToken = "12345678-1234-4234-8234-123456789abc"

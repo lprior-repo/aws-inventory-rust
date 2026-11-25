@@ -44,10 +44,14 @@ pub(super) async fn retain(
         .collect();
     let edges = expected.edges.iter().cloned().map(strings).collect();
     let nodes = graph
-        .rows("MATCH (n:Resource) RETURN n.account,n.region,n.kind,n.id,n.key,n.content_hash")
+        .rows(inventory_graph::cypher::diagnostics::NODE_HASHES)
         .await?;
-    let native_edges = graph.rows("MATCH (a:Resource)-[r]->(b:Resource) RETURN a.account,a.region,a.kind,a.id,b.account,b.region,b.kind,b.id,r.relation,r.provenance").await?;
-    let tags = graph.rows("MATCH (r:Resource)-[a:HAS_TAG]->(t:Tag) RETURN r.account,r.region,r.kind,r.id,t.account,t.region,t.tag_key,t.tag_value,a.provenance").await?;
+    let native_edges = graph
+        .rows(inventory_graph::cypher::diagnostics::RESOURCE_EDGES)
+        .await?;
+    let tags = graph
+        .rows(inventory_graph::cypher::diagnostics::SCOPED_AFFILIATIONS)
+        .await?;
     let record = Record::encode(&Value::Map(BTreeMap::from([
         (Key::Name("format".into()), Value::Int(1)),
         (

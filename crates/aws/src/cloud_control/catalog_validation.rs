@@ -10,7 +10,7 @@ struct SensitiveCatalog {
 }
 
 pub fn global_sensitive_names() -> Result<Arc<BTreeSet<String>>, AwsScanError> {
-    let catalog: SensitiveCatalog = serde_json::from_str(CATALOG_JSON)
+    let catalog: SensitiveCatalog = toml::from_str(CATALOG_TOML)
         .map_err(|error| invalid(format!("embedded Cloud Control catalog: {error}")))?;
     let sensitive = catalog.evidence.global_sensitive_property_names;
     if sensitive.is_empty() || sensitive.len() > 128 {
@@ -20,7 +20,7 @@ pub fn global_sensitive_names() -> Result<Arc<BTreeSet<String>>, AwsScanError> {
 }
 
 pub fn root_catalog() -> Result<Vec<ResourceType>, AwsScanError> {
-    let mut catalog: Catalog = serde_json::from_str(CATALOG_JSON)
+    let mut catalog: Catalog = toml::from_str(CATALOG_TOML)
         .map_err(|error| invalid(format!("embedded Cloud Control catalog: {error}")))?;
     if catalog.schema_version != 1 || catalog.resource_types.len() != ROOT_TYPE_COUNT {
         return Err(invalid(

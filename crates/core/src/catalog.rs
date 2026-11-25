@@ -13,7 +13,7 @@ pub use views::{
     Paginator, Service, Shape, Target, TimestampFormat, ValueConstraints, WireTraits, XmlNamespace,
 };
 
-pub const CATALOG_VERSION: i64 = 3;
+pub const CATALOG_VERSION: i64 = 4;
 
 /// Bound on the whole embedded catalog. The catalog is a trusted build
 /// artifact that nests one independently record-bounded blob per service, so
@@ -149,7 +149,7 @@ fn bytes_field(map: MapRef<'_>, key: CatalogKey) -> Result<&[u8], CatalogError> 
     }
 }
 fn validate_field_registry(names: &[u8], offsets: &[u8]) -> Result<(), CatalogError> {
-    if offsets.len() % 8 != 0 {
+    if !offsets.len().is_multiple_of(8) {
         return Err(CatalogError::Reference);
     }
     let mut previous = 0usize;

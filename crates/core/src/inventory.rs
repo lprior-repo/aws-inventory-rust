@@ -7,6 +7,7 @@ mod observation;
 mod query;
 mod reference;
 mod schema;
+mod sql_name;
 mod tag;
 mod tag_mapping;
 
@@ -24,6 +25,7 @@ pub use observation::{Edge, EdgeSource, Observation, ScopeOutcome};
 pub use query::{Filter, PageRequest, PageSize, ResourcePage};
 pub use reference::{ReferenceComponent, ReferenceTarget, UnresolvedReference};
 pub use schema::{Column, KindSchema, MAX_SQLITE_COLUMNS, ScalarType};
+pub use sql_name::{MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, shorten_sql_name};
 pub use tag::{
     MAX_RESOURCE_TAGS, MAX_TAG_KEY_CHARS, MAX_TAG_VALUE_CHARS, Tag, TagCoverage, TagObservation,
 };

@@ -1,26 +1,5 @@
 use super::*;
-
-pub(super) async fn rebuild_edges(
-    snapshot: &mut ProjectionSnapshot,
-    client: &mut GraphClient,
-    limit: u16,
-) -> Result<bool, GraphError> {
-    let mut cursor: Option<ProjectionEdgeCursor> = None;
-    for _ in 0..MAX_REBUILD_PAGES {
-        let page = snapshot
-            .edges(cursor.take(), limit)
-            .await
-            .map_err(GraphError::Store)?;
-        cursor = page.next;
-        for edge in page.edges {
-            client.edge(&edge).await?;
-        }
-        if cursor.is_none() {
-            return Ok(true);
-        }
-    }
-    Ok(false)
-}
+use futures_util::TryStreamExt;
 
 pub(super) fn validate(graph: &str, endpoint: &str, limit: u16) -> Result<(), ProjectionError> {
     let valid_graph = !graph.is_empty()
@@ -34,8 +13,8 @@ pub(super) fn validate(graph: &str, endpoint: &str, limit: u16) -> Result<(), Pr
     Ok(())
 }
 
-pub(super) async fn pending_report(
-    store: &BinaryStore,
+pub(super) async fn pending_report<S: InventoryStore>(
+    store: &S,
     acknowledged: u64,
     offline: bool,
     rebuild_incomplete: bool,
@@ -64,38 +43,27 @@ pub(super) fn report(
 }
 
 pub(super) fn entry_graph_error(error: GraphError) -> EntryError {
-    if error.is_offline() {
-        return EntryError::Offline;
-    }
     match error {
-        GraphError::Redis(_) | GraphError::Query(_) => {
-            EntryError::Projection(ProjectionError::Query)
-        }
-        GraphError::Store(error) => EntryError::Projection(ProjectionError::Store(error)),
-        GraphError::OwnershipLost => EntryError::Projection(ProjectionError::OwnershipLost),
-        GraphError::Timeout => EntryError::Offline,
+        GraphError::Transport(_) | GraphError::Timeout => EntryError::Offline,
+        error => EntryError::Projection(error.into()),
     }
 }
 
-pub(super) async fn failed_delivery(
-    store: &BinaryStore,
+pub(super) async fn failed_delivery<S: InventoryStore>(
+    store: &S,
     error: GraphError,
     acknowledged: u64,
 ) -> Result<ProjectionReport, ProjectionError> {
-    if error.is_offline() {
-        return pending_report(store, acknowledged, true, false).await;
-    }
-    match error {
-        GraphError::Redis(_) | GraphError::Query(_) => Err(ProjectionError::Query),
-        GraphError::Store(error) => Err(ProjectionError::Store(error)),
-        GraphError::OwnershipLost => Err(ProjectionError::OwnershipLost),
-        GraphError::Timeout => pending_report(store, acknowledged, true, false).await,
+    match entry_graph_error(error) {
+        EntryError::Offline => pending_report(store, acknowledged, true, false).await,
+        EntryError::Projection(error) => Err(error),
+        EntryError::Store(error) => Err(ProjectionError::Store(error)),
     }
 }
 
 #[derive(Debug, Error)]
 pub(super) enum EntryError {
-    #[error("FalkorDB is unavailable")]
+    #[error("graph backend is unavailable")]
     Offline,
     #[error(transparent)]
     Projection(#[from] ProjectionError),
@@ -103,61 +71,93 @@ pub(super) enum EntryError {
     Store(#[from] StoreError),
 }
 
-pub(super) async fn rebuild_graph(
-    store: &BinaryStore,
-    client: &mut GraphClient,
-    marker: &PendingProjection,
-    batch_limit: u16,
-) -> Result<Option<u64>, GraphError> {
-    client.clear().await?;
-    let mut snapshot = store
-        .begin_projection_snapshot()
-        .await
-        .map_err(GraphError::Store)?;
-    let resources_done = rebuild_resources(&mut snapshot, client, batch_limit).await?;
-    let edges_done = if resources_done {
-        rebuild_edges(&mut snapshot, client, batch_limit).await?
-    } else {
-        false
-    };
-    snapshot.finish().await.map_err(GraphError::Store)?;
-    if resources_done && edges_done {
-        store
-            .ack_projection(
-                ProjectionAck::full_rebuild(marker.revision).map_err(GraphError::Store)?,
-            )
-            .await
-            .map(Some)
-            .map_err(GraphError::Store)
-    } else {
-        Ok(None)
+impl From<GraphError> for EntryError {
+    fn from(error: GraphError) -> Self {
+        entry_graph_error(error)
     }
 }
 
-async fn rebuild_resources(
-    snapshot: &mut ProjectionSnapshot,
-    client: &mut GraphClient,
-    limit: u16,
-) -> Result<bool, GraphError> {
-    let mut after: Option<ResourceKey> = None;
-    for _ in 0..MAX_REBUILD_PAGES {
-        let page = snapshot
-            .resources(after.take(), limit)
-            .await
-            .map_err(GraphError::Store)?;
-        let count = page.len();
-        after = page.last().map(|resource| resource.key.clone());
-        for resource in page {
-            client.upsert(&resource).await?;
-            project_tags(snapshot, client, &resource.key, limit).await?;
-        }
-        if count < usize::from(limit) {
-            return Ok(true);
-        }
+pub(super) async fn rebuild_graph<S: InventoryStore, G: GraphBackend>(
+    store: &S,
+    client: &G,
+    marker: &PendingProjection,
+    batch_limit: u16,
+) -> Result<Option<u64>, EntryError> {
+    client.clear().await?;
+    let mut snapshot = store.begin_projection_snapshot().await?;
+    let nodes_done =
+        rebuild_resources(&mut snapshot, client, batch_limit, RebuildPass::Nodes).await?;
+    let edges_done = if nodes_done {
+        rebuild_resources(&mut snapshot, client, batch_limit, RebuildPass::Edges).await?
+    } else {
+        false
+    };
+    snapshot.finish().await?;
+    if !nodes_done || !edges_done {
+        return Ok(None);
     }
-    snapshot
-        .resources(after, 1)
-        .await
-        .map(|page| page.is_empty())
-        .map_err(GraphError::Store)
+    Ok(Some(
+        store
+            .ack_projection(ProjectionAck::full_rebuild(marker.revision)?)
+            .await?,
+    ))
+}
+
+#[derive(Clone, Copy)]
+enum RebuildPass {
+    Nodes,
+    Edges,
+}
+
+async fn rebuild_resources<G: GraphBackend>(
+    snapshot: &mut impl ProjectionSnapshotRead,
+    client: &G,
+    limit: u16,
+    pass: RebuildPass,
+) -> Result<bool, EntryError> {
+    let (snapshot, after, done) = stream::iter(0..MAX_REBUILD_PAGES)
+        .map(Ok::<_, EntryError>)
+        .try_fold(
+            (snapshot, None, false),
+            |(snapshot, after, done), _| async move {
+                if done {
+                    return Ok((snapshot, after, done));
+                }
+                let page = snapshot.resources(after, limit).await?;
+                let done = page.len() < usize::from(limit);
+                let after = page.last().map(|resource| resource.key.clone());
+                project_resources(snapshot, client, page, limit, pass).await?;
+                Ok((snapshot, after, done))
+            },
+        )
+        .await?;
+    if done {
+        return Ok(true);
+    }
+    Ok(snapshot.resources(after, 1).await?.is_empty())
+}
+
+async fn project_resources<G: GraphBackend>(
+    snapshot: &mut impl ProjectionSnapshotRead,
+    client: &G,
+    page: Vec<crate::inventory::ProjectionResource>,
+    limit: u16,
+    pass: RebuildPass,
+) -> Result<(), EntryError> {
+    stream::iter(page.into_iter().map(Ok::<_, EntryError>))
+        .try_fold(snapshot, |snapshot, resource| async move {
+            match pass {
+                RebuildPass::Nodes => {
+                    let key = resource.key.clone();
+                    client.upsert_node(&node_row(resource)).await?;
+                    project_tags(snapshot, client, &key, limit).await?;
+                }
+                RebuildPass::Edges => {
+                    deliver_incident_edges(snapshot, client, &resource.key, limit).await?;
+                }
+            }
+            Ok(snapshot)
+        })
+        .await?;
+    Ok(())
 }

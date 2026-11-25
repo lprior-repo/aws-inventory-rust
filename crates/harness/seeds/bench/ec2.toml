@@ -1,0 +1,21 @@
+format = 1
+service = "ec2"
+
+[[step]]
+id = "vpc"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.99.0.0/16"
+
+[[step]]
+id = "group"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+repeat = 2498
+[step.input]
+GroupName = "inventory-bench-group-{n}"
+Description = "Owned emulator benchmark metadata"
+VpcId = { from = "vpc", path = "Vpc.VpcId" }

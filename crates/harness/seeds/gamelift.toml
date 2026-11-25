@@ -1,0 +1,11 @@
+format = 1
+service = "gamelift"
+
+[[step]]
+id = "alias"
+operation = "CreateAlias"
+kind = "AWS::GameLift::Alias"
+identity = "Alias.AliasArn"
+[step.input]
+Name = "inventory-thin-gamelift"
+RoutingStrategy = { Type = "TERMINAL", Message = "Inventory seed terminal alias" }

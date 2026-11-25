@@ -1,0 +1,11 @@
+format = 1
+service = "emr"
+
+[[step]]
+id = "security"
+operation = "CreateSecurityConfiguration"
+kind = "AWS::EMR::SecurityConfiguration"
+identity = "Name"
+[step.input]
+Name = "inventory-thin-emr"
+SecurityConfiguration = "{\"EncryptionConfiguration\":{\"EnableInTransitEncryption\":false,\"EnableAtRestEncryption\":false}}"

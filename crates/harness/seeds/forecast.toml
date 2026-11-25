@@ -1,0 +1,11 @@
+format = 1
+service = "forecast"
+
+[[step]]
+id = "group"
+operation = "CreateDatasetGroup"
+kind = "AWS::Forecast::DatasetGroup"
+identity = "DatasetGroupArn"
+[step.input]
+DatasetGroupName = "inventory_seed_forecast"
+Domain = "CUSTOM"

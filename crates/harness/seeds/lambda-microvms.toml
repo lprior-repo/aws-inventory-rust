@@ -1,0 +1,13 @@
+format = 1
+service = "lambda-microvms"
+
+[[step]]
+id = "resource"
+operation = "CreateMicrovmImage"
+kind = "AWS::Lambda::MicrovmImage"
+identity = "imageArn"
+[step.input]
+"baseImageArn" = "arn:aws:iam::000000000000:role/inventory-thin"
+"buildRoleArn" = "arn:aws:iam::000000000000:role/inventory-thin"
+"codeArtifact" = { "uri" = "s3://inventory-thin/microvm.tar" }
+"name" = "inventory-thin-lambda-microvms"

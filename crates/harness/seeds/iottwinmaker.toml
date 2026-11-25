@@ -1,0 +1,10 @@
+format = 1
+service = "iottwinmaker"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkspace"
+kind = "AWS::IoTTwinMaker::Workspace"
+identity = "arn"
+[step.input]
+workspaceId = "inventory-thin-iottwinmaker"

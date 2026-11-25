@@ -1,6 +1,6 @@
-mod exclusions;
-mod merge;
-mod relations;
+pub(in crate::inventory) mod exclusions;
+pub(in crate::inventory) mod merge;
+pub(in crate::inventory) mod relations;
 
 use super::{PageCommit, SchemaRegistry, StoreError};
 use inventory_core::inventory::{Observation, ResourceId, ResourceKey, UnresolvedReference};
@@ -94,7 +94,17 @@ async fn replace(
             .is_some_and(|owned| owned);
     let owned = merge::owned(old_owned.as_ref(), &merge::fields(observation.record())?)?;
     let exclusions = exclusions::encode(observation.hash_exclusions())?;
-    let relations = relations::encode(registry, page, observation, direct_references, authority)?;
+    let references = page
+        .unresolved
+        .iter()
+        .map(|reference| (reference, None))
+        .chain(
+            direct_references
+                .iter()
+                .map(|(reference, target)| (reference, Some(target))),
+        )
+        .filter(|(reference, _)| &reference.from == observation.key());
+    let relations = relations::encode(registry, &page.lease, observation, references, authority)?;
     let old_relations = previous
         .as_ref()
         .map(|row| row.try_get::<Vec<u8>, _>("relations"))

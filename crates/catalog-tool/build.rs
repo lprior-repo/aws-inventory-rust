@@ -32,6 +32,7 @@ fn main() -> Result<(), Failure> {
         println!("cargo:rerun-if-changed={}", relative(&root, path)?);
     }
     let output = PathBuf::from(env::var_os("OUT_DIR").ok_or("missing build output directory")?);
+    thin_services(&root, &output)?;
     fs::write(
         output.join("embedded_sources_sha256.rs"),
         format!(
@@ -120,5 +121,33 @@ fn hash_file(path: &Path, hash: &mut Sha256) -> Result<(), Failure> {
     if total != length {
         return Err("embedded source changed during capture".into());
     }
+    Ok(())
+}
+
+fn thin_services(root: &Path, output: &Path) -> Result<(), Failure> {
+    let directory = root.join("../harness/seeds/bench");
+    println!("cargo:rerun-if-changed={}", directory.display());
+    let services = fs::read_dir(&directory)?.try_fold(BTreeSet::new(), |mut services, entry| {
+        let path = entry?.path();
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "toml")
+        {
+            let service = path
+                .file_stem()
+                .and_then(|name| name.to_str())
+                .ok_or("thin seed filename is not UTF-8")?;
+            services.insert(service.to_owned());
+        }
+        Ok::<_, Failure>(services)
+    })?;
+    if services.is_empty() {
+        return Err("thin seed service set is empty".into());
+    }
+    let services = services.into_iter().collect::<Vec<_>>();
+    fs::write(
+        output.join("thin_services.rs"),
+        format!("const THIN_SERVICES: &[&str] = &{services:?};\n"),
+    )?;
     Ok(())
 }

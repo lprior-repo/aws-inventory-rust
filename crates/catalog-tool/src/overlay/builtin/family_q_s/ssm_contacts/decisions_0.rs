@@ -3,6 +3,18 @@ use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
+    (
+        "ListPageReceipts",
+        Decision::Deferred(
+            "receipt identity requires ReceiptTime; timestamp identity representation is unsupported",
+        ),
+    ),
+    (
+        "ListRotationShifts",
+        Decision::Deferred(
+            "Computed shifts over a supplied time range are not stored inventory; the shift type alone does not identify a shift.",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Used to acknowledge an engagement to a contact channel during an incident.
     ("AcceptPage", Decision::Denied(DenyReason::Mutating)),
     (

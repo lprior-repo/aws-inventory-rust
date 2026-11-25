@@ -204,46 +204,55 @@ fn access_policies() -> Result<OperationOverlay, NameError> {
     ]
     .into_iter()
     .map(|(resource, producer, selected, opposite)| {
-        Ok(ExecutionBranch {
-            discriminator: resource.to_owned(),
-            fixed: [(
-                MemberPath::new("resourceType")?,
-                FixedValue::String(resource.to_owned()),
-            )]
-            .into_iter()
-            .collect(),
-            bind: [(
-                MemberPath::new("resourceId")?,
-                Binding::From {
-                    operation: OperationName::new(producer)?,
-                    path: MemberPath::new("id")?,
-                },
-            )]
-            .into_iter()
-            .collect(),
-            emission: None,
-            row_policy: Some(RowPolicy {
-                assertions: vec![
-                    RowPredicate::SelectedRequestEquals {
-                        selected: MemberPath::selected(selected)?,
-                        request: MemberPath::selected("resourceId")?,
-                        value_type: RowValueType::String,
-                        missing: MissingSelected::Reject,
-                    },
-                    RowPredicate::Absent(RowOperand {
-                        source: ContextSource::SelectedItem,
-                        path: MemberPath::selected(opposite)?,
-                        value_type: RowValueType::Structure,
-                    }),
-                ],
-                ..Default::default()
-            }),
-            scope: Scope::Region,
-            request_region: None,
-        })
+        access_policy_branch(resource, producer, selected, opposite)
     })
     .collect::<Result<_, NameError>>()?;
     Ok(value)
+}
+
+fn access_policy_branch(
+    resource: &str,
+    producer: &str,
+    selected: &str,
+    opposite: &str,
+) -> Result<ExecutionBranch, NameError> {
+    Ok(ExecutionBranch {
+        discriminator: resource.to_owned(),
+        fixed: [(
+            MemberPath::new("resourceType")?,
+            FixedValue::String(resource.to_owned()),
+        )]
+        .into_iter()
+        .collect(),
+        bind: [(
+            MemberPath::new("resourceId")?,
+            Binding::From {
+                operation: OperationName::new(producer)?,
+                path: MemberPath::new("id")?,
+            },
+        )]
+        .into_iter()
+        .collect(),
+        emission: None,
+        row_policy: Some(RowPolicy {
+            assertions: vec![
+                RowPredicate::SelectedRequestEquals {
+                    selected: MemberPath::selected(selected)?,
+                    request: MemberPath::selected("resourceId")?,
+                    value_type: RowValueType::String,
+                    missing: MissingSelected::Reject,
+                },
+                RowPredicate::Absent(RowOperand {
+                    source: ContextSource::SelectedItem,
+                    path: MemberPath::selected(opposite)?,
+                    value_type: RowValueType::Structure,
+                }),
+            ],
+            ..Default::default()
+        }),
+        scope: Scope::Region,
+        request_region: None,
+    })
 }
 
 fn datasets() -> Result<OperationOverlay, NameError> {

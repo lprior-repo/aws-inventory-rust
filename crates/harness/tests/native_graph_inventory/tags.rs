@@ -164,7 +164,9 @@ pub(super) async fn assert_sets(
             })
         })
         .collect();
-    let rows = graph.rows("MATCH (r:Resource)-[a:HAS_TAG]->(t:Tag) RETURN r.account,r.region,r.kind,r.id,t.tag_key,t.tag_value,a.provenance").await?;
+    let rows = graph
+        .rows(inventory_graph::cypher::diagnostics::AFFILIATIONS)
+        .await?;
     assert_eq!(
         rows.len(),
         associations.len(),
@@ -189,7 +191,7 @@ pub(super) async fn assert_sets(
         })
         .collect();
     let rows = graph
-        .rows("MATCH (t:Tag) RETURN t.account,t.region,t.tag_key,t.tag_value")
+        .rows(inventory_graph::cypher::diagnostics::TAG_ROWS)
         .await?;
     assert_eq!(
         rows.len(),
@@ -211,7 +213,9 @@ async fn assert_total_topology(
     associations: usize,
     vertices: usize,
 ) -> TestResult {
-    let nodes = graph.rows("MATCH (n) RETURN labels(n)[0]").await?;
+    let nodes = graph
+        .rows(inventory_graph::cypher::diagnostics::NODE_LABELS)
+        .await?;
     assert_eq!(
         nodes.len(),
         expected.resources.len() + vertices,
@@ -222,7 +226,9 @@ async fn assert_total_topology(
             .iter()
             .all(|row| matches!(row.as_slice(), [label] if label == "Resource" || label == "Tag"))
     );
-    let relationships = graph.rows("MATCH ()-[r]->() RETURN type(r)").await?;
+    let relationships = graph
+        .rows(inventory_graph::cypher::diagnostics::RELATION_TYPES)
+        .await?;
     assert_eq!(
         relationships.len(),
         expected.edges.len() + associations,
@@ -237,7 +243,7 @@ async fn assert_view_tags(
     expected: &Expected,
     tags: &TagSets,
 ) -> TestResult {
-    let database = Database::open(database).await?;
+    let database = Database::open(database.to_str().ok_or("non-UTF-8 database path")?).await?;
     let graph_reader = GraphConnection::connect(graph.endpoint(), graph.name())?;
     for resource in &expected.resources {
         let node = compare::node(resource);
@@ -347,7 +353,8 @@ pub(super) async fn replay(
     targets: &[ResourceKey],
     initial: bool,
 ) -> TestResult {
-    let report = run_projection(store, graph.endpoint(), graph.name(), 1000).await?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(graph.endpoint(), graph.name())?;
+    let report = run_projection(store, &backend, 1000).await?;
     assert_eq!(
         report.acknowledged, 0,
         "fully acked replay has no pending mutations"
@@ -369,7 +376,7 @@ pub(super) async fn assert_tag_only_refresh(
         .projection_resource(target)
         .await?
         .ok_or("tag-only target missing")?;
-    let view = Database::open(database).await?;
+    let view = Database::open(database.to_str().ok_or("non-UTF-8 database path")?).await?;
     let detail_before = view
         .detail(&compare::node(target))
         .await?
@@ -428,7 +435,7 @@ pub(super) async fn assert_tag_only_refresh(
         after.content_hash, before.content_hash,
         "tag-only update must not rewrite record identity"
     );
-    let detail_after = Database::open(database)
+    let detail_after = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(target))
         .await?
@@ -514,7 +521,7 @@ pub(super) async fn assert_observation(
     expected: Option<(inventory_core::inventory::TagCoverage, i64, Option<i64>)>,
 ) -> TestResult {
     // A new reader connection on every check proves persistence, not cached state.
-    let detail = Database::open(database)
+    let detail = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(resource))
         .await?
@@ -545,7 +552,7 @@ pub(super) async fn assert_collector_coverage(
     started: i64,
 ) -> TestResult {
     let finished = now_ms()?;
-    let view = Database::open(database).await?;
+    let view = Database::open(database.to_str().ok_or("non-UTF-8 database path")?).await?;
     for target in targets {
         let detail = view
             .detail(&compare::node(target))

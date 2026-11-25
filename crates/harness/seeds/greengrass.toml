@@ -1,0 +1,10 @@
+format = 1
+service = "greengrass"
+
+[[step]]
+id = "resource"
+operation = "CreateGroup"
+kind = "AWS::Greengrass::Group"
+identity = "Arn"
+[step.input]
+"Name" = "inventory-thin-greengrass"

@@ -32,10 +32,10 @@ inside that crate unless they name another.
 
 | Part | Files | State |
 | --- | --- | --- |
-| Window and widget tree | `src/ui.rs` (278 lines), `chrome.rs`, `templates.rs` | One window, 1440 by 900. Header with a summary line and a status chip. Left rail 184 wide. Center with Table and Graph tabs and a search input. Detail panel on the right |
+| Window and widget tree | `src/ui.rs` (298 lines), `chrome.rs`, `templates.rs` | One window, 1440 by 900. Header with a summary line and a status chip. Left rail 184 wide. Center with Table and Graph tabs and a search input. Detail panel on the right |
 | Left rail | `src/ui.rs` | Filter chips written into the widget tree by hand: accounts ("All", "prod" and two more), two regions, four kinds with count labels (`ec2_count`, `s3_count`, `rds_count`, `lambda_count`), and three exact-match text inputs. It is not built from the data |
-| App state and actions | `src/app.rs` (304 lines, over the limit), `app/actions.rs` | Holds the worker handle and a `SignalToUI` |
-| Table | `src/table.rs` (300 lines) | A `PortalList` over one page of 500 rows (`PAGE_LIMIT`); no second page |
+| App state and actions | `src/app.rs` (286 lines), `app/actions.rs` | Holds the worker handle and a `SignalToUI` |
+| Table | `src/table.rs` (296 lines) | A `PortalList` over one page of 500 rows (`PAGE_LIMIT`); no second page |
 | Data model | `src/data/mod.rs` | `Row`, `Edge`, `Graph`, `Filter`, `Counts`, `Data` |
 | Worker | `src/worker.rs`, `worker/` | A thread with its own tokio runtime. Commands come in on a bounded tokio channel, events go out on a bounded `std::sync::mpsc` channel, and `SignalToUI` wakes the UI. Two commands: `Refresh` and `Expand` |
 | Graph model | `src/dag/graph.rs`, `builder.rs` | `DagGraph` of at most 2,000 nodes and 4,000 edges (`MAX_NODES`, `MAX_EDGES`) |
@@ -121,6 +121,11 @@ Rules:
   is never dropped; progress events may be.
 - The UI process opens no listening socket.
 - One sweep at a time. A second start is refused.
+- Each UI read opens its own short-lived store snapshot and closes it at
+  once. No read transaction is held across idle time or between requests, so
+  a continuous writer can checkpoint the SQLite write-ahead log without
+  waiting on a stale reader. One page read is consistent, counts included;
+  two consecutive reads may see different committed states.
 
 ## 5. Connections and roles
 
@@ -344,9 +349,8 @@ throttled. Kinds the emulator could not verify are listed by name.
 | Headless start | The app starts, draws one frame and exits under the headless backend | CI, if D6.0 shows it works |
 | Frame harness | Section 8 | The owner's two test machines (V56), each on a 120 Hz display |
 
-`crates/cmdb-ui/src` is under the 300-line and 25-line guards. `app.rs` is
-over the first today and `ui.rs` is close; both are split before they grow
-(A0.4, D13.2).
+`crates/cmdb-ui/src` is under the 1000-line file and under-60-line function guards. `app.rs`
+(286 lines) and `ui.rs` (298 lines) are well inside the first.
 
 ## 11. Platforms and packaging
 

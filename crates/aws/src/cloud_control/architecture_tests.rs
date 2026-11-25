@@ -77,8 +77,8 @@ fn observed_paths(properties: &Value) -> Result<BTreeSet<String>, TestError> {
 #[test]
 fn independently_authored_architecture_fixtures_preserve_exact_targets_and_evidence() -> TestResult
 {
-    let fixtures: Fixtures = serde_json::from_str(include_str!(
-        "../../tests/fixtures/cloudcontrol-architecture.json"
+    let fixtures: Fixtures = toml::from_str(include_str!(
+        "../../tests/fixtures/cloudcontrol-architecture.toml"
     ))?;
     assert_eq!(fixtures.schema_version, 1);
     assert_eq!(fixtures.fixtures.len(), 18);

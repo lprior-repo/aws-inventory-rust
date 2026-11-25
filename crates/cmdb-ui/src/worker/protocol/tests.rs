@@ -2,7 +2,7 @@ use super::*;
 use crate::data::{Counts, Graph};
 
 #[test]
-fn given_new_page_and_newer_selection_when_draining_then_access_status_uses_page_fence_without_resurrecting_old_graph()
+fn given_new_page_and_newer_selection_when_draining_then_access_status_uses_graph_fence_without_resurrecting_old_graph()
 -> Result<(), String> {
     let revisions = Revisions::default();
     let page = revisions.refresh()?;
@@ -11,15 +11,15 @@ fn given_new_page_and_newer_selection_when_draining_then_access_status_uses_page
     let events = current_events(
         [
             Output {
-                revision: Some(0),
+                revision: Some(selection),
                 event: WorkerEvent::GraphStatus {
-                    error: Some("obsolete configuration".into()),
+                    error: Some("current selection transport".into()),
                 },
             },
             Output {
                 revision: Some(page),
                 event: WorkerEvent::GraphStatus {
-                    error: Some("current configuration".into()),
+                    error: Some("obsolete refresh configuration".into()),
                 },
             },
             Output {
@@ -44,7 +44,7 @@ fn given_new_page_and_newer_selection_when_draining_then_access_status_uses_page
     );
     assert_eq!(events.len(), 2);
     assert!(
-        matches!(events.first(), Some(WorkerEvent::GraphStatus { error: Some(error) }) if error == "current configuration")
+        matches!(events.first(), Some(WorkerEvent::GraphStatus { error: Some(error) }) if error == "current selection transport")
     );
     assert!(matches!(
         events.last(),
@@ -55,4 +55,26 @@ fn given_new_page_and_newer_selection_when_draining_then_access_status_uses_page
         })
     ));
     Ok(())
+}
+
+#[test]
+fn given_harness_graph_when_draining_then_current_graph_payload_is_preserved() {
+    let revisions = Revisions::default();
+    let output = Output {
+        revision: Some(0),
+        event: WorkerEvent::HarnessGraph {
+            graph: crate::dag::graph::DagGraph::default(),
+            resources: 500,
+            edges: 0,
+        },
+    };
+    let events = current_events([output].into_iter(), &revisions);
+    assert!(matches!(
+        events.last(),
+        Some(WorkerEvent::HarnessGraph {
+            resources: 500,
+            edges: 0,
+            ..
+        })
+    ));
 }

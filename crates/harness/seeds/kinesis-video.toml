@@ -1,0 +1,10 @@
+format = 1
+service = "kinesis-video"
+
+[[step]]
+id = "resource"
+operation = "CreateSignalingChannel"
+kind = "AWS::KinesisVideo::SignalingChannel"
+identity = "ChannelARN"
+[step.input]
+"ChannelName" = "inventory-thin-kinesis-video"

@@ -43,3 +43,15 @@ graph access needs one interface now.
   traversal questions and returns keys, whose details come from SQL.
 - With the graph database stopped, a sweep completes and the outbox drains
   when it returns. `tests/sweep_e2e` already proves that for the EC2 slice.
+
+## Current graph read contract
+
+`cmdb-view` expands only admitted frontiers, with an early row limit and no
+path enumeration, aggregation or sorting. Writes between native graph reads
+may be observed; the traversal is not a graph snapshot.
+
+Neighborhood queries follow edges in either direction. Blast-radius queries
+follow incoming edges: for `A -> B -> C`, failure of `C` affects `B` and `A`.
+Already-expanded nodes are excluded, while edges between frontier nodes remain
+eligible so cycles are captured. Query keys come only from validated
+hexadecimal resource digests.

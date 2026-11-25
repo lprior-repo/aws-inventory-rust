@@ -1,0 +1,12 @@
+format = 1
+service = "bedrock"
+
+[[step]]
+id = "resource"
+operation = "CreateGuardrail"
+kind = "AWS::Bedrock::Guardrail"
+identity = "guardrailArn"
+[step.input]
+"name" = "inventory-thin-bedrock"
+"blockedInputMessaging" = "inventory-thin-bedrock"
+"blockedOutputsMessaging" = "inventory-thin-bedrock"

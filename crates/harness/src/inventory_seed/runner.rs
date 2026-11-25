@@ -1,9 +1,17 @@
+mod batches;
+mod dependencies;
 mod identity;
+mod reporting;
+pub use reporting::{run_report, run_report_with_concurrency};
 mod materialize;
 #[path = "runner/oracle.rs"]
 mod oracle;
 #[cfg(test)]
 mod tests;
+mod values;
+#[cfg(test)]
+mod values_tests;
+
 use super::{
     ScenarioSeedOracle, SeedResourceIdentity, SeedResourcePair, TypedSeedOracle,
     config::{MutationPermit, SeedConfig, SeedError},
@@ -145,6 +153,15 @@ async fn execute_step(
     step: &PreparedStep<'_>,
     context: &SeedContext<'_, '_>,
 ) -> Result<(), SeedError> {
+    let output = prepare_output(state, step, context).await?;
+    record_output(state, output.step, output.resource, output.record)
+}
+
+async fn prepare_output(
+    state: &SeedState,
+    step: &PreparedStep<'_>,
+    context: &SeedContext<'_, '_>,
+) -> Result<SeedOutput, SeedError> {
     let inputs = step
         .inputs
         .iter()
@@ -157,7 +174,11 @@ async fn execute_step(
         .as_ref()
         .map(|resource| identity::resource(state, step.id, resource, &response, &inputs))
         .transpose()?;
-    record_output(state, step.id, resource, response)
+    Ok(SeedOutput {
+        step: step.id,
+        resource,
+        record: response,
+    })
 }
 
 async fn call_step(
@@ -219,16 +240,7 @@ fn materialize_input(
     state: &SeedState,
     input: &PreparedInput,
 ) -> Result<(Vec<FieldId>, Value), SeedError> {
-    let value = match &input.value {
-        PreparedInputValue::Text(text) => Value::Text(text.clone()),
-        PreparedInputValue::Boolean(value) => Value::Bool(*value),
-        PreparedInputValue::Integer(value) => Value::Int(*value),
-        PreparedInputValue::Literal(value) => value.clone(),
-        PreparedInputValue::Template(template) => materialize::template(state, template)?,
-        PreparedInputValue::PreviousOutput { step, path } => {
-            materialize::output_value(state, *step, path)?
-        }
-    };
+    let value = values::materialize(state, &input.value)?;
     Ok((input.path.clone(), value))
 }
 

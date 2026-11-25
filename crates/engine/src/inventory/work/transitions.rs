@@ -63,15 +63,17 @@ pub(super) async fn persist_children(
     Ok(())
 }
 
+/// With `keep_until`, a scope that has another page stays leased until then.
 pub(super) async fn persist_page_state(
     store: &BinaryStore,
     tx: &mut Transaction<'_, Sqlite>,
     page: &PageCommit,
     repeated: bool,
+    keep_until: Option<i64>,
 ) -> Result<ChangeStats, StoreError> {
     let scope = encode_scope(&page.lease.scope)?;
     if repeated {
-        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'partial',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='partial',observed_at=excluded.observed_at")
+        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'partial',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='partial',observed_at=excluded.observed_at,detail=NULL")
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.observed_at_ms).execute(&mut **tx).await?;
         sqlx::query("UPDATE work_queue SET state=2,token=NULL,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).execute(&mut **tx).await?;
@@ -86,8 +88,9 @@ pub(super) async fn persist_page_state(
     if page.done {
         return finalize_page(store, tx, page, &scope).await;
     }
-    sqlx::query("UPDATE work_queue SET state=0,token=?4,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
-        .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).bind(&page.next_token).execute(&mut **tx).await?;
+    let (state, until) = keep_until.map_or((0_i64, 0_i64), |until| (1, until));
+    sqlx::query("UPDATE work_queue SET state=?5,token=?4,lease_until=?6 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
+        .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).bind(&page.next_token).bind(state).bind(until).execute(&mut **tx).await?;
     Ok(ChangeStats::default())
 }
 
@@ -97,7 +100,7 @@ pub(super) async fn finalize_page(
     page: &PageCommit,
     scope: &[u8],
 ) -> Result<ChangeStats, StoreError> {
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'complete',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='complete',observed_at=excluded.observed_at")
+    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'complete',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='complete',observed_at=excluded.observed_at,detail=NULL")
         .bind(page.lease.sweep.as_str()).bind(scope).bind(page.observed_at_ms).execute(&mut **tx).await?;
     sqlx::query("UPDATE work_queue SET state=2,token=NULL,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
         .bind(page.lease.sweep.as_str()).bind(scope).bind(page.lease.generation).execute(&mut **tx).await?;
@@ -109,7 +112,7 @@ pub(in super::super) async fn resume_sweep(
     sweep: &SweepId,
     expected_account: &AccountId,
 ) -> Result<(), StoreError> {
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
 
     // Ensure the sweeps table exists (may not exist in legacy databases).
     sqlx::query(
@@ -184,7 +187,7 @@ pub(in super::super) async fn resume_sweep(
     Ok(())
 }
 
-pub(super) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
+pub(in crate::inventory) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
     encode_scope_context(scope, scope.context())
 }
 
@@ -239,7 +242,7 @@ fn encode_scope_context(
     Ok(bytes)
 }
 
-pub(super) fn decode_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
+pub(in crate::inventory) fn decode_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
     let mut cursor = Cursor::new(bytes);
     let account = inventory_core::inventory::AccountId::parse(cursor.text()?)?;
     let region = inventory_core::inventory::Region::parse(cursor.text()?)?;
@@ -315,7 +318,7 @@ pub(super) fn decode_resource_from(cursor: &mut Cursor<'_>) -> Result<ResourceKe
         id: inventory_core::inventory::ResourceId::parse(cursor.text()?)?,
     })
 }
-pub(super) fn put_text(out: &mut Vec<u8>, text: &str) -> Result<(), StoreError> {
+pub(in crate::inventory) fn put_text(out: &mut Vec<u8>, text: &str) -> Result<(), StoreError> {
     let size =
         u32::try_from(text.len()).map_err(|_| StoreError::Invalid("binary key field too large"))?;
     out.extend_from_slice(&size.to_be_bytes());
@@ -323,15 +326,15 @@ pub(super) fn put_text(out: &mut Vec<u8>, text: &str) -> Result<(), StoreError> 
     Ok(())
 }
 
-pub(super) struct Cursor<'a> {
-    pub(super) bytes: &'a [u8],
-    pub(super) offset: usize,
+pub(in crate::inventory) struct Cursor<'a> {
+    pub(in crate::inventory) bytes: &'a [u8],
+    pub(in crate::inventory) offset: usize,
 }
 impl<'a> Cursor<'a> {
-    pub(super) fn new(bytes: &'a [u8]) -> Self {
+    pub(in crate::inventory) fn new(bytes: &'a [u8]) -> Self {
         Self { bytes, offset: 0 }
     }
-    pub(super) fn byte(&mut self) -> Result<u8, StoreError> {
+    pub(in crate::inventory) fn byte(&mut self) -> Result<u8, StoreError> {
         let byte = self
             .bytes
             .get(self.offset)
@@ -343,7 +346,7 @@ impl<'a> Cursor<'a> {
             .ok_or(StoreError::Invalid("binary offset overflow"))?;
         Ok(byte)
     }
-    pub(super) fn text(&mut self) -> Result<&'a str, StoreError> {
+    pub(in crate::inventory) fn text(&mut self) -> Result<&'a str, StoreError> {
         let length = u32::from_be_bytes([self.byte()?, self.byte()?, self.byte()?, self.byte()?]);
         let size =
             usize::try_from(length).map_err(|_| StoreError::Invalid("binary length overflow"))?;
@@ -360,7 +363,7 @@ impl<'a> Cursor<'a> {
         self.offset = end;
         Ok(value)
     }
-    pub(super) fn finished(&self) -> bool {
+    pub(in crate::inventory) fn finished(&self) -> bool {
         self.offset == self.bytes.len()
     }
 }
@@ -380,7 +383,7 @@ pub(in super::super) async fn create_sweep_manifest(
         .as_millis();
     let now_ms =
         i64::try_from(now_ms).map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     sqlx::query(
         "INSERT INTO sweeps(sweep_id,account,started_at) VALUES(?1,?2,?3) ON CONFLICT(sweep_id) DO UPDATE SET sweep_id=sweep_id",
     )
@@ -397,6 +400,7 @@ pub(in super::super) async fn sweep_manifest_account(
     store: &BinaryStore,
     sweep: &SweepId,
 ) -> Result<Option<String>, StoreError> {
+    let _turn = store.read_turn().await;
     let row = sqlx::query_scalar("SELECT account FROM sweeps WHERE sweep_id=?1")
         .bind(sweep.as_str())
         .fetch_optional(&store.reader)
@@ -407,6 +411,7 @@ pub(in super::super) async fn sweep_manifest_account(
 pub(in super::super) async fn discover_active_sweep(
     store: &BinaryStore,
 ) -> Result<Option<SweepId>, StoreError> {
+    let _turn = store.read_turn().await;
     let row = sqlx::query_scalar(
         "SELECT DISTINCT sweep_id FROM work_queue WHERE state IN(0,1) ORDER BY sweep_id LIMIT 1",
     )

@@ -2,7 +2,7 @@ use super::{StoreError, merge};
 use inventory_core::record::{Exclusions, FieldId, Key, MapKeyExclusion, Record, Value, ValueRef};
 use std::collections::{BTreeMap, BTreeSet};
 
-pub(super) fn encode(exclusions: &Exclusions) -> Result<Record, StoreError> {
+pub(in crate::inventory) fn encode(exclusions: &Exclusions) -> Result<Record, StoreError> {
     let paths = exclusions
         .paths()
         .iter()
@@ -36,7 +36,7 @@ pub(super) fn encode(exclusions: &Exclusions) -> Result<Record, StoreError> {
     ])))?)
 }
 
-pub(super) fn append(
+pub(in crate::inventory) fn append(
     record: &Record,
     paths: &mut Vec<Vec<FieldId>>,
     keys: &mut BTreeSet<MapKeyExclusion>,

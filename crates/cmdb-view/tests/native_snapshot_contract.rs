@@ -52,7 +52,7 @@ async fn fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Database)> {
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let registry = SchemaRegistry::new(&bytes, runtime.schemas().to_vec())?;
     let store = BinaryStore::create(&path, registry).await?;
-    let database = Database::open(&path).await?;
+    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     Ok((directory, store, database))
 }
 

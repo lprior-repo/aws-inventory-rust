@@ -18,6 +18,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "mediaconnect",
+        operation: "DescribeGatewayInstance",
+        kind: "AWS::ApiOnly::MediaConnectGatewayInstance",
+    },
+    OperationMapping {
+        service: "mediaconnect",
         operation: "ListBridges",
         kind: "AWS::MediaConnect::Bridge",
     },

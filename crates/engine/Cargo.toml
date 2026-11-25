@@ -7,6 +7,7 @@ rust-version.workspace = true
 
 [dependencies]
 inventory-core.workspace = true
+inventory-graph.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -22,7 +23,10 @@ sqlx.workspace = true
 redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
 
 [dev-dependencies]
+inventory-graph = { workspace = true, features = ["test-fixtures"] }
+inventory-harness = { path = "../harness" }
 tempfile = "3.27.0"
+toml.workspace = true
 proptest.workspace = true
 
 [lints]

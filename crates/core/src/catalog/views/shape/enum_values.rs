@@ -5,6 +5,14 @@ use crate::{
 
 const MAX_VALUES: usize = 65_536;
 
+pub(super) fn first<'a>(map: MapRef<'a>, kind: &str) -> Result<Option<ValueRef<'a>>, CatalogError> {
+    validate(map, kind)?;
+    match map.get_field(CatalogKey::EnumValues.field()?)? {
+        Some(ValueRef::List(values)) => Ok(values.iter()?.next().transpose()?),
+        _ => Ok(None),
+    }
+}
+
 pub(super) fn validate(map: MapRef<'_>, kind: &str) -> Result<(), CatalogError> {
     let Some(values) = map.get_field(CatalogKey::EnumValues.field()?)? else {
         return Ok(());
@@ -101,6 +109,58 @@ mod tests {
         let record = Record::encode(&Value::Map(fields))?;
         super::validate(record.root(), kind)?;
         super::accepts(record.root(), kind, expected)
+    }
+
+    #[test]
+    fn given_enum_wire_order_when_first_requested_then_exact_first_value_is_borrowed() -> TestResult
+    {
+        let record = Record::encode(&Value::Map(BTreeMap::from([(
+            Key::Field(CatalogKey::EnumValues.field()?),
+            Value::List(vec![
+                Value::Text("second".into()),
+                Value::Text("first".into()),
+            ]),
+        )])))?;
+        let text = match super::first(record.root(), "enum")? {
+            Some(ValueRef::Text(text)) => Some(text),
+            _ => None,
+        };
+        assert_eq!(text, Some("second"));
+        let record = Record::encode(&Value::Map(BTreeMap::from([(
+            Key::Field(CatalogKey::EnumValues.field()?),
+            Value::List(vec![Value::Int(7), Value::Int(2)]),
+        )])))?;
+        let integer = match super::first(record.root(), "intEnum")? {
+            Some(ValueRef::Int(integer)) => Some(integer),
+            _ => None,
+        };
+        assert_eq!(integer, Some(7));
+        let record = Record::encode(&Value::Map(BTreeMap::new()))?;
+        assert!(super::first(record.root(), "string")?.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn given_empty_or_invalid_enum_metadata_when_first_requested_then_absence_or_exact_error_is_returned()
+    -> TestResult {
+        let record = Record::encode(&Value::Map(BTreeMap::from([(
+            Key::Field(CatalogKey::EnumValues.field()?),
+            Value::List(Vec::new()),
+        )])))?;
+        assert!(super::first(record.root(), "enum")?.is_none());
+        let error = super::first(record.root(), "structure")
+            .err()
+            .ok_or("expected an error")?;
+        assert_eq!(error.to_string(), "invalid catalog field EnumValues");
+        let record = Record::encode(&Value::Map(BTreeMap::from([(
+            Key::Field(CatalogKey::EnumValues.field()?),
+            Value::Text("wrong".into()),
+        )])))?;
+        let error = super::first(record.root(), "enum")
+            .err()
+            .ok_or("expected an error")?;
+        assert_eq!(error.to_string(), "invalid catalog field EnumValues");
+        Ok(())
     }
 
     #[test]

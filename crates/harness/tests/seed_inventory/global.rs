@@ -28,26 +28,28 @@ pub(super) fn iam() -> Result<SeedScenario, SeedError> {
     account_scenario(step)
 }
 
-// Requires an emulator account without an existing organization.
-// CreateAccount is deliberately absent: its CreateAccountStatus.Id identifies a
-// request, not an account. A bounded DescribeCreateAccountStatus waiter must
-// require State=SUCCEEDED, reject FAILED and obtain AccountId before publication.
-// ListRoots can supply an OU ParentId, but complete recursive OU collection is
-// deferred by the Organizations overlay, so this recipe creates no OUs.
+// The native emulator starts with an organization and root. Read both
+// rather than trying to create a second organization.
 pub(super) fn organizations() -> Result<SeedScenario, SeedError> {
-    let step = SeedStep::new(
+    let organization = SeedStep::new(
         StepId::new(0),
         "organizations".into(),
-        "CreateOrganization".into(),
+        "DescribeOrganization".into(),
         "AWS::Organizations::Organization".into(),
         FieldPath::new(&["Organization", "Arn"])?,
-        vec![text(&["FeatureSet"], "ALL")?],
+        vec![],
     )
-    .with_response_checks(vec![check(
-        &["Organization", "FeatureSet"],
-        &["FeatureSet"],
-    )?]);
-    account_scenario(step)
+    .with_scope(SeedScope::Account);
+    let root = SeedStep::new(
+        StepId::new(1),
+        "organizations".into(),
+        "ListRoots".into(),
+        "AWS::ApiOnly::OrganizationsRoot".into(),
+        FieldPath::new(&["Roots", "0", "Arn"])?,
+        vec![],
+    )
+    .with_scope(SeedScope::Account);
+    SeedScenario::new(vec![organization, root])
 }
 
 // Public-zone metadata only: no records, registration or VPC association.
@@ -150,17 +152,39 @@ pub(super) fn assert_organizations_oracle(
     account: &str,
     region: &str,
 ) -> OracleResult {
-    let resource = account_resource(oracle, account, region, "AWS::Organizations::Organization")?;
-    let prefix = format!(
-        "arn:{}:organizations::{account}:organization/o-",
-        partition(region)
-    );
-    let organization_id = resource
+    assert_eq!(oracle.account_id.as_str(), account);
+    assert_eq!(oracle.region, Region::parse(region)?);
+    assert!(oracle.edges.is_empty());
+    let [organization, root] = oracle.resources.as_slice() else {
+        return Err("expected an organization and its root".into());
+    };
+    for (resource, step, kind) in [
+        (organization, 0, "AWS::Organizations::Organization"),
+        (root, 1, "AWS::ApiOnly::OrganizationsRoot"),
+    ] {
+        assert_eq!(resource.step, StepId::new(step));
+        assert_eq!(resource.kind, Kind::parse(kind)?);
+        assert_eq!(resource.key.kind, resource.kind);
+        assert_eq!(resource.key.account, oracle.account_id);
+        assert_eq!(resource.key.region, Region::Global);
+        assert_eq!(resource.key.id, resource.id);
+        assert_eq!(resource.evidence, SeedIdentityEvidence::Response);
+    }
+    let prefix = format!("arn:{}:organizations::{account}:", partition(region));
+    let organization_prefix = format!("{prefix}organization/");
+    let organization_id = organization
         .id
         .as_str()
-        .strip_prefix(&prefix)
+        .strip_prefix(&organization_prefix)
         .ok_or("organization identity does not match its account and partition")?;
     assert!(!organization_id.is_empty());
+    let root_prefix = format!("{prefix}root/{organization_id}/r-");
+    let root_id = root
+        .id
+        .as_str()
+        .strip_prefix(&root_prefix)
+        .ok_or("root identity does not match its organization")?;
+    assert!(!root_id.is_empty());
     Ok(())
 }
 

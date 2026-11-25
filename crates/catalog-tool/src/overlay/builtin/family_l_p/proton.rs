@@ -1,6 +1,7 @@
 // Pinned Smithy source: .local/aws-models/models/proton/service/2020-07-20/proton-2020-07-20.json
+use super::super::{name, path};
 use super::policy::{Group, Id, Resource, compile};
-use crate::overlay::Scope;
+use crate::overlay::{Binding, ContextSource, Emission, ExecutionBranch, FixedValue, Scope};
 use crate::{
     classes::DenyReason,
     overlay::{NameError, OverlayClass, ServiceOverlay},
@@ -365,9 +366,22 @@ const RESOURCES: &[Resource] = &[
 ];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    use super::super::{name, path};
-    use crate::overlay::{Binding, ContextSource, Emission, ExecutionBranch, FixedValue};
     let mut service = compile("proton", GROUPS, RESOURCES)?;
+    setup_account_connections(&mut service)?;
+    setup_template_version(
+        &mut service,
+        "ListEnvironmentTemplateVersions",
+        "ListEnvironmentTemplates",
+    )?;
+    setup_template_version(
+        &mut service,
+        "ListServiceTemplateVersions",
+        "ListServiceTemplates",
+    )?;
+    Ok(service)
+}
+
+fn setup_account_connections(service: &mut ServiceOverlay) -> Result<(), NameError> {
     if let Some(plan) = service
         .operations
         .get_mut(&name("ListEnvironmentAccountConnections")?)
@@ -389,64 +403,64 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             })
             .collect::<Result<_, NameError>>()?;
     }
-    for (operation, templates) in [
-        (
-            "ListEnvironmentTemplateVersions",
-            "ListEnvironmentTemplates",
-        ),
-        ("ListServiceTemplateVersions", "ListServiceTemplates"),
-    ] {
-        if let Some(plan) = service.operations.get_mut(&name(operation)?) {
-            plan.bind.clear();
-            plan.branches = vec![
-                ExecutionBranch {
-                    discriminator: "majors".to_owned(),
-                    fixed: Default::default(),
-                    bind: [(
+    Ok(())
+}
+
+fn setup_template_version(
+    service: &mut ServiceOverlay,
+    operation: &str,
+    templates: &str,
+) -> Result<(), NameError> {
+    if let Some(plan) = service.operations.get_mut(&name(operation)?) {
+        plan.bind.clear();
+        plan.branches = vec![
+            ExecutionBranch {
+                discriminator: "majors".to_owned(),
+                fixed: Default::default(),
+                bind: [(
+                    path("templateName")?,
+                    Binding::From {
+                        operation: name(templates)?,
+                        path: path("name")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                emission: Some(Emission::DiscoveryOnly),
+                row_policy: None,
+                scope: Scope::Region,
+                request_region: None,
+            },
+            ExecutionBranch {
+                discriminator: "minors".to_owned(),
+                fixed: Default::default(),
+                bind: [
+                    (
                         path("templateName")?,
-                        Binding::From {
-                            operation: name(templates)?,
-                            path: path("name")?,
+                        Binding::ContextFromBranch {
+                            operation: name(operation)?,
+                            branch: "majors".to_owned(),
+                            source: ContextSource::Request,
+                            path: path("templateName")?,
                         },
-                    )]
-                    .into_iter()
-                    .collect(),
-                    emission: Some(Emission::DiscoveryOnly),
-                    row_policy: None,
-                    scope: Scope::Region,
-                    request_region: None,
-                },
-                ExecutionBranch {
-                    discriminator: "minors".to_owned(),
-                    fixed: Default::default(),
-                    bind: [
-                        (
-                            path("templateName")?,
-                            Binding::ContextFromBranch {
-                                operation: name(operation)?,
-                                branch: "majors".to_owned(),
-                                source: ContextSource::Request,
-                                path: path("templateName")?,
-                            },
-                        ),
-                        (
-                            path("majorVersion")?,
-                            Binding::FromBranch {
-                                operation: name(operation)?,
-                                branch: "majors".to_owned(),
-                                path: path("majorVersion")?,
-                            },
-                        ),
-                    ]
-                    .into_iter()
-                    .collect(),
-                    emission: None,
-                    row_policy: None,
-                    scope: Scope::Region,
-                    request_region: None,
-                },
-            ];
-        }
+                    ),
+                    (
+                        path("majorVersion")?,
+                        Binding::FromBranch {
+                            operation: name(operation)?,
+                            branch: "majors".to_owned(),
+                            path: path("majorVersion")?,
+                        },
+                    ),
+                ]
+                .into_iter()
+                .collect(),
+                emission: None,
+                row_policy: None,
+                scope: Scope::Region,
+                request_region: None,
+            },
+        ];
     }
-    Ok(service)
+    Ok(())
 }

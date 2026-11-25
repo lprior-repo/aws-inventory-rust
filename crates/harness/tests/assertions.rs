@@ -19,16 +19,17 @@ fn given_pinned_fixtures_when_selected_then_exactly_thirteen_authored_cases_rema
     assert_eq!(fixtures.len(), 13);
     assert_eq!(
         digest,
-        "becbfa28fca31c361c165d7533f5b4a9945c34cf7ef86c6b3a2abc65587ac5ea"
+        "5736639a04254e70b1830dc35d1a5399bb10f75bfe5344775951569f524432ba"
     );
     assert!(
         fixtures
             .iter()
             .all(|row| !row.to_string().contains("111111111111"))
     );
-    let document: Value = serde_json::from_str(&std::fs::read_to_string(
-        root().join("crates/aws/tests/fixtures/cloudcontrol-architecture.json"),
-    )?)?;
+    let document: Value =
+        serde_json::to_value(toml::from_str::<toml::Table>(&std::fs::read_to_string(
+            root().join("crates/aws/tests/fixtures/cloudcontrol-architecture.toml"),
+        )?)?)?;
     let authored = document
         .get("fixtures")
         .and_then(Value::as_array)

@@ -56,10 +56,13 @@ mod operations_8;
 mod operations_9;
 #[path = "family_l_p/relations_0.rs"]
 mod relations_0;
+#[path = "family_l_p/sanitized_functions.rs"]
+mod sanitized_functions;
 
 pub(super) const SOURCES: &[MappingSource<'static>] = &[
     completion_additions::SOURCE,
     final_additions::SOURCE,
+    sanitized_functions::SOURCE,
     MappingSource {
         cfn: cfn_0::ENTRIES,
         ..super::EMPTY

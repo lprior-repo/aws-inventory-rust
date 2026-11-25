@@ -1,0 +1,10 @@
+format = 1
+service = "redshift"
+
+[[step]]
+id = "resource"
+operation = "CreateHsmClientCertificate"
+kind = "AWS::ApiOnly::RedshiftHsmClientCertificate"
+identity = "HsmClientCertificate.HsmClientCertificateIdentifier"
+[step.input]
+"HsmClientCertificateIdentifier" = "inventory-thin-redshift"

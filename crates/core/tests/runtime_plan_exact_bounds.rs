@@ -1,3 +1,5 @@
+#[path = "support/base_catalog.rs"]
+mod base_catalog;
 #[path = "support/synthetic_catalog.rs"]
 mod synthetic_catalog;
 

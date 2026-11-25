@@ -125,37 +125,58 @@ fn given_live_native_tags_and_committed_sql_tags_when_expanding_then_affiliation
         let native = NativeGraph::new(std::slice::from_ref(&link)).await?;
         let worker = fixture.worker(Some(&native));
         let result: TestResult = async {
-        snapshot(&worker).await?;
-        let after = fixture
-            .commit_tagged(
-                "after",
-                (ACCOUNT, REGION),
-                &[("shared", "root"), ("b", "neighbor")],
-                &[],
-                vec![observed(&a, "owner", "after")?],
-                2,
-            )
-            .await?;
-        native.query(&format!("MATCH (s:Resource {{key:'{}'}}) CREATE (s)-[:HAS_TAG {{provenance:'inventory.tags'}}]->(:Tag {{account:'{ACCOUNT}',region:'{REGION}',tag_key:'owner',tag_value:'after'}}), (s)-[:HAS_TAG {{provenance:'inventory.tags'}}]->(:Tag {{account:'222222222222',region:'{REGION}',tag_key:'owner',tag_value:'foreign'}})", digest(&a)?)).await?;
-        // When the actual worker reads live native tags and pinned SQL details.
-        worker.expand(a.clone())?;
-        let expanded = graph(&worker).await?;
-        // Then tag membership is scoped to the requested root, never a dependency.
-        assert_edges(&expanded, std::slice::from_ref(&link))?;
-        assert_eq!(expanded.tag_root, Some(digest(&a)?));
-        assert_eq!(expanded.tag_affiliations, vec![cmdb_view::TagAffiliation {
-            tag: cmdb_view::ScopedTag { account: ACCOUNT.into(), region: REGION.into(),
-                key: "owner".into(), value: "after".into() }, provenance: "inventory.tags".into(),
-        }]);
-        assert!(!expanded.tags_truncated);
-        assert_eq!(expanded.nodes.iter().find(|row| row.id == "shared"), after.iter().find(|row| row.id == "shared"));
-        worker.expand(b)?;
-        let untagged = graph(&worker).await?;
-        assert!(untagged.tag_affiliations.is_empty());
-        assert!(!untagged.tags_truncated);
-        assert_eq!(untagged.tag_root, Some(digest(&node(ACCOUNT, REGION, KIND, "b"))?));
-        Ok(())
-    }.await;
+            snapshot(&worker).await?;
+            let after = fixture
+                .commit_tagged(
+                    "after",
+                    (ACCOUNT, REGION),
+                    &[("shared", "root"), ("b", "neighbor")],
+                    &[],
+                    vec![observed(&a, "owner", "after")?],
+                    2,
+                )
+                .await?;
+            native
+                .query(&inventory_graph::cypher::diagnostics::foreign_tag_fixture(
+                    &digest(&a)?,
+                    ACCOUNT,
+                    REGION,
+                )?)
+                .await?;
+            // When the actual worker reads live native tags and pinned SQL details.
+            worker.expand(a.clone())?;
+            let expanded = graph(&worker).await?;
+            // Then tag membership is scoped to the requested root, never a dependency.
+            assert_edges(&expanded, std::slice::from_ref(&link))?;
+            assert_eq!(expanded.tag_root, Some(digest(&a)?));
+            assert_eq!(
+                expanded.tag_affiliations,
+                vec![cmdb_view::TagAffiliation {
+                    tag: cmdb_view::ScopedTag {
+                        account: ACCOUNT.into(),
+                        region: REGION.into(),
+                        key: "owner".into(),
+                        value: "after".into()
+                    },
+                    provenance: "inventory.tags".into(),
+                }]
+            );
+            assert!(!expanded.tags_truncated);
+            assert_eq!(
+                expanded.nodes.iter().find(|row| row.id == "shared"),
+                after.iter().find(|row| row.id == "shared")
+            );
+            worker.expand(b)?;
+            let untagged = graph(&worker).await?;
+            assert!(untagged.tag_affiliations.is_empty());
+            assert!(!untagged.tags_truncated);
+            assert_eq!(
+                untagged.tag_root,
+                Some(digest(&node(ACCOUNT, REGION, KIND, "b"))?)
+            );
+            Ok(())
+        }
+        .await;
         drop(worker);
         let cleanup = native.delete().await;
         result?;

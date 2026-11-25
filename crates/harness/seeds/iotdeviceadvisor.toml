@@ -1,0 +1,21 @@
+format = 1
+service = "iotdeviceadvisor"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-iotdeviceadvisor"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"iotdeviceadvisor.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "suite"
+operation = "CreateSuiteDefinition"
+kind = "AWS::IoTCoreDeviceAdvisor::SuiteDefinition"
+identity = "suiteDefinitionId"
+[step.input]
+suiteDefinitionConfiguration = { suiteDefinitionName = "inventory-thin-iotdeviceadvisor", rootGroup = "{\"configuration\":{\"EXECUTION_TIMEOUT\":\"600\"},\"tests\":[{\"name\":\"MQTT Connect\",\"configuration\":{},\"test\":{\"id\":\"MQTT_Connect\",\"version\":\"0.0.0\"}}]}", devicePermissionRoleArn = { from = "role", path = "Role.Arn" } }

@@ -177,7 +177,7 @@ impl<'a> Model<'a> {
             .ok_or_else(|| self.invalid(id, "operation"))
     }
 
-    pub(super) fn members(
+    pub(crate) fn members(
         &self,
         id: &str,
         side: &str,
@@ -204,7 +204,7 @@ impl<'a> Model<'a> {
             .ok_or_else(|| self.invalid(id, "input/output structure"))
     }
 
-    pub(super) fn facts(&self, id: &str) -> Result<OperationFacts<'_>, Error> {
+    pub(crate) fn facts(&self, id: &str) -> Result<OperationFacts<'_>, Error> {
         let (id, shape) = self
             .classifier
             .shapes

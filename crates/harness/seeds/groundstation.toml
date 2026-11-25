@@ -1,0 +1,11 @@
+format = 1
+service = "groundstation"
+
+[[step]]
+id = "config"
+operation = "CreateConfig"
+kind = "AWS::GroundStation::Config"
+identity = "configArn"
+[step.input]
+name = "inventory-thin-groundstation"
+configData = { trackingConfig = { autotrack = "PREFERRED" } }

@@ -10,7 +10,7 @@ use crate::catalog::json::Json;
 use crate::catalog::rules::GLOBAL_SENSITIVE;
 use crate::catalog::schema::{basic_type, empty_model_valid};
 use crate::catalog::tables::GROUPS;
-use crate::catalog::{ARCHIVE, ARCHIVE_SHA256, ROOT_CATALOG};
+use crate::catalog::{ARCHIVE, ARCHIVE_SHA256, ROOT_CATALOG, toml_doc};
 use crate::provenance::{file_sha256, sha256_hex};
 
 use super::descriptor::make_descriptor;
@@ -42,7 +42,7 @@ pub(super) fn root_catalog(root: &Path) -> Result<(Json, String), HarnessError> 
     let root_sha = sha256_hex(&root_bytes);
     let root_text = std::str::from_utf8(&root_bytes)
         .map_err(|_| HarnessError::invalid("root catalog is not UTF-8"))?;
-    Ok((Json::parse(root_text)?, root_sha))
+    Ok((Json::from_serde(&toml_doc::parse(root_text)?), root_sha))
 }
 
 pub(super) fn known_types(root_catalog: &Json) -> BTreeSet<String> {

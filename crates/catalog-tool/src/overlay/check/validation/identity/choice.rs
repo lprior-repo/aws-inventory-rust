@@ -90,80 +90,85 @@ fn valid_fields<'m>(
 ) -> bool {
     !fields.is_empty()
         && fields.len() <= 64
-        && fields.iter().all(|field| match field {
-            IdentityField::Selected(path) => scalar(selected(model, item, path.as_str())),
-            IdentityField::SelectedDigest(path) => typed_fields::digest(if path.as_str() == "$" {
-                Some(item)
-            } else {
-                selected(model, item, path.as_str())
-            }),
-            IdentityField::Request(path) => scalar(
+        && fields
+            .iter()
+            .all(|field| valid_field(operation, model, item, field))
+}
+
+fn valid_field<'m>(
+    operation: &str,
+    model: &Model<'m>,
+    item: ShapeRef<'m>,
+    field: &IdentityField,
+) -> bool {
+    match field {
+        IdentityField::Selected(path) => scalar(selected(model, item, path.as_str())),
+        IdentityField::SelectedDigest(path) => typed_fields::digest(if path.as_str() == "$" {
+            Some(item)
+        } else {
+            selected(model, item, path.as_str())
+        }),
+        IdentityField::Request(path) => scalar(request(model, operation, path.as_str())),
+        IdentityField::SelectedArn(path) => text(selected(model, item, path.as_str())),
+        IdentityField::RequestArn(path) => text(request(model, operation, path.as_str())),
+        IdentityField::SelectedInteger {
+            path,
+            minimum,
+            maximum,
+        } => typed_fields::integer(selected(model, item, path.as_str()), *minimum, *maximum),
+        IdentityField::RequestInteger {
+            path,
+            minimum,
+            maximum,
+        } => typed_fields::integer(request(model, operation, path.as_str()), *minimum, *maximum),
+        IdentityField::SelectedStringList {
+            path,
+            max_items,
+            max_item_bytes,
+        } => typed_fields::string_list(
+            model,
+            selected(model, item, path.as_str()),
+            *max_items,
+            *max_item_bytes,
+        ),
+        IdentityField::MapValue { path, key } => {
+            !key.is_empty() && key.len() <= 4096 && text_map(model, item, path.as_str())
+        }
+        IdentityField::Context {
+            operation,
+            source,
+            path,
+        } => field_context_valid(operation, source, path, model),
+    }
+}
+
+fn request<'m>(model: &Model<'m>, operation: &str, path: &str) -> Option<ShapeRef<'m>> {
+    model.resolve_path(operation, "input", path).ok().flatten()
+}
+
+fn field_context_valid(
+    operation: &crate::overlay::OperationName,
+    source: &ContextSource,
+    path: &crate::overlay::MemberPath,
+    model: &Model<'_>,
+) -> bool {
+    model.operation_id(operation.as_str()).is_some()
+        && match source {
+            // Producer-relative selectors require the cross-plan dependency gate, not the consumer model root.
+            ContextSource::SelectedItem => true,
+            ContextSource::Response => scalar(
                 model
-                    .resolve_path(operation, "input", path.as_str())
+                    .resolve_path(operation.as_str(), "output", path.as_str())
                     .ok()
                     .flatten(),
             ),
-            IdentityField::SelectedArn(path) => text(selected(model, item, path.as_str())),
-            IdentityField::RequestArn(path) => text(
+            ContextSource::Request => scalar(
                 model
-                    .resolve_path(operation, "input", path.as_str())
+                    .resolve_path(operation.as_str(), "input", path.as_str())
                     .ok()
                     .flatten(),
             ),
-            IdentityField::SelectedInteger {
-                path,
-                minimum,
-                maximum,
-            } => typed_fields::integer(selected(model, item, path.as_str()), *minimum, *maximum),
-            IdentityField::RequestInteger {
-                path,
-                minimum,
-                maximum,
-            } => typed_fields::integer(
-                model
-                    .resolve_path(operation, "input", path.as_str())
-                    .ok()
-                    .flatten(),
-                *minimum,
-                *maximum,
-            ),
-            IdentityField::SelectedStringList {
-                path,
-                max_items,
-                max_item_bytes,
-            } => typed_fields::string_list(
-                model,
-                selected(model, item, path.as_str()),
-                *max_items,
-                *max_item_bytes,
-            ),
-            IdentityField::MapValue { path, key } => {
-                !key.is_empty() && key.len() <= 4096 && text_map(model, item, path.as_str())
-            }
-            IdentityField::Context {
-                operation,
-                source,
-                path,
-            } => {
-                model.operation_id(operation.as_str()).is_some()
-                    && match source {
-                        // Producer-relative selectors require the cross-plan dependency gate, not the consumer model root.
-                        ContextSource::SelectedItem => true,
-                        ContextSource::Response => scalar(
-                            model
-                                .resolve_path(operation.as_str(), "output", path.as_str())
-                                .ok()
-                                .flatten(),
-                        ),
-                        ContextSource::Request => scalar(
-                            model
-                                .resolve_path(operation.as_str(), "input", path.as_str())
-                                .ok()
-                                .flatten(),
-                        ),
-                    }
-            }
-        })
+        }
 }
 fn selected<'m>(model: &Model<'m>, item: ShapeRef<'m>, path: &str) -> Option<ShapeRef<'m>> {
     super::super::paths::resolve_selected(model, item, path)

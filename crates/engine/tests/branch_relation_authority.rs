@@ -32,7 +32,7 @@ async fn branch_fixture(
     let database = directory.path().join("inventory.sqlite");
     // Decode the bounded, sealed synthetic catalog rather than injecting an
     // unchecked in-memory permission map or fabricating an upstream receipt.
-    let bytes = branch_catalog_bytes(base_discovery)?;
+    let bytes = model_relation_catalog(branch_catalog_bytes(base_discovery)?)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog
         .plans()
@@ -140,7 +140,9 @@ async fn assert_rejected_completion(
     lease: WorkLease,
 ) -> TestResult {
     let before = snapshot::read_durable_state(pool).await?;
-    let result = store.finish_scope(lease, ScopeOutcome::Complete, 101).await;
+    let result = store
+        .finish_scope(lease, ScopeOutcome::Complete, 101, None)
+        .await;
     assert!(
         matches!(
             &result,
@@ -212,7 +214,7 @@ async fn given_base_emits_but_exact_stage_is_discovery_when_metadata_is_submitte
 #[tokio::test]
 async fn given_base_is_discovery_but_exact_stage_emits_when_matching_evidence_is_committed_then_projection_survives_reopen()
 -> TestResult {
-    for (relationship, source) in [(1, "inferred-exact"), (2, "model")] {
+    for (relationship, source) in [(1, "reviewed-rule"), (2, "model")] {
         let (directory, store, pool) = branch_fixture(true).await?;
         let lease = stage_lease(&store, Some("EMIT"), Some("emitting-name")).await?;
         store
@@ -335,7 +337,7 @@ async fn given_an_exact_discovery_only_stage_when_finished_complete_then_its_ter
     let (directory, store, pool) = branch_fixture(false).await?;
     let lease = stage_lease(&store, Some("DISCOVER"), Some("discovery-name")).await?;
     let stats = store
-        .finish_scope(lease, ScopeOutcome::Complete, 101)
+        .finish_scope(lease, ScopeOutcome::Complete, 101, None)
         .await?;
     assert_eq!(
         (
@@ -368,7 +370,7 @@ async fn assert_non_authoritative_completion(
     lease: WorkLease,
     outcome: ScopeOutcome,
 ) -> TestResult {
-    let stats = store.finish_scope(lease, outcome, 101).await?;
+    let stats = store.finish_scope(lease, outcome, 101, None).await?;
     assert_eq!(
         (
             stats.resources_inserted,

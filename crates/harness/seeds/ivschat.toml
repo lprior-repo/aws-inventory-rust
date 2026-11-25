@@ -1,0 +1,10 @@
+format = 1
+service = "ivschat"
+
+[[step]]
+id = "resource"
+operation = "CreateRoom"
+kind = "AWS::IVSChat::Room"
+identity = "arn"
+[step.input]
+name = "inventory-thin-ivschat"

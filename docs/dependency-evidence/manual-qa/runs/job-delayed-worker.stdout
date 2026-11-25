@@ -1,9 +1,0 @@
-{
-  "executed": 0,
-  "jobs": [],
-  "mode": "bounded worker invocation; no background daemon remains",
-  "results": "Terminal results are retained by job ID in the queue; oversized results declare result_truncated. This response contains bounded summaries.",
-  "status": "complete",
-  "stop_reason": "queue_empty",
-  "worker": "manual-qa-worker"
-}

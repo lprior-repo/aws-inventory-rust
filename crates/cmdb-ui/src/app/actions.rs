@@ -124,24 +124,27 @@ impl App {
     }
 
     pub(super) fn handle_graph_click(&mut self, cx: &mut Cx, actions: &Actions) {
+        if self.frame_harness.is_some() {
+            return;
+        }
         let Some(id) = crate::graph_view::click_id(&self.ui, cx, actions) else {
             return;
         };
         if let Some(id) = id {
-            let row = self
-                .table(cx)
-                .borrow::<ResourceTable>()
-                .and_then(|table| table.row_for_id(&id));
-            if let Some(row) = row {
-                self.request_selection(cx, row);
-            }
+            self.select_graph_resource(cx, &id);
         } else {
             let changed = self
                 .table(cx)
                 .borrow_mut::<ResourceTable>()
                 .is_some_and(|mut table| table.clear_selection(cx));
             if changed {
-                self.request_expansion(cx);
+                let result = self
+                    .worker
+                    .as_ref()
+                    .map_or(Ok(()), crate::worker::DataWorker::invalidate_graph);
+                if let Err(error) = result {
+                    self.apply_graph_event(cx, crate::data::Graph::default(), Some(error));
+                }
                 self.refresh(cx);
             }
         }
@@ -161,7 +164,9 @@ impl AppMain for App {
     }
 
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        let dispatch = std::time::Instant::now();
         if matches!(event, Event::Shutdown) {
+            self.shutdown_frame_harness(cx);
             self.stop_worker(cx);
             self.shutdown_frame_recorder();
             return;
@@ -169,8 +174,19 @@ impl AppMain for App {
         if self.shutting_down {
             return;
         }
+        self.prepare_event(cx, event);
+        self.step_frame_harness(cx, event);
+        self.match_event(cx, event);
+        self.ui.handle_event(cx, event, &mut Scope::empty());
+        self.finish_harness_event(cx, event, dispatch.elapsed());
+    }
+}
+
+impl App {
+    fn prepare_event(&mut self, cx: &mut Cx, event: &Event) {
         if matches!(event, Event::Startup) {
             self.start_frame_recorder();
+            self.start_frame_harness(cx);
             self.start_worker(cx);
         }
         if matches!(event, Event::Signal) {
@@ -179,12 +195,8 @@ impl AppMain for App {
         if matches!(event, Event::Draw(_)) {
             self.record_frame(cx);
         }
-        self.match_event(cx, event);
-        self.ui.handle_event(cx, event, &mut Scope::empty());
     }
-}
 
-impl App {
     fn start_frame_recorder(&mut self) {
         self.frame_time_recorder = match FrameTimeRecorder::from_env() {
             Ok(recorder) => Some(recorder),

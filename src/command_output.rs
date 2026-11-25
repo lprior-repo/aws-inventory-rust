@@ -6,6 +6,7 @@ use std::{io::Write, process::ExitCode};
 pub(super) enum CommandOutput {
     Legacy(Value),
     Native(ExitCode),
+    Text(String),
 }
 
 pub(super) fn execute(command: Command) -> Result<CommandOutput> {
@@ -26,6 +27,7 @@ pub(super) fn output(result: CommandOutput) -> ExitCode {
     let value = match result {
         CommandOutput::Legacy(value) => value,
         CommandOutput::Native(code) => return code,
+        CommandOutput::Text(text) => return output_text(&text),
     };
     let mut stdout = std::io::stdout().lock();
     let result = serde_json::to_writer_pretty(&mut stdout, &value)
@@ -41,5 +43,15 @@ pub(super) fn output(result: CommandOutput) -> ExitCode {
             ExitCode::from(2)
         }
         _ => ExitCode::SUCCESS,
+    }
+}
+
+fn output_text(text: &str) -> ExitCode {
+    match std::io::stdout().lock().write_all(text.as_bytes()) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("output error: {error}");
+            ExitCode::FAILURE
+        }
     }
 }

@@ -1,0 +1,37 @@
+relations live=528 pending=35 declared=121 reviewed=407
+declared thin=0
+pending AWS::APS::AnomalyDetector arn AnomalyDetector - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::APS::RuleGroupsNamespace arn RuleGroupsNamespace - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::APS::Scraper arn Scraper - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::APS::Scraper destination.ampConfiguration.workspaceArn Workspace - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::APS::Workspace arn Workspace - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::AppMeshVirtualRouterData meshName AWS::AppMesh::VirtualRouter - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
+pending AWS::ApiOnly::AppMeshVirtualServiceData meshName AWS::AppMesh::VirtualService - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
+pending AWS::ApiOnly::DSQLGetClusterOutput multiRegionProperties.clusters com.amazonaws.dsql#Cluster - REFERENCES (reference path traverses a container (requires E2.2 extraction))	reference path traverses a container (requires E2.2 extraction)
+pending AWS::ApiOnly::DeadlineVolume farmId AWS::ApiOnly::DeadlineVolume - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
+pending AWS::ApiOnly::GroundStationSatellite satelliteArn com.amazon.awsgsaascontrolplanelambda.r20190311#Satellite - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::MediaConnectRouterInput AssociatedDestinationEndpointArns com.amazonaws.mediaconnect#DestinationEndpointResource - REFERENCES (reference path traverses a container (requires E2.2 extraction))	reference path traverses a container (requires E2.2 extraction)
+pending AWS::ApiOnly::MediaConnectRouterOutput AssociatedSourceEndpointArns com.amazonaws.mediaconnect#SourceEndpointResource - REFERENCES (reference path traverses a container (requires E2.2 extraction))	reference path traverses a container (requires E2.2 extraction)
+pending AWS::ApiOnly::MediaConnectSourceEndpoint ConnectedDestinations com.amazonaws.mediaconnect#DestinationEndpointResource - REFERENCES (reference path traverses a container (requires E2.2 extraction))	reference path traverses a container (requires E2.2 extraction)
+pending AWS::ApiOnly::ProtonEnvironmentTemplateVersion arn com.amazonaws.proton#EnvironmentTemplateVersion - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::ProtonServiceTemplateVersion arn com.amazonaws.proton#ServiceTemplateVersion - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::ResilienceHubDependency serviceArn com.amazonaws.resiliencehubv2#IamServiceResource - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::ResilienceHubPolicy policyArn com.amazonaws.resiliencehubv2#IamPolicyResource - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::ResilienceHubService associatedSystems.systemArn com.amazonaws.resiliencehubv2#IamSystemResource - REFERENCES (reference path traverses a container (requires E2.2 extraction))	reference path traverses a container (requires E2.2 extraction)
+pending AWS::ApiOnly::ResilienceHubService policyArn com.amazonaws.resiliencehubv2#IamPolicyResource - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::ResilienceHubService serviceArn com.amazonaws.resiliencehubv2#IamServiceResource - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::ApiOnly::ResilienceHubSystem systemArn com.amazonaws.resiliencehubv2#IamSystemResource - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::GroundStation::Config configArn Config - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::GroundStation::DataflowEndpointGroup dataflowEndpointGroupArn DataflowEndpointGroup - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::GroundStation::MissionProfile dataflowEdges Config - REFERENCES (reference path traverses a container (requires E2.2 extraction))	reference path traverses a container (requires E2.2 extraction)
+pending AWS::GroundStation::MissionProfile missionProfileArn MissionProfile - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::GroundStation::MissionProfile telemetrySinkConfigArn Config - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::GroundStation::MissionProfile trackingConfigArn Config - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::Lambda::Function Layers.Arn com.amazonaws.lambda#LayerVersion - REFERENCES (reference path traverses a container (requires E2.2 extraction))	reference path traverses a container (requires E2.2 extraction)
+pending AWS::NotificationsContacts::EmailContact arn com.amazon.aws.services.notifications.contacts.orchestration.service#EmailContact - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::SES::MailManagerAddressList AddressListArn com.amazon.pancetta.addresslist.management#AddressListResource - REFERENCES (target kind not callable)	target kind not callable
+pending AWS::Wisdom::AIPrompt aiPromptId AWS::Wisdom::AIPrompt - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
+pending AWS::Wisdom::AIPromptVersion aiPromptSummary.aiPromptId AWS::Wisdom::AIPrompt - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
+pending AWS::Wisdom::AssistantAssociation assistantAssociationId AWS::Wisdom::AssistantAssociation - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
+pending AWS::Wisdom::Content contentId AWS::Wisdom::Content - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
+pending AWS::Wisdom::QuickResponse knowledgeBaseId AWS::Wisdom::QuickResponse - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound

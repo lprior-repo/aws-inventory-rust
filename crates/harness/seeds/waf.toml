@@ -1,0 +1,18 @@
+format = 1
+service = "waf"
+
+[[step]]
+id = "token"
+operation = "GetChangeToken"
+kind = ""
+[step.input]
+
+[[step]]
+id = "resource"
+operation = "CreateIPSet"
+kind = "AWS::WAF::IPSet"
+identity = "IPSet.IPSetId"
+scope = "account"
+[step.input]
+"Name" = "inventory-thin-waf"
+"ChangeToken" = { "from" = "token", "path" = "ChangeToken" }

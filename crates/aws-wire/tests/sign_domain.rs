@@ -134,6 +134,7 @@ fn maximum_credentials_are_usable_and_remain_redacted() -> TestResult {
     let authorization = scope_signature(scope, &credentials)?;
 
     assert!(authorization.contains(&format!("Credential={key}/19700101/r/S-3/aws4_request,")));
+    assert_eq!(scope_signature(scope, &credentials.clone())?, authorization);
     assert_eq!(format!("{credentials:?}"), "Credentials([REDACTED])");
     Ok(())
 }

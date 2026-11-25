@@ -1,0 +1,10 @@
+format = 1
+service = "cognito-identity-provider"
+
+[[step]]
+id = "pool"
+operation = "CreateUserPool"
+kind = "AWS::Cognito::UserPool"
+identity = "UserPool.Id"
+[step.input]
+PoolName = "inventory-thin-cognito-identity-provider"

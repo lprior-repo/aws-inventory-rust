@@ -1,0 +1,10 @@
+format = 1
+service = "personalize"
+
+[[step]]
+id = "resource"
+operation = "CreateDatasetGroup"
+kind = "AWS::Personalize::DatasetGroup"
+identity = "datasetGroupArn"
+[step.input]
+"name" = "inventory-thin-personalize"

@@ -14,7 +14,7 @@ pub(super) async fn custom_non_idempotent_query_gets_no_ambiguous_replay() -> Te
         .iter_mut()
         .find(|batch| batch.stage == "resources")
         .ok_or("missing resource batch")?;
-    resource.query = "CREATE (r:Resource {id:'custom-non-idempotent'})".into();
+    resource.query = inventory_graph::cypher::diagnostics::NON_IDEMPOTENT_RESOURCE_FIXTURE.into();
     let bytes = batches
         .iter()
         .map(serde_json::to_string)

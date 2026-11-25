@@ -1,0 +1,57 @@
+auditmanager	CreateControl	control[1]	rejected	NotImplemented	operation CreateControl is scaffolded but not implemented in this emulator
+auditmanager	CreateControl	control[2]	rejected	NotImplemented	operation CreateControl is scaffolded but not implemented in this emulator
+cloudwatch	PutMetricAlarm	alarm[1]	accepted
+cloudwatch	PutMetricAlarm	alarm[2]	accepted
+dynamodb	CreateTable	table[1]	accepted
+dynamodb	CreateTable	table[2]	accepted
+ec2	CreateSubnet	subnet[1]	accepted
+ec2	CreateSubnet	subnet[2]	accepted
+ec2	CreateSubnet	subnet[3]	accepted
+ec2	CreateSubnet	subnet[4]	accepted
+ec2	CreateSubnet	subnet[5]	accepted
+ec2	CreateSubnet	subnet[6]	accepted
+ec2	CreateVpc	vpc[1]	accepted
+ec2	CreateVpc	vpc[2]	accepted
+ec2	CreateVpc	vpc[3]	accepted
+ec2	CreateVpc	vpc[4]	accepted
+ec2	CreateVpc	vpc[5]	accepted
+ec2	CreateVpc	vpc[6]	accepted
+iam	AttachRolePolicy	attachment[1]	accepted
+iam	AttachRolePolicy	attachment[2]	accepted
+iam	CreatePolicy	policy[1]	accepted
+iam	CreatePolicy	policy[2]	accepted
+iam	CreateRole	role[1]	accepted
+iam	CreateRole	role[2]	accepted
+kms	CreateAlias	alias[1]	accepted
+kms	CreateAlias	alias[2]	accepted
+kms	CreateKey	key[1]	accepted
+kms	CreateKey	key[2]	accepted
+lambda	CreateCodeSigningConfig	config[1]	accepted
+lambda	CreateCodeSigningConfig	config[2]	accepted
+license-manager-linux-subscriptions	RegisterSubscriptionProvider	provider	rejected	ValidationException	The subscription provider token is invalid or expired
+license-manager-user-subscriptions	CreateLicenseServerEndpoint	-	not-run	prerequisites	Registered identity provider and license server settings not prepared
+migrationhubstrategy	-	-	not-run	no-create-path	No direct create operation identified for enumerated collectors or servers
+mpa	CreateIdentitySource	-	not-run	prerequisites	Identity source parameters not prepared
+notifications	CreateNotificationConfiguration	notification_config[1]	sweep-failed	decode	Create accepted; ListNotificationConfigurations failed with invalid timestamp
+notifications	CreateNotificationConfiguration	notification_config[2]	sweep-failed	decode	Create accepted; ListNotificationConfigurations failed with invalid timestamp
+organizations	CreateOrganization	org	rejected	AlreadyInOrganizationException	Emulator account is already a member of an organization
+route53-recovery-readiness	CreateCell	cell[1]	rejected	AccessDeniedException	This operation is currently unavailable for new accounts.
+route53-recovery-readiness	CreateCell	cell[2]	rejected	AccessDeniedException	This operation is currently unavailable for new accounts.
+s3	CreateBucket	bucket[1]	accepted
+s3	CreateBucket	bucket[2]	accepted
+s3outposts	CreateEndpoint	-	not-run	prerequisites	Outpost ID, subnet and security group not prepared
+signer	PutSigningProfile	profile[1]	accepted
+signer	PutSigningProfile	profile[2]	accepted
+sns	CreateTopic	topic[1]	accepted
+sns	CreateTopic	topic[2]	accepted
+sns	GetSubscriptionAttributes	subscription[1]	accepted
+sns	GetSubscriptionAttributes	subscription[2]	accepted
+sns	Subscribe	subscribe[1]	accepted
+sns	Subscribe	subscribe[2]	accepted
+sqs	CreateQueue	endpoint_queue	accepted
+sqs	CreateQueue	queue[1]	accepted
+sqs	CreateQueue	queue[2]	accepted
+sqs	GetQueueAttributes	endpoint_identity	accepted
+sqs	GetQueueAttributes	queue_identity[1]	accepted
+sqs	GetQueueAttributes	queue_identity[2]	accepted
+ssm-sap	RegisterApplication	-	not-run	prerequisites	EC2 instance and SAP application inputs not prepared

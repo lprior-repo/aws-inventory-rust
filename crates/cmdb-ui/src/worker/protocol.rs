@@ -50,8 +50,10 @@ impl Revisions {
             return true;
         };
         let latest = match &output.event {
-            WorkerEvent::Snapshot { .. } | WorkerEvent::GraphStatus { .. } => &self.page,
-            WorkerEvent::Graph { .. } => &self.graph,
+            WorkerEvent::Snapshot { .. } => &self.page,
+            WorkerEvent::GraphStatus { .. }
+            | WorkerEvent::Graph { .. }
+            | WorkerEvent::HarnessGraph { .. } => &self.graph,
         };
         latest.load(Ordering::Acquire) == revision
     }
@@ -76,7 +78,9 @@ pub(super) fn current_events(
             (None, None, None),
             |(status, graph, page), output| match output.event {
                 event @ WorkerEvent::GraphStatus { .. } => (Some(event), graph, page),
-                event @ WorkerEvent::Graph { .. } => (status, Some(event), page),
+                event @ (WorkerEvent::Graph { .. } | WorkerEvent::HarnessGraph { .. }) => {
+                    (status, Some(event), page)
+                }
                 event @ WorkerEvent::Snapshot { .. } => (status, graph, Some(event)),
             },
         );

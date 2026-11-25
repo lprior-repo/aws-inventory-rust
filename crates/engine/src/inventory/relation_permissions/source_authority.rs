@@ -150,6 +150,9 @@ impl SourceAuthority<'_, '_> {
 
 fn relation(hash: &mut Sha256, rule: &RelationshipPlan) -> Result<(), StoreError> {
     bytes(hash, rule.source_kind.as_str().as_bytes())?;
+    if rule.edge_source == inventory_core::inventory::EdgeSource::Model {
+        hash.update(b"model-declared-reference\0");
+    }
     hash.update([source_code(rule.source)]);
     path(hash, &rule.source_path)?;
     bytes(hash, rule.target_kind.as_str().as_bytes())?;
@@ -256,3 +259,6 @@ fn path(hash: &mut Sha256, value: &[FieldId]) -> Result<(), StoreError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

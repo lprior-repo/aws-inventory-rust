@@ -1,0 +1,10 @@
+format = 1
+service = "location"
+
+[[step]]
+id = "resource"
+operation = "CreateGeofenceCollection"
+kind = "AWS::Location::GeofenceCollection"
+identity = "CollectionName"
+[step.input]
+"CollectionName" = "inventory-thin-location"

@@ -1,0 +1,15 @@
+# service	operation	signing name	reason
+applicationcostprofiler	GetReportDefinition	application-cost-profiler	unconfirmed: absent from the service authorization reference at 2026-11-24
+applicationcostprofiler	ListReportDefinitions	application-cost-profiler	unconfirmed: absent from the service authorization reference at 2026-11-24
+cloudhsm	DescribeHapg	cloudhsm	unconfirmed: absent from the service authorization reference at 2026-11-24
+cloudhsm	DescribeHsm	cloudhsm	unconfirmed: absent from the service authorization reference at 2026-11-24
+cloudhsm	ListHapgs	cloudhsm	unconfirmed: absent from the service authorization reference at 2026-11-24
+cloudhsm	ListHsms	cloudhsm	unconfirmed: absent from the service authorization reference at 2026-11-24
+cloudhsm	ListLunaClients	cloudhsm	unconfirmed: absent from the service authorization reference at 2026-11-24
+ec2	DescribeMetricCategories	ec2	unconfirmed: absent from the service authorization reference at 2026-11-24
+ec2	DescribeNetworkingFlexCostAllocationPolicies	ec2	unconfirmed: absent from the service authorization reference at 2026-11-24
+ec2	DescribeNetworkingFlexCostAllocationPolicyAssociations	ec2	unconfirmed: absent from the service authorization reference at 2026-11-24
+ec2	GetNetworkingFlexCostAllocationPolicyVersions	ec2	unconfirmed: absent from the service authorization reference at 2026-11-24
+iotthingsgraph	SearchFlowTemplates	iotthingsgraph	unconfirmed: absent from the service authorization reference at 2026-11-24
+iotthingsgraph	SearchSystemInstances	iotthingsgraph	unconfirmed: absent from the service authorization reference at 2026-11-24
+iotthingsgraph	SearchSystemTemplates	iotthingsgraph	unconfirmed: absent from the service authorization reference at 2026-11-24

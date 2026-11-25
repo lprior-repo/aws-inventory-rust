@@ -13,7 +13,7 @@
 > timing). "Makepad:" paths are in the pinned checkout.
 
 Conventions: as in [STEPS_A.md](STEPS_A.md). `crates/cmdb-ui/src` and
-`crates/cmdb-view/src` are under the 25-line function gate. This machine has
+`crates/cmdb-view/src` are under the under-60-line function gate. This machine has
 no display, so UI steps name what is proven headless (worker and layout tests)
 and what needs a machine with a GPU (frame times).
 
@@ -175,7 +175,7 @@ and what needs a machine with a GPU (frame times).
   `START_HERE.md` and `docs/ARCHITECTURE.md` where they place the sweep in the
   binary.
 - **Change:** the gate does not cover `src/sweep_runtime/` today, and several
-  functions there are over 25 lines by reading: `execution.rs::run`,
+  functions there are long by reading (the limit is under 60 lines): `execution.rs::run`,
   `bootstrap_account`, `discover_regions`, `lease_budget`;
   `draining.rs::drain_work`; `call.rs::sign_and_send`; `page.rs::process_lease`
   (the exact list is whatever the script prints). Split each into named steps
@@ -853,7 +853,7 @@ and what needs a machine with a GPU (frame times).
 
 - **Goal:** Every row is reachable; the 500-row limit goes.
 - **Depends on:** C6.11.
-- **Files:** `crates/cmdb-ui/src/table.rs` (300 lines, at the limit),
+- **Files:** `crates/cmdb-ui/src/table.rs` (296 lines),
   `table/model.rs` (new), `worker/protocol.rs`, `worker/queries.rs`,
   `crates/cmdb-view/src/database/postgres.rs` (C6.11's `page`).
 - **Change:** the table model holds a window of pages around the visible

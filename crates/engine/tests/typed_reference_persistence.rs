@@ -1,3 +1,5 @@
+#[path = "typed_reference_persistence/provenance.rs"]
+mod provenance;
 #[path = "scalar_replay_contract/snapshot.rs"]
 mod snapshot;
 #[path = "inventory_store/support.rs"]
@@ -52,6 +54,7 @@ fn rule(
         (4, path(target_path)),
         (5, Value::Text("references".into())),
         (6, Value::Int(0)),
+        (7, Value::Int(1)),
         (10, Value::Int(1)),
         (11, Value::Int(0)),
         (12, Value::Int(mode)),
@@ -61,6 +64,15 @@ fn rule(
         fields.push((13, guard));
     }
     map(fields)
+}
+
+fn model_bound_rule() -> TestResult<Value> {
+    let mut value = rule(2, &[3], vec![], None)?;
+    let Value::Map(fields) = &mut value else {
+        return Err("relationship fixture is not a map".into());
+    };
+    fields.insert(Key::Field(FieldId::new(7)?), Value::Int(0));
+    Ok(value)
 }
 
 fn bound_component() -> TestResult<Value> {
@@ -113,7 +125,7 @@ fn reference(
     Ok(UnresolvedReference {
         from: resource("source")?,
         relation: Relation::parse("references")?,
-        source: EdgeSource::InferredExact,
+        source: EdgeSource::ReviewedRule,
         target: target.with_components(components)?,
     })
 }
@@ -125,7 +137,7 @@ async fn commit_partial_observation(
     (request, namespace): (Option<&str>, Option<&str>),
     observations: Vec<Observation>,
     references: Vec<UnresolvedReference>,
-    direct: bool,
+    direct: Option<EdgeSource>,
 ) -> TestResult {
     store
         .seed_work(relationship_work(sweep, "us-east-1", request, namespace)?)
@@ -139,12 +151,12 @@ async fn commit_partial_observation(
     let next = at.checked_add(1).ok_or("time overflow")?;
     let mut page = page(lease, observations, false, Some(vec![1]), next);
     page.unresolved = references;
-    if direct {
+    if let Some(source) = direct {
         page.edges.push(Edge {
             from: resource("source")?,
             to: resource("target")?,
             relation: Relation::parse("references")?,
-            source: EdgeSource::Model,
+            source,
         });
     }
     store.commit_page(page).await?;
@@ -158,6 +170,7 @@ async fn commit_partial_observation(
             continuation,
             ScopeOutcome::Partial,
             at.checked_add(3).ok_or("time overflow")?,
+            None,
         )
         .await?;
     assert_eq!(store.sweep_summary(&sweep_id).await?.partial_scopes, 1);
@@ -226,7 +239,7 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
                 (None, None),
                 vec![observation("target", "unrelated-name")?],
                 vec![],
-                false,
+                None,
             )
             .await?;
         }
@@ -243,13 +256,13 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
                 "target",
                 None,
             )?],
-            false,
+            None,
         )
         .await?;
         assert_edges(
             &store,
             if source_first { &[] } else { &["target"] },
-            EdgeSource::InferredExact,
+            EdgeSource::ReviewedRule,
         )
         .await?;
         let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
@@ -260,11 +273,11 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
             (None, None),
             vec![observation("target", "still-not-its-id")?],
             vec![],
-            false,
+            None,
         )
         .await?;
         // Then exact identity survives SQLite reopen and an identical source replay.
-        assert_edges(&reopened, &["target"], EdgeSource::InferredExact).await?;
+        assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
         commit_partial_observation(
             &reopened,
             "source-replay",
@@ -277,10 +290,10 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
                 "target",
                 None,
             )?],
-            false,
+            None,
         )
         .await?;
-        assert_edges(&reopened, &["target"], EdgeSource::InferredExact).await?;
+        assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     }
     Ok(())
 }
@@ -302,7 +315,7 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
             "namespace-x",
             None,
         )?],
-        false,
+        None,
     )
     .await?;
     commit_partial_observation(
@@ -312,10 +325,10 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
         (None, Some("namespace-y")),
         vec![observation("decoy", "namespace-x")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &[], EdgeSource::InferredExact).await?;
+    assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
     // When the real target arrives under the matching checked request and SQLite is reopened.
     commit_partial_observation(
         &store,
@@ -324,12 +337,12 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
         (None, Some("namespace-x")),
         vec![observation("target", "unrelated-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     // Then output data never substitutes for request provenance.
-    assert_edges(&reopened, &["target"], EdgeSource::InferredExact).await?;
+    assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     Ok(())
 }
 
@@ -350,7 +363,7 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
             "namespace-x",
             None,
         )?],
-        false,
+        None,
     )
     .await?;
     commit_partial_observation(
@@ -360,14 +373,14 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
         (None, Some("namespace-x")),
         vec![observation("target", "unrelated-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &["target"], EdgeSource::InferredExact).await?;
+    assert_edges(&store, &["target"], EdgeSource::ReviewedRule).await?;
     assert_reopened_bound_reference(
         &directory,
         &["target"],
-        EdgeSource::InferredExact,
+        EdgeSource::ReviewedRule,
         "resolved",
     )
     .await?;
@@ -379,12 +392,11 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
         (None, Some("namespace-x")),
         vec![observation("second", "another-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &[], EdgeSource::InferredExact).await?;
-    assert_reopened_bound_reference(&directory, &[], EdgeSource::InferredExact, "ambiguous")
-        .await?;
+    assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
+    assert_reopened_bound_reference(&directory, &[], EdgeSource::ReviewedRule, "ambiguous").await?;
     // Then one complete miss retains ambiguity; only the second retires its witness.
     for (sweep, source_sweep, source_at, at, second_survives) in [
         ("first-miss", "source-before-first-miss", 390, 400, true),
@@ -403,7 +415,7 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
                 "namespace-x",
                 None,
             )?],
-            false,
+            None,
         )
         .await?;
         reopened
@@ -454,8 +466,8 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
         } else {
             "resolved"
         };
-        assert_edges(&reopened, ids, EdgeSource::InferredExact).await?;
-        assert_reopened_bound_reference(&directory, ids, EdgeSource::InferredExact, status).await?;
+        assert_edges(&reopened, ids, EdgeSource::ReviewedRule).await?;
+        assert_reopened_bound_reference(&directory, ids, EdgeSource::ReviewedRule, status).await?;
     }
     Ok(())
 }
@@ -464,7 +476,8 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
 async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_then_only_the_pin_proves_its_edge()
 -> TestResult {
     // Given the same bound tuple has both wildcard and exact-identity authority.
-    let (directory, store) = fixture_for(rule(2, &[3], vec![], None)?, false).await?;
+    let (directory, store) = fixture_for(model_bound_rule()?, false).await?;
+    let source = EdgeSource::Model;
     let wildcard = || -> TestResult<_> {
         let mut reference = reference(
             RelationTargetMode::BoundContextFields,
@@ -472,7 +485,7 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
             "namespace-x",
             None,
         )?;
-        reference.source = EdgeSource::Model;
+        reference.source = source;
         Ok(reference)
     };
     commit_partial_observation(
@@ -485,11 +498,11 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
             observation("target", "unrelated-name")?,
         ],
         vec![wildcard()?],
-        true,
+        Some(source),
     )
     .await?;
-    assert_edges(&store, &["target"], EdgeSource::Model).await?;
-    assert_reopened_bound_reference(&directory, &["target"], EdgeSource::Model, "resolved").await?;
+    assert_edges(&store, &["target"], source).await?;
+    assert_reopened_bound_reference(&directory, &["target"], source, "resolved").await?;
     // When another distinct matching target arrives, ambiguity cannot erase or redirect the pin.
     commit_partial_observation(
         &store,
@@ -498,11 +511,11 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
         (None, Some("namespace-x")),
         vec![observation("second", "another-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &["target"], EdgeSource::Model).await?;
-    assert_reopened_bound_reference(&directory, &["target"], EdgeSource::Model, "resolved").await?;
+    assert_edges(&store, &["target"], source).await?;
+    assert_reopened_bound_reference(&directory, &["target"], source, "resolved").await?;
     // Then replacing the source facet without its direct proof leaves only ambiguity.
     commit_partial_observation(
         &store,
@@ -511,11 +524,11 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
         (Some("namespace-x"), Some("namespace-x")),
         vec![observation("source", "source-name")?],
         vec![wildcard()?],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &[], EdgeSource::Model).await?;
-    assert_reopened_bound_reference(&directory, &[], EdgeSource::Model, "ambiguous").await?;
+    assert_edges(&store, &[], source).await?;
+    assert_reopened_bound_reference(&directory, &[], source, "ambiguous").await?;
     Ok(())
 }
 
@@ -537,7 +550,7 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
             "shared-name",
             Some("namespace-x"),
         )?],
-        false,
+        None,
     )
     .await?;
     commit_partial_observation(
@@ -547,10 +560,10 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         (None, Some("namespace-y")),
         vec![observation("decoy", "shared-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &[], EdgeSource::InferredExact).await?;
+    assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
     commit_partial_observation(
         &store,
         "unique",
@@ -558,10 +571,10 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         (None, Some("namespace-x")),
         vec![observation("target", "shared-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &["target"], EdgeSource::InferredExact).await?;
+    assert_edges(&store, &["target"], EdgeSource::ReviewedRule).await?;
     // When a second complete match appears, then ambiguity retracts rather than guesses.
     commit_partial_observation(
         &store,
@@ -570,10 +583,10 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         (None, Some("namespace-x")),
         vec![observation("second", "shared-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&store, &[], EdgeSource::InferredExact).await?;
+    assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     commit_partial_observation(
         &reopened,
@@ -582,10 +595,10 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         (None, Some("namespace-x")),
         vec![observation("second", "different")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&reopened, &["target"], EdgeSource::InferredExact).await?;
+    assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     commit_partial_observation(
         &reopened,
         "last-conjunct-lost",
@@ -593,10 +606,10 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         (None, Some("namespace-x")),
         vec![observation("target", "different")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&reopened, &[], EdgeSource::InferredExact).await?;
+    assert_edges(&reopened, &[], EdgeSource::ReviewedRule).await?;
     Ok(())
 }
 
@@ -620,7 +633,7 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         (Some("left"), Some("wrong")),
         vec![observation("target", "target-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
     commit_partial_observation(
@@ -630,7 +643,7 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         (Some("wrong"), Some("right")),
         vec![observation("target", "target-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
     // When a canonical target requires both bound terms on one checked facet.
@@ -654,13 +667,13 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         (Some("target"), Some("right")),
         vec![observation("source", "left")?],
         vec![reference],
-        false,
+        None,
     )
     .await?;
     // Then neither target facet alone proves the conjunction, even after reopen.
-    assert_edges(&store, &[], EdgeSource::InferredExact).await?;
+    assert_edges(&store, &[], EdgeSource::ReviewedRule).await?;
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_edges(&reopened, &[], EdgeSource::InferredExact).await?;
+    assert_edges(&reopened, &[], EdgeSource::ReviewedRule).await?;
     // A new request witness must refresh matches even when output bytes are unchanged.
     commit_partial_observation(
         &reopened,
@@ -669,10 +682,10 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         (Some("left"), Some("right")),
         vec![observation("target", "target-name")?],
         vec![],
-        false,
+        None,
     )
     .await?;
-    assert_edges(&reopened, &["target"], EdgeSource::InferredExact).await?;
+    assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     Ok(())
 }
 
@@ -734,7 +747,7 @@ async fn given_checked_canonical_rule_when_a_selected_field_mode_is_forged_then_
 #[tokio::test]
 async fn given_canonical_rule_when_a_same_page_direct_edge_is_committed_then_its_pin_survives_reopen()
 -> TestResult {
-    // Given a direct model edge whose target Name is deliberately not its ID.
+    // Given a direct reviewed edge whose target Name is deliberately not its ID.
     let (directory, store) = fixture_for(rule(4, &[], vec![], None)?, false).await?;
     // When the exact canonical target and source are committed atomically.
     commit_partial_observation(
@@ -747,12 +760,12 @@ async fn given_canonical_rule_when_a_same_page_direct_edge_is_committed_then_its
             observation("target", "different-name")?,
         ],
         vec![],
-        true,
+        Some(EdgeSource::ReviewedRule),
     )
     .await?;
-    // Then the direct pin is encoded, decoded, and projected as model evidence.
+    // Then the direct pin is encoded, decoded, and projected as reviewed evidence.
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_edges(&reopened, &["target"], EdgeSource::Model).await?;
+    assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     Ok(())
 }
 
@@ -815,7 +828,7 @@ async fn given_guarded_compound_rule_when_guard_or_component_is_forged_then_no_p
         if accepted {
             result?;
             let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-            assert_edges(&reopened, &["target"], EdgeSource::InferredExact).await?;
+            assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
         } else {
             assert!(matches!(
                 result,
@@ -850,7 +863,7 @@ async fn given_v3_facets_without_request_column_when_opened_then_legacy_selected
             "target-name",
             None,
         )?],
-        false,
+        None,
     )
     .await?;
     let pool = sqlx::sqlite::SqlitePoolOptions::new()
@@ -867,7 +880,7 @@ async fn given_v3_facets_without_request_column_when_opened_then_legacy_selected
     // When additive migration opens the older facet layout.
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     // Then existing resources and selected references survive, but old requests remain unknown.
-    assert_edges(&reopened, &["target"], EdgeSource::InferredExact).await?;
+    assert_edges(&reopened, &["target"], EdgeSource::ReviewedRule).await?;
     let contexts: i64 =
         sqlx::query_scalar("SELECT count(*) FROM resource_facets WHERE bound_request IS NOT NULL")
             .fetch_one(&pool)
@@ -942,7 +955,7 @@ async fn given_compound_reference_when_two_complete_sweeps_miss_only_target_then
         assert_edges(
             &reopened,
             if target_survives { &["target"] } else { &[] },
-            EdgeSource::InferredExact,
+            EdgeSource::ReviewedRule,
         )
         .await?;
     }

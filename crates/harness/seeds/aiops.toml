@@ -1,0 +1,22 @@
+format = 1
+service = "aiops"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-aiops"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"aiops.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "group"
+operation = "CreateInvestigationGroup"
+kind = "AWS::AIOps::InvestigationGroup"
+identity = "arn"
+[step.input]
+name = "inventory-thin-aiops"
+roleArn = { "from" = "role", "path" = "Role.Arn" }

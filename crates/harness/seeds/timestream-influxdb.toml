@@ -1,0 +1,10 @@
+format = 1
+service = "timestream-influxdb"
+
+[[step]]
+id = "resource"
+operation = "CreateDbParameterGroup"
+kind = "AWS::ApiOnly::TimestreamInfluxDBParameterGroup"
+identity = "id"
+[step.input]
+"name" = "inventory-thin-timestream-influxdb"

@@ -1,0 +1,23 @@
+format = 1
+service = "elastic-load-balancing-v2"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.42.0.0/16"
+
+[[step]]
+id = "target"
+operation = "CreateTargetGroup"
+kind = "AWS::ElasticLoadBalancingV2::TargetGroup"
+identity = "TargetGroups.0.TargetGroupArn"
+[step.input]
+Name = "inventory-seed-target"
+Protocol = "HTTP"
+Port = 80
+TargetType = "ip"
+VpcId = { from = "vpc", path = "Vpc.VpcId" }

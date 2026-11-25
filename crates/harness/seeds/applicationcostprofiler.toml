@@ -1,0 +1,14 @@
+format = 1
+service = "applicationcostprofiler"
+
+[[step]]
+id = "resource"
+operation = "PutReportDefinition"
+kind = "AWS::ApiOnly::ApplicationCostProfilerReportDefinition"
+identity = "reportId"
+[step.input]
+"reportId" = "inventory-thin-applicationcostprofiler"
+"reportDescription" = "Inventory emulator seed"
+"reportFrequency" = "MONTHLY"
+"format" = "CSV"
+"destinationS3Location" = { "bucket" = "inventory-thin-applicationcostprofiler", "prefix" = "inventory-thin-applicationcostprofiler" }

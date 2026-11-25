@@ -3,7 +3,7 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use super::{CASES, field, object, read_json};
+use super::{CASES, field, object, read_json, read_toml};
 use crate::HarnessError;
 use crate::provenance::{
     canonical_sha256, expected_runtime_catalog, file_sha256, source_fingerprint,
@@ -82,9 +82,9 @@ fn load_catalogs(
     root: &Path,
     binary_sha: &str,
 ) -> Result<(Value, Value), HarnessError> {
-    let (catalog, catalog_sha) = read_json(&root.join("catalog/cloudcontrol-resources.json"))?;
+    let (catalog, catalog_sha) = read_toml(&root.join("catalog/cloudcontrol-resources.toml"))?;
     let (parents, parents_sha) =
-        read_json(&root.join("catalog/cloudcontrol-parent-resources.json"))?;
+        read_toml(&root.join("catalog/cloudcontrol-parent-resources.toml"))?;
     let runtime = expected_runtime_catalog(&catalog, &parents)?;
     let digests = expected_digests(root, &catalog, &runtime, catalog_sha, parents_sha)?;
     check_catalogs(execution, &digests)?;
@@ -109,11 +109,11 @@ fn expected_digests(
         ),
         (
             "architecture_fixture_sha256",
-            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.json"))?,
+            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.toml"))?,
         ),
         (
             "parent_fixture_sha256",
-            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-parents.json"))?,
+            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-parents.toml"))?,
         ),
     ])
 }

@@ -1,0 +1,11 @@
+format = 1
+service = "qconnect"
+
+[[step]]
+id = "resource"
+operation = "CreateAssistant"
+kind = "AWS::Wisdom::Assistant"
+identity = "assistant.assistantArn"
+[step.input]
+"name" = "inventory-thin-qconnect"
+"type" = "AGENT"

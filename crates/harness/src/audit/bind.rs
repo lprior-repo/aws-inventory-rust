@@ -7,7 +7,7 @@ use serde_json::{Map, Value, json};
 use crate::HarnessError;
 use crate::provenance::file_sha256;
 
-use super::files::{read_json_audit, relative_slash};
+use super::files::{read_json_audit, read_toml_audit, relative_slash};
 use super::ledger::request_evidence;
 use super::matrix::{Catalogs, catalogs};
 use super::validate::validate_summary;
@@ -46,7 +46,7 @@ pub fn bind_emulator(
 fn load(report: &Value, root: &Path, summary_path: &Path) -> Result<Context, HarnessError> {
     let summary_path = fs::canonicalize(summary_path)?;
     let (summary, summary_sha) = read_json_audit(&summary_path)?;
-    let (matrix, _) = read_json_audit(&root.join("catalog/aws-operations.json"))?;
+    let (matrix, _) = read_toml_audit(&root.join("catalog/aws-operations.toml"))?;
     let frozen = catalogs(root)?;
     let (executed, rows) = validate_summary(report, &summary, &frozen.catalog, &matrix)?;
     Ok(Context {
@@ -75,7 +75,7 @@ fn check_binary(executed: &Value) -> Result<Option<String>, HarnessError> {
 }
 
 fn check_fixture(root: &Path, executed: &Value) -> Result<(), HarnessError> {
-    let fixture = root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.json");
+    let fixture = root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.toml");
     if Some(file_sha256(&fixture)?.as_str())
         != executed
             .get("architecture_fixture_sha256")

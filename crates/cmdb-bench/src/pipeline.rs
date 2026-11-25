@@ -168,12 +168,11 @@ pub(super) async fn run(workload: Workload) -> BenchResult {
         .await
 }
 
-async fn run_phase(
+async fn prepare_phase_works(
     workload: &Workload,
-    catalog: &RuntimeCatalog<'_>,
-    store: &BinaryStore,
     phase: Phase,
-) -> BenchResult {
+    store: &BinaryStore,
+) -> BenchResult<SweepId> {
     let sweep = SweepId::new(format!("cmdb-bench-{}", phase.name()))?;
     let works = (0..workload.concurrency)
         .map(|shard| {
@@ -185,8 +184,42 @@ async fn run_phase(
             )?)
         })
         .collect::<BenchResult<Vec<_>>>()?;
-    let revision_before = oracle::revision(&workload.path).await?;
     store.seed_works(&works).await?;
+    Ok(sweep)
+}
+
+fn validate_phase_totals(
+    phase: Phase,
+    expected_inserted: u64,
+    expected_pages: u64,
+    totals: &Totals,
+) -> BenchResult {
+    if totals.inserted != expected_inserted
+        || totals.changed != 0
+        || totals.deleted != 0
+        || totals.pages != expected_pages
+    {
+        return Err(format!(
+            "{} commit statistics mismatch: pages={} inserted={} changed={} deleted={}",
+            phase.name(),
+            totals.pages,
+            totals.inserted,
+            totals.changed,
+            totals.deleted
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn run_phase(
+    workload: &Workload,
+    catalog: &RuntimeCatalog<'_>,
+    store: &BinaryStore,
+    phase: Phase,
+) -> BenchResult {
+    let sweep = prepare_phase_works(workload, phase, store).await?;
+    let revision_before = oracle::revision(&workload.path).await?;
     let started = Instant::now();
     let totals = stream::iter(0..workload.pages)
         .then(|page| run_round(workload, catalog, store, &sweep, phase, page))
@@ -209,21 +242,7 @@ async fn run_phase(
             .checked_mul(workload.concurrency)
             .ok_or("page count overflow")?,
     )?;
-    if totals.inserted != expected_inserted
-        || totals.changed != 0
-        || totals.deleted != 0
-        || totals.pages != expected_pages
-    {
-        return Err(format!(
-            "{} commit statistics mismatch: pages={} inserted={} changed={} deleted={}",
-            phase.name(),
-            totals.pages,
-            totals.inserted,
-            totals.changed,
-            totals.deleted
-        )
-        .into());
-    }
+    validate_phase_totals(phase, expected_inserted, expected_pages, &totals)?;
     oracle::check(workload, store, &sweep, phase, revision_before).await?;
     println!(
         "pipeline_phase={} pages={} resources={} inserted={} changed={} deleted={} wall_us={} pages_per_second={} resources_per_second={} decode_caller_sum_us={} commit_caller_sum_us={} rate_clock=wall_after_seed_before_oracles rate_scope=end_to_end_phase_with_concurrency sum_scope=per_page_caller_time_summed_over_concurrent_pages commit_scope=store_commit_call_including_writer_queue_wait_no_service_time timings_include=fixture_generation_decode_tag_normalization_claim_commit timings_exclude=seed_state_oracles_native_projection",

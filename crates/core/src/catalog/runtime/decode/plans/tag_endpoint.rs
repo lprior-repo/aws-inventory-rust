@@ -188,7 +188,7 @@ pub(super) fn validate_parents(plans: &[CallablePlan<'_>]) -> Result<(), Runtime
                     parent.service_name() == child.service_name()
                         && parent.operation_name() == source.operation.as_ref()
                         && matches!(parent.purpose(), PlanPurpose::Enumeration)
-                        && parent.emission() == crate::catalog::runtime::Emission::EmitMetadata
+                        && parent.emission() != crate::catalog::runtime::Emission::DiscoveryOnly
                 })
                 .ok_or(RuntimeCatalogError::Capability)?;
             source

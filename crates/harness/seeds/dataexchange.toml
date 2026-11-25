@@ -1,0 +1,12 @@
+format = 1
+service = "dataexchange"
+
+[[step]]
+id = "resource"
+operation = "CreateDataSet"
+kind = "AWS::ApiOnly::DataExchangeDataSet"
+identity = "Arn"
+[step.input]
+"AssetType" = "S3_SNAPSHOT"
+"Description" = "Inventory emulator seed"
+"Name" = "inventory-thin-dataexchange"

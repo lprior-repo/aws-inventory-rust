@@ -1,6 +1,7 @@
 mod metadata;
 mod owners;
 mod plans;
+pub(super) use plans::producers;
 mod provenance;
 mod schemas;
 mod services;
@@ -36,7 +37,7 @@ pub(crate) fn read<'a>(
         None => return Err(RuntimeCatalogError::MissingExtension),
     };
     let version = metadata::integer(extension, 1)?;
-    if version != 2 {
+    if version != 3 {
         return Err(RuntimeCatalogError::ExtensionVersion(version));
     }
     let services = services::Services::open(catalog)?;

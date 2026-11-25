@@ -1,0 +1,13 @@
+retrieved_at = "2026-11-12T15:31:46.572550+00:00"
+
+[[sources]]
+file = "cloudformation-us-east-1-2026-11-12.zip"
+url = "https://schema.cloudformation.us-east-1.amazonaws.com/CloudformationSchema.zip"
+bytes = 3335713
+sha256 = "8226b9cd82f432997fe3918b134ef155245636f35ac37f8006de5abe88dd54a8"
+etag = '"83581a97fcd3079ad782ec6fb2c23287"'
+last_modified = "Thu, 12 Nov 2026 13:29:08 GMT"
+
+[[discarded_acquisitions]]
+url = "https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/supported-resources.html"
+reason = "HTTP 200 returned a 195-byte SiteUnavailable page; not retained or used as capability evidence"

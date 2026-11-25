@@ -52,7 +52,7 @@ pub(super) fn compute_stats(model: &ModelFile) -> Result<ModelStats, Error> {
             .saturating_add(usize::from(shape.traits.contains_key("aws.api#arn")));
         match &shape.kind {
             ShapeKind::Operation { .. } => count_operation(&mut stats, id, shape, model)?,
-            ShapeKind::Resource => stats.resources = stats.resources.saturating_add(1),
+            ShapeKind::Resource { .. } => stats.resources = stats.resources.saturating_add(1),
             ShapeKind::Structure { members } | ShapeKind::Union { members } => {
                 stats.members = stats.members.saturating_add(members.len());
             }

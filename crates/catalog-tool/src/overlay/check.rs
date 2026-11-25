@@ -1,7 +1,7 @@
-mod orchestration;
+pub(crate) mod orchestration;
 mod report;
 mod service;
-mod validation;
+pub(in crate::overlay) mod validation;
 use super::ReviewEvidence;
 use crate::{
     ReportMode,
@@ -24,6 +24,8 @@ const MAX_SERVICES: usize = 4096;
 pub enum CheckError {
     #[error(transparent)]
     Policy(#[from] super::NameError),
+    #[error(transparent)]
+    Directory(#[from] super::OverlayError),
     #[error(transparent)]
     Decode(#[from] serde_json::Error),
     #[error(transparent)]
@@ -114,9 +116,14 @@ pub struct CallableOperation {
     operation: String,
     class: EffectiveClass,
     plan: super::OperationOverlay,
+    origin: super::Origin,
 }
 
 impl CallableOperation {
+    pub fn origin(&self) -> super::Origin {
+        self.origin
+    }
+
     pub fn service(&self) -> &str {
         &self.service
     }

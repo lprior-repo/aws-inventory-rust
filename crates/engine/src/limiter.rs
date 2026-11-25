@@ -14,7 +14,7 @@ use tokio_util::sync::CancellationToken;
 pub const MAX_CONCURRENCY: usize = 4_096;
 
 pub const MAX_ATTEMPTS: u32 = 10;
-pub(crate) const MAX_REQUESTS_PER_SECOND: u32 = 100_000;
+pub const MAX_REQUESTS_PER_SECOND: u32 = 100_000;
 pub(crate) const MAX_DURATION_MS: u64 = 300_000;
 
 pub const MAX_RATE_PERIOD_MS: u64 = 300_000;
@@ -22,6 +22,10 @@ pub const MAX_RATE_PERIOD_MS: u64 = 300_000;
 pub const MAX_RETRY_AFTER_MS: u64 = 300_000;
 
 pub const MAX_BUCKETS: usize = 65_536;
+
+/// Reduced rates remembered for evicted buckets; past this an evicted bucket
+/// restarts at its policy rate.
+pub const MAX_LEARNED_RATES: usize = 262_144;
 pub(crate) const MAX_PENDING_OPERATIONS: usize = 65_536;
 pub(crate) const MAX_BUCKET_KEY_BYTES: usize = 512;
 const MAX_ADMISSION_ROUNDS: usize = MAX_CONCURRENCY.saturating_add(1);
@@ -98,7 +102,8 @@ pub struct ApiExecutor {
     config: ExecutorConfig,
     global: Semaphore,
     pending: Semaphore,
-    buckets: Mutex<HashMap<String, Arc<Bucket>>>,
+    registry: Mutex<Registry>,
+    default_limits: ValidatedLimits,
     policies: BTreeMap<String, ValidatedLimits>,
     cancellation: CancellationToken,
     counters: Counters,
@@ -110,7 +115,7 @@ impl ApiExecutor {}
 
 #[cfg(test)]
 mod tests {
-    use super::{AdaptiveRate, ApiError, MAX_REQUESTS_PER_SECOND};
+    use super::{AdaptiveRate, ApiError, Instant, MAX_REQUESTS_PER_SECOND};
 
     #[test]
     fn fractional_policy_recovery_keeps_sub_nanosecond_rate_credits() -> Result<(), ApiError> {
@@ -119,18 +124,19 @@ mod tests {
             minimum_ns: 10_000,
             recovery_rps: 0,
         };
-        rate.throttle()?;
+        let now = Instant::now();
+        rate.throttle(now)?;
         assert_eq!(rate.interval_ns()?, 20_000);
         for _ in 0..3 {
-            rate.recover();
+            rate.recover(now);
         }
         assert_eq!(rate.interval_ns()?, 19_999);
         for _ in 0..MAX_REQUESTS_PER_SECOND {
-            rate.recover();
+            rate.recover(now);
             assert!(rate.interval_ns()? >= 10_000);
         }
         assert_eq!(rate.interval_ns()?, 10_000);
-        rate.throttle()?;
+        rate.throttle(now)?;
         assert_eq!(rate.interval_ns()?, 20_000);
         Ok(())
     }
@@ -142,18 +148,19 @@ mod tests {
                 current: ceiling,
                 maximum: ceiling,
             };
-            rate.throttle()?;
+            let now = Instant::now();
+            rate.throttle(now)?;
             let recoveries = ceiling - ceiling / 2;
             let mut previous = rate.interval_ns()?;
             for _ in 0..recoveries {
-                rate.recover();
+                rate.recover(now);
                 let next = rate.interval_ns()?;
                 assert!(next < previous, "ceiling {ceiling}: {previous} -> {next}");
                 previous = next;
             }
             let ceiling_interval = 1_000_000_000_u64.div_ceil(u64::from(ceiling));
             assert_eq!(previous, ceiling_interval);
-            rate.recover();
+            rate.recover(now);
             assert_eq!(rate.interval_ns()?, ceiling_interval);
         }
         Ok(())
@@ -167,9 +174,12 @@ mod pacing;
 use pacing::*;
 mod bucket;
 use bucket::*;
+mod adaptive;
+use adaptive::*;
 mod admission;
 mod construction;
 mod execution;
 mod registry;
+use registry::Registry;
 mod retry;
 use retry::*;

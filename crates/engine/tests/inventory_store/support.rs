@@ -8,12 +8,72 @@ use inventory_core::inventory::{
     UnresolvedReference,
 };
 use inventory_core::record::{Exclusions, FieldId, Key, ListRef, Record, Value, encode_list};
-use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkSpec};
+use inventory_engine::inventory::{
+    BinaryStore, PageCommit, SchemaRegistry, StoreError, SweepId, WorkSpec,
+};
 use sha2::Digest;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+pub(super) trait OutcomeDetailStorageCapability {
+    async fn stored_outcomes(&self, sweep: &str) -> TestResult<Vec<(String, Option<String>)>>;
+
+    async fn seed_prior_outcome_detail(&self, sweep: &str) -> TestResult;
+}
+pub(super) trait UnobservedScopesCapability {
+    async fn unobserved_scopes(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+    ) -> Result<Vec<inventory_engine::inventory::UnobservedScope>, StoreError>;
+}
+
+impl UnobservedScopesCapability for BinaryStore {
+    async fn unobserved_scopes(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+    ) -> Result<Vec<inventory_engine::inventory::UnobservedScope>, StoreError> {
+        BinaryStore::unobserved_scopes(self, sweep, now_ms).await
+    }
+}
+
+impl OutcomeDetailStorageCapability for tempfile::TempDir {
+    async fn stored_outcomes(&self, sweep: &str) -> TestResult<Vec<(String, Option<String>)>> {
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(
+                sqlx::sqlite::SqliteConnectOptions::new()
+                    .filename(self.path().join("inventory.sqlite")),
+            )
+            .await?;
+        let rows = sqlx::query_as(
+            "SELECT outcome,detail FROM scope_outcomes WHERE sweep_id=?1 ORDER BY scope_key",
+        )
+        .bind(sweep)
+        .fetch_all(&pool)
+        .await?;
+        pool.close().await;
+        Ok(rows)
+    }
+
+    async fn seed_prior_outcome_detail(&self, sweep: &str) -> TestResult {
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(
+                sqlx::sqlite::SqliteConnectOptions::new()
+                    .filename(self.path().join("inventory.sqlite")),
+            )
+            .await?;
+        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at,detail) SELECT sweep_id,scope_key,'failed',90,'transport: earlier' FROM work_queue WHERE sweep_id=?1")
+            .bind(sweep)
+            .execute(&pool)
+            .await?;
+        pool.close().await;
+        Ok(())
+    }
+}
 
 pub(super) async fn fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Vec<u8>)> {
     let directory = tempfile::tempdir()?;
@@ -27,6 +87,15 @@ pub(super) async fn fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Vec
     )?;
     let registry = SchemaRegistry::new(&catalog, vec![Arc::new(kind)])?;
     let store = BinaryStore::create(&database, registry).await?;
+    Ok((directory, store, catalog))
+}
+
+pub(super) async fn conformance_fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Vec<u8>)> {
+    let (directory, store, catalog) = fixture().await?;
+    for id in ["work-1", "live-lease", "takeover", "dummy"] {
+        let sweep = SweepId::new(id.to_owned())?;
+        store.create_sweep_manifest(&sweep, "111111111111").await?;
+    }
     Ok((directory, store, catalog))
 }
 
@@ -50,11 +119,12 @@ pub(super) fn scope(region: &str) -> TestResult<ScopeKey> {
 }
 
 pub(super) fn work(sweep: &str, region: &str) -> TestResult<WorkSpec> {
+    let bindings = Record::encode(&Value::Map(BTreeMap::new()))?.into_bytes();
     WorkSpec::new(
         SweepId::new(sweep.to_owned())?,
         scope(region)?,
         None,
-        vec![1, 2],
+        bindings,
     )
     .map_err(Into::into)
 }
@@ -135,7 +205,7 @@ pub(super) fn unresolved(from: &str, target: &str) -> TestResult<UnresolvedRefer
     Ok(UnresolvedReference {
         from: resource(from)?,
         relation: Relation::parse("references")?,
-        source: EdgeSource::InferredExact,
+        source: EdgeSource::ReviewedRule,
         target: ReferenceTarget::new(
             AccountId::parse("123456789012")?,
             Region::parse("us-east-1")?,
@@ -283,6 +353,28 @@ pub(super) fn typed_relationship_catalog(relations: Vec<Value>, dual: bool) -> T
         return Err("runtime extension missing".into());
     };
     extension.insert(Key::Field(FieldId::new(4)?), Value::List(relations));
+    seal_catalog(&mut root)?;
+    Ok(Record::encode(&root)?.into_bytes())
+}
+
+pub(super) fn model_relation_catalog(bytes: Vec<u8>) -> TestResult<Vec<u8>> {
+    let record = Record::from_bytes(bytes)?;
+    let mut root = inventory_core::record::ValueRef::Map(record.root()).to_value()?;
+    let Value::Map(fields) = &mut root else {
+        return Err("catalog root is not a map".into());
+    };
+    let Some(Value::Map(extension)) = fields.get_mut(&Key::Field(FieldId::new(60_000)?)) else {
+        return Err("runtime extension missing".into());
+    };
+    let Some(Value::List(relations)) = extension.get_mut(&Key::Field(FieldId::new(4)?)) else {
+        return Err("relationships missing".into());
+    };
+    let mut relation = relations.first().ok_or("relationship missing")?.clone();
+    let Value::Map(fields) = &mut relation else {
+        return Err("relationship is not a map".into());
+    };
+    fields.insert(Key::Field(FieldId::new(7)?), Value::Int(0));
+    relations.push(relation);
     seal_catalog(&mut root)?;
     Ok(Record::encode(&root)?.into_bytes())
 }
@@ -497,6 +589,7 @@ fn runtime_metadata(scalar: Option<ScalarType>, dual: bool) -> TestResult<Value>
                     (4, Value::List(target_path)),
                     (5, Value::Text(relation.into())),
                     (6, Value::Int(0)),
+                    (7, Value::Int(1)),
                     (10, Value::Int(1)),
                 ])
             })
@@ -510,7 +603,7 @@ fn runtime_metadata(scalar: Option<ScalarType>, dual: bool) -> TestResult<Value>
         (3, Value::Int(0)),
     ])?;
     wire_map([
-        (1, Value::Int(2)),
+        (1, Value::Int(3)),
         (2, Value::List(vec![plan])),
         (3, Value::List(vec![schema])),
         (4, Value::List(relations)),

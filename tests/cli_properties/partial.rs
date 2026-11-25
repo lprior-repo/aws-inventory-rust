@@ -5,7 +5,11 @@ fn partial_and_cancelled_snapshots_preserve_exit_status_and_evidence() -> Result
     let directory = tempfile::tempdir()?;
     let database_path = directory.path().join("inventory.sqlite");
     let database = path(&database_path)?;
-    let input = fixture("architecture-events.jsonl")?;
+    let input = fixture(
+        directory.path(),
+        "architecture-events.jsonl",
+        event_fixtures::ARCHITECTURE_EVENTS,
+    )?;
     let imported = json_command(
         &arguments(&[
             "ingest",

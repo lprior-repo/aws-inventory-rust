@@ -1,0 +1,10 @@
+format = 1
+service = "datazone"
+
+[[step]]
+id = "resource"
+operation = "CreateDomain"
+kind = "AWS::DataZone::Domain"
+identity = "arn"
+[step.input]
+"name" = "inventory-thin-datazone"

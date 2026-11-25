@@ -1,0 +1,30 @@
+format = 1
+service = "cost-and-usage-report-service"
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-cost-and-usage-report-service"
+
+[[step]]
+id = "policy"
+service = "s3"
+operation = "PutBucketPolicy"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-cost-and-usage-report-service"
+Policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"billingreports.amazonaws.com\"},\"Action\":[\"s3:GetBucketAcl\",\"s3:GetBucketPolicy\"],\"Resource\":\"arn:aws:s3:::inventory-thin-cost-and-usage-report-service\"},{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"billingreports.amazonaws.com\"},\"Action\":\"s3:PutObject\",\"Resource\":\"arn:aws:s3:::inventory-thin-cost-and-usage-report-service/*\"}]}"
+
+[[step]]
+id = "report"
+operation = "PutReportDefinition"
+kind = "AWS::CUR::ReportDefinition"
+identity = { input = "ReportDefinition.ReportName" }
+scope = "account"
+[step.input]
+ReportDefinition = { ReportName = "inventory-thin-cost-and-usage-report-service", TimeUnit = "HOURLY", Format = "textORcsv", Compression = "ZIP", AdditionalSchemaElements = ["RESOURCES"], S3Bucket = "inventory-thin-cost-and-usage-report-service", S3Prefix = "inventory", S3Region = "us-east-1" }

@@ -5,6 +5,8 @@ pub(super) const RETAIN_PAYLOADS: &[&str] = &[
     "smithy.api#clientOptional",
     "smithy.api#mixin",
     "aws.api#arn",
+    "aws.api#arnReference",
+    "smithy.api#references",
     "aws.api#service",
     "aws.api#endpointPrefix",
     "aws.api#arnNamespace",

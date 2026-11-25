@@ -1,6 +1,7 @@
 pub mod assertions;
 pub mod audit;
 pub mod catalog;
+pub mod e2e;
 pub mod emulator;
 mod files;
 pub mod install;
@@ -8,10 +9,13 @@ pub mod inventory_seed;
 pub mod json;
 pub mod mutate;
 pub mod package;
+pub mod postgres;
+pub mod probe;
 pub mod provenance;
 pub mod proxy;
 pub mod seed;
 pub mod snapshot;
+pub mod verify;
 pub mod verify_delivery;
 
 #[derive(Debug, thiserror::Error)]
@@ -27,6 +31,9 @@ pub enum HarnessError {
 
     #[error("{0}")]
     Sqlx(#[from] sqlx::Error),
+
+    #[error(transparent)]
+    CloudControl(#[from] verify::cloud_control::CloudControlError),
 }
 
 impl HarnessError {

@@ -353,7 +353,7 @@ async fn given_schema14_before_writer_migration_when_reader_opens_then_upgrade_r
     pool.close().await;
     // When/Then: no reader-side mutation, inference, or silent metadata fallback.
     assert!(matches!(
-        Database::open(&path).await,
+        Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await,
         Err(cmdb_view::ViewError::Version(14))
     ));
     Ok(())

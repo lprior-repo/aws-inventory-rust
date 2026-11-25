@@ -20,7 +20,6 @@ use crate::common::{
 const ROLE: &str = "aws_iam_role";
 const PROFILE: &str = "aws_iam_instance_profile";
 const POLICY: &str = "aws_iam_policy";
-const MAX_TRUST_BYTES: usize = 65_536;
 const MAX_TRUST_STATEMENTS: usize = 128;
 const MAX_PRINCIPALS: usize = 256;
 

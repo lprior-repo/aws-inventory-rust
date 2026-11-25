@@ -116,6 +116,7 @@ pub(crate) struct PlanParts<'a> {
     pub(crate) identity_text: Box<[(Box<str>, IdentityTextPlan<'a>)]>,
     pub(crate) row_policy: RowPolicyPlan,
     pub(crate) context_projection: ContextProjectionPlan,
+    pub(crate) excluded_members: crate::record::MemberExclusions,
 }
 
 pub struct CallablePlan<'a> {
@@ -123,6 +124,10 @@ pub struct CallablePlan<'a> {
 }
 
 impl<'a> CallablePlan<'a> {
+    pub fn excluded_members(&self) -> crate::record::MemberExclusions {
+        self.parts.excluded_members
+    }
+
     /// Effective reviewed stage inputs, with exact-path overrides replacing common inputs.
     pub fn effective_bindings<'p>(
         &'p self,

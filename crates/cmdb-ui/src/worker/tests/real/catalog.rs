@@ -92,7 +92,7 @@ pub(super) fn catalog() -> TestResult<Vec<u8>> {
         (3, Value::Int(0)),
     ])?;
     let runtime = wire([
-        (1, Value::Int(2)),
+        (1, Value::Int(3)),
         (2, Value::List(vec![plan])),
         (3, Value::List(vec![schema])),
         (4, Value::List(relations()?)),
@@ -235,6 +235,7 @@ fn relations() -> TestResult<Vec<Value>> {
                 (4, Value::List(vec![Value::Int(1)])),
                 (5, Value::Text((*relation).into())),
                 (6, Value::Int(0)),
+                (7, Value::Int(0)),
             ])
         })
         .chain(std::iter::once(wire([
@@ -244,6 +245,7 @@ fn relations() -> TestResult<Vec<Value>> {
             (4, Value::List(vec![Value::Int(1)])),
             (5, Value::Text("references".into())),
             (6, Value::Int(3)),
+            (7, Value::Int(1)),
         ])))
         .collect()
 }

@@ -1,0 +1,9 @@
+format = 1
+service = "amp"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkspace"
+kind = "AWS::APS::Workspace"
+identity = "arn"
+[step.input]

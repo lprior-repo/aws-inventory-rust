@@ -46,7 +46,8 @@ async fn given_real_wire_model_when_committing_tags_and_replay_then_exact_durabl
     // When initial collection, empty/partial/tag-only updates, and duplicate replay run.
     pipeline::run(workload.clone()).await?;
     // Then the production reader and durable checkpoints expose the exact fixture.
-    let database = cmdb_view::Database::open(&workload.path).await?;
+    let database =
+        cmdb_view::Database::open(workload.path.to_str().ok_or("non-UTF-8 database path")?).await?;
     assert_eq!(database.counts().await?.resources, 12);
     let store = BinaryStore::open(&workload.path).await?;
     let summary = store

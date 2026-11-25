@@ -46,3 +46,36 @@ pub(in crate::inventory_seed) fn member<'a>(
         })?
         .ok_or(SeedError::Invalid("modeled field path is missing"))
 }
+
+pub(in crate::inventory_seed) fn is_document(
+    service: Service<'_>,
+    target: Target,
+) -> Result<bool, SeedError> {
+    match target {
+        Target::Prelude(kind) => Ok(kind == "document"),
+        Target::Shape(index) => {
+            let shape = service
+                .shape(index)?
+                .ok_or(SeedError::Invalid("modeled shape is missing"))?;
+            Ok(shape.kind()? == "document")
+        }
+        _ => Err(SeedError::Invalid("modeled target is unknown")),
+    }
+}
+
+pub(in crate::inventory_seed) fn element(
+    service: Service<'_>,
+    target: Target,
+) -> Result<Target, SeedError> {
+    if is_document(service, target)? {
+        return Ok(target);
+    }
+    let Target::Shape(index) = target else {
+        return Err(SeedError::Invalid("seed list targets a non-list shape"));
+    };
+    service
+        .shape(index)?
+        .ok_or(SeedError::Invalid("modeled shape is missing"))?
+        .element()?
+        .ok_or(SeedError::Invalid("seed list targets a non-list shape"))
+}

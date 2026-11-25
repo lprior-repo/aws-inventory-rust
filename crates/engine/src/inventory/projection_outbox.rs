@@ -11,6 +11,7 @@ pub(super) async fn drain_projection(
     if limit == 0 || i64::from(limit) > MAX_PROJECTION_ROWS {
         return Err(StoreError::Invalid("projection batch exceeds bounds"));
     }
+    let _turn = store.writer_turn.lock().await;
     let rows = sqlx::query("SELECT resource_key,revision,deleted,full_rebuild FROM projection_outbox ORDER BY full_rebuild DESC,revision,resource_key LIMIT ?1")
         .bind(i64::from(limit)).fetch_all(&store.writer).await?;
     rows.into_iter()
@@ -40,7 +41,7 @@ pub(super) async fn ack_projection(
         Some(key) => encode_resource(key)?,
         None => vec![0_u8],
     };
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     let result = sqlx::query("DELETE FROM projection_outbox WHERE resource_key=?1 AND revision=?2")
         .bind(key)
         .bind(ack.revision)
@@ -70,6 +71,7 @@ pub(super) async fn sweep_summary(
     store: &BinaryStore,
     sweep: &SweepId,
 ) -> Result<SweepSummary, StoreError> {
+    let _turn = store.read_turn().await;
     let rows = sqlx::query(
         "SELECT outcome,COUNT(*) AS count FROM scope_outcomes WHERE sweep_id=?1 GROUP BY outcome",
     )

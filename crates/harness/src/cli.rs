@@ -4,6 +4,20 @@ use inventory_harness::{HarnessError, install};
 
 use super::{Command, USAGE, workspace_root};
 
+pub(super) type SeedDraftOptions = (String, PathBuf, Option<PathBuf>);
+
+pub(super) fn parse_seed_draft(arguments: &[String]) -> Result<SeedDraftOptions, HarnessError> {
+    let options = options(arguments, &["--service", "--catalog", "--output"], &[])?;
+    let service = options
+        .text("--service")
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| HarnessError::invalid("seed draft requires --service <name>"))?;
+    let catalog = options
+        .get("--catalog")
+        .unwrap_or_else(|| workspace_root().join("catalog/aws-api.catalog"));
+    Ok((service, catalog, options.get("--output")))
+}
+
 pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
     match arguments.first().map(String::as_str) {
         Some("snapshot") if arguments.get(1).map(String::as_str) == Some("freeze") => {
@@ -308,6 +322,52 @@ fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> 
     })
 }
 
+const VERIFY_CLOUD_CONTROL_FLAGS: &[&str] = &[
+    "--database",
+    "--endpoint",
+    "--ca-bundle",
+    "--region",
+    "--account",
+    "--report",
+    "--root",
+    "--universal",
+    "--differences",
+    "--seeds",
+    "--oracle",
+];
+
+pub(super) fn parse_verify_cloud_control(
+    arguments: &[String],
+) -> Result<inventory_harness::verify::cloud_control::Args, HarnessError> {
+    let options = options(arguments, VERIFY_CLOUD_CONTROL_FLAGS, &[])?;
+    let root = options.get("--root").unwrap_or_else(workspace_root);
+    let required = |name| {
+        options
+            .text(name)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| HarnessError::invalid(format!("verify cloud-control requires {name}")))
+    };
+    Ok(inventory_harness::verify::cloud_control::Args {
+        database: required("--database")?,
+        endpoint: required("--endpoint")?,
+        ca_bundle: options.value("--ca-bundle")?,
+        region: required("--region")?,
+        account: options.text("--account"),
+        report: options.value("--report")?,
+        catalog: root.join("catalog/aws-api.catalog"),
+        universal: options
+            .get("--universal")
+            .unwrap_or_else(|| root.join("catalog/cloudcontrol-universal.json")),
+        differences: options
+            .get("--differences")
+            .unwrap_or_else(|| root.join("catalog/cloudcontrol-differences.tsv")),
+        seeds: options
+            .get("--seeds")
+            .unwrap_or_else(|| root.join("crates/harness/seeds")),
+        oracle: options.get("--oracle"),
+    })
+}
+
 struct Options {
     pairs: Vec<(String, String)>,
 }
@@ -354,4 +414,71 @@ fn options(
         }
     }
     Ok(Options { pairs })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn given_verify_parser_flags_when_usage_is_read_then_all_flags_are_documented()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let line = USAGE
+            .lines()
+            .find(|line| line.contains("inventory-harness verify cloud-control "))
+            .ok_or("missing Cloud Control usage")?;
+        let documented: BTreeSet<_> = line
+            .split_whitespace()
+            .map(|word| word.trim_matches(['[', ']']))
+            .filter(|word| word.starts_with("--"))
+            .collect();
+        let accepted: BTreeSet<_> = VERIFY_CLOUD_CONTROL_FLAGS.iter().copied().collect();
+        assert_eq!(documented, accepted);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod seed_draft_tests {
+    use super::*;
+
+    #[test]
+    fn given_draft_options_when_parsed_then_service_catalog_and_output_are_preserved()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let arguments = [
+            "--service",
+            "sns",
+            "--catalog",
+            "/tmp/model.catalog",
+            "--output",
+            "/tmp/sns.toml",
+        ]
+        .map(String::from);
+        let (service, catalog, output) = parse_seed_draft(&arguments)?;
+        assert_eq!(service, "sns");
+        assert_eq!(catalog, PathBuf::from("/tmp/model.catalog"));
+        assert_eq!(output, Some(PathBuf::from("/tmp/sns.toml")));
+        let (service, catalog, output) = parse_seed_draft(&["--service".into(), "ec2".into()])?;
+        assert_eq!(service, "ec2");
+        assert_eq!(catalog, workspace_root().join("catalog/aws-api.catalog"));
+        assert_eq!(output, None);
+        let error = parse_seed_draft(&[]).err().ok_or("expected an error")?;
+        assert_eq!(error.to_string(), "seed draft requires --service <name>");
+        Ok(())
+    }
+
+    #[test]
+    fn given_empty_service_or_unknown_flag_when_parsed_then_exact_errors_are_returned()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let error = parse_seed_draft(&["--service".into(), String::new()])
+            .err()
+            .ok_or("expected an error")?;
+        assert_eq!(error.to_string(), "seed draft requires --service <name>");
+        let error = parse_seed_draft(&["--unknown".into(), "value".into()])
+            .err()
+            .ok_or("expected an error")?;
+        assert_eq!(error.to_string(), format!("unexpected --unknown; {USAGE}"));
+        Ok(())
+    }
 }

@@ -4,7 +4,7 @@ use std::time::Duration;
 
 #[test]
 fn invalid_connection_caps_are_rejected_before_pool_construction() {
-    for max_connections in [0, 513] {
+    for max_connections in [0, 4_097] {
         invalid(Config {
             max_connections,
             ..config()
@@ -139,8 +139,8 @@ async fn largest_configured_bounds_construct_an_empty_pool() -> TestResult {
         request_deadline: Duration::from_secs(300),
         idle_timeout: Duration::from_secs(150),
         response_body_limit: 67_108_864,
-        max_connections: 512,
-        pool_idle_per_host: 512,
+        max_connections: 4_096,
+        pool_idle_per_host: 4_096,
         ..config()
     };
     assert_eq!(

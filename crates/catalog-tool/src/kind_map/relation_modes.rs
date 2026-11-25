@@ -107,52 +107,7 @@ pub(super) fn compile_compounds(
     let mut rows = source
         .iter()
         .enumerate()
-        .map(|(index, row)| {
-            validate_ends(
-                row.source_kind,
-                row.target_kind,
-                row.relation,
-                row.scope,
-                known,
-                index,
-            )?;
-            if row.components.len() < 2 || row.components.len() > MAX_COMPONENTS {
-                return Err(row_error(
-                    index,
-                    "compound relation requires two through eight AND components",
-                ));
-            }
-            let mut components = row
-                .components
-                .iter()
-                .map(|component| {
-                    Ok(ReviewedRelationComponent {
-                        source: component.source.owned(index)?,
-                        target: component.target.owned(index)?,
-                    })
-                })
-                .collect::<Result<Vec<_>, KindMapError>>()?;
-            for (position, component) in components.iter().enumerate() {
-                if components
-                    .iter()
-                    .take(position)
-                    .any(|previous| previous.target == component.target)
-                {
-                    return Err(row_error(
-                        index,
-                        "compound relation repeats a target selector",
-                    ));
-                }
-            }
-            components.sort();
-            Ok(ReviewedCompoundRelation {
-                source_kind: row.source_kind.to_owned(),
-                target_kinds: ReviewedTargetKinds::singleton(row.target_kind, index)?,
-                relation: row.relation.to_owned(),
-                scope: row.scope.to_owned(),
-                components,
-            })
-        })
+        .map(|(index, row)| compile_compound_row(index, row, known))
         .collect::<Result<Vec<_>, KindMapError>>()?;
     rows.sort();
     if rows
@@ -165,6 +120,57 @@ pub(super) fn compile_compounds(
         ));
     }
     Ok(rows)
+}
+
+fn compile_compound_row(
+    index: usize,
+    row: &CompoundRelationMapping<'_>,
+    known: &BTreeSet<&str>,
+) -> Result<ReviewedCompoundRelation, KindMapError> {
+    validate_ends(
+        row.source_kind,
+        row.target_kind,
+        row.relation,
+        row.scope,
+        known,
+        index,
+    )?;
+    if row.components.len() < 2 || row.components.len() > MAX_COMPONENTS {
+        return Err(row_error(
+            index,
+            "compound relation requires two through eight AND components",
+        ));
+    }
+    let mut components = row
+        .components
+        .iter()
+        .map(|component| {
+            Ok(ReviewedRelationComponent {
+                source: component.source.owned(index)?,
+                target: component.target.owned(index)?,
+            })
+        })
+        .collect::<Result<Vec<_>, KindMapError>>()?;
+    for (position, component) in components.iter().enumerate() {
+        if components
+            .iter()
+            .take(position)
+            .any(|previous| previous.target == component.target)
+        {
+            return Err(row_error(
+                index,
+                "compound relation repeats a target selector",
+            ));
+        }
+    }
+    components.sort();
+    Ok(ReviewedCompoundRelation {
+        source_kind: row.source_kind.to_owned(),
+        target_kinds: ReviewedTargetKinds::singleton(row.target_kind, index)?,
+        relation: row.relation.to_owned(),
+        scope: row.scope.to_owned(),
+        components,
+    })
 }
 
 fn validate_ends(

@@ -1,0 +1,11 @@
+format = 1
+service = "lookoutequipment"
+
+[[step]]
+id = "resource"
+operation = "CreateDataset"
+kind = "AWS::ApiOnly::LookoutEquipmentDataset"
+identity = "DatasetArn"
+[step.input]
+"DatasetName" = "inventory-thin-lookoutequipment"
+"ClientToken" = "12345678-1234-4234-8234-123456789abc"

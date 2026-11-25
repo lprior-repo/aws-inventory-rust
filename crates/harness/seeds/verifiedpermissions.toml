@@ -1,0 +1,10 @@
+format = 1
+service = "verifiedpermissions"
+
+[[step]]
+id = "resource"
+operation = "CreatePolicyStore"
+kind = "AWS::VerifiedPermissions::PolicyStore"
+identity = "arn"
+[step.input]
+"validationSettings" = { "mode" = "OFF" }

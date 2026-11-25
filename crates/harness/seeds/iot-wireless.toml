@@ -1,0 +1,10 @@
+format = 1
+service = "iot-wireless"
+
+[[step]]
+id = "resource"
+operation = "CreateServiceProfile"
+kind = "AWS::IoTWireless::ServiceProfile"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-iot-wireless"

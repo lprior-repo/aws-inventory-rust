@@ -1,0 +1,10 @@
+format = 1
+service = "rekognition"
+
+[[step]]
+id = "resource"
+operation = "CreateCollection"
+kind = "AWS::Rekognition::Collection"
+identity = { input = "CollectionId" }
+[step.input]
+"CollectionId" = "inventory-thin-rekognition"

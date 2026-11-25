@@ -144,7 +144,7 @@ async fn assert_sql_projection(store: &BinaryStore, expected: &Expected) -> Test
 
 async fn assert_native(database: &Path, graph: &NativeGraph, expected: &Expected) -> TestResult {
     let rows = graph
-        .rows("MATCH (n:Resource) RETURN n.account,n.region,n.kind,n.id,n.key")
+        .rows(inventory_graph::cypher::diagnostics::NODE_IDENTITIES)
         .await?;
     let resources: BTreeSet<Vec<String>> = expected
         .resources
@@ -169,7 +169,7 @@ async fn assert_native(database: &Path, graph: &NativeGraph, expected: &Expected
         resources,
         "native resource full keys and production digest must match the seed oracle"
     );
-    let view = Database::open(database).await?;
+    let view = Database::open(database.to_str().ok_or("non-UTF-8 database path")?).await?;
     let mut metadata = BTreeSet::new();
     for key in &expected.resources {
         let detail = view
@@ -188,7 +188,9 @@ async fn assert_native(database: &Path, graph: &NativeGraph, expected: &Expected
                 .collect::<Vec<_>>(),
         );
     }
-    let rows = graph.rows("MATCH (n:Resource) WHERE n.name IS NULL RETURN n.account,n.region,n.kind,n.id,n.content_hash").await?;
+    let rows = graph
+        .rows(inventory_graph::cypher::diagnostics::UNNAMED_RESOURCES)
+        .await?;
     assert_eq!(
         rows.len(),
         metadata.len(),
@@ -199,7 +201,9 @@ async fn assert_native(database: &Path, graph: &NativeGraph, expected: &Expected
         metadata,
         "native names/hashes must match independently checked public canonical records"
     );
-    let rows = graph.rows("MATCH (a:Resource)-[r]->(b:Resource) RETURN a.account,a.region,a.kind,a.id,b.account,b.region,b.kind,b.id,r.relation,r.provenance").await?;
+    let rows = graph
+        .rows(inventory_graph::cypher::diagnostics::RESOURCE_EDGES)
+        .await?;
     assert_eq!(
         rows.len(),
         expected.edges.len(),
@@ -218,7 +222,7 @@ async fn assert_read_model(
     graph: &NativeGraph,
     expected: &Expected,
 ) -> TestResult {
-    let database = Database::open(database).await?;
+    let database = Database::open(database.to_str().ok_or("non-UTF-8 database path")?).await?;
     let catalog_bytes = std::fs::read(super::runtime::catalog_path())?;
     let catalog = inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&catalog_bytes)?;
     assert_eq!(

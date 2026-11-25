@@ -1,0 +1,14 @@
+format = 1
+service = "cleanrooms"
+
+[[step]]
+id = "collaboration"
+operation = "CreateCollaboration"
+kind = "AWS::CleanRooms::Collaboration"
+identity = "collaboration.arn"
+[step.input]
+members = []
+name = "inventory-thin-cleanrooms"
+creatorMemberAbilities = ["CAN_QUERY", "CAN_RECEIVE_RESULTS"]
+creatorDisplayName = "Inventory Seed"
+queryLogStatus = "DISABLED"

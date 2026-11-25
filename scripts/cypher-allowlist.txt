@@ -1,0 +1,12 @@
+# Exact Rust paths only; each exception states why the protocol text is required.
+crates/graph-store/tests/cypher.rs # Query compiler contract assertions inspect emitted Cypher without running external projection logic.
+crates/cmdb-view/tests/database/tag_graph_live.rs # Adversarial live fixture creates malformed identities and foreign tag links to verify read isolation.
+crates/cmdb-ui/src/worker/tests.rs # Fake RESP worker validates the graph read command at the transport boundary.
+crates/cmdb-ui/src/worker/tests/shutdown.rs # Fake RESP shutdown regression holds an in-flight graph read command.
+crates/cmdb-ui/src/worker/tests/support.rs # Fake RESP worker support dispatches graph read commands.
+crates/cmdb-ui/src/worker/tests/support/transport.rs # Fake RESP proxy recognizes the graph read command name to fail or forward it.
+crates/cmdb-ui/src/app/integration_tests/lifecycle.rs # Adversarial live fixture corrupts stored node accounts to prove a query failure stays scoped.
+crates/harness/src/verify_delivery.rs # Delivery verifier transports named read-only graph-store diagnostics to the inspected graph.
+crates/harness/tests/native_graph_inventory/native.rs # Legacy native projection harness executes named diagnostic queries and a constant connectivity probe.
+crates/harness/tests/native_graph_inventory/native_deadlines.rs # Deadline regression intercepts graph commands to exercise transport cancellation.
+crates/harness/tests/native_graph_inventory/projection_fence.rs # Legacy projection fencing tests execute named diagnostics through the raw RESP client.

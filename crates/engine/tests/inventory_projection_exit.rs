@@ -230,7 +230,9 @@ async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_lat
         .await?;
 
     // Try to project to an offline server - should report offline, not error
-    let report = run_projection(&store, "redis://127.0.0.1:1", "offline-test", 10).await?;
+    let backend =
+        inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "offline-test")?;
+    let report = run_projection(&store, &backend, 10).await?;
     assert!(report.offline, "report should indicate FalkorDB is offline");
     assert_eq!(report.acknowledged, 0, "no acknowledgments when offline");
 

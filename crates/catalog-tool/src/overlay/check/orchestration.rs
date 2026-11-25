@@ -18,12 +18,14 @@ struct Accumulation {
     unreviewed: [usize; 3],
 }
 
-pub(super) fn check(_root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> {
+pub(super) fn check(root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> {
     let values = read_model_values(source)?;
-    let mut overlays = super::super::embedded()?;
+    let mut overlays = super::super::load(root)?;
     validate_policy_services(&overlays)?;
     overlays.retain(|overlay| values.contains_key(overlay.service()));
-    check_model_policies(&values, &overlays, &DenyList::default())
+    let text = super::super::generate::selection::deny_text(root)?;
+    let deny = DenyList::parse(&text)?;
+    check_model_policies(&values, &overlays, &deny)
 }
 
 pub(super) fn check_policies(
@@ -36,7 +38,7 @@ pub(super) fn check_policies(
     check_model_policies(&values, overlays, deny)
 }
 
-fn check_model_policies(
+pub(crate) fn check_model_policies(
     values: &BTreeMap<String, Value>,
     overlays: &[crate::overlay::ServiceOverlay],
     deny: &DenyList<'_>,
@@ -77,7 +79,7 @@ fn validate_policy_services(overlays: &[crate::overlay::ServiceOverlay]) -> Resu
     Ok(())
 }
 
-fn read_model_values(source: &Path) -> Result<BTreeMap<String, Value>, CheckError> {
+pub(crate) fn read_model_values(source: &Path) -> Result<BTreeMap<String, Value>, CheckError> {
     let models = source.join("models");
     let files = model_source::discover_models(&models)?;
     if files.is_empty() {

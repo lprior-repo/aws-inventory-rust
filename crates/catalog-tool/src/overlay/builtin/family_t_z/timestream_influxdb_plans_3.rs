@@ -54,7 +54,7 @@ pub(super) fn list_db_instances_for_cluster() -> Result<OperationOverlay, NameEr
 pub(super) fn list_db_parameter_groups() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
         "items",
-        Identity::Arn(path("arn")?),
+        Identity::Key(vec![path("id")?]),
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;

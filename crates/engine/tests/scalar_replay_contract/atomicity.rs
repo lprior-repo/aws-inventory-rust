@@ -80,7 +80,7 @@ async fn related_fixture() -> TestResult<(tempfile::TempDir, BinaryStore)> {
         from: key("us-east-1")?,
         to: resource(TARGET)?,
         relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
+        source: EdgeSource::ReviewedRule,
     });
     let source = key("us-east-1")?;
     let bytes = support::scalar_catalog_bytes(ScalarType::Text)?;
@@ -125,7 +125,7 @@ async fn assert_seeded_relations(pool: &SqlitePool) -> TestResult {
             ID.to_owned(),
             TARGET.to_owned(),
             "depends-on".to_owned(),
-            "model".to_owned()
+            "reviewed-rule".to_owned()
         )]
     );
     let unresolved: Vec<(String, String, String, String)> = sqlx::query_as(
@@ -138,13 +138,13 @@ async fn assert_seeded_relations(pool: &SqlitePool) -> TestResult {
                 ID.to_owned(),
                 "missing-target".to_owned(),
                 "references".to_owned(),
-                "inferred-exact".to_owned()
+                "reviewed-rule".to_owned()
             ),
             (
                 ID.to_owned(),
                 "target".to_owned(),
                 "depends-on".to_owned(),
-                "model".to_owned()
+                "reviewed-rule".to_owned()
             ),
         ]
     );

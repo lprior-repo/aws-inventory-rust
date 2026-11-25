@@ -1,0 +1,8 @@
+service	operation	first_verdict	conflicting_verdict	audit_line
+glue	ListRegistries	ENUMERATE-OK	KEEP-DEFER	49
+iot	ListIndices	ENUMERATE-OK	EXPAND-OK	33
+iot	ListPackages	ENUMERATE-OK	EXPAND-OK	15
+iot	ListPolicies	ENUMERATE-OK	EXPAND-OK	15
+iot	ListProvisioningTemplates	ENUMERATE-OK	EXPAND-OK	15
+iot	ListTopicRuleDestinations	ENUMERATE-OK	EXPAND-OK	43
+macie2	GetMember	ENUMERATE-OK	KEEP-DEFER	39

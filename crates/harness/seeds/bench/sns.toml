@@ -1,0 +1,11 @@
+format = 1
+service = "sns"
+
+[[step]]
+id = "topic"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = "TopicArn"
+repeat = 1000
+[step.input]
+Name = "inventory-bench-topic-{n}"

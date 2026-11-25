@@ -1,7 +1,7 @@
 use super::{bind, inventory, name, path, token};
 use crate::overlay::{
-    ExecutionBranch, FixedValue, Identity, NameError, OperationOverlay, OverlayClass, Paginator,
-    RequestRouting, Scope, ServiceOverlay,
+    Binding, ExecutionBranch, FixedValue, Identity, NameError, OperationOverlay, OverlayClass,
+    Paginator, RequestRouting, Scope, ServiceOverlay,
 };
 use std::collections::BTreeMap;
 
@@ -145,6 +145,11 @@ pub(super) fn branches(bind_scope: bool) -> Result<Vec<ExecutionBranch>, NameErr
 }
 
 fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    waf_resource_operations(service)?;
+    waf_logging_operations(service)
+}
+
+fn waf_resource_operations(service: &mut ServiceOverlay) -> Result<(), NameError> {
     for (list, items, get, selected) in [
         ("ListWebACLs", "WebACLs", "GetWebACL", "WebACL"),
         ("ListIPSets", "IPSets", "GetIPSet", "IPSet"),
@@ -176,11 +181,14 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
             Paginator::None,
             Scope::Region,
         )?;
-        bind(&mut detail, "Name", list, "Name")?;
-        bind(&mut detail, "Id", list, "Id")?;
-        detail.branches = branches(true)?;
+        detail.class = Some(OverlayClass::Expand);
+        detail.branches = detail_branches(list, &[("Name", "Name"), ("Id", "Id")], true)?;
         service.operations.insert(name(get)?, detail);
     }
+    Ok(())
+}
+
+fn waf_logging_operations(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut logging = inventory(
         "LoggingConfigurations",
         Identity::Arn(path("ResourceArn")?),
@@ -197,15 +205,35 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    bind(
-        &mut detail,
-        "ResourceArn",
+    detail.class = Some(OverlayClass::Expand);
+    detail.branches = detail_branches(
         "ListLoggingConfigurations",
-        "ResourceArn",
+        &[("ResourceArn", "ResourceArn")],
+        false,
     )?;
-    detail.branches = branches(false)?;
     service
         .operations
         .insert(name("GetLoggingConfiguration")?, detail);
     Ok(())
+}
+
+fn detail_branches(
+    parent: &str,
+    fields: &[(&str, &str)],
+    bind_scope: bool,
+) -> Result<Vec<ExecutionBranch>, NameError> {
+    let mut variants = branches(bind_scope)?;
+    for branch in &mut variants {
+        for (input, selected) in fields {
+            branch.bind.insert(
+                path(input)?,
+                Binding::FromBranch {
+                    operation: name(parent)?,
+                    branch: branch.discriminator.clone(),
+                    path: path(selected)?,
+                },
+            );
+        }
+    }
+    Ok(variants)
 }

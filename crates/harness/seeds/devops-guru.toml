@@ -1,0 +1,19 @@
+format = 1
+service = "devops-guru"
+
+[[step]]
+id = "topic"
+service = "sns"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = "TopicArn"
+[step.input]
+Name = "inventory-thin-devops-guru"
+
+[[step]]
+id = "channel"
+operation = "AddNotificationChannel"
+kind = "AWS::DevOpsGuru::NotificationChannel"
+identity = "Id"
+[step.input]
+Config = { Sns = { TopicArn = { from = "topic", path = "TopicArn" } } }

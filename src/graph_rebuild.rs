@@ -67,8 +67,9 @@ async fn deliver_until_settled(
     endpoint: &str,
     graph: &str,
 ) -> Result<ProjectionReport> {
+    let backend = inventory_graph::falkor::FalkorDb::connect(endpoint, graph)?;
     loop {
-        let report = run_projection(store, endpoint, graph, PROJECTION_BATCH).await?;
+        let report = run_projection(store, &backend, PROJECTION_BATCH).await?;
         if report.offline
             || report.rebuild_incomplete
             || report.pending == 0

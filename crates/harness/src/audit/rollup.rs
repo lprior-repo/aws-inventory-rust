@@ -8,12 +8,9 @@ use super::format::group_thousands;
 use super::jhelpers::{array, field, integer, object, text};
 
 pub(super) fn read_ordered(path: &Path) -> Result<(Json, String), HarnessError> {
-    let bytes = crate::files::read_bytes(path, super::files::MAX_DOCUMENT_BYTES)
+    let (value, digest) = crate::catalog::toml_doc::read(path, super::files::MAX_DOCUMENT_BYTES)
         .map_err(super::files::budget_message)?;
-    let digest = crate::provenance::sha256_hex(&bytes);
-    let content = String::from_utf8(bytes)
-        .map_err(|_| HarnessError::invalid("coverage evidence document is not UTF-8"))?;
-    Ok((Json::parse(&content)?, digest))
+    Ok((Json::from_value(&value), digest))
 }
 
 fn histogram_lines(summary: &Json) -> Result<Vec<String>, HarnessError> {
@@ -35,13 +32,13 @@ fn emulator_header(emulator: &Json) -> Result<Vec<String>, HarnessError> {
     let command_file = text(emulator, "command_file")?;
     let database_file = text(emulator, "database_file")?;
     Ok(vec![
-        format!("- Summary: [{summary_file}](../{summary_file})."),
+        format!("- Summary: `{summary_file}`."),
         format!(
             "- Summary SHA-256: `{}`.",
             text(emulator, "summary_sha256")?
         ),
-        format!("- Cloud Control scan receipt: [{command_file}](../{command_file})."),
-        format!("- Database: [{database_file}](../{database_file})."),
+        format!("- Cloud Control scan receipt: `{command_file}`."),
+        format!("- Database: `{database_file}`."),
         "- Python fixture creation is excluded from operation coverage. A successful HTTP response"
             .to_owned(),
         "  alone does not establish a successful typed, stored read.".to_owned(),
@@ -180,9 +177,9 @@ fn interpretation_lines() -> Vec<String> {
         String::new(),
         "## Full matrix and interpretation".to_owned(),
         String::new(),
-        "- [All provider capability entries](../catalog/cloudcontrol-capabilities.json)."
+        "- [All provider capability entries](../catalog/cloudcontrol-capabilities.toml)."
             .to_owned(),
-        "- [Executable descriptors and property mappings](../catalog/cloudcontrol-resources.json)."
+        "- [Executable descriptors and property mappings](../catalog/cloudcontrol-resources.toml)."
             .to_owned(),
         "- [Collection and relationship design](CLOUDCONTROL_COVERAGE.md).".to_owned(),
         String::new(),

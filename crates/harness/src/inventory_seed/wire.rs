@@ -74,6 +74,7 @@ pub(super) async fn call(
     let request = build_request(credentials, spec)?;
     let response = client.send(request).await?;
     let descriptor = spec.operation;
+    check_status(spec, response.status, &response.headers, &response.body)?;
     Ok(aws_wire::response::decode(ResponseContext {
         service: descriptor.service,
         operation: descriptor.operation,
@@ -83,6 +84,38 @@ pub(super) async fn call(
         status: response.status,
         limits: DecodeLimits::default().preserve_field_presence(),
     })?)
+}
+
+fn check_status(
+    spec: RequestSpec<'_>,
+    status: http::StatusCode,
+    headers: &http::HeaderMap,
+    body: &[u8],
+) -> Result<(), SeedError> {
+    if status.is_success() {
+        return Ok(());
+    }
+    let error = aws_wire::response::errors::decode(ResponseContext {
+        service: spec.operation.service,
+        operation: spec.operation.operation,
+        protocol: spec.operation.protocol,
+        body,
+        headers,
+        status,
+        limits: DecodeLimits::default(),
+    })?;
+    let code = rejection_code(error.code, status);
+    Err(SeedError::Rejected {
+        code,
+        message: super::report::message(body),
+    })
+}
+
+fn rejection_code(code: Option<String>, status: http::StatusCode) -> String {
+    match code {
+        Some(code) => code,
+        None => status.as_str().to_owned(),
+    }
 }
 
 fn build_request(

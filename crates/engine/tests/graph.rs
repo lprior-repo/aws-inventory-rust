@@ -16,7 +16,7 @@ fn page(count: usize) -> CollectionPage {
             region: "us-east-1".into(),
             kind: "aws_ec2_instance".into(),
             name: Some("quote\" newline\n slash\\ 😃".into()),
-            properties: json!({"value":"x\"}) MATCH (n) DETACH DELETE n //"}),
+            properties: json!({"value":inventory_graph::cypher::diagnostics::HOSTILE_PROPERTY}),
             tags: BTreeMap::from([("env".into(), "test".into())]),
             source: Source::Direct,
             observed_at: 1,
@@ -226,11 +226,16 @@ async fn live_assertions(
     if first != 5 || resumed != 0 || replayed != 5 {
         return Err("unexpected delivery/replay batch counts".into());
     }
-    let nodes = live_query(connection, name, "MATCH (r:Resource) RETURN count(r)").await?;
+    let nodes = live_query(
+        connection,
+        name,
+        inventory_graph::cypher::diagnostics::RESOURCE_COUNT,
+    )
+    .await?;
     let edges = live_query(
         connection,
         name,
-        "MATCH ()-[e:RELATES_TO]->() RETURN count(e)",
+        inventory_graph::cypher::diagnostics::LEGACY_EDGE_COUNT,
     )
     .await?;
     if first_cell(&nodes)? != &redis::Value::Int(4) || first_cell(&edges)? != &redis::Value::Int(1)
@@ -240,14 +245,19 @@ async fn live_assertions(
     let names = live_query(
         connection,
         name,
-        "MATCH (r:Resource) WHERE r.unresolved=false RETURN r.name LIMIT 1",
+        inventory_graph::cypher::diagnostics::LEGACY_NAME,
     )
     .await?;
     let expected = redis::Value::BulkString("quote\" newline\n slash\\ 😃".as_bytes().to_vec());
     if first_cell(&names)? != &expected {
         return Err("graph string parameter round-trip mismatch".into());
     }
-    let marker = live_query(connection, name, "MATCH (s:InventoryScan) RETURN s.state").await?;
+    let marker = live_query(
+        connection,
+        name,
+        inventory_graph::cypher::diagnostics::SCAN_STATE,
+    )
+    .await?;
     if first_cell(&marker)? != &redis::Value::BulkString(b"complete".to_vec()) {
         return Err("missing complete marker".into());
     }
@@ -259,7 +269,7 @@ async fn live_query(
     name: &str,
     query: &str,
 ) -> Result<redis::Value, redis::RedisError> {
-    redis::cmd("GRAPH.QUERY")
+    redis::cmd(inventory_graph::cypher::COMMAND)
         .arg(name)
         .arg(query)
         .query_async(connection)

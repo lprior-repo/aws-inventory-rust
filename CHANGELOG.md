@@ -2,6 +2,363 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- `cmdb-bench` measures cold and warm sweeps in owned stacks, compares benchmark
+  results, and times catalog opens. The proxy profile adds latency and request
+  pacing; reports retain run provenance and distinguish incomplete runs.
+- Catalog compilation retains modeled references and materializes resolvable
+  `REFERENCES` edges with model provenance. Reviewed rules take precedence.
+  Regenerate catalogs before use; relation provenance is now required.
+- The SQLite and PostgreSQL store conformance suites now share batch claim
+  ordering, repeated observation, deletion and projection outbox scenarios,
+  plus manifest handling, scope reporting, reference retraction and outcome
+  detail. PostgreSQL lists unobserved scopes.
+- `inventory-harness verify cloud-control` compares stored identities with
+  Cloud Control listings without writing to the inventory. The command reports
+  missing, extra, explained and non-listable identities; ambiguous normalized
+  identities fail instead of choosing a resource.
+- Cloud Control listings with no identities are reported as not comparable when
+  stored resources exist. Seeded kinds fail the gate; an empty listing with no
+  stored identities remains a match.
+- PostgreSQL test database creation and removal use a 60-second server deadline
+  and a 65-second transport deadline after connecting. Prune bounds the candidate
+  query separately from each drop.
+- Local PostgreSQL image upgraded from 16-bookworm to 18-trixie (18.7),
+  pinned by digest. The volume name changed to `inventory-pgdata-18` and
+  its mount path to `/var/lib/postgresql`; the old `inventory-pgdata`
+  volume is left in place and data is not migrated automatically.
+- Sweep moves selected row buffers into observations after deriving references,
+  tags and child work, shares up to 65,536 modeled endpoints per run, and encodes
+  each page request once while still signing every retry. Observations share
+  immutable hash-exclusion paths instead of copying them per row; endpoint-cache
+  hits borrow region keys. Record bytes, exclusion values and content hashes
+  remain unchanged.
+- `inventory-harness seed draft --service <name> [--catalog <file>] [--output <file>]`
+  drafts a seed file from the create operations in the compiled catalog. A step
+  that cannot be drafted (sensitive required input, unresolved or ambiguous
+  reference, unsupported pattern, unrepresentable integer range, home-region
+  scope, traversal limit) is written commented out under `# Disabled: <reason>`
+  and does not stop the other steps. Output cannot target
+  `crates/harness/seeds`, including through a symlink.
+- Catalog version 4 retains modeled integer bounds for seed drafting.
+  Regenerate catalogs before use; version 3 catalogs are rejected.
+- SQL refuses SQL-string executor entry points, timeout overrides, notifications
+  and logical messages. Its transport watchdog terminates the timed-out reader
+  backend, and scalar table cells are charged before heap formatting.
+  Sweep integration checks repeated reads against a real uncommitted page
+  through a latency-injecting proxy.
+- SQL rendering charges escaped text before allocating it; harmless
+  advisory-prefixed columns remain queryable, and reader fixtures clean up
+  after assertion failures.
+- `aws-inventory sql --database <reader-URL> "<statement>"` runs bounded,
+  typed PostgreSQL queries in a dedicated read-only transaction. Reader
+  privileges and standard-conforming strings are verified on connection.
+  Exact quoted and unquoted advisory/backend-control function names and
+  Unicode-escaped quoted identifiers are refused. Cleanup is time-bounded,
+  failed queries retain their original errors, and results use aligned tables.
+  `--limit` lowers the row budget. The SQLite `query` command is unchanged and
+  shares the statement lexer.
+- The whole-account hierarchy layout accepts borrowed interned arrays and emits
+  deterministic resource positions and contiguous account/region/service/kind
+  child ranges, independently of Makepad and database I/O.
+- Catalog overlay operations gain an `emit` key with values `resources`
+  (default) and `work`. An `emit = "work"` enumeration creates child work
+  instead of resource rows. The compiler infers `work` for enumerations with
+  no explicit setting, exactly one callable expansion returning a structure,
+  and scalar or identifier-only items. The runtime plan extension version
+  moves from 2 to 3 (plan field 25 carries the flag); catalogs compiled
+  before this change are rejected and must be regenerated. The catalog
+  version stays 4.
+- Work-only pages record listed members in the same transaction that enqueues
+  describe work. SQLite and PostgreSQL retire a describe scope after two
+  complete enumerations omit its member. A still-listed member from another
+  enumeration keeps the describe scope alive.
+- Concurrent sweeps into SQLite no longer fail with a connection pool timeout.
+  The store has one writer connection; writers now queue for it in arrival
+  order before the five-second checkout deadline starts, and the scheduler
+  keeps polling in-flight pages while it claims more work, so a page that
+  holds the writer can finish. Any `--concurrency` in the allowed range is
+  safe, including the default of 16.
+- EKS clusters are stored under their full ARN instead of their name. Existing
+  databases are not rekeyed in place; collect into a fresh database with the
+  regenerated catalog.
+- `catalog-tool relations remap --write` generates exact API-member relation
+  rows and a per-type mapped/unmapped report from the reviewed CloudFormation
+  rules; live relations rise from 468 to 528. Reviewed typed relation sources
+  take precedence over generated rows. List-crossing mappings are written as
+  `relation-held` rows that the kind loader excludes for now. Generic
+  references are inferred only when the terminal API member name matches
+  exactly one enumerated target kind's identifier; missing and ambiguous
+  candidates are reported with a reason.
+- The native Organizations seed test reads the emulator's existing
+  organization instead of trying to create one.
+- `catalog-tool iam-policy` derives one read-only IAM action per callable
+  runtime plan and writes the policy, the cross-account role template and a
+  gap report. Must-deny findings and broad aliases are reported; write-named
+  exceptions that are not confirmed are refused. Sweep keeps a receipt for
+  every attempt, including rejected and retried calls.
+- Graph traversal retains breadth-first paths under edge budgets and
+  distinguishes a depth cutoff from a budget-truncated path.
+- FalkorDB projection rejects foreign edges before emission and writes at
+  most 1,000 rows per constant-depth `UNWIND` statement, preserving relation
+  labels. Connection loss uses the graph adapter deadline instead of Redis's
+  500 ms response timeout. Cypher ownership is checked by a standalone script.
+- PostgreSQL pages batch payload reads by kind and cache table names per snapshot;
+  tag pairs retain their key ordering, malformed freshness rows are typed errors,
+  and URL-free diagnostics distinguish authentication, database and schema failures.
+- Graph expansion reports terminal failures and revision-scoped transport status.
+  Offline diagnostics survive following SQL snapshots and clear after a successful
+  graph query; resource-query failures remain scoped to their selected resource.
+- `cmdb-view` and `cmdb-ui --database` now read PostgreSQL inventory URLs as
+  well as SQLite paths. PostgreSQL reads use four read-only connections,
+  pinned repeatable-read snapshots, full-identity cursors, escaped literal
+  searches with ASCII-only case folding and bounded table-row projections.
+  Configuration diagnostics redact PostgreSQL URLs; `Database::open` now accepts `&str`.
+- PostgreSQL URL dispatch and diagnostic redaction share case-insensitive scheme
+  handling, including URLs embedded in malformed CLI arguments. Both readers
+  retain byte-budget continuations and reject oversized first rows or missing
+  stored records consistently; SQLite record lengths use complete resource identities.
+- Marketplace Agreement discovery now sends the pinned model's documented-required
+  `AgreementType=PurchaseAgreement` filter on initial and subsequent search pages.
+  Existing catalog/database pairs must be regenerated together for the new plan.
+- EMR Containers seeds use distinct EKS role, cluster and idempotency-token
+  identities, so replaying all service recipes in one account does not reject
+  their prerequisites as duplicates of the standalone EKS recipe.
+- Sweep preserves account-global Lightsail domain ARNs while retaining strict
+  account and regional-resource identity checks.
+- Timestream InfluxDB parameter groups now use their required, service-generated
+  `id` as the canonical resource ID, replacing ARN IDs. This includes service
+  defaults whose ARN is empty without discarding customer groups on the same page.
+  Existing ARN-keyed parameter-group rows are replaced after complete observation.
+- Required child requests with absent or empty source text are skipped per row
+  and counted in the invocation's `child_requests_skipped` metric. Nonempty
+  values are preserved verbatim; validation and transport failures remain errors.
+- `ProgressEvent::Finished.summary` is now boxed to keep bounded progress-channel
+  event slots compact as summary metrics grow. No listener means no event allocation.
+
+- Reviewed per-operation response-member omissions now drop sensitive modeled
+  values during decoding, before records, projections or persistence. This
+  enables IAM instance-profile discovery/detail/role expansion, Lambda function
+  discovery/configuration/aliases, and SNS platform-application metadata. These
+  plans omit embedded profile-role trust documents, function environment/commands
+  and platform credentials. Pre-existing IAM `ListRoles`/`GetRole` trust-summary
+  projections are unchanged and are not covered by that omission guarantee.
+  Validation rejects ambiguous terminal names and union variants.
+  See `docs/e2e/SANITIZED_RESPONSE_MEMBERS.md` for bounds and compatibility.
+- E2E count verification now rejects an entirely catalog-deferred seed oracle.
+  Every explicit E2E service selector must have a seed recipe; bootstrap calls
+  remain implicit, so the baseline script no longer selects recipe-less STS.
+- Sweep accepts `INVENTORY_SWEEP_DATABASE` as an alternative to `--database`;
+  the harness uses it to keep database passwords off collector argv. Generated
+  profile/config files are exclusively created with mode 0600, issued credential
+  reads are capped at 64 KiB, and signal-listener failures still finalize owned
+  children and the database.
+- Selection/parser regression scenarios cover bootstrap retention, sibling
+  removal, empty-selection identity, duplicate plan names, invalid arguments,
+  and unknown selectors rejected before database creation. E2E SQL snapshots
+  self-validate seeded relationships and resource pagination bounds; crash and
+  cancellation subscenarios use independent graph namespaces.
+
+- Seed directories admit up to 512 entries while retaining bounded reads, sorted
+  TOML selection and empty-directory rejection. Offline recipe checks report all
+  invalid files together rather than stopping at the first model/path error.
+- Seed TOML strings targeting modeled blobs decode strict canonical padded base64
+  during preflight, within a 1,024-byte encoded blob bound; ordinary strings
+  remain text and malformed blob literals fail before network calls.
+- Fresh-emulator seed replays use catalog-enumerated Kinesis streams and Lightsail
+  domains, omit unimplemented Fraud Detector prerequisites, and remove the
+  unverified legacy SMS/Voice recipe.
+- Native first-page probes accept repeatable `--service` filters for isolated
+  service seed verification; omitted filters retain the full-catalog report.
+- Native first-page probes account for every callable purpose, including bootstrap
+  and tag plans, with exactly one row per service/operation. STS identity is reused
+  for account-bound root inputs. Known absent features and singleton configurations
+  produce empty-with-reason evidence and complete empty runtime scopes; permission
+  and generic missing-resource errors remain visible failures.
+- AWS error decoding honors explicit JSON error envelopes and error headers even
+  for RPC/CBOR requests, preserving emulator protocol gaps instead of generic HTTP
+  errors. Explicit unknown-operation responses are unsupported, not decoder failures.
+- Batch service jobs, CloudFormation type versions, Kinesis Video mapped resources
+  and Redshift reserved-node exchange status now use their actual parent identifiers.
+  CloudFormation registry discovery explicitly selects account-private extensions.
+  IAM login-profile `NoSuchEntity` is narrowly treated as absent; permission and
+  service failures remain visible. Native failure triage reconciles all 2,197 keys.
+- Overlay generation now covers all 436 pinned services, including validated
+  child reads derived from modeled identifiers or a unique compatible
+  same-service identity source. Reachable credential outputs, owner-sensitive
+  inputs and ambiguous collections fail closed. Specific reviewed defers and
+  denials remain authoritative; only source-typed request-binding blockers may
+  be replaced by validated generated children. Per-class/protocol counts,
+  advisory audit differences and mutation evidence are documented in
+  `docs/e2e/build/GENERATOR_EVIDENCE.md`.
+- Generator integration preserves reviewed safety decisions and shared
+  MediaConnect gateway-instance kinds. Singleton detail identity uses a required,
+  matching modeled ARN rather than treating related agent/security-group lists
+  as the inventoried resource.
+
+- Sweep accepts repeatable `--service service[:Operation]` selectors. Bootstrap
+  calls and required ancestors remain enabled; descendants require an explicit
+  selector (a bare service selects all its plans). Omitted selectors keep the
+  full catalog, and unknown selectors exit with usage status 2.
+- `inventory-harness e2e run` owns an isolated emulator, FalkorDB and fresh
+  PostgreSQL database, seeds recipes, runs the shipped collector twice and
+  checks seeded identities/counts and zero repeat writes. Timed stages and
+  safe numeric collector outcomes and failed operation names remain visible.
+  Completed product exits 0/2 require no partial scopes, pending work or graph
+  backlog; unsupported/failed emulator outcomes do not bypass count/repeat gates.
+  `--keep` retains the database until explicitly pruned and waits for Ctrl-C
+  before stopping children. The baseline script now uses this command.
+- The shared collector runner accepts a caller-supplied deadline for long-running
+  benchmarks while ordinary E2E collection retains its 300-second deadline.
+  Both paths use the same outcome classifier and kill/reap timed-out children.
+- E2E count verification captures a pre-seed inventory and compares full
+  account/region/kind/id additions, not default-resource exceptions or count
+  subtraction. Oracle kinds with no compiled callable resource emission are
+  explicitly catalog-deferred with reviewed reasons; callable kinds still
+  require exact identities, with up to five differing identities on failure.
+- E2E collection includes resource-producing cross-service seed prerequisites,
+  derived from selected recipes, so Lambda signing profiles are not seeded
+  without collecting Signer. Existing qualified service scopes remain explicit.
+
+
+- The VPC/subnet baseline explicitly selects its two paginated enumerations
+  from the full catalog instead of sweeping unrelated services and descendants.
+  It retains the 60-second CLI deadline, all inventory/graph/resume assertions,
+  and checks the exact two-scope, four-page, six-request budget. Optional
+  `INVENTORY_E2E_TRACE=1` records per-invocation timing and bounded API-attempt
+  diagnostics, including when the child process exceeds its deadline.
+  The deliberate offline-graph invocation requires exit 5. Both stores verify
+  SIGKILL/live-lease refusal without checkpoint corruption and Ctrl-C followed
+  by immediate resume to the uninterrupted digest; the long hard-crash lease
+  recovery limitation is recorded explicitly.
+
+- The harness `probe` command reports every catalog callable in stable order,
+  skips parent-bound children, and calls only the first page through the sweep's
+  existing encoder, signer, status classifier and decoder. Reports retain bounded
+  failure details, decoder output shapes, and outcome/protocol totals. The public
+  sweep `call_once` API returns item counts and the actual HTTP response version
+  without persistence. Signing credentials now clone their shared identity handle.
+
+- Catalog kind/naming generation and regression tests follow rustfmt without
+  changing mapping precedence or catalog wire formats. Formatting changes the
+  embedded generator-source fingerprint, so compiled catalogs and their manifest
+  hashes must be regenerated. Small helpers retain source/function size limits.
+
+- The harness runs ordered TOML seed directories against loopback HTTPS, retaining
+  rejected operations and skipped dependencies in a sorted matrix alongside a
+  sorted resource/relationship oracle. Mutation authorization remains harness-only.
+  Thin-slice fixtures now cover IAM, SNS/SQS, DynamoDB, KMS, Lambda signing
+  configuration, S3 and CloudWatch; all 44 matrix rows are accepted by pinned
+  emulator 1.0.348. Seed files support explicit request-derived identities and
+  per-step services for observed cross-service references. SNS subscription
+  and Lambda execution-role relationship metadata remains gated on A1.x.
+  Bulk seed execution accepts `--concurrency 1..=64` (default one), retaining
+  dependency barriers and deterministic oracle ordering without detached tasks.
+  Five benchmark recipes honor observed service quotas and create 10,000
+  resources at concurrency 64: two fresh native emulator runs completed in
+  43.59 and 43.73 seconds with matching kind counts and acceptance matrices.
+  IAM uses roles, policies and instance profiles to stay below per-kind limits.
+  Catalog-plan classification and both product/sweep dependency tests are
+  included. The sweep encoder accepts only a callable catalog plan, endpoint,
+  record and input fields; protocol-spanning tests verify catalog-derived
+  methods. Service rejection messages are decoded and bounded.
+  Native seed integration fixtures use the widened 16-bit step identifiers in
+  recipe helpers and independent oracle assertions.
+
+- Sweep accepts PostgreSQL URLs, creates missing inventory schemas and refuses
+  missing-schema resume. Collection and graph delivery share the inventory port;
+  file paths retain the transitional SQLite backend. Database URLs are redacted
+  from CLI argument debug output. Baseline scenarios default to isolated native
+  PostgreSQL databases and retain an explicit `INVENTORY_E2E_STORE=file` mode.
+
+- PostgreSQL now implements the complete inventory and projection ports, including
+  transaction-owned delivery fencing, bounded revision-exact outbox delivery,
+  repeatable-read snapshots, and paged resources, edges and tags.
+
+- Projection delivery now uses backend-neutral inventory, snapshot, target-identity
+  and delivery-ownership ports. SQLite retains its persistent sidecar generation
+  and immediate cross-process contention behavior.
+
+- PostgreSQL resolves reviewed typed reference unions in bounded batches, retracts
+  stale or ambiguous matches without discarding independent proofs, and retires
+  missing resources only after two complete authoritative enumerations.
+  Parent retirement preserves independently owned descendants and reaggregates
+  their remaining facets. Final pages, explicit outcomes and repeated tokens all
+  drain completion atomically under the current lease fence.
+  Concurrency debt: reviewed-catalog writes acquire advisory lock `(14, 2)`
+  before sweep and kind locks, serializing reviewed-relationship writers.
+  Revisit a dependency-closure protocol at B6/C6.7 after benchmarking.
+
+- PostgreSQL schema initialization creates the inventory namespace, account-led
+  resource keys and native scalar kind columns in batches of 200 tables.
+  SQL timestamps retain microseconds; CBOR retains the original precision.
+  The reviewed catalog is persisted with its digest so reopening retains
+  current catalog authority metadata rather than restoring an incomplete registry.
+
+- `PgStore` creates and reopens schema14 through a bounded eight-connection
+  pool, checks stored catalog integrity and hides the entire URL in diagnostics.
+  Connection failures never propagate raw connection details.
+
+- PostgreSQL work seeding uses 5,000-scope array batches and a transaction
+  advisory lock. Claims skip locked rows, preserve staleness ordering and reject
+  exhausted generations. Resume checks manifests and locks the queue before
+  fencing expired leases.
+
+- PostgreSQL page commits batch resource, scalar, facet, tag and child-work
+  writes in one lease-fenced transaction. Unchanged content is not rewritten.
+  Native provenance and candidate indexes retain checked reference authority.
+  Timestamp arrays use binary intervals to avoid floating-point rounding,
+  and projection work collapses to a bounded full-rebuild marker on overflow.
+
+- The sweep runtime now lives in `inventory-sweep`; CLI collection and cadence
+  scheduling call its public API. Credential resolution uses `CredentialSource`
+  without an AWS SDK dependency, with the profile adapter enabled by
+  `inventory-aws/sweep-credentials`. Bounded IAM trust summarization is shared
+  from `inventory-core` under its existing `legacy` feature.
+
+- Sweep callers now own cancellation and optional bounded progress delivery.
+  Slow listeners never block collection; full-channel drops are counted in the
+  returned summary. Cancellation durably releases owned leases without changing
+  scope outcomes or continuation tokens, so resume completes the same inventory.
+  CLI signal handling stays outside the library and spawns no signal task.
+
+- Sweep summaries retain their original first output line and add a `metrics`
+  line with stage times, executor and transport counters, per-run decode and
+  commit timing, successful claims/pages, HTTP/2 requests, and bounded `/proc`
+  CPU/peak-memory readings. Missing process metrics are explicitly unavailable.
+
+- Collection now accepts any `InventoryStore` through monomorphized APIs,
+  including discovery, resume, lease settlement and page persistence. Concrete
+  SQLite construction remains in CLI wiring and test fixtures.
+
+- `InventoryStore` now exposes bounded sweep discovery, typed manifest creation,
+  and generation-fenced lease release for immediate cancellation/resume.
+  Queue depth is opt-in through `claim_with_depth`; ordinary claims retain their
+  original UPDATE without a COUNT or RETURNING, and page commits are unchanged.
+
+- Added the unused `inventory-graph` crate for E3.1: a backend-neutral,
+  RPIT-plus-Send graph port, a bounded FalkorDB adapter and centralized
+  openCypher builders. Existing projection and UI callers remain unchanged.
+  `docs/GRAPH_SUBSET.md` records identity, incident-edge replacement,
+  cursor ordering, limits and live conformance commands.
+
+- Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
+  separate source decoders and unchanged wire tags, limits and rejection order.
+  The parent plan decoder is now below the 300-line source limit.
+
+- Relationship metadata decoding and its existing namespace/mode tests move
+  together under `decode/metadata/relations/`. Target-kind, source and scope
+  decoding remain ordered as before; the parent metadata module is below 300 lines.
+
+- Graph traversal comments move to the track E read contract. Frontier expansion
+  and edge-budget calculation are separate helpers; traversal direction,
+  timeout, limits and edge admission order are unchanged.
+- Harness seed scenarios now load strict, bounded per-service TOML. Symbolic
+  step references bind the same repeat index; nested lists, modeled structures
+  and named maps reach request records without losing output bindings.
+  The embedded EC2 file preserves all 12 legacy steps and six relationships,
+  including input/check ordering. Expansion is limited to 4,096 steps, 65,536
+  input nodes, depth eight and a conservative 64 MiB string budget.
+
 - `cmdb-ui` gains property tests for `DagLayout::compute` (node accounting,
   non-overlap, bounds, determinism, edge direction with strictly increasing
   layers on forward edges), a criterion layout benchmark
@@ -229,7 +586,7 @@
 - M1.6a: `catalog-tool models endpoints [--check | --write]` evaluates every
   model's endpoint rule set and writes `catalog/aws-endpoints.report`: URL
   template, signing name and signing region for 436 services (28 global,
-  401 regional, 5 needing an overlay, 2 unsupported), proven on the 4,109
+  402 regional, 3 needing an overlay, 3 unsupported), proven on the 4,112
   published endpoint cases in scope, with three explicit per-region
   exceptions. The gate runs `models endpoints --check`. Rust lines: 4,138
   added, 2 deleted.
@@ -292,7 +649,7 @@
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.
 - Decision V34: records are CBOR through the `minicbor` library. A codec
-  benchmark (`docs/performance-evidence/record-codec-2026-11-13.md`) found it
+  benchmark (not kept in this repository) found it
   faster to build and smaller than our own format, `rkyv`, `postcard` and
   JSON. Our own format was deleted before landing; it and the benchmark are on
   the branch `evidence/o1-record-codec`.

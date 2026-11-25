@@ -22,6 +22,7 @@ pub struct DecodeLimits {
     nodes: usize,
     depth: usize,
     preserve_fields: bool,
+    excluded_members: inventory_core::record::MemberExclusions,
 }
 
 impl DecodeLimits {
@@ -40,6 +41,7 @@ impl DecodeLimits {
             nodes,
             depth,
             preserve_fields: false,
+            excluded_members: inventory_core::record::MemberExclusions::default(),
         })
     }
 
@@ -61,6 +63,12 @@ impl DecodeLimits {
         self.preserve_fields = true;
         self
     }
+
+    /// Skip modeled member names before decoding values, including nested occurrences.
+    pub fn excluding_members(mut self, members: inventory_core::record::MemberExclusions) -> Self {
+        self.excluded_members = members;
+        self
+    }
 }
 
 impl Default for DecodeLimits {
@@ -70,6 +78,7 @@ impl Default for DecodeLimits {
             nodes: MAX_NODES,
             depth: MAX_DEPTH,
             preserve_fields: false,
+            excluded_members: inventory_core::record::MemberExclusions::default(),
         }
     }
 }

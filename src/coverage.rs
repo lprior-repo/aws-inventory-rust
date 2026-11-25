@@ -2,7 +2,7 @@ use anyhow::{Context, Result, ensure};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
 
-const CAPABILITIES: &str = include_str!("../catalog/cloudcontrol-capabilities.json");
+const CAPABILITIES: &str = include_str!("../catalog/cloudcontrol-capabilities.toml");
 
 pub fn report(
     service: Option<&str>,
@@ -20,7 +20,7 @@ pub fn report(
             "invalid coverage filter"
         );
     }
-    let mut catalog: Value = serde_json::from_str(CAPABILITIES)?;
+    let mut catalog: Value = toml::from_str(CAPABILITIES)?;
     merge_parent_capabilities(&mut catalog)?;
     let types = catalog
         .get("resource_types")
@@ -54,7 +54,7 @@ pub fn report(
 }
 
 fn merge_parent_capabilities(catalog: &mut Value) -> Result<()> {
-    let parents: Value = serde_json::from_str(crate::plan::PARENT_CATALOG)?;
+    let parents: Value = toml::from_str(crate::plan::PARENT_CATALOG)?;
     let types = parents
         .get("resource_types")
         .and_then(Value::as_array)

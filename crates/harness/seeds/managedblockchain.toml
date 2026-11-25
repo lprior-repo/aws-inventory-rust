@@ -1,0 +1,18 @@
+format = 1
+service = "managedblockchain"
+
+[[step]]
+id = "resource"
+operation = "CreateAccessor"
+kind = ""
+[step.input]
+"ClientRequestToken" = "12345678-1234-4234-8234-123456789abc"
+"AccessorType" = "BILLING_TOKEN"
+
+[[step]]
+id = "accessor"
+operation = "GetAccessor"
+kind = "AWS::ManagedBlockchain::Accessor"
+identity = "Accessor.Arn"
+[step.input]
+AccessorId = { from = "resource", path = "AccessorId" }

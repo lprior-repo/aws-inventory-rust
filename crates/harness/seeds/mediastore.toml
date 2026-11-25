@@ -1,0 +1,10 @@
+format = 1
+service = "mediastore"
+
+[[step]]
+id = "resource"
+operation = "CreateContainer"
+kind = "AWS::MediaStore::Container"
+identity = "Container.ARN"
+[step.input]
+"ContainerName" = "inventory-thin-mediastore"

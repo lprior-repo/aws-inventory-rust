@@ -1,0 +1,10 @@
+format = 1
+service = "qbusiness"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::QBusiness::Application"
+identity = "applicationId"
+[step.input]
+"displayName" = "inventory-thin-qbusiness"

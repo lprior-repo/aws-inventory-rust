@@ -1,0 +1,11 @@
+format = 1
+service = "controltower"
+
+[[step]]
+id = "zone"
+operation = "CreateLandingZone"
+kind = "AWS::ControlTower::LandingZone"
+identity = "arn"
+[step.input]
+version = "3.3"
+manifest = { governedRegions = ["us-east-1"], organizationStructure = { security = { name = "Security" }, sandbox = { name = "Sandbox" } }, centralizedLogging = { accountId = "111122223333", configurations = { loggingBucket = { retentionDays = 365 }, accessLoggingBucket = { retentionDays = 365 } }, enabled = true }, securityRoles = { accountId = "444455556666" }, accessManagement = { enabled = false } }

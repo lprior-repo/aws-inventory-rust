@@ -26,7 +26,9 @@ async fn given_graph_disconnect_when_traversal_fails_then_sql_remains_available(
     };
     assert!(matches!(
         graph.neighbors(&root, bounds).await,
-        Err(ViewError::Graph(_))
+        Err(ViewError::Backend(inventory_graph::GraphError::Transport(
+            _
+        )))
     ));
     server.await??;
     let page = db
@@ -49,7 +51,7 @@ async fn given_missing_database_when_opening_reader_then_no_file_is_created() ->
     let dir = tempdir()?;
     let path = dir.path().join("absent.sqlite");
     assert!(matches!(
-        Database::open(&path).await,
+        Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await,
         Err(ViewError::Sql(_))
     ));
     assert!(!path.exists());

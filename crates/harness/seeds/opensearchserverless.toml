@@ -1,0 +1,11 @@
+format = 1
+service = "opensearchserverless"
+
+[[step]]
+id = "resource"
+operation = "CreateCollectionGroup"
+kind = "AWS::OpenSearchServerless::CollectionGroup"
+identity = "createCollectionGroupDetail.arn"
+[step.input]
+"name" = "inventory-thin-opensearchserverl"
+"standbyReplicas" = "ENABLED"

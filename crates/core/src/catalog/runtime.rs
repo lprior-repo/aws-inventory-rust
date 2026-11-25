@@ -1,4 +1,6 @@
 mod decode;
+mod index;
+mod service_selection;
 mod tag_endpoint;
 mod tag_sources;
 mod types;
@@ -61,6 +63,8 @@ pub enum RuntimeCatalogError {
     Bounds,
     #[error("verified endpoint metadata cannot be resolved for this region")]
     Endpoint,
+    #[error("unknown callable service or operation selector: {0}")]
+    Selection(String),
 }
 
 pub struct RuntimeCatalog<'a> {
@@ -73,6 +77,7 @@ pub struct RuntimeCatalog<'a> {
     coverage: Box<[KindCoverage]>,
     decisions: Box<[ReviewDecision]>,
     provenance: CatalogSourceProvenance,
+    index: index::Index,
 }
 impl<'a> RuntimeCatalog<'a> {
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, RuntimeCatalogError> {
@@ -81,16 +86,21 @@ impl<'a> RuntimeCatalog<'a> {
         if decoded.plans.len() > MAX_PLANS {
             return Err(RuntimeCatalogError::Bounds);
         }
+        let plans = decoded.plans.into_boxed_slice();
+        let name_paths = decoded.name_paths.into_boxed_slice();
+        let relations = decoded.relations.into_boxed_slice();
+        let index = index::Index::new(&plans, &name_paths, &relations)?;
         Ok(Self {
             bytes,
             catalog,
-            plans: decoded.plans.into_boxed_slice(),
+            plans,
             schemas: decoded.schemas.into_boxed_slice(),
-            name_paths: decoded.name_paths.into_boxed_slice(),
-            relations: decoded.relations.into_boxed_slice(),
+            name_paths,
+            relations,
             coverage: decoded.coverage.into_boxed_slice(),
             decisions: decoded.decisions.into_boxed_slice(),
             provenance: decoded.provenance,
+            index,
         })
     }
 
@@ -107,9 +117,12 @@ impl<'a> RuntimeCatalog<'a> {
     }
 
     pub fn lookup(&self, service: &str, operation: &str) -> Option<&CallablePlan<'a>> {
-        self.plans
-            .iter()
-            .find(|plan| plan.service_name() == service && plan.operation_name() == operation)
+        self.index.lookup(&self.plans, service, operation)
+    }
+
+    /// Returns the position of a reviewed operation in this catalog's plans.
+    pub fn plan_index(&self, service: &str, operation: &str) -> Option<usize> {
+        self.index.lookup_index(&self.plans, service, operation)
     }
 
     pub fn schemas(&self) -> &[Arc<KindSchema>] {
@@ -120,8 +133,19 @@ impl<'a> RuntimeCatalog<'a> {
         &self.name_paths
     }
 
+    pub fn name_path(&self, kind: &crate::inventory::Kind) -> Option<&KindNamePath> {
+        self.index.name_path(&self.name_paths, kind)
+    }
+
     pub fn relationships(&self) -> &[RelationshipPlan] {
         &self.relations
+    }
+
+    pub fn relationships_from<'s>(
+        &'s self,
+        kind: &crate::inventory::Kind,
+    ) -> impl Iterator<Item = &'s RelationshipPlan> + 's {
+        self.index.relationships_from(&self.relations, kind)
     }
 
     pub fn coverage(&self) -> &[KindCoverage] {

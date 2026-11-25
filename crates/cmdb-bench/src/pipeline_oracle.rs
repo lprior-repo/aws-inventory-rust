@@ -44,6 +44,59 @@ async fn count(pool: &SqlitePool, statement: &str) -> BenchResult<u64> {
     Ok(u64::try_from(value)?)
 }
 
+struct ProjectionState {
+    outbox: u64,
+    rebuilds: u64,
+    revision_after: i64,
+}
+
+async fn validate_projection(
+    pool: &SqlitePool,
+    store: &BinaryStore,
+    phase: Phase,
+    revision_before: i64,
+) -> BenchResult<ProjectionState> {
+    let outbox = count(pool, "SELECT COUNT(*) FROM projection_outbox").await?;
+    let metadata_pending = count(
+        pool,
+        "SELECT CAST(value AS INTEGER) FROM metadata WHERE key='projection_pending'",
+    )
+    .await?;
+    let state = store.projection_state().await?;
+    if outbox != state.pending || metadata_pending != outbox || outbox > 100_000 {
+        return Err("durable outbox count/backpressure metadata mismatch".into());
+    }
+    let rebuilds = count(
+        pool,
+        "SELECT COUNT(*) FROM projection_outbox WHERE full_rebuild=1",
+    )
+    .await?;
+    if rebuilds != u64::from(state.rebuild_required) {
+        return Err("outbox rebuild marker mismatch".into());
+    }
+    let invalid_outbox = count(
+        pool,
+        "SELECT COUNT(*) FROM projection_outbox WHERE deleted<>0 OR revision<1",
+    )
+    .await?;
+    if invalid_outbox != 0 {
+        return Err("outbox contains unexpected deletion or invalid revision".into());
+    }
+    let revision_after: i64 = sqlx::query_scalar(
+        "SELECT CAST(value AS INTEGER) FROM metadata WHERE key='projection_revision'",
+    )
+    .fetch_one(pool)
+    .await?;
+    if phase == Phase::Replay && revision_after != revision_before {
+        return Err("duplicate replay unexpectedly published new projection revisions".into());
+    }
+    Ok(ProjectionState {
+        outbox,
+        rebuilds,
+        revision_after,
+    })
+}
+
 pub(super) async fn check(
     workload: &Workload,
     store: &BinaryStore,
@@ -73,44 +126,14 @@ pub(super) async fn check(
     check_tags(&pool, phase).await?;
     check_coverage(&pool, workload, phase).await?;
     check_work(&pool, workload, sweep).await?;
-    let outbox = count(&pool, "SELECT COUNT(*) FROM projection_outbox").await?;
-    let metadata_pending = count(
-        &pool,
-        "SELECT CAST(value AS INTEGER) FROM metadata WHERE key='projection_pending'",
-    )
-    .await?;
-    let state = store.projection_state().await?;
-    if outbox != state.pending || metadata_pending != outbox || outbox > 100_000 {
-        return Err("durable outbox count/backpressure metadata mismatch".into());
-    }
-    let rebuilds = count(
-        &pool,
-        "SELECT COUNT(*) FROM projection_outbox WHERE full_rebuild=1",
-    )
-    .await?;
-    if rebuilds != u64::from(state.rebuild_required) {
-        return Err("outbox rebuild marker mismatch".into());
-    }
-    let invalid_outbox = count(
-        &pool,
-        "SELECT COUNT(*) FROM projection_outbox WHERE deleted<>0 OR revision<1",
-    )
-    .await?;
-    if invalid_outbox != 0 {
-        return Err("outbox contains unexpected deletion or invalid revision".into());
-    }
-    let revision_after: i64 = sqlx::query_scalar(
-        "SELECT CAST(value AS INTEGER) FROM metadata WHERE key='projection_revision'",
-    )
-    .fetch_one(&pool)
-    .await?;
-    if phase == Phase::Replay && revision_after != revision_before {
-        return Err("duplicate replay unexpectedly published new projection revisions".into());
-    }
+    let proj = validate_projection(&pool, store, phase, revision_before).await?;
     println!(
         "pipeline_state={} resources={resources} resource_scopes={scopes} tags={tags} complete_scopes={} pending_outbox={outbox} rebuild_markers={rebuilds} projection_revision={revision_after} exact_sqlite_state=true",
         phase.name(),
-        workload.concurrency
+        workload.concurrency,
+        outbox = proj.outbox,
+        rebuilds = proj.rebuilds,
+        revision_after = proj.revision_after
     );
     pool.close().await;
     Ok(())

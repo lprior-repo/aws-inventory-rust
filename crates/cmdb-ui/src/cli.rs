@@ -1,14 +1,12 @@
-//! Command line of the viewer, read once before any window exists.
-
 use crate::worker::{WorkerConfig, parse_lod_config};
-use std::path::PathBuf;
 use std::sync::OnceLock;
 
 pub const USAGE: &str = "\
-usage: cmdb-ui --database PATH [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
+usage: cmdb-ui --database TARGET [--frame-harness SECONDS] [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
 
 Options:
-  --database PATH          SQLite inventory database to view (required)
+  --database TARGET        SQLite path or PostgreSQL inventory URL (required)
+  --frame-harness SECONDS  Scripted frame capture (1..600 seconds); reports and exits
   --graph-url URL          FalkorDB endpoint; use with --graph-name
   --graph-name NAME        FalkorDB graph name; use with --graph-url
   --linux-backend=BACKEND  Force the Linux display backend (value must follow '=')
@@ -27,7 +25,7 @@ static STARTUP: OnceLock<WorkerConfig> = OnceLock::new();
 
 /// Parses the process arguments and `CMDB_UI_LOD`. Nothing here touches the GUI.
 pub fn from_process_args() -> Result<Command, String> {
-    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    let arguments: Vec<String> = std::env::args().skip(1).take(65).collect();
     let lod = std::env::var("CMDB_UI_LOD").ok();
     with_lod(parse(&arguments)?, lod.as_deref())
 }
@@ -50,7 +48,10 @@ pub fn set_startup_config(config: WorkerConfig) {
 
 /// The configuration recorded at startup; defaults when none was recorded (tests).
 pub fn startup_config() -> WorkerConfig {
-    STARTUP.get().cloned().unwrap_or_default()
+    match STARTUP.get() {
+        Some(config) => config.clone(),
+        None => WorkerConfig::default(),
+    }
 }
 
 pub fn parse(arguments: &[String]) -> Result<Command, String> {
@@ -62,20 +63,31 @@ pub fn parse(arguments: &[String]) -> Result<Command, String> {
     }
     let mut config = WorkerConfig::default();
     parse_arguments(arguments, &mut config)?;
+    if config.frame_harness.is_some() && config.database.is_none() {
+        return Err("--frame-harness requires --database PATH".to_owned());
+    }
     Ok(Command::Run(config))
 }
 
 fn parse_arguments(arguments: &[String], config: &mut WorkerConfig) -> Result<(), String> {
-    match arguments {
-        [] => Ok(()),
-        [flag, remaining @ ..] if is_switch(flag) => parse_arguments(remaining, config),
-        [flag, value, remaining @ ..] if is_value_flag(flag) => {
-            set_argument(config, flag, value)?;
-            parse_arguments(remaining, config)
-        }
-        [flag, ..] if is_value_flag(flag) => Err(format!("missing value for {flag}")),
-        [flag, ..] => Err(format!("unknown argument {flag}")),
+    if arguments.len() > 64 {
+        return Err("at most 64 command-line arguments are accepted".to_owned());
     }
+    let mut arguments = arguments.iter();
+    for _ in 0..64 {
+        let Some(flag) = arguments.next() else { break };
+        if is_switch(flag) {
+            continue;
+        }
+        if !is_value_flag(flag) {
+            return Err(unknown_argument(flag));
+        }
+        let value = arguments
+            .next()
+            .ok_or_else(|| format!("missing value for {flag}"))?;
+        set_argument(config, flag, value)?;
+    }
+    Ok(())
 }
 
 fn is_switch(flag: &str) -> bool {
@@ -83,17 +95,39 @@ fn is_switch(flag: &str) -> bool {
 }
 
 fn is_value_flag(flag: &str) -> bool {
-    matches!(flag, "--database" | "--graph-url" | "--graph-name")
+    matches!(
+        flag,
+        "--database" | "--graph-url" | "--graph-name" | "--frame-harness"
+    )
 }
 
 fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<(), String> {
     match flag {
-        "--database" => config.database = Some(PathBuf::from(value)),
+        "--database" => config.database = Some(value.to_owned()),
         "--graph-url" => config.graph_url = Some(value.to_owned()),
         "--graph-name" => config.graph_name = Some(value.to_owned()),
-        _ => return Err(format!("unknown argument {flag}")),
+        "--frame-harness" => {
+            config.frame_harness = Some(crate::frame_harness::FrameConfig::parse(value)?)
+        }
+        _ => return Err(unknown_argument(flag)),
     }
     Ok(())
+}
+
+fn unknown_argument(flag: &str) -> String {
+    let contains_postgres_url = flag.match_indices("://").any(|(scheme_end, _)| {
+        [8, 10].into_iter().any(|scheme_len| {
+            scheme_end
+                .checked_sub(scheme_len)
+                .and_then(|start| flag.get(start..))
+                .is_some_and(cmdb_view::is_postgres_url)
+        })
+    });
+    if contains_postgres_url {
+        "unknown argument [PostgreSQL URL redacted]".to_owned()
+    } else {
+        format!("unknown argument {flag}")
+    }
 }
 
 #[cfg(test)]
@@ -134,7 +168,7 @@ mod tests {
         assert_eq!(
             command,
             Ok(Command::Run(WorkerConfig {
-                database: Some(PathBuf::from("inventory.db")),
+                database: Some("inventory.db".to_owned()),
                 graph_url: Some("redis://127.0.0.1:6379".to_owned()),
                 graph_name: Some("cmdb".to_owned()),
                 ..WorkerConfig::default()
@@ -147,7 +181,7 @@ mod tests {
         assert_eq!(
             parse(&args(&["--linux-backend=x11", "--database", "a.db"])),
             Ok(Command::Run(WorkerConfig {
-                database: Some(PathBuf::from("a.db")),
+                database: Some("a.db".to_owned()),
                 ..WorkerConfig::default()
             }))
         );
@@ -229,5 +263,44 @@ mod lod_tests {
     #[test]
     fn given_help_when_lod_is_invalid_then_help_still_wins() {
         assert_eq!(with_lod(Command::Help, Some("bad")), Ok(Command::Help));
+    }
+}
+
+#[cfg(test)]
+mod frame_harness_tests;
+
+#[cfg(test)]
+mod postgres_tests {
+    use super::*;
+
+    #[test]
+    fn postgres_given_url_when_parsing_database_then_target_is_retained_and_debug_is_redacted()
+    -> Result<(), String> {
+        let target = "postgres://reader:secret-password@localhost/inventory";
+        let Command::Run(config) = parse(&["--database".to_owned(), target.to_owned()])? else {
+            return Err("expected run command".into());
+        };
+        assert_eq!(config.database.as_deref(), Some(target));
+        assert!(!format!("{config:?}").contains("secret-password"));
+        Ok(())
+    }
+
+    #[test]
+    fn postgres_given_url_in_unknown_argument_when_parsing_then_password_is_not_echoed()
+    -> Result<(), String> {
+        for flag in [
+            "postgres://reader:secret-password@localhost/inventory",
+            "--database=postgresql://reader:secret-password@localhost/inventory",
+            "POSTGRES://reader:secret-password@localhost/inventory",
+            "--database=PoStGrEsQl://reader:secret-password@localhost/inventory",
+            "-postgres://reader:secret-password@localhost/inventory",
+            "--dbpostgres://reader:secret-password@localhost/inventory",
+        ] {
+            let error = parse(&[flag.to_owned()])
+                .err()
+                .ok_or("expected unknown argument")?;
+            assert_eq!(error, "unknown argument [PostgreSQL URL redacted]");
+        }
+        Ok(())
     }
 }

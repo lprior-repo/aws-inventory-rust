@@ -25,9 +25,9 @@ const MODELS: &str = "catalog/aws-models.report";
 const PLANS: &str = "catalog/aws-plans.report";
 const CLASSES: &str = "catalog/aws-classes.report";
 const OVERLAY: &str = "catalog/aws-overlay.report";
-const OPERATIONS: &str = "catalog/aws-operations.json";
-const CAPABILITIES: &str = "catalog/cloudcontrol-capabilities.json";
-const RESOURCES: &str = "catalog/cloudcontrol-resources.json";
+const OPERATIONS: &str = "catalog/aws-operations.toml";
+const CAPABILITIES: &str = "catalog/cloudcontrol-capabilities.toml";
+const RESOURCES: &str = "catalog/cloudcontrol-resources.toml";
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -233,7 +233,11 @@ impl Input {
     }
 
     fn json(&self) -> Result<Value, Error> {
-        serde_json::from_str(&self.text).map_err(|source| self.invalid(source.to_string()))
+        toml::from_str(&self.text).map_err(|source| self.invalid(source.to_string()))
+    }
+
+    fn toml(&self) -> Result<Value, Error> {
+        toml::from_str(&self.text).map_err(|source| self.invalid(source.to_string()))
     }
 
     fn expect_equal(&self, what: &str, actual: u64, expected: u64) -> Result<(), Error> {
@@ -340,6 +344,18 @@ struct OverlayCounts {
 
 /// Counts one row per operation and checks each category against the overlay's own totals line.
 fn overlay_counts(input: &Input, known: u64) -> Result<OverlayCounts, Error> {
+    let lines = parse_overlay_lines(input)?;
+    input.expect_equal("overlay rows", lines.rows, known)?;
+    validate_overlay_totals(input, &lines.counts, &lines.totals)
+}
+
+struct OverlayLines<'a> {
+    counts: BTreeMap<&'a str, u64>,
+    totals: BTreeMap<&'a str, u64>,
+    rows: u64,
+}
+
+fn parse_overlay_lines(input: &Input) -> Result<OverlayLines<'_>, Error> {
     let mut counts: BTreeMap<&str, u64> = BTreeMap::new();
     let mut totals: BTreeMap<&str, u64> = BTreeMap::new();
     let mut rows = 0_u64;
@@ -374,7 +390,18 @@ fn overlay_counts(input: &Input, known: u64) -> Result<OverlayCounts, Error> {
             _ => {}
         }
     }
-    input.expect_equal("overlay rows", rows, known)?;
+    Ok(OverlayLines {
+        counts,
+        totals,
+        rows,
+    })
+}
+
+fn validate_overlay_totals(
+    input: &Input,
+    counts: &BTreeMap<&str, u64>,
+    totals: &BTreeMap<&str, u64>,
+) -> Result<OverlayCounts, Error> {
     let count = |key: &str| counts.get(key).copied().unwrap_or(0);
     let overlay = OverlayCounts {
         enumerate: count("enumerate"),
@@ -444,13 +471,22 @@ fn operation_funnel(
     ]);
     overlay_partition(callable, excluded, known)?;
 
+    Ok(build_operation_funnel(known, classes, callable, &overlay))
+}
+
+fn build_operation_funnel(
+    known: u64,
+    classes: ClassCounts,
+    callable: u64,
+    overlay: &OverlayCounts,
+) -> Funnel {
     let mut excluded_stages = vec![
         Stage::recorded("denied_by_overlay", overlay.denied_overlay),
         Stage::recorded("denied_by_deny_list", overlay.denied_deny_list),
         Stage::recorded("deferred_by_overlay", overlay.deferred),
     ];
     excluded_stages.extend(unrecorded_categories());
-    Ok(Funnel {
+    Funnel {
         name: "operations",
         stages: vec![
             Stage::recorded("known_operations", known),
@@ -469,7 +505,7 @@ fn operation_funnel(
             Stage::recorded("class_unclassified", classes.unclassified),
         ],
         basis: Vec::new(),
-    })
+    }
 }
 
 fn overlay_partition(callable: u64, excluded: u64, known: u64) -> Result<(), Error> {
@@ -484,7 +520,7 @@ fn overlay_partition(callable: u64, excluded: u64, known: u64) -> Result<(), Err
 }
 
 fn native_funnel(input: &Input) -> Result<Funnel, Error> {
-    let document = input.json()?;
+    let document = input.toml()?;
     let known = json_number(input, &document, "/counts/explicit_unique_operations")?;
     let operations = document
         .get("operations")
@@ -539,6 +575,68 @@ fn cloud_control_funnel(capabilities: &Input, resources: &Input) -> Result<Funne
         .ok_or_else(|| capabilities.invalid("resource_types is not an array"))?;
     capabilities.expect_equal("resource type count", count_u64(types.len()), known)?;
 
+    let (read_and_list, selected, excluded) = validate_type_counts(capabilities, &document, types)?;
+    let (excluded_stages, excluded_total) =
+        process_exclusion_reasons(capabilities, &document, types)?;
+    capabilities.expect_equal("exclusion partition", excluded_total, excluded)?;
+
+    let (emulator_read, emulator_list_error) =
+        validate_emulator_outcomes(capabilities, &document, types, selected)?;
+
+    let (real_aws, basis) = real_aws_stage(resources, selected)?;
+    let mut all_excluded = excluded_stages;
+    all_excluded.extend(unrecorded_categories());
+    Ok(Funnel {
+        name: "cloud_control_types",
+        stages: vec![
+            Stage::recorded("known_types", known),
+            Stage::recorded("read_and_list", read_and_list),
+            Stage::recorded("selected", selected),
+            Stage::not_recorded("fixture_tested"),
+            Stage::recorded("emulator_tested", emulator_read),
+            real_aws,
+        ],
+        excluded: all_excluded,
+        notes: vec![Stage::recorded(
+            "selected_emulator_list_error",
+            emulator_list_error,
+        )],
+        basis,
+    })
+}
+
+fn real_aws_stage(resources: &Input, selected: u64) -> Result<(Stage, Vec<String>), Error> {
+    let resource_document = resources.json()?;
+    let live_validated = resource_document
+        .pointer("/evidence/live_validated")
+        .and_then(Value::as_bool)
+        .ok_or_else(|| resources.invalid("evidence.live_validated is not a boolean"))?;
+    let resource_types = resource_document
+        .get("resource_types")
+        .and_then(Value::as_array)
+        .ok_or_else(|| resources.invalid("resource_types is not an array"))?;
+    resources.expect_equal(
+        "resource document selected count",
+        count_u64(resource_types.len()),
+        selected,
+    )?;
+    // The resource file records that no live validation ran, so the real-AWS count is
+    // recorded as zero with that basis. Any other value means the count is unknown.
+    if live_validated {
+        Ok((Stage::not_recorded("real_aws_tested"), Vec::new()))
+    } else {
+        Ok((
+            Stage::recorded("real_aws_tested", 0),
+            vec!["real_aws_tested=0 from evidence.live_validated=false".to_owned()],
+        ))
+    }
+}
+
+fn validate_type_counts(
+    capabilities: &Input,
+    document: &Value,
+    types: &[Value],
+) -> Result<(u64, u64, u64), Error> {
     let read_and_list = count_where(types, |t| {
         flag(t, "read_supported") && flag(t, "list_supported")
     });
@@ -547,19 +645,26 @@ fn cloud_control_funnel(capabilities: &Input, resources: &Input) -> Result<Funne
     capabilities.expect_equal(
         "read and list count",
         read_and_list,
-        json_number(capabilities, &document, "/summary/read_and_list_count")?,
+        json_number(capabilities, document, "/summary/read_and_list_count")?,
     )?;
     capabilities.expect_equal(
         "selected count",
         selected,
-        json_number(capabilities, &document, "/summary/selected_count")?,
+        json_number(capabilities, document, "/summary/selected_count")?,
     )?;
     capabilities.expect_equal(
         "excluded count",
         excluded,
-        json_number(capabilities, &document, "/summary/excluded_count")?,
+        json_number(capabilities, document, "/summary/excluded_count")?,
     )?;
+    Ok((read_and_list, selected, excluded))
+}
 
+fn process_exclusion_reasons(
+    capabilities: &Input,
+    document: &Value,
+    types: &[Value],
+) -> Result<(Vec<Stage>, u64), Error> {
     let reasons = document
         .pointer("/summary/exclusions")
         .and_then(Value::as_object)
@@ -577,9 +682,15 @@ fn cloud_control_funnel(capabilities: &Input, resources: &Input) -> Result<Funne
         excluded_total = excluded_total.saturating_add(counted);
         excluded_stages.push(Stage::recorded(reason.as_str(), counted));
     }
-    capabilities.expect_equal("exclusion partition", excluded_total, excluded)?;
-    excluded_stages.extend(unrecorded_categories());
+    Ok((excluded_stages, excluded_total))
+}
 
+fn validate_emulator_outcomes(
+    capabilities: &Input,
+    document: &Value,
+    types: &[Value],
+    selected: u64,
+) -> Result<(u64, u64), Error> {
     let emulator_status = |status: &str| {
         count_where(types, |t| {
             flag(t, "selected")
@@ -593,14 +704,14 @@ fn cloud_control_funnel(capabilities: &Input, resources: &Input) -> Result<Funne
     capabilities.expect_equal(
         "emulator read_observed",
         emulator_read,
-        json_number(capabilities, &document, "/summary/emulator_read_observed")?,
+        json_number(capabilities, document, "/summary/emulator_read_observed")?,
     )?;
     capabilities.expect_equal(
         "emulator list_error",
         emulator_list_error,
         json_number(
             capabilities,
-            &document,
+            document,
             "/summary/emulator_outcomes/list_error",
         )?,
     )?;
@@ -609,50 +720,7 @@ fn cloud_control_funnel(capabilities: &Input, resources: &Input) -> Result<Funne
         emulator_read.saturating_add(emulator_list_error),
         selected,
     )?;
-
-    let resource_document = resources.json()?;
-    let live_validated = resource_document
-        .pointer("/evidence/live_validated")
-        .and_then(Value::as_bool)
-        .ok_or_else(|| resources.invalid("evidence.live_validated is not a boolean"))?;
-    let resource_types = resource_document
-        .get("resource_types")
-        .and_then(Value::as_array)
-        .ok_or_else(|| resources.invalid("resource_types is not an array"))?;
-    resources.expect_equal(
-        "resource document selected count",
-        count_u64(resource_types.len()),
-        selected,
-    )?;
-
-    // The resource file records that no live validation ran, so the real-AWS count is
-    // recorded as zero with that basis. Any other value means the count is unknown.
-    let (real_aws, basis) = if live_validated {
-        (Stage::not_recorded("real_aws_tested"), Vec::new())
-    } else {
-        (
-            Stage::recorded("real_aws_tested", 0),
-            vec!["real_aws_tested=0 from evidence.live_validated=false".to_owned()],
-        )
-    };
-
-    Ok(Funnel {
-        name: "cloud_control_types",
-        stages: vec![
-            Stage::recorded("known_types", known),
-            Stage::recorded("read_and_list", read_and_list),
-            Stage::recorded("selected", selected),
-            Stage::not_recorded("fixture_tested"),
-            Stage::recorded("emulator_tested", emulator_read),
-            real_aws,
-        ],
-        excluded: excluded_stages,
-        notes: vec![Stage::recorded(
-            "selected_emulator_list_error",
-            emulator_list_error,
-        )],
-        basis,
-    })
+    Ok((emulator_read, emulator_list_error))
 }
 
 fn resource_kind_funnel(models: &Input, plans: &Input) -> Result<Funnel, Error> {

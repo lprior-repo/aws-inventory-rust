@@ -10,7 +10,7 @@ use tracing::{error, info};
 use super::config::ServeConfig;
 use super::store::{open_store, read_catalog};
 use crate::cli::ServeArgs;
-use crate::sweep_runtime::{self, SweepConfig};
+use inventory_sweep::SweepConfig;
 
 struct ProfileConfig {
     name: String,
@@ -103,6 +103,8 @@ fn sweep_config(options: &ServeArgs) -> SweepConfig {
         endpoint: options.endpoint.clone(),
         ca_bundle: options.ca_bundle.clone(),
         slice_timeout_secs: None,
+        max_rps: options.max_rps,
+        max_page_size: None,
     }
 }
 
@@ -196,7 +198,7 @@ impl Environment for ServeEnv {
         };
         info!(profile = profile.name, "starting sweep");
         let catalog = self.catalog();
-        let result = sweep_runtime::run(
+        let result = crate::sweep_command::control::run(
             &catalog,
             &self.store,
             self.sweep_config.clone(),

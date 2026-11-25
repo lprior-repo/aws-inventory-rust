@@ -1,0 +1,10 @@
+format = 1
+service = "endusermessaging"
+
+[[step]]
+id = "resource"
+operation = "CreateBrandProfile"
+kind = "AWS::ApiOnly::EndUserMessagingBrandProfile"
+identity = "brandProfileArn"
+[step.input]
+"brandProfileName" = "inventory-thin-endusermessaging"

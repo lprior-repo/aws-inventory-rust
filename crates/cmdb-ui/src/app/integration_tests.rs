@@ -62,7 +62,12 @@ fn wait_for(app: &mut App, cx: &mut Cx, predicate: impl Fn(&App, &mut Cx) -> boo
         .ok_or("deadline overflow")?;
     for _ in 0..20_000_000 {
         app.handle_event(cx, &Event::Signal);
-        if predicate(app, cx) {
+        if predicate(app, cx)
+            && app
+                .worker
+                .as_ref()
+                .is_none_or(DataWorker::test_commands_consumed)
+        {
             return Ok(());
         }
         if Instant::now() >= deadline {
@@ -71,6 +76,27 @@ fn wait_for(app: &mut App, cx: &mut Cx, predicate: impl Fn(&App, &mut Cx) -> boo
         std::thread::yield_now();
     }
     Err(format!("App completion deadline: {}", status(app, cx)).into())
+}
+
+fn wait_for_condition(
+    app: &mut App,
+    cx: &mut Cx,
+    predicate: impl Fn(&App, &mut Cx) -> bool,
+) -> TestResult {
+    let deadline = Instant::now()
+        .checked_add(Duration::from_secs(5))
+        .ok_or("deadline overflow")?;
+    for _ in 0..20_000_000 {
+        app.handle_event(cx, &Event::Signal);
+        if predicate(app, cx) {
+            return Ok(());
+        }
+        if Instant::now() >= deadline {
+            break;
+        }
+        std::thread::yield_now();
+    }
+    Err(format!("App condition deadline: {}", status(app, cx)).into())
 }
 
 fn text_action(app: &mut App, cx: &mut Cx, path: &[LiveId], value: &str) {
@@ -270,7 +296,7 @@ fn given_saturated_real_intake_when_app_rejects_actions_then_inputs_selection_an
         let previous_graph = graph(&app, &mut cx);
         let QueuedWorker { worker, start } = support::queued(
             WorkerConfig {
-                database: Some(fixture.path.clone()),
+                database: Some(fixture.path.to_string_lossy().into_owned()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
@@ -359,7 +385,7 @@ fn given_live_app_blocked_query_when_shutdown_event_arrives_then_worker_joins_an
         let (mut cx, mut app) = app()?;
         app.start_worker_with_config(&mut cx, peer.config(fixture.path.clone()));
         assert!(!app.completion_poll.is_empty());
-        wait_for(&mut app, &mut cx, |app, cx| selected(app, cx).is_some())?;
+        wait_for_condition(&mut app, &mut cx, |app, cx| selected(app, cx).is_some())?;
         peer.await_query()?;
         // When shutdown dispatch occurs while App and Cx remain strongly alive.
         let started = Instant::now();
@@ -387,7 +413,7 @@ fn given_live_app_with_blocked_output_when_shutdown_event_arrives_then_timer_and
         let (mut cx, mut app) = app()?;
         let worker = support::queued(
             WorkerConfig {
-                database: Some(fixture.path.clone()),
+                database: Some(fixture.path.to_string_lossy().into_owned()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },

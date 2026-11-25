@@ -35,6 +35,13 @@ pub(super) async fn run_cli_degraded(
     run_cli_with_status(environment, arguments, 2).await
 }
 
+pub(super) async fn run_cli_graph_pending(
+    environment: &Environment,
+    arguments: &[String],
+) -> Result<String> {
+    run_cli_with_status(environment, arguments, 5).await
+}
+
 async fn run_cli_with_status(
     environment: &Environment,
     arguments: &[String],
@@ -43,7 +50,8 @@ async fn run_cli_with_status(
     let environment = environment.clone();
     let arguments = arguments.to_vec();
     tokio::task::spawn_blocking(move || {
-        wait_cli_sync(spawn_cli_sync(&environment, &arguments)?, expected_code)
+        let mut process = spawn_cli_sync(&environment, &arguments)?;
+        wait_cli_sync(&mut process, expected_code)
     })
     .await
     .context("joining bounded sweep CLI runner")?
@@ -60,10 +68,52 @@ pub(super) async fn spawn_cli(
         .context("spawning bounded sweep CLI runner")?
 }
 
-pub(super) async fn terminate_cli(process: RunningCli) -> Result<()> {
-    tokio::task::spawn_blocking(move || terminate_cli_sync(process))
+pub(super) async fn cancel_cli(process: RunningCli) -> Result<()> {
+    tokio::task::spawn_blocking(move || cancel_cli_sync(process))
         .await
-        .context("reaping interrupted sweep CLI process")?
+        .context("reaping cancelled sweep CLI process")?
+}
+
+pub(super) async fn crash_cli(mut process: RunningCli) -> Result<()> {
+    tokio::task::spawn_blocking(move || {
+        ensure!(
+            process.child.0.try_wait()?.is_none(),
+            "CLI exited before SIGKILL"
+        );
+        process.child.0.kill().context("crashing owned sweep CLI")?;
+        let status = process
+            .child
+            .0
+            .wait()
+            .context("reaping crashed sweep CLI")?;
+        ensure!(
+            status.code().is_none(),
+            "SIGKILL did not terminate CLI: {status:?}"
+        );
+        Ok(())
+    })
+    .await
+    .context("joining crashed sweep CLI runner")?
+}
+
+pub(super) async fn run_cli_lease_blocked(
+    environment: &Environment,
+    arguments: &[String],
+) -> Result<()> {
+    let environment = environment.clone();
+    let arguments = arguments.to_vec();
+    tokio::task::spawn_blocking(move || {
+        let mut process = spawn_cli_sync(&environment, &arguments)?;
+        wait_cli_sync(&mut process, 1)?;
+        let diagnostic = read_output(&mut process.stderr)?;
+        ensure!(
+            diagnostic.contains("sweep has live leases"),
+            "crash resume failed for an unexpected reason: {diagnostic}"
+        );
+        Ok(())
+    })
+    .await
+    .context("joining live-lease resume rejection")?
 }
 
 fn spawn_cli_sync(environment: &Environment, arguments: &[String]) -> Result<RunningCli> {
@@ -77,10 +127,18 @@ fn spawn_cli_sync(environment: &Environment, arguments: &[String]) -> Result<Run
     })
 }
 
-fn wait_cli_sync(mut process: RunningCli, expected_code: i32) -> Result<String> {
-    let status = wait_bounded(&mut process.child)?;
+fn wait_cli_sync(process: &mut RunningCli, expected_code: i32) -> Result<String> {
+    let started = std::time::Instant::now();
+    let status = wait_bounded(&mut process.child);
     let output = read_output(&mut process.stdout)?;
     let diagnostic = read_output(&mut process.stderr)?;
+    if std::env::var_os("INVENTORY_E2E_TRACE").is_some() {
+        eprintln!(
+            "sweep elapsed_ms={}\n{output}{diagnostic}",
+            started.elapsed().as_millis()
+        );
+    }
+    let status = status.with_context(|| format!("sweep stderr: {diagnostic}"))?;
     ensure!(
         status.code() == Some(expected_code),
         "sweep CLI exited with {:?}, expected {expected_code}: {diagnostic}",
@@ -89,22 +147,22 @@ fn wait_cli_sync(mut process: RunningCli, expected_code: i32) -> Result<String> 
     Ok(output)
 }
 
-fn terminate_cli_sync(mut process: RunningCli) -> Result<()> {
-    if process.child.0.try_wait()?.is_some() {
-        return Ok(());
-    }
-    if let Err(error) = process.child.0.kill() {
-        ensure!(
-            process.child.0.try_wait()?.is_some(),
-            "could not kill interrupted sweep CLI: {error}"
-        );
-        return Ok(());
-    }
-    process
-        .child
-        .0
-        .wait()
-        .context("reaping interrupted sweep CLI")?;
+fn cancel_cli_sync(mut process: RunningCli) -> Result<()> {
+    ensure!(
+        process.child.0.try_wait()?.is_none(),
+        "checkpoint CLI finished before Ctrl-C cancellation"
+    );
+    let signal = Command::new("kill")
+        .args(["-INT", "--", &process.child.0.id().to_string()])
+        .status()
+        .context("sending Ctrl-C to owned sweep CLI")?;
+    ensure!(signal.success(), "could not interrupt owned sweep CLI");
+    let status = wait_bounded(&mut process.child)?;
+    let diagnostic = read_output(&mut process.stderr)?;
+    ensure!(
+        status.code() == Some(1) && diagnostic.contains("API execution cancelled"),
+        "Ctrl-C did not cancel sweep collection: {status:?}: {diagnostic}"
+    );
     Ok(())
 }
 
@@ -119,6 +177,7 @@ fn spawn(
         .env("AWS_CONFIG_FILE", &environment.aws_config)
         .env("AWS_SHARED_CREDENTIALS_FILE", &environment.aws_credentials)
         .env("AWS_EC2_METADATA_DISABLED", "true")
+        .env("RUST_LOG", log_filter())
         .args(arguments)
         .stdin(Stdio::null())
         .stdout(Stdio::from(stdout.try_clone()?))
@@ -129,16 +188,13 @@ fn spawn(
 }
 
 fn wait_bounded(child: &mut ChildOwner) -> Result<std::process::ExitStatus> {
-    (0..POLL_ATTEMPTS)
-        .find_map(|_| match child.0.try_wait() {
-            Ok(Some(status)) => Some(Ok(status)),
-            Ok(None) => {
-                std::thread::sleep(POLL_INTERVAL);
-                None
-            }
-            Err(error) => Some(Err(error.into())),
-        })
-        .unwrap_or_else(|| timeout_child(child))
+    for _ in 0..POLL_ATTEMPTS {
+        if let Some(status) = child.0.try_wait()? {
+            return Ok(status);
+        }
+        std::thread::sleep(POLL_INTERVAL);
+    }
+    timeout_child(child)
 }
 
 fn timeout_child(child: &mut ChildOwner) -> Result<std::process::ExitStatus> {
@@ -150,6 +206,14 @@ fn timeout_child(child: &mut ChildOwner) -> Result<std::process::ExitStatus> {
 fn read_output(file: &mut std::fs::File) -> Result<String> {
     file.seek(SeekFrom::Start(0))?;
     let mut output = String::new();
-    file.take(65_536).read_to_string(&mut output)?;
+    file.take(1_048_576).read_to_string(&mut output)?;
     Ok(output)
+}
+
+fn log_filter() -> &'static str {
+    if std::env::var_os("INVENTORY_E2E_TRACE").is_some() {
+        "inventory_sweep=debug"
+    } else {
+        "warn"
+    }
 }

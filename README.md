@@ -2,7 +2,7 @@
 
 > Status: Baseline being replaced. The opening states where the product is
 > going; every section after it documents the baseline collector as it works
-> today. See [VISION](docs/VISION.md) and [ROADMAP](docs/ROADMAP.md).
+> today. The plan for what replaces it is in [docs/e2e/](docs/e2e/README.md).
 
 This project is becoming a CMDB of every AWS resource in the accounts it is
 pointed at. It will read AWS through the services' own endpoint APIs with our
@@ -12,32 +12,34 @@ records in SQLite, projected into FalkorDB for graph traversal, and shown as a
 DAG in a native Makepad application that reads both databases in process. The
 first version runs on one laptop with about 10 profiles, holds current state
 without history, and derives owner, team and application from tags.
-[docs/VISION.md](docs/VISION.md) defines the product,
-[docs/ROADMAP.md](docs/ROADMAP.md) is the build plan and records what has
-landed, and [docs/README.md](docs/README.md) indexes every document by whether
-it is plan, kept subsystem, baseline or history.
+The plan, build steps and decisions are in [docs/e2e/](docs/e2e/README.md).
 
 **What works today** is the baseline collector that the plan replaces. The
-`catalog` and `coverage` commands of the built binary report 39 native resource
-kinds collected by hand-written typed SDK adapters behind 16 service selectors,
-421 reviewed Cloud Control resource types (431 distinct kinds together), 968
-property relationship rules, and SQLite schema 13. The baseline also has a
-FalkorDB snapshot projection, a rate limiter that is the single retry owner,
-fenced durable scan jobs, an emulator harness (`inventory-harness`), a workload
-generator (`cmdb-bench`), a bounded export read model (`cmdb-view`) and a
-Makepad viewer (`cmdb-ui`) that renders a synthetic fixture. Of the new architecture only
-groundwork has landed; there is no wire engine, binary record store or sweep
-yet. Cloud Control collection is not the way forward: it gets no new work and
-is deleted in ROADMAP M9.5 (decisions V01, V04).
+`catalog` and `coverage` commands report 39 native resource kinds collected by
+hand-written typed SDK adapters behind 16 service selectors, 421 reviewed Cloud
+Control resource types (431 distinct kinds together), 968 property relationship
+rules, and SQLite schema 13. The baseline also has a FalkorDB snapshot
+projection, a rate limiter that is the single retry owner, fenced durable scan
+jobs, a `serve` mode with a cadence scheduler, an emulator harness
+(`inventory-harness`), a workload generator (`cmdb-bench`), a bounded export
+read model (`cmdb-view`) and a Makepad viewer (`cmdb-ui`) that renders a
+synthetic fixture. Cloud Control collection is not the way forward: it gets no
+new work and is deleted in ROADMAP M9.5 (decisions V01, V04).
+
+The new architecture has landed its foundations: `aws-wire` (SigV4 signing, the
+pooled HTTP transport, and request and response handling) and the binary record
+module in `inventory-core`. Not built yet: the universal `sweep` command and its
+planner (ROADMAP M3.6), the binary record store with single-writer commits (M3.2
+to M3.4), and in-process SQLite and FalkorDB reads for the UI (M6.2 and M6.3).
 
 All product code is Rust. SQLx's bundled SQLite engine is native SQLite C and
 FalkorDB is an external database. Legacy Python development tooling has been
 replaced by the Rust `inventory-harness` CLI; it provides fixture seeding,
 request recording, installation, the mutation gate, and catalog generation.
 
-**The sections below document the baseline.** For the local emulator stack see
-[setup and commands](docs/LOCAL_SETUP.md); for the baseline build-and-verify
-handoff see [START_HERE.md](START_HERE.md).
+**The sections below document the baseline.** For the local emulator stack run
+`scripts/local-stack.sh help`; for the baseline build-and-verify handoff see
+[START_HERE.md](START_HERE.md).
 
 ## Current scope
 
@@ -62,8 +64,7 @@ handoff see [START_HERE.md](START_HERE.md).
   292 provider-unsupported, 0 failed, with 410 parent-scoped and 180 handler-less
   types reported as explicit skips. The scan JSON carries the full partition and
   names every skip. `--service all,cloud-control --cloud-control --resource-type
-  all` combines the native adapters with universal listing in one scan. See
-  [universal coverage](docs/UNIVERSAL_COVERAGE.md).
+  all` combines the native adapters with universal listing in one scan.
 - **39 direct resource and component kinds:** EC2 instances, VPCs, subnets, security groups,
   network interfaces, EBS volumes, DynamoDB tables, Lambda functions, ECS
   clusters/services/tasks and ACTIVE task-definition revisions, EKS clusters/nodegroups, route tables, internet and
@@ -104,7 +105,7 @@ handoff see [START_HERE.md](START_HERE.md).
 
 SDK availability is distinct from collector coverage. This is not a complete
 port of awsmap, Cartography, or every Steampipe AWS table. The CLI `catalog`
-command and [collector contract](docs/COLLECTORS.md) describe the implemented
+command describes the implemented
 resource fields and relationships. `complete` means all attempted, selected
 scopes completed; it does not mean every AWS service was scanned.
 
@@ -115,19 +116,16 @@ scalar aliases, and neither currently supplies native-equivalent relationships.
 Config's raw nested route arrays are retained but are not expanded by the
 normalized routes panel.
 
-See [verification evidence](docs/VERIFICATION.md) for the actual build, test,
-benchmark, and live-environment boundaries of this delivery.
-
 ## Test the actual AWS calls locally
 
-[AWS Emulator testing](docs/EMULATOR_TESTING.md) describes the pinned full source
+AWS Emulator testing describes the pinned full source
 checkout, verified AWS binary, populated service fixtures and operation-by-operation
-evidence. [The call matrix](docs/AWS_CALL_MATRIX.md) enumerates **89 explicit SDK
+evidence. The call matrix enumerates **89 explicit SDK
 operations in 19 services** (79 in the frozen matrix plus 10 reviewed KMS and
 Step Functions additions; 2 of the 89 are Cloud Control) **plus the SDK's
 AssumeRole boundary**, separately from the 421 Cloud Control resource types and
 437 available SDK crates.
-The [current source/run reconciliation](docs/AWS_OPERATION_RECONCILIATION.md)
+The current source/run reconciliation
 binds operation identities to a specific source tree and executed evidence.
 The parent workflows reuse Cloud Control's two existing operation identities;
 their type, ownership and pagination checks remain separate evidence dimensions.
@@ -141,12 +139,12 @@ HTTP 200 alone does not establish a valid SDK response.
 
 ## Property tests and mutation testing
 
-[Property tests](docs/PROPERTY_TESTING.md) exercise generated retry histories,
+Property tests exercise generated retry histories,
 pagination, resource identities, SQLx transactions, durable job leases and the
 actual CLI. Guarded integration tests compare the compiled collectors and CLI
 with independently checked AWS Emulator snapshots and a real local FalkorDB.
 
-The [mutation gate](docs/MUTATION_TESTING.md) requires a complete, frozen inventory
+The mutation gate requires a complete, frozen inventory
 of production candidates across the core, engine, AWS and CLI packages. It
 requires **at least 95% of viable mutations caught**, and rejects incomplete
 runs, timeouts and infrastructure failures. The historical v0.4 core campaign caught
@@ -158,19 +156,35 @@ substitutes for that result.
 The retry configuration property also found and fixed a real boundary defect:
 a manually constructed shared SDK configuration could lose the one-attempt
 setting when converted to a DynamoDB client. The public AssumeRole helper now
-sets the retry configuration's explicit origin as well as its value. See the
-[regression and scope](docs/AWS_PROPERTY_TESTS.md); normal CLI configuration
+sets the retry configuration's explicit origin as well as its value. Normal CLI configuration
 loaders already supplied that origin.
 
 ## Build
 
-Install Rust with rustup and a C toolchain for bundled SQLite. Run commands from
-the repository root so `.cargo/config.toml` applies the SQLite allocation bounds.
-The toolchain is pinned in `rust-toolchain.toml`; dependencies are locked.
-The repository enables the pinned nightly's selective `profile-hint-mostly-unused`
-support so large SDK crates can defer code generation for unused APIs. This
-resolved the EC2 build's memory failure in the delivery environment. The setting
-respects upstream crate hints rather than applying the flag to every dependency.
+Install Rust 1.100 stable with rustup (`rustup toolchain install 1.100.0`) and a
+C toolchain for bundled SQLite. Run commands from the repository root so
+`.cargo/config.toml` applies the SQLite allocation bounds. Dependencies are
+locked.
+
+Supported targets are Linux x86_64, Linux aarch64 and macOS aarch64 (Apple
+silicon). `inventory-harness install` selects the emulator asset for the host
+and returns an unsupported-platform error for any other target. The FalkorDB
+module has no macOS build upstream, so `install-graph` reports the same error on
+macOS; SQLite-only work does not need it.
+
+The pinned AWS API models are the `.local/aws-models` git submodule. Fetch it
+before compiling the catalog:
+
+```bash
+git submodule update --init --depth 1 .local/aws-models
+scripts/bootstrap-catalog.sh
+```
+
+`scripts/bootstrap-catalog.sh` regenerates `catalog/aws-api.catalog` and the
+other generated catalog outputs from those models and verifies them against
+`MANIFEST.sha256`. They are not checked in; builds fail with a pointer to the
+script when they are missing. Large pinned inputs are stored with Git LFS
+(`git lfs install` once per clone).
 
 ```bash
 # Fetch the locked workspace dependencies.
@@ -213,19 +227,12 @@ cargo run --locked -- graph-export --db demo.sqlite \
 The fixture contains seven resources and four relationships. It is a functional
 pipeline demonstration, not a performance result or a real AWS account snapshot.
 
-For a larger network and load-balancer fixture, follow
-[architecture queries](docs/ARCHITECTURE_QUERIES.md). It exercises the new
-snapshot report, route targets, target health, and unresolved references.
-
 ## Collect AWS configuration
 
 Use an existing AWS credential profile or the standard SDK credential provider
 chain. The scanner does not persist credentials from that credential provider
 chain. These examples perform inventory
 reads when you run them with your own credentials.
-
-To scan other accounts through an assumed role, deploy the read-only role
-described in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ```bash
 # Inspect the 421-type breadth plan and direct architecture collectors offline.
@@ -275,6 +282,73 @@ not need regional discovery. Explicit source names/ARNs take precedence over
 automatic source discovery. All infrastructure and cross-account roles must
 already exist.
 
+`catalog-tool iam-policy --write` generates the callable-plan action bundle
+(`catalog/iam-read-only-policy.json`, an array of managed-policy documents),
+`deploy/read-only-role.yaml`, and `deploy/read-only-policy-gaps.txt`; `--check`
+compares all three byte for byte without writing. Each document has at most
+6,144 non-whitespace characters. Generation caps attachments at the default
+quota of 20 per role; AWS's adjustable maximum is 25 (verified 2026-11-24).
+The generated template states its actual attachment count. With no mode flag,
+stdout is only the JSON policy bundle. Writes stage all artifacts before
+publishing, and attempt every rollback on a later I/O error, reporting all
+restoration failures. Abrupt process/machine failure during replacements is not
+a multi-file transaction.
+
+The gap report's `shared` section uses explicit operation overrides or model
+signing-name/operation defaults; non-callable operations whose IAM action is not
+derivable by that lookup are not listed. DENIED (must-deny) overlaps appear first
+as findings, separately from deferred operations. IAM grants actions rather than
+operation IDs, so an action needed by a callable operation can also permit an
+excluded operation. The derived `broad` section lists granted actions associated
+with multiple operation IDs by existing aliases or callable mappings, with their
+callable owners; for example, `apigateway:GET` can permit other GET requests.
+These sections describe the current catalog lookup, not verified real-account
+authorization coverage.
+
+Deploy the template through S3, not `--template-body`: CloudFormation permits
+only 51,200 bytes inline but 1 MB with an S3 `--template-url`
+([AWS quotas](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html),
+[CreateStack API](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html),
+verified 2026-11-24). Tests bound the generated template to a conservative
+1,000,000 bytes, including the maximum 20-policy attachment set.
+Set `AWS_REGION` and `TEMPLATE_BUCKET` for an existing private bucket in the
+stack's Region. Create a mode-0600 `role-parameters.json` containing
+CloudFormation `ParameterKey`/`ParameterValue` entries for your actual
+`TrustedPrincipalArn` and `ExternalId` (and optionally `RoleName`).
+The uploading/deploying identity must have access to the S3 object:
+
+```bash
+aws s3 cp deploy/read-only-role.yaml \
+  "s3://${TEMPLATE_BUCKET}/aws-inventory/read-only-role.yaml" --region "$AWS_REGION"
+aws cloudformation create-stack --stack-name aws-inventory-read-only \
+  --region "$AWS_REGION" \
+  --template-url "https://${TEMPLATE_BUCKET}.s3.${AWS_REGION}.amazonaws.com/aws-inventory/read-only-role.yaml" \
+  --capabilities CAPABILITY_NAMED_IAM --parameters file://role-parameters.json
+```
+
+`catalog-tool iam-reference --date YYYY-MM-DD` downloads AWS's machine-readable
+Service Authorization Reference into sorted `catalog/iam-actions.tsv`, for
+services used by callable plans. This requires `curl` and network access;
+normal policy generation and checks are offline. Exceptions to the model's
+signing-name/operation-name convention are reviewed explicitly in
+`catalog/overlay/iam-actions.toml`, one scalar action per callable operation.
+Non-read-only reference actions fail closed, naming the operation.
+Reviewed reference omissions are pinned as `unconfirmed` in
+`catalog/overlay/iam-reference-exceptions.tsv`, with the signing name and
+reference date. These operations receive their `<signing name>:<Operation>`
+grant only if the operation also has a catalog read-verb prefix; write-named
+omissions are refused. The generated gap document lists the unconfirmed count
+and names. Generation refuses stale, newly published, or no-longer-callable exceptions.
+Attempted actions, including unconfirmed names and aliases, must all be in
+the policy. Neither reference membership nor emulator tests prove real-account
+IAM minimality or dependent resource-provider permissions.
+
+Sweep callers may set `SweepControl.attempts` to an `Arc<AttemptedOperations>`
+created from the invocation's runtime catalog. After the sweep, `iter()` exposes
+the distinct service/operation pairs recorded immediately before signing,
+including retries and failures. Recording allocates only at table construction;
+an unknown operation fails the sweep rather than disappearing from the receipt.
+
 `--allow-partial` includes finalized partial snapshots while preserving their
 actual collection status and failures. Without it, requested delivery skips
 partial snapshots. Delivery is independently retryable from local SQLite:
@@ -289,8 +363,8 @@ aws-inventory deliver --db inventory.sqlite --scan-id SCAN_ID \
 The `deliver` command performs no AWS calls. It publishes a new attempt directory
 and resumes graph acknowledgements from `outputs/projection.sqlite`. A failed
 graph delivery retains the already written inventory artifact and its receipt.
-See [delivery](docs/DELIVERY.md), [portable export](docs/EXPORT.md) and
-[graph retry](docs/GRAPH_DELIVERY.md) for formats, bounds and recovery contracts.
+See delivery, portable export and
+graph retry for formats, bounds and recovery contracts.
 
 ```bash
 # Inspect existing organization and supplemental sources without scanning them.
@@ -350,8 +424,7 @@ Organizations listing must complete before automatic account fan-out starts.
 Inactive or missing accounts are not silently accepted by an explicit filter.
 `--max-accounts` defaults to 128 and is capped at 1,024. An optional
 `--external-id-env VARIABLE_NAME` reads its value only at execution; the value is
-never persisted in a queue job. See [discovery](docs/DISCOVERY.md) and
-[global inventory](docs/GLOBAL_INVENTORY.md) for selection and coverage contracts.
+never persisted in a queue job.
 
 `ec2` includes the six network collectors as well as the original EC2 resources.
 Use `--service network` for only routes, gateways, endpoints, ACLs and peering,
@@ -393,12 +466,11 @@ Leased jobs recover after worker expiry by starting a new scan attempt. API
 retries still belong to the request executor; normal partial/failed jobs require
 an explicit `job retry`. Pagination checkpoints are durable evidence, but a
 fresh job attempt does not resume arbitrary provider cursors. Queue and inventory
-files are separate databases. See [durable jobs](docs/DURABLE_JOBS.md).
+files are separate databases.
 
 Diff reports observation changes, including source changes. It does not infer
 deletion from a missing record. Graph paths follow observed configuration
 references; they do not prove network reachability or IAM authorization.
-See [analysis semantics](docs/ANALYSIS.md) for bounds and truncation behavior.
 
 ## Set verified rate ceilings
 
@@ -432,8 +504,7 @@ These are example budgets with headroom, not guarantees about your account.
 The period form expresses rates below one request per second; it spaces starts
 and does not create a burst allowance. Both shapes reject unknown fields.
 All EC2 and network operations share the EC2 read bucket; all five ELBv2 request
-types share `elasticloadbalancing:read`. Other applications consume the same AWS account quotas. See
-[scheduler design](docs/SCHEDULER.md) before increasing ceilings.
+types share `elasticloadbalancing:read`. Other applications consume the same AWS account quotas.
 
 Standard `Retry-After`, AWS `x-amz-retry-after`, and Lambda's typed retry delay
 extend the affected bucket's cooldown. Malformed or excessive server delays
@@ -487,6 +558,52 @@ connection with statement, result, and native execution bounds. SQLite syntax
 and JSON functions apply; PostgreSQL-specific Steampipe SQL is not automatically
 compatible. Absent columns are not silently fabricated.
 
+For schema 14 PostgreSQL inventories, use the separate `sql` command:
+
+```bash
+aws-inventory sql --database "$INVENTORY_READER_URL" --limit 100 \
+  "SELECT kind, count(*) FROM resources GROUP BY kind ORDER BY kind"
+```
+
+Use a dedicated reader login with `USAGE` on `inventory` and `SELECT` on
+its tables. The command refuses database owners, administrators, roles with
+inventory write privileges, broad built-in read roles, and logins that can
+assume such roles; it does not downgrade a writer URL. Reader provisioning
+is an administrative operation, not something this command performs.
+
+Statements run on a dedicated connection in a read-only transaction with a
+five-second timeout and the `inventory` search path. Success is followed by
+bounded rollback and connection shutdown. Ordinary query failures disconnect
+without draining pending rows. If the transport watchdog expires, a separate
+authenticated reader connection terminates the timed-out backend and waits for
+its exit; termination failures are reported rather than claiming cancellation.
+Exact quoted and unquoted advisory-lock, backend-control, `set_config`,
+notification and logical-message function names are refused. SQL-text execution
+through `query_to_xml*`, `ts_stat`, `ts_rewrite`, and the documented
+`tablefunc`/`dblink` entry points is also refused. Harmless columns such as
+`pg_advisory_note` remain queryable.
+Unicode-escaped quoted identifiers (`U&"..."`) are also refused; ordinary quoted
+identifiers and Unicode string literals remain supported.
+Connections require `standard_conforming_strings = on`.
+Defaults cap results at 10,000 rows, 256 columns, 100,000 cells and 8 MiB of
+column names and binary cell payloads; escaped table output is also capped at 8 MiB,
+with every rendered cell charged before allocating its heap text.
+The byte bound is checked after a cell is received; it is not a memory bound
+for one very large cell.
+`--limit` can only lower the row cap. Tables preserve SQL nulls, show bytes as
+hex (up to 32 bytes), and format timestamps in UTC. Unsupported types must be
+cast to `text`; this includes PostgreSQL `numeric`, arrays and UUIDs.
+Only columns actually materialized by the catalog are available; use
+`information_schema.columns` to inspect them rather than assuming a full
+Steampipe schema, including `aws_ec2_vpc.cidr_block`.
+The lexer is a guard, not a sandbox for arbitrary administrator-defined
+functions or untrusted extensions. Reader privileges and the read-only
+transaction remain necessary. The SQL-text entry points are documented in
+PostgreSQL 18's [XML mapping functions](https://www.postgresql.org/docs/18/functions-xml.html#FUNCTIONS-XML-MAPPING),
+[text search functions](https://www.postgresql.org/docs/18/textsearch-features.html),
+[tablefunc](https://www.postgresql.org/docs/18/tablefunc.html) and
+[dblink](https://www.postgresql.org/docs/18/dblink.html).
+
 ### Architecture report
 
 ```bash
@@ -503,9 +620,7 @@ Unknown endpoints mean they were not observed in the same scan.
 
 Opening an older database upgrades it transactionally to schema version 13,
 including when opened by query/report commands. Observation and checkpoint
-tables are preserved. [Storage design](docs/STORAGE.md) describes the upgrade;
-[networking](docs/NETWORKING.md) and [load balancing](docs/LOAD_BALANCING.md)
-specify exactly which fields and relationships are collected.
+tables are preserved.
 
 ## Retry primitives and workflow engines
 
@@ -521,15 +636,12 @@ service SDK request configured for one attempt. Every retry re-enters admission.
 Enabling a second five-attempt SDK loop inside the outer five-attempt loop can
 produce 25 attempts and invalidate configured accounting. The audited public
 SDK hooks did not provide a proven drop-in asynchronous quota wait before
-signing and before the SDK's attempt timeout. The retained retry decision and
-current behavior are in [retries and workflows](docs/RETRY_AND_WORKFLOWS.md).
+signing and before the SDK's attempt timeout.
 
 The local SQLx queue supplies durable scan submission, worker-crash recovery,
 fenced ownership, cancellation and explicit retry without an additional server.
 Restate and Temporal remain options for ownership and timers across multiple
 machines. Neither removes quota coordination or idempotent persistence work.
-The comparison and current behavior are in
-[retries and workflows](docs/RETRY_AND_WORKFLOWS.md).
 
 HTTP 501 is terminal. A modeled-error-free SDK rejection of an HTTP success
 response is reported as a response-decoding/protocol problem without copying the
@@ -580,43 +692,81 @@ RETURN a.kind, a.id, b.id;
 cargo run --locked -- catalog
 ```
 
-Start with [architecture](docs/ARCHITECTURE.md), [storage](docs/STORAGE.md),
-[collectors](docs/COLLECTORS.md), and [scheduler](docs/SCHEDULER.md);
-[docs/README.md](docs/README.md) describes which baseline documents remain.
-[The roadmap](docs/ROADMAP.md) is the build plan for what replaces the baseline.
-The [collection plan](docs/COLLECTION_PLAN.md) specifies the shared 421-type
-adapter, schema evidence, architecture relationships, and query generation.
-[Parent collection design](docs/PARENT_COLLECTIONS.md) explains prerequisite
-discovery, exact resource models, ownership checks and bounded child traversal.
-The [coverage matrix](docs/CLOUDCONTROL_COVERAGE.md) explains the full registry
-partition, excluded types, relationship inference and observed emulator evidence.
+The plan for what replaces the baseline is in [docs/e2e/](docs/e2e/README.md).
+
+### Sweep benchmark
+
+`cmdb-bench sweep --collector <binary> --profile thin|full|proxy --runs 3`
+starts the harness's private emulator and graph server, seeds once, and creates a
+fresh PostgreSQL database for each cold/warm pair. Set `INVENTORY_POSTGRES_URL`
+to a harness administrative connection. Installed emulator/graph paths can be
+set through `INVENTORY_EMULATOR_BINARY`, `INVENTORY_REDIS_SERVER`, and
+`INVENTORY_FALKOR_MODULE`, as with the harness.
+
+Use `--out <file>` for raw TSV, `--work <empty-dir>` to retain collector logs,
+`--catalog <file>` to select the compiled catalog, and repeated
+`--service <recipe>` to restrict an explicitly labelled smoke workload.
+Record `--server container|native|managed`, `--volume named|bind|native-disk`,
+and `--build release|debug`; unstated values are printed, not inferred.
+The table includes actual PostgreSQL settings, measured HTTP protocol and Git
+state. Failed collectors, dirty/unavailable commits, fsync-off servers and
+non-Linux hosts are not publishable, with the reason recorded. A failed
+collector's table is printed but never written to `--out`. WAL is server-wide:
+unrelated writes can contribute. Resource and writer rates are per second,
+rounded down; CPU is milliseconds and decode share is parts per million.
+Zero-denominator rows are `unavailable`, not zero; comparison refuses them.
+
+`--profile proxy` selects thin seeds with 50 ms latency and 20 requests per second
+per account/region/service. `--proxy latency_ms=50,rps=20` also works with thin/full
+and overrides those defaults. Every cold and warm collection gets fresh buckets
+and the same fixed fault seed. Raw 100-ms counter recordings accompany collector
+logs. Proxy extra rows measure the cold phase; warm extras are discarded.
+Steady throughput and ramp-up count admitted responses, excluding throttles.
+Ramp-up compares aggregate admitted responses against one scope's quota, not
+proof that all scopes saturated. Short runs may not reach the 30-second
+throttle-share window or the quota threshold.
+
+Collector logs and seed reports are read with a 16 MiB bound; each seed recipe
+has a 1 MiB bound. SIGINT/SIGTERM cancel the collector and drain owned resources.
+
+`cmdb-bench open --catalog <file>` measures catalog decode, fresh schema creation,
+reopening, and insert preparation (P11). `cmdb-bench compare <before> <after>`
+checks every median against the larger of 5% and twice the baseline spread.
+`--band <whole-percent>` overrides this band; `--allow-different-server` allows
+different profile/server, operating-system, build and protocol headers with an
+explicit non-comparability warning. Compare exits 0 for no regression, 1 for a
+regression and 2 for a refused comparison. Collector failures exit nonzero.
+
 
 ## CMDB product direction
 
-The current tool is a local inventory CLI with SQLite, a process-local scheduler,
-persistent jobs and a replayable FalkorDB projection. The development tree now
-also contains the first continuous-CMDB slice: freshness views and an
-account/region/collector coverage registry, a deterministic workload generator
-with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`)
-over one JSON export, and a Makepad viewer (`cmdb-ui`) with a filterable table
-and an account→region→kind→resource DAG over a synthetic fixture.
+The inventory CLI stores swept resources in SQLite or PostgreSQL and projects
+their topology into FalkorDB. The bounded `cmdb-view` read model supplies
+tables, details, counts, tags, freshness and edge pages directly from either
+inventory database. PostgreSQL reads use pinned repeatable-read, read-only
+snapshots, so pagination and details stay consistent while a sweep writes.
+Resource pages keep a continuation when the 10 MiB byte budget truncates a page.
+A single row larger than that budget, or a resource missing its kind mapping or
+record, returns an explicit error in both backends. Search treats wildcard
+characters literally and folds ASCII case only in both backends. PostgreSQL
+uses the `C` collation for this search, independently of the server locale.
 
-Decisions taken on the external audit findings, with what is and is not verified, are in [docs/AUDIT_DECISIONS.md](docs/AUDIT_DECISIONS.md).
+The Makepad viewer accepts either a SQLite path or a PostgreSQL URL:
 
-That slice was built against an earlier draft: the
-[performance contract](docs/CMDB_PERFORMANCE_CONTRACT.md) and the
-[CMDB architecture](docs/CMDB_ARCHITECTURE.md). [The vision](docs/VISION.md)
-supersedes both. The obsolete HTTP read API (`cmdb-api`) has been removed
-under V32 (ROADMAP M6.5). In-process SQLite and FalkorDB reads for the UI are
-planned in M6.2/M6.3, not implemented by the export read model or synthetic
-viewer. The first version also has no history, tombstones or retention, no
-event ingestion, no PostgreSQL and no multi-machine quota coordination. The
-[release baseline](docs/CMDB_BASELINE_2026-11-13.md) records preliminary local
-storage and mock-scheduler measurements only. It does not establish fleet
-capacity or competitive superiority.
+```bash
+cmdb-ui --database "$INVENTORY_DATABASE_URL"
+```
+
+Add `--graph-url redis://127.0.0.1:6379/ --graph-name inventory` to read native
+FalkorDB topology and enrich it from the inventory database. PostgreSQL URLs
+are redacted in configuration diagnostics. `cmdb-bench` supplies a deterministic
+workload generator and an independent oracle.
+
+The implementation plan is in [docs/e2e/](docs/e2e/README.md). The obsolete
+HTTP read API (`cmdb-api`) has been removed; the viewer uses in-process readers.
 
 Upstream projects informed the design; this is an independent implementation.
-See [sources and licensing](docs/SOURCES.md). No upstream documentation prose,
+No upstream documentation prose,
 logos, or complete Steampipe schemas are bundled as a claimed port.
 
 ## License
@@ -624,5 +774,4 @@ logos, or complete Steampipe schemas are bundled as a claimed port.
 MIT. See [LICENSE](LICENSE). The project license was deliberately changed from
 Apache-2.0 to MIT for this development tree by the project owner; third-party
 dependencies keep their own licenses: the official
-AWS SDK for Rust crates are Apache-2.0, SQLx and FalkorDB are covered in
-[sources and licensing](docs/SOURCES.md).
+AWS SDK for Rust crates are Apache-2.0.

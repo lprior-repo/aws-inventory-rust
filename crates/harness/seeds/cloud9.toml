@@ -1,0 +1,13 @@
+format = 1
+service = "cloud9"
+
+[[step]]
+id = "environment"
+operation = "CreateEnvironmentEC2"
+kind = "AWS::ApiOnly::Cloud9Environment"
+identity = "environmentId"
+[step.input]
+name = "inventory-thin-cloud9"
+instanceType = "t3.micro"
+imageId = "amazonlinux-2023-x86_64"
+automaticStopTimeMinutes = 30

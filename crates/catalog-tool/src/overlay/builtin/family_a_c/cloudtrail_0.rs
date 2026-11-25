@@ -256,6 +256,9 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListDashboards",
             OperationOverlay {
                 queryable: vec![path("DashboardArn")?],
+                fixed: [(path("Type")?, FixedValue::String("CUSTOM".to_owned()))]
+                    .into_iter()
+                    .collect(),
                 ..read(
                     "Dashboards",
                     Identity::Arn(path("DashboardArn")?),

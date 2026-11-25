@@ -1,0 +1,10 @@
+format = 1
+service = "codecommit"
+
+[[step]]
+id = "resource"
+operation = "CreateRepository"
+kind = "AWS::CodeCommit::Repository"
+identity = "repositoryMetadata.repositoryId"
+[step.input]
+"repositoryName" = "inventory-thin-codecommit"

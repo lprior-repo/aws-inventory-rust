@@ -63,6 +63,68 @@ pub enum Command {
         limit: usize,
     },
 
+    /// Run one bounded, read-only PostgreSQL statement using a reader role.
+    Sql(SqlArgs),
+
+    #[command(flatten)]
+    Inspection(InspectionCommand),
+
+    Discover(DiscoverArgs),
+
+    Job {
+        #[command(subcommand)]
+        command: JobCommand,
+    },
+
+    GraphExport {
+        #[arg(long, default_value = "inventory.sqlite")]
+        db: PathBuf,
+        #[arg(long)]
+        scan_id: String,
+        #[arg(long, default_value = "aws_inventory")]
+        graph: String,
+        #[arg(long, default_value = "graph.jsonl")]
+        output: PathBuf,
+        #[arg(long)]
+        allow_partial: bool,
+    },
+
+    GraphPush {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long, default_value = "projection.sqlite")]
+        checkpoint: PathBuf,
+        #[arg(long, default_value = "FALKORDB_URL")]
+        url_env: String,
+
+        #[arg(long, default_value_t = 5)]
+        attempts: u32,
+    },
+
+    /// Rebuild a FalkorDB graph from the stored inventory, with no AWS calls.
+    RebuildGraph {
+        #[arg(long)]
+        database: PathBuf,
+        #[arg(long, default_value = "catalog/aws-api.catalog")]
+        catalog: PathBuf,
+        #[arg(long)]
+        graph_url: String,
+        #[arg(long)]
+        graph_name: String,
+    },
+
+    TagMapping {
+        #[command(subcommand)]
+        command: TagMappingCommand,
+    },
+
+    Scan(ScanArgs),
+    Sweep(SweepArgs),
+    Serve(ServeArgs),
+}
+
+#[derive(Subcommand, Debug)]
+pub enum InspectionCommand {
     Report {
         #[arg(long, default_value = "inventory.sqlite")]
         db: PathBuf,
@@ -125,59 +187,16 @@ pub enum Command {
         #[arg(long, default_value_t = 100)]
         limit: usize,
     },
+}
 
-    Discover(DiscoverArgs),
-
-    Job {
-        #[command(subcommand)]
-        command: JobCommand,
-    },
-
-    GraphExport {
-        #[arg(long, default_value = "inventory.sqlite")]
-        db: PathBuf,
-        #[arg(long)]
-        scan_id: String,
-        #[arg(long, default_value = "aws_inventory")]
-        graph: String,
-        #[arg(long, default_value = "graph.jsonl")]
-        output: PathBuf,
-        #[arg(long)]
-        allow_partial: bool,
-    },
-
-    GraphPush {
-        #[arg(long)]
-        input: PathBuf,
-        #[arg(long, default_value = "projection.sqlite")]
-        checkpoint: PathBuf,
-        #[arg(long, default_value = "FALKORDB_URL")]
-        url_env: String,
-
-        #[arg(long, default_value_t = 5)]
-        attempts: u32,
-    },
-
-    /// Rebuild a FalkorDB graph from the stored inventory, with no AWS calls.
-    RebuildGraph {
-        #[arg(long)]
-        database: PathBuf,
-        #[arg(long, default_value = "catalog/aws-api.catalog")]
-        catalog: PathBuf,
-        #[arg(long)]
-        graph_url: String,
-        #[arg(long)]
-        graph_name: String,
-    },
-
-    TagMapping {
-        #[command(subcommand)]
-        command: TagMappingCommand,
-    },
-
-    Scan(ScanArgs),
-    Sweep(SweepArgs),
-    Serve(ServeArgs),
+/// A bounded PostgreSQL statement and its reader connection.
+#[derive(Args, Debug)]
+pub struct SqlArgs {
+    #[arg(long)]
+    pub database: String,
+    pub sql: String,
+    #[arg(long, default_value_t = inventory_engine::sql::Bounds::default().rows)]
+    pub limit: usize,
 }
 
 impl From<TraversalArgs> for crate::analysis::TraversalOptions {

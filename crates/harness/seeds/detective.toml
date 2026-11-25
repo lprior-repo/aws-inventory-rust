@@ -1,0 +1,9 @@
+format = 1
+service = "detective"
+
+[[step]]
+id = "resource"
+operation = "CreateGraph"
+kind = "AWS::Detective::Graph"
+identity = "GraphArn"
+[step.input]

@@ -1,0 +1,11 @@
+format = 1
+service = "xray"
+
+[[step]]
+id = "resource"
+operation = "CreateGroup"
+kind = "AWS::XRay::Group"
+identity = "Group.GroupARN"
+[step.input]
+"GroupName" = "inventory-thin-xray"
+"FilterExpression" = "service(\"inventory\")"

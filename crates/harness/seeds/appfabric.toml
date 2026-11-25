@@ -1,0 +1,9 @@
+format = 1
+service = "appfabric"
+
+[[step]]
+id = "resource"
+operation = "CreateAppBundle"
+kind = "AWS::AppFabric::AppBundle"
+identity = "appBundle.arn"
+[step.input]

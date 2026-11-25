@@ -1,0 +1,12 @@
+format = 1
+service = "s3"
+
+[[step]]
+id = "bucket"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+repeat = 2
+[step.input]
+Bucket = "inventory-thin-bucket-{n}"

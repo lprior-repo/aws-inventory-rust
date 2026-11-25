@@ -517,6 +517,9 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListCustomModels",
             OperationOverlay {
                 queryable: vec![path("modelArn")?],
+                fixed: [(path("isOwned")?, FixedValue::Boolean(true))]
+                    .into_iter()
+                    .collect(),
                 ..read(
                     "modelSummaries",
                     Identity::Arn(path("modelArn")?),

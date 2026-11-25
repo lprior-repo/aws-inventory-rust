@@ -1,0 +1,11 @@
+format = 1
+service = "elementalinference"
+
+[[step]]
+id = "resource"
+operation = "CreateFeed"
+kind = "AWS::ApiOnly::ElementalInferenceFeed"
+identity = "arn"
+[step.input]
+"name" = "inventory-thin-elementalinference"
+"outputs" = [{ "name" = "inventory-thin-elementalinference", "outputConfig" = { "cropping" = {  } }, "status" = "ENABLED" }]

@@ -1,0 +1,10 @@
+format = 1
+service = "sfn"
+
+[[step]]
+id = "resource"
+operation = "CreateActivity"
+kind = "AWS::StepFunctions::Activity"
+identity = "activityArn"
+[step.input]
+"name" = "inventory-thin-sfn"

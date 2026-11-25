@@ -64,8 +64,11 @@ mod operations_8;
 mod operations_9;
 #[path = "family_q_s/relations_0.rs"]
 mod relations_0;
+#[path = "family_q_s/sanitized_sns.rs"]
+mod sanitized_sns;
 
 pub(super) const SOURCES: &[MappingSource<'static>] = &[
+    sanitized_sns::SOURCE,
     MappingSource {
         cfn: cfn_0::ENTRIES,
         ..super::EMPTY

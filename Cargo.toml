@@ -1,18 +1,19 @@
 [workspace]
-members = ["crates/core", "crates/engine", "crates/aws", "crates/aws-wire", "crates/harness", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view"]
+members = ["crates/core", "crates/engine", "crates/aws", "crates/aws-wire", "crates/harness", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view", "crates/sweep", "crates/graph-store"]
 resolver = "3"
 
 [workspace.package]
 version = "0.6.0"
 edition = "2024"
 license = "MIT"
-rust-version = "1.101"
+rust-version = "1.100"
 
 [workspace.dependencies]
 inventory-core = { path = "crates/core" }
 inventory-engine = { path = "crates/engine" }
+inventory-graph = { path = "crates/graph-store" }
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.154"
+serde_json = { version = "1.0.154", features = ["preserve_order"] }
 thiserror = "2.0.21"
 tokio = { version = "1.54.1", features = ["rt-multi-thread", "macros", "time", "sync", "signal", "net", "io-util", "fs", "test-util", "process"] }
 tokio-util = { version = "0.7.20", features = ["rt"] }
@@ -20,12 +21,9 @@ futures-util = "0.3.34"
 tracing = "0.1.44"
 sha2 = "0.11.1"
 base16ct = "1.0.0"
-# Upstream's merged SQLite 0.39 support; retain bundled SQLite and allocation limits.
-# https://github.com/transact-rs/sqlx/pull/4502
-# Published 0.9.0 requires libsqlite3-sys <0.38; this pin supports SQLite 0.39.
-sqlx = { git = "https://github.com/transact-rs/sqlx", rev = "10462fa4414c6c7f1ed1d39bb31678e3b726878c", default-features = false, features = ["sqlite", "runtime-tokio"] }
+sqlx = { version = "0.9.1", default-features = false, features = ["sqlite", "postgres", "runtime-tokio"] }
 proptest = { version = "1.12.0", default-features = false, features = ["std"] }
-toml = "1.2.1"
+toml = { version = "1.2.1", features = ["preserve_order"] }
 zip = { version = "9.5.1", default-features = false, features = ["deflate"] }
 minicbor = { version = "2.3.1", features = ["std"] }
 blake3 = "1.8.7"
@@ -55,18 +53,22 @@ rust-version.workspace = true
 
 [features]
 default = []
-aws = ["dep:inventory-aws"]
+sweep = ["dep:inventory-aws", "dep:inventory-sweep", "inventory-aws/sweep-credentials"]
+aws = ["sweep", "inventory-aws/adapters"]
 
 [dependencies]
 inventory-core.workspace = true
 inventory-engine.workspace = true
-inventory-aws = { path = "crates/aws", optional = true }
+inventory-graph.workspace = true
+inventory-aws = { path = "crates/aws", optional = true, default-features = false }
+inventory-sweep = { path = "crates/sweep", optional = true }
 aws-wire = { path = "crates/aws-wire" }
 thiserror.workspace = true
 http = "1.5.0"
 bytes = "1.12.1"
 serde.workspace = true
 serde_json.workspace = true
+toml.workspace = true
 tokio.workspace = true
 tokio-util.workspace = true
 futures-util.workspace = true

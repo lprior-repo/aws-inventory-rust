@@ -1,0 +1,11 @@
+format = 1
+service = "chime-sdk-voice"
+
+[[step]]
+id = "resource"
+operation = "CreateVoiceConnector"
+kind = "AWS::Chime::VoiceConnector"
+identity = "VoiceConnector.VoiceConnectorArn"
+[step.input]
+"Name" = "inventory-thin-chime-sdk-voice"
+"RequireEncryption" = false

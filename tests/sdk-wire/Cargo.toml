@@ -2,7 +2,7 @@
 name = "inventory-sdk-wire-tests"
 version = "0.4.0"
 edition = "2024"
-rust-version = "1.101"
+rust-version = "1.100"
 license = "MIT"
 publish = false
 autotests = false

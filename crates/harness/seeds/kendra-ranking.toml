@@ -1,0 +1,11 @@
+format = 1
+service = "kendra-ranking"
+
+[[step]]
+id = "resource"
+operation = "CreateRescoreExecutionPlan"
+kind = "AWS::KendraRanking::ExecutionPlan"
+identity = "Id"
+repeat = 2
+[step.input]
+Name = "inventory-thin-kendra-ranking-name-{n}"

@@ -1,0 +1,11 @@
+format = 1
+service = "snowball"
+
+[[step]]
+id = "resource"
+operation = "CreateLongTermPricing"
+kind = "AWS::ApiOnly::SnowballLongTermRental"
+identity = "LongTermPricingId"
+[step.input]
+"LongTermPricingType" = "OneYear"
+"SnowballType" = "STANDARD"

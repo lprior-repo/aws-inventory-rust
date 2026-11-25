@@ -1,0 +1,12 @@
+format = 1
+service = "codestar-connections"
+
+[[step]]
+id = "host"
+operation = "CreateHost"
+kind = "AWS::ApiOnly::CodeStarConnectionsHost"
+identity = "HostArn"
+[step.input]
+Name = "inventory-thin-codestar-connections"
+ProviderType = "GitHubEnterpriseServer"
+ProviderEndpoint = "https://github.inventory.example"

@@ -57,7 +57,7 @@ async fn given_account_only_and_global_identity_collisions_when_reading_tags_the
         )
         .await?;
     }
-    let database = Database::open(&fixture.path).await?;
+    let database = Database::open(fixture.path.to_str().ok_or("non-UTF-8 database path")?).await?;
     for (account, region, expected, foreign) in [
         (ACCOUNT, REGION, "own-region", "foreign-region"),
         (FOREIGN, REGION, "foreign-region", "own-region"),
@@ -155,7 +155,7 @@ async fn given_complete_then_every_degraded_and_absent_observation_when_reading_
         100,
     )
     .await?;
-    let database = Database::open(&fixture.path).await?;
+    let database = Database::open(fixture.path.to_str().ok_or("non-UTF-8 database path")?).await?;
     let selected = node(ACCOUNT, REGION, "shared");
     let literal = filter(ACCOUNT, REGION, "empty", Some(""));
     let mut retained = database.snapshot().await?;
@@ -246,7 +246,7 @@ async fn given_complete_then_every_degraded_and_absent_observation_when_reading_
     drop(database);
     drop(fixture.store);
     let _writer = BinaryStore::open(&fixture.path).await?;
-    let reopened = Database::open(&fixture.path).await?;
+    let reopened = Database::open(fixture.path.to_str().ok_or("non-UTF-8 database path")?).await?;
     assert_eq!(reopened.detail(&selected).await?, Some(final_row.clone()));
     assert_eq!(
         reopened.page(&literal, page(1)).await?.resources,
@@ -302,11 +302,11 @@ async fn given_real_schema14_legacy_pairs_when_writer_migrates_then_reader_disti
     sqlx::query("PRAGMA user_version=14").execute(&pool).await?;
     pool.close().await;
     assert!(matches!(
-        Database::open(&path).await,
+        Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await,
         Err(ViewError::Version(14))
     ));
     let store = BinaryStore::open(&path).await?;
-    let database = Database::open(&path).await?;
+    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     let selected = node(ACCOUNT, REGION, "shared");
     let mut retained = database.snapshot().await?;
     let legacy = retained
@@ -368,7 +368,7 @@ async fn given_real_schema14_legacy_pairs_when_writer_migrates_then_reader_disti
     drop(database);
     drop(store);
     let _writer = BinaryStore::open(&path).await?;
-    let reopened = Database::open(&path).await?;
+    let reopened = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     assert_eq!(reopened.detail(&selected).await?, Some(empty.clone()));
     assert_eq!(
         reopened
@@ -443,7 +443,7 @@ async fn given_over_one_thousand_literal_tag_matches_when_paging_at_both_limits_
         200,
     )
     .await?;
-    let database = Database::open(&fixture.path).await?;
+    let database = Database::open(fixture.path.to_str().ok_or("non-UTF-8 database path")?).await?;
     let literal = filter(ACCOUNT, REGION, literal_key, Some(""));
     assert_eq!(database.counts().await?.resources, 1006);
     for limit in [1, 1000] {

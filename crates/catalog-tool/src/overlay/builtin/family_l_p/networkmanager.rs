@@ -173,6 +173,13 @@ const GROUPS: &[Group] = &[
             "Expansion requires request context (CoreNetworkId, SegmentName, EdgeLocation); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
         ),
     },
+    Group {
+        operations: &["ListCoreNetworks"],
+        class: OverlayClass::Defer,
+        reason: Some(
+            "The modeled collection includes owned and shared core networks without an account-owner request filter; no owned-only selector is available.",
+        ),
+    },
 ];
 
 const RESOURCES: &[Resource] = &[
@@ -223,24 +230,6 @@ const RESOURCES: &[Resource] = &[
             "ConnectAttachmentId",
             "ConnectPeerState",
             "SubnetArn",
-        ],
-        tags: Some("Tags"),
-        bindings: &[],
-        fixed: &[],
-    },
-    // Returns a list of owned and shared core networks.
-    Resource {
-        operation: "ListCoreNetworks",
-        items: "CoreNetworks",
-        id: Id::Arn("CoreNetworkArn"),
-        scope: Scope::Account,
-        tokens: Some(("NextToken", "NextToken")),
-        query: &[
-            "CoreNetworkArn",
-            "CoreNetworkId",
-            "GlobalNetworkId",
-            "OwnerAccountId",
-            "State",
         ],
         tags: Some("Tags"),
         bindings: &[],

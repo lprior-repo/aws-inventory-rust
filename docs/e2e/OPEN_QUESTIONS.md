@@ -19,7 +19,7 @@
 | What is open source | All of it, MIT. There is no closed part | V63 |
 | What does "everything" mean | Every resource of every service, in every account of an organization that gives access | V64 |
 | How fresh | One sweep a day | V65 |
-| Which PostgreSQL | The latest major version: 19 | V66 |
+| Which PostgreSQL | PostgreSQL 18, pinned 18.7 | V66 |
 | May overlays be generated without a review of each | Yes | V67 |
 | How big an organization | Up to 10,000 accounts, reached in stages | V69 |
 | One account or the whole organization on screen | The whole organization, ideally; what is handled grows in stages | V70 |
@@ -90,7 +90,7 @@ have not been executed. Each is marked "not verified" where it appears.
 | Makepad instancing | That retained GPU instances can be drawn from this app at the pinned revision; the API was read, and no example in the pinned tree uses it | D6.0, which exists to find out before the renderer is built |
 | 120 frames a second | Never measured at any size | D7 |
 | The emulator | How many of the 436 services it actually serves | A5 |
-| PostgreSQL 19 | That the pinned driver, the container image and the plan's SQL work on a version released three days before this was written | C6.1, C6.2 |
+| PostgreSQL 18 | That the pinned driver, the container image and the plan's SQL work on 18.7 | C6.1, C6.2 |
 | The graph candidates | The Rust API, query coverage and stability of Grafeo and LadybugDB; any claim that one is faster | E3.4 |
 | The other tools | That CloudQuery, Steampipe and Cartography can be pointed at the emulator | B9.1 |
 | The rate targets | That the adaptive rate settles within the stated margin of a limit | B2.3 |

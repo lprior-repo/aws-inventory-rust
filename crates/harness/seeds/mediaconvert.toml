@@ -1,0 +1,10 @@
+format = 1
+service = "mediaconvert"
+
+[[step]]
+id = "resource"
+operation = "CreateQueue"
+kind = "AWS::MediaConvert::Queue"
+identity = "Queue.Arn"
+[step.input]
+"Name" = "inventory-thin-mediaconvert"

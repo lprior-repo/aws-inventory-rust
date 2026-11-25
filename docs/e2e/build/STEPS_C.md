@@ -22,8 +22,8 @@ Facts this track relies on, read from the tree and the machine:
   itself (`crates/cmdb-view/src/database.rs`) with its own queries.
 - A kind table's typed columns are named `f_<field id>` today
   (`inventory_core::inventory::Column::new`), not by member name.
-- This machine has the `docker` client but no daemon, and PostgreSQL 16.15
-  installed natively with binaries in `/usr/lib/postgresql/16/bin`. `initdb`
+- This machine has the `docker` client but no daemon, and PostgreSQL 18.6
+  installed natively with binaries in `/usr/bin`. `initdb`
   refuses to run as root. Defaults seen: `max_connections` 100,
   `synchronous_commit` on.
 
@@ -89,6 +89,14 @@ B3.2). Its cost is a generic parameter; there is no dynamic dispatch.
   `Send` bound; that is why the methods are written as `fn ... -> impl Future +
   Send`. Do not add the `async-trait` crate. `inventory.rs` is at 280 lines;
   the trait goes in its own file.
+
+The SQLite implementation exposes this seam through
+`inventory::InventoryStore` and `inventory::ProjectionSnapshotRead`.
+`inventory_store/conformance.rs` runs backend-neutral scenarios from a fresh
+factory per scenario; the SQLite factory prepares sweep manifests before
+returning the store. SQLite schema assertions, injected SQL failures, reopen
+checks, manifest discovery, explicit rebuild requests and unobserved-scope
+reports remain backend-local. They do not expand the portable store contract.
 
 ### C5.3 The sweep and the projection use the trait
 
@@ -158,10 +166,9 @@ B3.2). Its cost is a generic parameter; there is no dynamic dispatch.
   `.github/workflows/ci.yml`, `moon.yml`.
 - **Change:**
   1. **Compose file.** One service `postgres` from the official image, pinned
-     as `docker.io/library/postgres:16-bookworm@sha256:<digest>` (major
-     version 16, the version verified natively on this machine; the digest is
-     resolved and written by the worker, it is not known to this plan). A
-     named volume `inventory-pgdata` for `/var/lib/postgresql/data`, never a
+     as `docker.io/library/postgres:18-trixie@sha256:<digest>` (PostgreSQL
+     18.7; the digest is resolved and written by the worker). A
+     named volume `inventory-pgdata-18` for `/var/lib/postgresql`, never a
      bind mount. Port published on loopback only: `127.0.0.1:54329:5432`.
      `shm_size: 2gb`. Database `inventory`, user `inventory`. A health check
      with `pg_isready`. Server settings passed on the command line and written
@@ -661,7 +668,7 @@ B3.2). Its cost is a generic parameter; there is no dynamic dispatch.
   external client would); the test fixtures may, as a dev-dependency.
   `count(*)` on PostgreSQL scans; if the counts query is slow at 250,000 rows,
   read counts per kind from a small summary the store maintains, as its own
-  step. `crates/cmdb-view/src` is under the 25-line function gate.
+  step. `crates/cmdb-view/src` is under the under-60-line function gate.
 
 ### C6.12 Delete the old store code
 

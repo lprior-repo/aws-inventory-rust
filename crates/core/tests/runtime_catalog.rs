@@ -11,7 +11,9 @@ use inventory_core::{
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
-const BASE: &[u8] = include_bytes!("../../../catalog/aws-api.catalog");
+#[path = "support/base_catalog.rs"]
+mod base_catalog;
+use base_catalog::base;
 
 fn field_map(
     entries: impl IntoIterator<Item = (u32, Value)>,
@@ -25,7 +27,7 @@ fn field_map(
 
 fn runtime_bytes(version: i64) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut root = ValueRef::Map(MapRef::from_container_bytes(
-        BASE,
+        base()?,
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?)
     .to_value()?;
@@ -43,7 +45,7 @@ fn runtime_bytes(version: i64) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     ])?;
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let mut root = Value::Map(root.clone());
-    runtime_provenance::reseal(&mut root, BASE)?;
+    runtime_provenance::reseal(&mut root, base()?)?;
     Ok(inventory_core::record::encode_container(
         &root,
         inventory_core::catalog::MAX_CATALOG_BYTES,
@@ -51,7 +53,7 @@ fn runtime_bytes(version: i64) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 }
 
 fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let catalog = inventory_core::catalog::Catalog::borrow(BASE)?;
+    let catalog = inventory_core::catalog::Catalog::borrow(base()?)?;
     let service = catalog
         .services()?
         .next()
@@ -67,7 +69,7 @@ fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         (4, Value::Text("explicitly reviewed denial".to_owned())),
     ])?;
     let mut root = ValueRef::Map(MapRef::from_container_bytes(
-        BASE,
+        base()?,
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?)
     .to_value()?;
@@ -76,7 +78,7 @@ fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         _ => return Err("base compiled catalog is not a map".into()),
     };
     let extension = field_map([
-        (1, Value::Int(2)),
+        (1, Value::Int(3)),
         (2, Value::List(Vec::new())),
         (3, Value::List(Vec::new())),
         (4, Value::List(Vec::new())),
@@ -85,7 +87,7 @@ fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     ])?;
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let mut root = Value::Map(root.clone());
-    runtime_provenance::reseal(&mut root, BASE)?;
+    runtime_provenance::reseal(&mut root, base()?)?;
     Ok(inventory_core::record::encode_container(
         &root,
         inventory_core::catalog::MAX_CATALOG_BYTES,
@@ -95,7 +97,7 @@ fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 fn relationship_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     // Keep real producers and schemas: a relation without a supporting plan is invalid.
     let mut root = ValueRef::Map(MapRef::from_container_bytes(
-        BASE,
+        base()?,
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?)
     .to_value()?;
@@ -108,7 +110,7 @@ fn relationship_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         .first_mut()
         .ok_or("base catalog has no relationship")?;
     fields(relation)?.insert(key(6)?, Value::Int(2));
-    runtime_provenance::reseal(&mut root, BASE)?;
+    runtime_provenance::reseal(&mut root, base()?)?;
     Ok(inventory_core::record::encode_container(
         &root,
         inventory_core::catalog::MAX_CATALOG_BYTES,
@@ -117,10 +119,20 @@ fn relationship_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 
 #[test]
 fn unknown_runtime_extension_version_is_rejected() -> Result<(), Box<dyn std::error::Error>> {
-    let bytes = runtime_bytes(3)?;
+    let bytes = runtime_bytes(4)?;
     assert!(matches!(
         RuntimeCatalog::from_bytes(&bytes),
-        Err(RuntimeCatalogError::ExtensionVersion(3))
+        Err(RuntimeCatalogError::ExtensionVersion(4))
+    ));
+    Ok(())
+}
+
+#[test]
+fn previous_version_two_runtime_schema_is_rejected() -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = runtime_bytes(2)?;
+    assert!(matches!(
+        RuntimeCatalog::from_bytes(&bytes),
+        Err(RuntimeCatalogError::ExtensionVersion(2))
     ));
     Ok(())
 }
@@ -139,7 +151,7 @@ fn tagless_previous_runtime_schema_is_rejected_without_guessing_observation_stat
 #[test]
 fn valid_empty_runtime_extension_keeps_borrowed_catalog_and_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
-    let bytes = runtime_bytes(2)?;
+    let bytes = runtime_bytes(3)?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     assert!(runtime.plans().is_empty());
     assert!(runtime.schemas().is_empty());
@@ -152,7 +164,7 @@ fn valid_empty_runtime_extension_keeps_borrowed_catalog_and_bytes()
 fn incomplete_plan_metadata_is_rejected_as_a_closed_capability()
 -> Result<(), Box<dyn std::error::Error>> {
     let mut root = ValueRef::Map(MapRef::from_container_bytes(
-        BASE,
+        base()?,
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?)
     .to_value()?;
@@ -161,7 +173,7 @@ fn incomplete_plan_metadata_is_rejected_as_a_closed_capability()
         _ => return Err("base compiled catalog is not a map".into()),
     };
     let extension = field_map([
-        (1, Value::Int(2)),
+        (1, Value::Int(3)),
         (2, Value::List(vec![field_map([])?])),
         (3, Value::List(Vec::new())),
         (4, Value::List(Vec::new())),
@@ -170,7 +182,7 @@ fn incomplete_plan_metadata_is_rejected_as_a_closed_capability()
     ])?;
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let mut root = Value::Map(root.clone());
-    runtime_provenance::reseal(&mut root, BASE)?;
+    runtime_provenance::reseal(&mut root, base()?)?;
     let bytes = inventory_core::record::encode_container(
         &root,
         inventory_core::catalog::MAX_CATALOG_BYTES,
@@ -242,7 +254,7 @@ fn receipt(root: &mut Value) -> TestResult<&mut Fields> {
 }
 
 fn mutated_receipt(change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult<Vec<u8>> {
-    let bytes = runtime_bytes(2)?;
+    let bytes = runtime_bytes(3)?;
     mutate_receipt_in(&bytes, change)
 }
 
@@ -276,9 +288,9 @@ fn rejects_capability(bytes: &[u8]) -> TestResult {
 fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or_cfn_input()
 -> TestResult {
     // Given: a real compiler-generated control and an assembled empty extension.
-    let control = RuntimeCatalog::from_bytes(BASE)?;
-    let bytes = runtime_bytes(2)?;
-    let base_input = runtime_provenance::base_bytes(BASE)?;
+    let control = RuntimeCatalog::from_bytes(base()?)?;
+    let bytes = runtime_bytes(3)?;
+    let base_input = runtime_provenance::base_bytes(base()?)?;
     let mut restored = ValueRef::Map(MapRef::from_container_bytes(
         &base_input,
         inventory_core::catalog::MAX_CATALOG_BYTES,
@@ -286,7 +298,7 @@ fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or
     .to_value()?;
     assert!(!fields(&mut restored)?.contains_key(&key(60_000)?));
     let original_extension =
-        MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?
+        MapRef::from_container_bytes(base()?, inventory_core::catalog::MAX_CATALOG_BYTES)?
             .get_field(FieldId::new(60_000)?)?
             .ok_or("control extension missing")?
             .to_value()?;
@@ -296,7 +308,7 @@ fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or
         &restored,
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?;
-    assert_eq!(rebuilt.as_slice(), BASE);
+    assert_eq!(rebuilt.as_slice(), base()?);
     // When: the public consumer loads the re-sealed fixture.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let root = MapRef::from_container_bytes(&bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?;
@@ -326,7 +338,7 @@ fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or
 #[test]
 fn loader_rejects_capability_when_runtime_source_receipt_is_missing() -> TestResult {
     // Given: the exact same valid empty extension, with only its receipt removed.
-    let bytes = runtime_bytes(2)?;
+    let bytes = runtime_bytes(3)?;
     let control = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(control.source_provenance().version, 1);
     let mut root = ValueRef::Map(MapRef::from_container_bytes(
@@ -490,7 +502,7 @@ fn loader_rejects_capability_when_valid_reviewed_metadata_changes_without_reseal
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?;
     rejects_capability(&stale)?;
-    runtime_provenance::reseal(&mut root, BASE)?;
+    runtime_provenance::reseal(&mut root, base()?)?;
     let sealed = inventory_core::record::encode_container(
         &root,
         inventory_core::catalog::MAX_CATALOG_BYTES,
@@ -511,7 +523,7 @@ fn loader_rejects_capability_when_source_receipt_is_not_a_map() -> TestResult {
     [Value::Null, Value::Bytes(vec![0; 32]), Value::List(vec![])]
         .into_iter()
         .try_for_each(|malformed| {
-            let bytes = runtime_bytes(2)?;
+            let bytes = runtime_bytes(3)?;
             let control = RuntimeCatalog::from_bytes(&bytes)?;
             assert_eq!(control.source_provenance().version, 1);
             let mut root = ValueRef::Map(MapRef::from_container_bytes(
@@ -569,7 +581,7 @@ fn reviewed_checksum(bytes: &[u8]) -> TestResult<[u8; 32]> {
 fn public_reviewed_checksum_excludes_receipt_even_when_that_receipt_is_absent_or_corrupt()
 -> TestResult {
     // Given: a loadable artifact and its reviewed checksum.
-    let bytes = runtime_bytes(2)?;
+    let bytes = runtime_bytes(3)?;
     let expected = reviewed_checksum(&bytes)?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(runtime.source_provenance().reviewed_inputs_sha256, expected);
@@ -601,10 +613,10 @@ fn public_reviewed_checksum_excludes_receipt_even_when_that_receipt_is_absent_or
 #[test]
 fn public_reviewed_checksum_binds_actual_version_and_each_capability_list() -> TestResult {
     // Given: the empty extension's accepted version and canonical lists.
-    let bytes = runtime_bytes(2)?;
+    let bytes = runtime_bytes(3)?;
     let expected = reviewed_checksum(&bytes)?;
     // When/Then: the actual encoded version, not a hardcoded current version, is hashed.
-    assert_ne!(reviewed_checksum(&runtime_bytes(1)?)?, expected);
+    assert_ne!(reviewed_checksum(&runtime_bytes(2)?)?, expected);
     // Given/When/Then: changing any single encoded list changes its commitment.
     (2..=6).try_for_each(|id| {
         let mut root = ValueRef::Map(MapRef::from_container_bytes(
@@ -627,7 +639,7 @@ fn public_reviewed_checksum_binds_actual_version_and_each_capability_list() -> T
 }
 
 fn repository_control() -> TestResult<RuntimeCatalog<'static>> {
-    let runtime = RuntimeCatalog::from_bytes(BASE)?;
+    let runtime = RuntimeCatalog::from_bytes(base()?)?;
     let ModelSourceProvenance::Repository { commit, .. } = &runtime.source_provenance().models
     else {
         return Err("regenerated control must contain genuine repository provenance".into());
@@ -651,7 +663,7 @@ fn loader_rejects_capability_when_repository_commit_is_well_formed_but_different
     *first = if *first == b'a' { b'b' } else { b'a' };
     let changed = String::from_utf8(commit)?;
     // When: a plausible different commit replaces only the repository receipt pin.
-    let bytes = mutate_receipt_in(BASE, |receipt| {
+    let bytes = mutate_receipt_in(base()?, |receipt| {
         fields(receipt.get_mut(&key(2)?).ok_or("models missing")?)?
             .insert(key(3)?, Value::Text(changed));
         Ok(())
@@ -665,7 +677,7 @@ fn loader_rejects_capability_when_repository_commit_is_missing_or_malformed() ->
     // Given: the real repository source receipt, never an invented successful fixture.
     let control = repository_control()?;
     assert_eq!(control.source_provenance().version, 1);
-    let bytes = mutate_receipt_in(BASE, |receipt| {
+    let bytes = mutate_receipt_in(base()?, |receipt| {
         fields(receipt.get_mut(&key(2)?).ok_or("models missing")?)?
             .remove(&key(3)?)
             .ok_or("repository commit missing")?;
@@ -682,7 +694,7 @@ fn loader_rejects_capability_when_repository_commit_is_missing_or_malformed() ->
     ]
     .into_iter()
     .try_for_each(|commit| {
-        rejects_capability(&mutate_receipt_in(BASE, |receipt| {
+        rejects_capability(&mutate_receipt_in(base()?, |receipt| {
             fields(receipt.get_mut(&key(2)?).ok_or("models missing")?)?.insert(key(3)?, commit);
             Ok(())
         })?)
@@ -695,7 +707,7 @@ fn loader_rejects_capability_when_repository_origin_loses_its_cfn_evidence() -> 
     let control = repository_control()?;
     assert_eq!(control.source_provenance().kind_map_version, 1);
     // When: only the CFN pin is replaced with the assembled-fixture None marker.
-    let bytes = mutate_receipt_in(BASE, |receipt| {
+    let bytes = mutate_receipt_in(base()?, |receipt| {
         receipt.insert(key(5)?, Value::Null);
         Ok(())
     })?;

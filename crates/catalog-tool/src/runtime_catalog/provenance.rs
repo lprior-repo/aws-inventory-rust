@@ -23,7 +23,8 @@ impl CatalogSources {
         }
     }
 
-    pub(super) fn compiled(base_bytes: &[u8]) -> Self {
+    /// Binds provenance to the encoded base catalog bytes.
+    pub fn compiled(base_bytes: &[u8]) -> Self {
         Self {
             models: ModelSourceProvenance::CompiledCatalog {
                 sha256: Sha256::digest(base_bytes).into(),

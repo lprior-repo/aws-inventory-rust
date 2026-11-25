@@ -1,0 +1,11 @@
+format = 1
+service = "wisdom"
+
+[[step]]
+id = "resource"
+operation = "CreateAssistant"
+kind = "AWS::Wisdom::Assistant"
+identity = "assistant.assistantArn"
+[step.input]
+"name" = "inventory-thin-wisdom"
+"type" = "AGENT"

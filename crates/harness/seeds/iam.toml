@@ -1,0 +1,33 @@
+format = 1
+service = "iam"
+
+[[step]]
+id = "role"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+repeat = 2
+[step.input]
+RoleName = "inventory-thin-role-{n}"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"lambda.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "policy"
+operation = "CreatePolicy"
+kind = "AWS::IAM::ManagedPolicy"
+identity = "Policy.Arn"
+scope = "account"
+repeat = 2
+[step.input]
+PolicyName = "inventory-thin-policy-{n}"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sts:GetCallerIdentity","Resource":"*"}]}'
+
+[[step]]
+id = "attachment"
+operation = "AttachRolePolicy"
+kind = ""
+repeat = 2
+[step.input]
+RoleName = { from = "role", path = "Role.RoleName" }
+PolicyArn = { from = "policy", path = "Policy.Arn" }

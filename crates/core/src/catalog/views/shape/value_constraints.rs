@@ -5,12 +5,15 @@ use crate::{
 
 const MAX_PATTERN_BYTES: usize = 16_384;
 
-/// Retained Smithy length and pattern traits, borrowed from the checked catalog.
+/// Retained Smithy length, pattern and integer range traits from the checked catalog.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ValueConstraints<'a> {
     pub min_length: Option<usize>,
     pub max_length: Option<usize>,
     pub pattern: Option<&'a str>,
+    pub min_integer: Option<i64>,
+    pub max_integer: Option<i64>,
+    pub integer_range_unrepresentable: bool,
 }
 
 pub(super) fn read(map: MapRef<'_>) -> Result<ValueConstraints<'_>, CatalogError> {
@@ -52,13 +55,13 @@ fn parse(value: ValueRef<'_>) -> Result<ValueConstraints<'_>, CatalogError> {
     let ValueRef::Map(fields) = value else {
         return Err(invalid());
     };
-    if !(1..=3).contains(&fields.count()?) {
+    if !(1..=6).contains(&fields.count()?) {
         return Err(invalid());
     }
     fields.iter()?.try_for_each(|entry| {
         let (key, _) = entry?;
         match key {
-            KeyRef::Field(id) if (1..=3).contains(&id.value()) => Ok(()),
+            KeyRef::Field(id) if (1..=6).contains(&id.value()) => Ok(()),
             _ => Err(invalid()),
         }
     })?;
@@ -72,11 +75,29 @@ fn parse(value: ValueRef<'_>) -> Result<ValueConstraints<'_>, CatalogError> {
         Some(ValueRef::Text(value)) if value.len() <= MAX_PATTERN_BYTES => Some(value),
         _ => return Err(invalid()),
     };
+    let min_integer = integer(fields, 4)?;
+    let max_integer = integer(fields, 5)?;
+    let integer_range_unrepresentable = match fields.get_field(FieldId::new(6)?)? {
+        None => false,
+        Some(ValueRef::Bool(value)) => value,
+        _ => return Err(invalid()),
+    };
     Ok(ValueConstraints {
         min_length,
         max_length,
         pattern,
+        min_integer,
+        max_integer,
+        integer_range_unrepresentable,
     })
+}
+
+fn integer(fields: MapRef<'_>, id: u32) -> Result<Option<i64>, CatalogError> {
+    match fields.get_field(FieldId::new(id)?)? {
+        None => Ok(None),
+        Some(ValueRef::Int(value)) => Ok(Some(value)),
+        _ => Err(invalid()),
+    }
 }
 
 fn length(fields: MapRef<'_>, id: u32) -> Result<Option<usize>, CatalogError> {
@@ -133,7 +154,8 @@ mod tests {
                     ValueConstraints {
                         min_length: Some(2),
                         max_length: Some(7),
-                        pattern: Some("^é+$")
+                        pattern: Some("^é+$"),
+                        ..ValueConstraints::default()
                     }
                 );
                 Ok(())
@@ -165,6 +187,9 @@ mod tests {
             constraints([(1, Value::Int(8)), (2, Value::Int(7))])?,
             constraints([(2, Value::Text("7".into()))])?,
             constraints([(4, Value::Null)])?,
+            constraints([(5, Value::Null)])?,
+            constraints([(6, Value::Int(1))])?,
+            constraints([(7, Value::Int(1))])?,
             constraints([])?,
             constraints([(1, Value::Null)])?,
             constraints([(3, Value::Null)])?,
@@ -178,6 +203,51 @@ mod tests {
                 ));
                 Ok(())
             })?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn given_integer_minimum_metadata_when_borrowed_then_exact_signed_values_survive() -> TestResult
+    {
+        for minimum in [i64::MIN, -7, 0, 10, i64::MAX] {
+            check(Some(constraints([(4, Value::Int(minimum))])?), |result| {
+                assert_eq!(
+                    result?,
+                    ValueConstraints {
+                        min_integer: Some(minimum),
+                        ..ValueConstraints::default()
+                    }
+                );
+                Ok(())
+            })?;
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn given_integer_bounds_and_unrepresentable_marker_when_borrowed_then_all_metadata_survives()
+    -> TestResult {
+        for maximum in [i64::MIN, -5, 0, i64::MAX] {
+            check(
+                Some(constraints([
+                    (4, Value::Int(i64::MIN)),
+                    (5, Value::Int(maximum)),
+                    (6, Value::Bool(true)),
+                ])?),
+                |result| {
+                    assert_eq!(
+                        result?,
+                        ValueConstraints {
+                            min_integer: Some(i64::MIN),
+                            max_integer: Some(maximum),
+                            integer_range_unrepresentable: true,
+                            ..ValueConstraints::default()
+                        }
+                    );
+                    Ok(())
+                },
+            )?;
         }
         Ok(())
     }

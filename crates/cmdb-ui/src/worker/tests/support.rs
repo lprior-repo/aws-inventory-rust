@@ -1,8 +1,11 @@
 //! Deterministic ordering around the production runner, never fabricated outputs.
+pub(crate) mod transport;
+
 use super::super::*;
 use super::real::fixtures::TestResult;
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{TcpListener, TcpStream};
+use std::path::PathBuf;
 
 pub(crate) struct QueuedWorker {
     pub worker: DataWorker,
@@ -45,6 +48,7 @@ pub(crate) fn queued(
             revisions,
             shutdown,
             thread: Some(thread),
+            pending_test_events: std::cell::RefCell::default(),
         },
         start,
     }
@@ -104,10 +108,11 @@ impl BlockedGraph {
 
     pub fn config(&self, database: PathBuf) -> WorkerConfig {
         WorkerConfig {
-            database: Some(database),
+            database: Some(database.to_string_lossy().into_owned()),
             graph_url: Some(self.endpoint.clone()),
             graph_name: Some("blocked_shutdown_query".into()),
             graph_limits: DEFAULT_GRAPH_LIMITS,
+            ..WorkerConfig::default()
         }
     }
 

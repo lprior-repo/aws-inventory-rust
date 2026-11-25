@@ -29,7 +29,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["resourceShareArn", "arn", "permissionVersion"]),
         token: Some(("nextToken", "nextToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::String("resourceOwner", "SELF")],
         tags: None,
         queryable: &[],
     },

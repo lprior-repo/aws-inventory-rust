@@ -1,7 +1,11 @@
+mod claiming;
+pub(super) use claiming::claim;
+mod owned_lease;
 #[path = "work/transitions.rs"]
-mod transitions;
+pub(in crate::inventory) mod transitions;
+pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};
 use super::{BinaryStore, MAX_BINDING_BYTES, MAX_TOKEN_BYTES, PageCommit, StoreError};
-use inventory_core::inventory::{ResourceKey, ScopeKey, ScopeOutcome};
+use inventory_core::inventory::{ResourceId, ResourceKey, ScopeKey, ScopeOutcome};
 use sqlx::{Row, Sqlite, Transaction};
 use std::sync::Arc;
 use transitions::*;
@@ -9,12 +13,10 @@ pub(super) use transitions::{
     create_sweep_manifest, decode_resource, discover_active_sweep, encode_resource,
     ownership_scope_bytes, resource_bytes, resume_sweep, sweep_manifest_account,
 };
-
-pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};
 const MAX_SWEEP_ID: usize = 128;
 const MAX_SCOPE_BYTES: usize = 16_384;
 
-pub(super) fn persisted_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
+pub fn persisted_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
     decode_scope(bytes)
 }
 
@@ -41,9 +43,10 @@ impl SweepId {
 pub struct WorkSpec {
     sweep: SweepId,
     scope: ScopeKey,
-    token: Option<Vec<u8>>,
-    bindings: Vec<u8>,
-    context: Vec<u8>,
+    pub(in crate::inventory) token: Option<Vec<u8>>,
+    pub(in crate::inventory) bindings: Vec<u8>,
+    pub(in crate::inventory) context: Vec<u8>,
+    pub(in crate::inventory) scope_member: Option<ResourceId>,
 }
 
 impl WorkSpec {
@@ -76,7 +79,14 @@ impl WorkSpec {
             token,
             bindings,
             context: Vec::new(),
+            scope_member: None,
         })
+    }
+
+    /// Records the source enumeration's member represented by this child work.
+    /// The page store persists the membership in the same transaction as the child.
+    pub fn mark_scope_member(&mut self, member: ResourceId) {
+        self.scope_member = Some(member);
     }
 
     pub fn with_context(mut self, context: Vec<u8>) -> Result<Self, StoreError> {
@@ -127,6 +137,7 @@ pub struct WorkLease {
     pub(crate) bindings: Vec<u8>,
     pub(crate) context: Vec<u8>,
     pub(crate) lease_until_ms: i64,
+    pub(crate) pending_work: Option<u64>,
 }
 
 impl WorkLease {
@@ -147,6 +158,18 @@ impl WorkLease {
     }
     pub fn context(&self) -> &[u8] {
         &self.context
+    }
+    pub fn pending_work(&self) -> Option<u64> {
+        self.pending_work
+    }
+    /// The same lease after a kept page: it carries the next token and its new deadline.
+    pub(crate) fn continued(self, token: Option<Vec<u8>>, lease_until_ms: i64) -> Self {
+        Self {
+            token,
+            lease_until_ms,
+            pending_work: None,
+            ..self
+        }
     }
 }
 
@@ -219,7 +242,7 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
             return Err(StoreError::Invalid("batch work items must share one sweep"));
         }
     }
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     validate_active_sweep(&mut tx, Some(&first.sweep)).await?;
     for work in works {
         let scope = encode_scope(&work.scope)?;
@@ -233,94 +256,102 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
     Ok(())
 }
 
-// last_complete is now a stored column; query it directly.
-// -1 sentinel means never completed (stalest). 0 and above are actual completion timestamps.
-const READY_STALEST_FIRST: &str = "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=0 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
-
-const EXPIRED_STALEST_FIRST: &str = "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=1 AND w.lease_until<=?2 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
-
-fn staleness_key(row: &sqlx::sqlite::SqliteRow) -> Result<(i64, Vec<u8>), StoreError> {
-    Ok((row.try_get("last_complete")?, row.try_get("scope_key")?))
-}
-
-pub(super) async fn claim(
-    store: &BinaryStore,
-    sweep: &SweepId,
-    now_ms: i64,
-    lease_ms: i64,
-) -> Result<Option<WorkLease>, StoreError> {
-    if now_ms < 0 || lease_ms < 1 || now_ms.checked_add(lease_ms).is_none() {
+/// The interval of a keeping commit, rejected when no lease could use it.
+pub(crate) fn keep_interval(lease_ms: i64) -> Result<i64, StoreError> {
+    if lease_ms < 1 {
         return Err(StoreError::Invalid("invalid lease interval"));
     }
-    let mut tx = store.writer.begin().await?;
-    validate_active_sweep(&mut tx, Some(sweep)).await?;
+    Ok(lease_ms)
+}
 
-    // Stalest scope first: never-completed scopes (0), then the oldest last
-    // completion, then scope_key as the deterministic tie-break. The ready and
-    // expired-lease branches are queried separately so each stays index-bounded.
-    let ready = sqlx::query(READY_STALEST_FIRST)
-        .bind(sweep.as_str())
-        .fetch_optional(&mut *tx)
+/// When a lease kept past a page committed at `observed_at_ms` expires.
+///
+/// The deadline always moves past the committed lease's own, so a copy of
+/// that lease taken before the commit no longer matches the queue. Only a
+/// page that continues its scope has a deadline; a final or repeated page
+/// must not ask for one, because it may not be representable.
+pub(crate) fn kept_until(page: &PageCommit, lease_ms: i64) -> Result<i64, StoreError> {
+    let overflow = StoreError::Invalid("lease interval overflow");
+    let Some(fresh) = page.observed_at_ms.checked_add(lease_ms) else {
+        return Err(overflow);
+    };
+    let Some(past_old) = page.lease.lease_until_ms.checked_add(1) else {
+        return Err(overflow);
+    };
+    Ok(fresh.max(past_old))
+}
+
+async fn persist_scope_members(
+    tx: &mut Transaction<'_, Sqlite>,
+    page: &PageCommit,
+) -> Result<(), StoreError> {
+    let Some(first) = page
+        .children
+        .iter()
+        .position(|child| child.scope_member.is_some())
+    else {
+        return Ok(());
+    };
+    let scope = page.lease.scope();
+    let scope_bytes = ownership_scope_bytes(scope, page.lease.bindings())?;
+    for child in page.children.iter().skip(first) {
+        let Some(member_id) = &child.scope_member else {
+            continue;
+        };
+        let child_scope_bytes = ownership_scope_bytes(child.scope(), &child.bindings)?;
+        sqlx::query(
+            "INSERT INTO scope_members(account,region,scope_key,child_scope,member_id,missing_complete,observed_sweep) \
+             VALUES(?1,?2,?3,?4,?5,0,?6) \
+             ON CONFLICT(account,region,scope_key,child_scope,member_id) DO UPDATE SET \
+             missing_complete=0,observed_sweep=excluded.observed_sweep",
+        )
+        .bind(scope.account().as_str())
+        .bind(scope.region().as_str())
+        .bind(&scope_bytes)
+        .bind(&child_scope_bytes)
+        .bind(member_id.as_str())
+        .bind(page.lease.sweep().as_str())
+        .execute(&mut **tx)
         .await?;
-    let expired = sqlx::query(EXPIRED_STALEST_FIRST)
-        .bind(sweep.as_str())
-        .bind(now_ms)
-        .fetch_optional(&mut *tx)
-        .await?;
-
-    let row = match (ready, expired) {
-        (Some(r), Some(e)) => {
-            if staleness_key(&r)? < staleness_key(&e)? {
-                Some(r)
-            } else {
-                Some(e)
-            }
-        }
-        (Some(r), None) => Some(r),
-        (None, Some(e)) => Some(e),
-        (None, None) => None,
-    };
-
-    let Some(row) = row else {
-        tx.commit().await?;
-        return Ok(None);
-    };
-    let key: Vec<u8> = row.try_get("scope_key")?;
-    let generation: i64 = row.try_get("generation")?;
-    let next_generation = generation
-        .checked_add(1)
-        .ok_or(StoreError::Invalid("lease generation overflow"))?;
-    let complete = row.try_get::<Option<&[u8]>, _>("token")?.is_none()
-        || row.try_get::<bool, _>("authority_complete")?;
-    let lease_until = now_ms
-        .checked_add(lease_ms)
-        .ok_or(StoreError::Invalid("lease interval overflow"))?;
-    sqlx::query("UPDATE work_queue SET state=1,generation=?3,authority_generation=?3,lease_until=?4,authority_complete=?5 WHERE sweep_id=?1 AND scope_key=?2")
-        .bind(sweep.as_str()).bind(&key).bind(next_generation).bind(lease_until).bind(complete).execute(&mut *tx).await?;
-    let lease = WorkLease {
-        sweep: sweep.clone(),
-        scope: decode_scope(&key)?,
-        generation: next_generation,
-        token: row.try_get("token")?,
-        bindings: row.try_get("bindings")?,
-        context: row.try_get("context")?,
-        lease_until_ms: lease_until,
-    };
-    tx.commit().await?;
-    Ok(Some(lease))
+    }
+    Ok(())
 }
 
 pub(super) async fn commit_page(
     store: &BinaryStore,
     page: PageCommit,
 ) -> Result<CommitResult, StoreError> {
+    Ok(commit(store, page, None).await?.0)
+}
+
+pub(super) async fn commit_page_keeping(
+    store: &BinaryStore,
+    page: PageCommit,
+    lease_ms: i64,
+) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
+    let lease_ms = keep_interval(lease_ms)?;
+    commit(store, page, Some(lease_ms)).await
+}
+
+/// Commits one page. With `keep_ms`, a scope that has another page stays
+/// leased for that long and its continued lease is returned.
+async fn commit(
+    store: &BinaryStore,
+    page: PageCommit,
+    keep_ms: Option<i64>,
+) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
     validate_page(store, &page)?;
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     validate_lease(&mut tx, &page.lease, page.observed_at_ms).await?;
     let mut stats = super::commit::persist_page(store, &mut tx, &page).await?;
+    persist_scope_members(&mut tx, &page).await?;
     persist_children(store, &mut tx, &page).await?;
     let repeated_token = record_continuation(&mut tx, &page).await?;
-    let completed = persist_page_state(store, &mut tx, &page, repeated_token).await?;
+    let keep_until = match keep_ms {
+        Some(lease_ms) if !page.done && !repeated_token => Some(kept_until(&page, lease_ms)?),
+        _ => None,
+    };
+    let completed = persist_page_state(store, &mut tx, &page, repeated_token, keep_until).await?;
     stats.resources_deleted = stats
         .resources_deleted
         .checked_add(completed.resources_deleted)
@@ -334,11 +365,13 @@ pub(super) async fn commit_page(
         .checked_add(completed.edges_changed)
         .ok_or(StoreError::Invalid("edge count overflow"))?;
     tx.commit().await?;
-    Ok(CommitResult {
+    let result = CommitResult {
         stats,
         next_generation: (!repeated_token).then_some(page.lease.generation),
         repeated_token,
-    })
+    };
+    let kept = keep_until.map(|until| page.lease.continued(page.next_token, until));
+    Ok((result, kept))
 }
 
 pub(super) async fn finish_scope(
@@ -346,15 +379,17 @@ pub(super) async fn finish_scope(
     lease: WorkLease,
     outcome: ScopeOutcome,
     observed_at_ms: i64,
+    detail: Option<&str>,
 ) -> Result<ChangeStats, StoreError> {
+    super::validation::validate_detail(detail)?;
     if matches!(outcome, ScopeOutcome::Complete) {
         store.registry.permissions.validate_completion(&lease)?;
     }
-    let mut tx = store.writer.begin().await?;
+    let (_turn, mut tx) = store.begin_write().await?;
     validate_lease(&mut tx, &lease, observed_at_ms).await?;
     let scope = encode_scope(&lease.scope)?;
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,?3,?4) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=excluded.outcome,observed_at=excluded.observed_at")
-        .bind(lease.sweep.as_str()).bind(&scope).bind(outcome.as_str()).bind(observed_at_ms)
+    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at,detail) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=excluded.outcome,observed_at=excluded.observed_at,detail=excluded.detail")
+        .bind(lease.sweep.as_str()).bind(&scope).bind(outcome.as_str()).bind(observed_at_ms).bind(detail)
         .execute(&mut *tx).await?;
     if matches!(outcome, ScopeOutcome::Complete) {
         // Update last_complete for future claim ordering.

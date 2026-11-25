@@ -1,1 +1,0 @@
-/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory query --db /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/worker-inventory.sqlite SELECT\ \(SELECT\ count\(\*\)\ FROM\ scan_resources\)\ AS\ resources\,\(SELECT\ count\(\*\)\ FROM\ scan_edges\)\ AS\ edges\,\(SELECT\ count\(\*\)\ FROM\ scans\)\ AS\ scans --limit 1 

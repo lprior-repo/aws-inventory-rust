@@ -6,9 +6,9 @@ use serde_json::{Value, json};
 
 use crate::{catalog, cli::PlanArgs};
 
-const CLOUD_CONTROL_CATALOG: &str = include_str!("../catalog/cloudcontrol-resources.json");
+const CLOUD_CONTROL_CATALOG: &str = include_str!("../catalog/cloudcontrol-resources.toml");
 pub(crate) const PARENT_CATALOG: &str =
-    include_str!("../catalog/cloudcontrol-parent-resources.json");
+    include_str!("../catalog/cloudcontrol-parent-resources.toml");
 
 pub fn create(options: PlanArgs, selection: &Selection) -> Result<Value> {
     validate_options(&options)?;

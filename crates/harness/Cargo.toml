@@ -21,6 +21,11 @@ name = "native_graph_inventory"
 path = "tests/native_graph_inventory.rs"
 required-features = ["native-emulator-tests", "native-graph-integration"]
 
+[[test]]
+name = "probe_native"
+path = "tests/probe_native.rs"
+required-features = ["native-emulator-tests"]
+
 [[bin]]
 name = "inventory-harness"
 path = "src/main.rs"
@@ -28,20 +33,28 @@ path = "src/main.rs"
 [dependencies]
 catalog-tool = { path = "../catalog-tool" }
 inventory-core = { path = "../core", default-features = false, features = ["legacy"] }
+inventory-engine = { workspace = true, default-features = false }
+inventory-graph.workspace = true
+inventory-sweep = { path = "../sweep" }
 aws-wire = { path = "../aws-wire" }
 http = "1.5.0"
 bytes = "1.12.1"
 futures-util.workspace = true
 serde_json.workspace = true
+quick-xml = "0.42"
 thiserror.workspace = true
 tokio.workspace = true
 sha2.workspace = true
 base16ct.workspace = true
+base64 = "0.23.1"
 sqlx.workspace = true
 aws-config = "1.13.2"
 aws-sdk-s3 = { version = "1.159.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-cloudcontrol = { version = "1.122.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
-toml.workspace = true
+aws-smithy-http-client = { version = "1.5.2", default-features = false, features = ["rustls-aws-lc", "rt-tokio"] }
+aws-smithy-runtime-api = { version = "1.21.0", features = ["client"] }
+aws-smithy-types = "1.9.4"
+toml = { workspace = true, features = ["preserve_order"] }
 zip.workspace = true
 httparse = "1.10.1"
 tokio-rustls = "0.26.6"
@@ -58,7 +71,6 @@ rustls = "0.23.36"
 
 [dev-dependencies]
 rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }
-inventory-engine = { workspace = true, default-features = false }
 cmdb-view = { path = "../cmdb-view" }
 redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
 

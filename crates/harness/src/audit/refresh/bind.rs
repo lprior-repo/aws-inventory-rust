@@ -6,12 +6,13 @@ use serde_json::Value;
 
 use crate::HarnessError;
 use crate::audit::Json;
+use crate::catalog::toml_doc;
 use crate::provenance::{
     canonical_sha256, expected_runtime_catalog, file_sha256, source_fingerprint,
 };
 
 use super::super::coverage::apply_verification;
-use super::super::files::read_json_document;
+use super::super::files::{read_json_document, read_toml_document};
 use super::super::persisted::persisted_reads;
 
 mod bindings;
@@ -22,7 +23,7 @@ use lookup::{expected_status, parent_of, scan};
 
 const SUMMARY_FILE: &str = "cloud-control.json";
 const CATALOG_COMMAND_FILE: &str = "catalog.json";
-const FIXTURE: &str = "crates/aws/tests/fixtures/cloudcontrol-architecture.json";
+const FIXTURE: &str = "crates/aws/tests/fixtures/cloudcontrol-architecture.toml";
 
 struct Commands {
     cloud_control_path: PathBuf,
@@ -93,7 +94,7 @@ fn load(root: &Path, requested: &Path, catalog: &Value) -> Result<Run, HarnessEr
 
 fn runtime(root: &Path, catalog: &Value) -> Result<(Value, String, String), HarnessError> {
     let (parent_catalog, parent_catalog_sha) =
-        read_json_document(&root.join("catalog/cloudcontrol-parent-resources.json"))?;
+        read_toml_document(&root.join("catalog/cloudcontrol-parent-resources.toml"))?;
     let runtime_catalog = expected_runtime_catalog(catalog, &parent_catalog)?;
     let runtime_catalog_sha = canonical_sha256(&runtime_catalog);
     Ok((runtime_catalog, runtime_catalog_sha, parent_catalog_sha))
@@ -280,10 +281,9 @@ async fn counts(run: &Run, catalog: &Json) -> Result<BTreeMap<String, i64>, Harn
 }
 
 fn write_matrix(root: &Path, merged: &Json) -> Result<(), HarnessError> {
-    let target = root.join("catalog/cloudcontrol-capabilities.json");
-    let temporary = target.with_file_name("cloudcontrol-capabilities.json.tmp");
-    let mut encoded = super::super::pretty(merged);
-    encoded.push('\n');
+    let target = root.join("catalog/cloudcontrol-capabilities.toml");
+    let temporary = target.with_file_name("cloudcontrol-capabilities.toml.tmp");
+    let encoded = toml_doc::render(&merged.to_value())?;
     fs::write(&temporary, encoded)?;
     fs::rename(&temporary, &target)?;
     Ok(())

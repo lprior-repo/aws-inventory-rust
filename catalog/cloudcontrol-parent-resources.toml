@@ -1,0 +1,2127 @@
+schema_version = 1
+
+[evidence]
+source_kind = "official_aws_cloudformation_registry_schema_archive"
+archive_file = "upstream/cloudformation-us-east-1-2026-11-12.zip"
+archive_sha256 = "8226b9cd82f432997fe3918b134ef155245636f35ac37f8006de5abe88dd54a8"
+root_catalog_sha256 = "14569b1faab78fa6f91cc7b8d682226e1b089730328673f131bce3d268aa38b0"
+global_sensitive_property_names = [
+    "accesstoken",
+    "apikeyvalue",
+    "args",
+    "authorizationtoken",
+    "authtoken",
+    "buildspec",
+    "clientsecret",
+    "code",
+    "command",
+    "connectionstring",
+    "connectionstrings",
+    "content",
+    "credentials",
+    "defaultarguments",
+    "definition",
+    "definitionstring",
+    "entrypoint",
+    "env",
+    "environment",
+    "environmentvariables",
+    "hectoken",
+    "invocationhttpparameters",
+    "masteruserpassword",
+    "nonoverridablearguments",
+    "oauthhttpparameters",
+    "password",
+    "privatekey",
+    "refreshtoken",
+    "secretaccesskey",
+    "secretbinary",
+    "secretstring",
+    "sessiontoken",
+    "userdata",
+]
+list_semantics_url = "https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-operations-list.html"
+list_api_url = "https://docs.aws.amazon.com/cloudcontrolapi/latest/APIReference/API_ListResources.html"
+scope_review = "Six reviewed regional root types; one dependency level; exact string property bindings; reviewed high-confidence candidate additions"
+live_validated = false
+limitations = [
+    "Schema and request-model audit is not live AWS provider validation.",
+    "Two-level parents, account/global contexts, and other unreviewed bindings remain excluded.",
+    "Parent discovery uses complete sanitized GetResource properties; missing context records a failure.",
+]
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::Authorizer"
+kind = "aws_api_gateway_authorizer"
+view_name = "aws_cc_api_gateway_authorizer"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/RestApiId",
+    "/AuthorizerId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/Name"]
+write_only_properties = []
+sensitive_properties = []
+schema_file = "aws-apigateway-authorizer.json"
+schema_sha256 = "b73605d0e503e9bcb2d1ba38ce64ef9773145dfdbebd9e73c4285590d3658338"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.relationships]]
+pointer = "/ProviderARNs/*"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.columns]]
+name = "auth_type"
+pointer = "/AuthType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "authorizer_credentials"
+pointer = "/AuthorizerCredentials"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "authorizer_id"
+pointer = "/AuthorizerId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "authorizer_result_ttl_in_seconds"
+pointer = "/AuthorizerResultTtlInSeconds"
+json_type = "integer"
+
+[[resource_types.columns]]
+name = "authorizer_uri"
+pointer = "/AuthorizerUri"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "identity_source"
+pointer = "/IdentitySource"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "identity_validation_expression"
+pointer = "/IdentityValidationExpression"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_name"
+pointer = "/Name"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_ar_ns"
+pointer = "/ProviderARNs"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "type"
+pointer = "/Type"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::Deployment"
+kind = "aws_api_gateway_deployment"
+view_name = "aws_cc_api_gateway_deployment"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/DeploymentId",
+    "/RestApiId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = [
+    "/DeploymentCanarySettings",
+    "/StageDescription",
+    "/StageName",
+]
+sensitive_properties = [
+    "/StageDescription/CanarySetting/StageVariableOverrides",
+    "/StageDescription/Variables",
+]
+relationships = []
+schema_file = "aws-apigateway-deployment.json"
+schema_sha256 = "11c4f83a10150d0492a56b789616dd615901afdb39f4e7799247e8a2cc271be7"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "deployment_id"
+pointer = "/DeploymentId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::DocumentationVersion"
+kind = "aws_api_gateway_documentation_version"
+view_name = "aws_cc_api_gateway_documentation_version"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/DocumentationVersion",
+    "/RestApiId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = []
+sensitive_properties = []
+relationships = []
+schema_file = "aws-apigateway-documentationversion.json"
+schema_sha256 = "33038c04eab933c6a39b75029e5b7ab9522a841d298e1730f21dddb7e498ed9a"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "documentation_version"
+pointer = "/DocumentationVersion"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::GatewayResponse"
+kind = "aws_api_gateway_gateway_response"
+view_name = "aws_cc_api_gateway_gateway_response"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = ["/Id"]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = []
+sensitive_properties = [
+    "/ResponseParameters",
+    "/ResponseTemplates",
+]
+relationships = []
+schema_file = "aws-apigateway-gatewayresponse.json"
+schema_sha256 = "62d1e96c6e1cdc1e6605fe3658d7a166ac6d91b270634515d0c424c79163722a"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "provider_id"
+pointer = "/Id"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "response_type"
+pointer = "/ResponseType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "status_code"
+pointer = "/StatusCode"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::Model"
+kind = "aws_api_gateway_model"
+view_name = "aws_cc_api_gateway_model"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/RestApiId",
+    "/Name",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/Name"]
+write_only_properties = []
+sensitive_properties = []
+relationships = []
+schema_file = "aws-apigateway-model.json"
+schema_sha256 = "6b65c7f60f60b2111966ad665834a5bc877482f277362c1278b7dc50e310a62f"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "content_type"
+pointer = "/ContentType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_name"
+pointer = "/Name"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "schema"
+pointer = "/Schema"
+json_type = "mixed"
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::RequestValidator"
+kind = "aws_api_gateway_request_validator"
+view_name = "aws_cc_api_gateway_request_validator"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/RestApiId",
+    "/RequestValidatorId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/Name"]
+write_only_properties = []
+sensitive_properties = []
+relationships = []
+schema_file = "aws-apigateway-requestvalidator.json"
+schema_sha256 = "a4db5e7f50ec6685de85e1bacef4883f4af137a53981eca6fba52742faa33d37"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "provider_name"
+pointer = "/Name"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "request_validator_id"
+pointer = "/RequestValidatorId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "validate_request_body"
+pointer = "/ValidateRequestBody"
+json_type = "boolean"
+
+[[resource_types.columns]]
+name = "validate_request_parameters"
+pointer = "/ValidateRequestParameters"
+json_type = "boolean"
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::Resource"
+kind = "aws_api_gateway_resource"
+view_name = "aws_cc_api_gateway_resource"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/RestApiId",
+    "/ResourceId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = []
+sensitive_properties = []
+relationships = []
+schema_file = "aws-apigateway-resource.json"
+schema_sha256 = "7c40d299287d7d030a9fbdae53429503683373dcd6f0417f69af057a5c47c92d"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "parent_id"
+pointer = "/ParentId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "path_part"
+pointer = "/PathPart"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "resource_id"
+pointer = "/ResourceId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGateway::Stage"
+kind = "aws_api_gateway_stage"
+view_name = "aws_cc_api_gateway_stage"
+service = "api_gateway"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/RestApiId",
+    "/StageName",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/StageName"]
+write_only_properties = []
+sensitive_properties = [
+    "/CanarySetting/StageVariableOverrides",
+    "/Variables",
+]
+schema_file = "aws-apigateway-stage.json"
+schema_sha256 = "b7977d0340646d1c749f3e6adab11a865892d616a1f38c08e203b5c5d6b13e08"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.relationships]]
+pointer = "/AccessLogSetting/DestinationArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.columns]]
+name = "access_log_setting"
+pointer = "/AccessLogSetting"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "cache_cluster_enabled"
+pointer = "/CacheClusterEnabled"
+json_type = "boolean"
+
+[[resource_types.columns]]
+name = "cache_cluster_size"
+pointer = "/CacheClusterSize"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "canary_setting"
+pointer = "/CanarySetting"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "client_certificate_id"
+pointer = "/ClientCertificateId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "deployment_id"
+pointer = "/DeploymentId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "documentation_version"
+pointer = "/DocumentationVersion"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "method_settings"
+pointer = "/MethodSettings"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "rest_api_id"
+pointer = "/RestApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "stage_name"
+pointer = "/StageName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "tracing_enabled"
+pointer = "/TracingEnabled"
+json_type = "boolean"
+
+[[resource_types]]
+type_name = "AWS::ApiGatewayV2::Authorizer"
+kind = "aws_api_gateway_v2_authorizer"
+view_name = "aws_cc_api_gateway_v2_authorizer"
+service = "api_gateway_v2"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/AuthorizerId",
+    "/ApiId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/Name"]
+write_only_properties = [
+    "/AuthorizerCredentialsArn",
+    "/AuthorizerPayloadFormatVersion",
+    "/AuthorizerResultTtlInSeconds",
+    "/AuthorizerUri",
+    "/EnableSimpleResponses",
+]
+sensitive_properties = []
+relationships = []
+schema_file = "aws-apigatewayv2-authorizer.json"
+schema_sha256 = "6f2e4de42cba36e5677311f0b1b5e7af6367e1c495ed94f6e428f2f1529fe8d9"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "api_id"
+pointer = "/ApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "authorizer_id"
+pointer = "/AuthorizerId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "authorizer_type"
+pointer = "/AuthorizerType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "identity_source"
+pointer = "/IdentitySource"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "identity_validation_expression"
+pointer = "/IdentityValidationExpression"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "jwt_configuration"
+pointer = "/JwtConfiguration"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "provider_name"
+pointer = "/Name"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGatewayV2::Deployment"
+kind = "aws_api_gateway_v2_deployment"
+view_name = "aws_cc_api_gateway_v2_deployment"
+service = "api_gateway_v2"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ApiId",
+    "/DeploymentId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = ["/StageName"]
+sensitive_properties = []
+relationships = []
+schema_file = "aws-apigatewayv2-deployment.json"
+schema_sha256 = "537c5828705eb96ccbd0fe23126828387953d920a1e9226003c2f3c793810c86"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "api_id"
+pointer = "/ApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "deployment_id"
+pointer = "/DeploymentId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGatewayV2::Integration"
+kind = "aws_api_gateway_v2_integration"
+view_name = "aws_cc_api_gateway_v2_integration"
+service = "api_gateway_v2"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ApiId",
+    "/IntegrationId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = []
+sensitive_properties = [
+    "/RequestParameters",
+    "/RequestTemplates",
+    "/ResponseParameters",
+]
+schema_file = "aws-apigatewayv2-integration.json"
+schema_sha256 = "8b8cbc049eb3625b75144520c05c28498e936d6a4170aaa2f61490b08affedb3"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.relationships]]
+pointer = "/CredentialsArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.columns]]
+name = "api_id"
+pointer = "/ApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "connection_id"
+pointer = "/ConnectionId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "connection_type"
+pointer = "/ConnectionType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "content_handling_strategy"
+pointer = "/ContentHandlingStrategy"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "credentials_arn"
+pointer = "/CredentialsArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "integration_id"
+pointer = "/IntegrationId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "integration_method"
+pointer = "/IntegrationMethod"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "integration_subtype"
+pointer = "/IntegrationSubtype"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "integration_type"
+pointer = "/IntegrationType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "integration_uri"
+pointer = "/IntegrationUri"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "passthrough_behavior"
+pointer = "/PassthroughBehavior"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "payload_format_version"
+pointer = "/PayloadFormatVersion"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "template_selection_expression"
+pointer = "/TemplateSelectionExpression"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "timeout_in_millis"
+pointer = "/TimeoutInMillis"
+json_type = "integer"
+
+[[resource_types.columns]]
+name = "tls_config"
+pointer = "/TlsConfig"
+json_type = "object"
+
+[[resource_types]]
+type_name = "AWS::ApiGatewayV2::Route"
+kind = "aws_api_gateway_v2_route"
+view_name = "aws_cc_api_gateway_v2_route"
+service = "api_gateway_v2"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ApiId",
+    "/RouteId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = [
+    "/AuthorizerId",
+    "/RequestParameters",
+]
+sensitive_properties = []
+relationships = []
+schema_file = "aws-apigatewayv2-route.json"
+schema_sha256 = "c6c9119fb6aec601c0f8b675bcf8ce7298f270fb7fe7e237284fd206c3647c05"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.columns]]
+name = "api_id"
+pointer = "/ApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "api_key_required"
+pointer = "/ApiKeyRequired"
+json_type = "boolean"
+
+[[resource_types.columns]]
+name = "authorization_scopes"
+pointer = "/AuthorizationScopes"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "authorization_type"
+pointer = "/AuthorizationType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "model_selection_expression"
+pointer = "/ModelSelectionExpression"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "operation_name"
+pointer = "/OperationName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "request_models"
+pointer = "/RequestModels"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "route_id"
+pointer = "/RouteId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "route_key"
+pointer = "/RouteKey"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "route_response_selection_expression"
+pointer = "/RouteResponseSelectionExpression"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "target"
+pointer = "/Target"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ApiGatewayV2::Stage"
+kind = "aws_api_gateway_v2_stage"
+view_name = "aws_cc_api_gateway_v2_stage"
+service = "api_gateway_v2"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ApiId",
+    "/StageName",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/StageName"]
+write_only_properties = []
+sensitive_properties = ["/StageVariables"]
+schema_file = "aws-apigatewayv2-stage.json"
+schema_sha256 = "d257a8bc9dbb7e6c47f3396fc4021a60b5cb9cf7920117a3187d1f8f6c2b30e8"
+read_permissions = ["apigateway:GET"]
+list_permissions = ["apigateway:GET"]
+
+[[resource_types.relationships]]
+pointer = "/AccessLogSettings/DestinationArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.columns]]
+name = "access_log_settings"
+pointer = "/AccessLogSettings"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "api_id"
+pointer = "/ApiId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "auto_deploy"
+pointer = "/AutoDeploy"
+json_type = "boolean"
+
+[[resource_types.columns]]
+name = "client_certificate_id"
+pointer = "/ClientCertificateId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "default_route_settings"
+pointer = "/DefaultRouteSettings"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "deployment_id"
+pointer = "/DeploymentId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "route_settings"
+pointer = "/RouteSettings"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "stage_name"
+pointer = "/StageName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "object"
+
+[[resource_types]]
+type_name = "AWS::AppConfig::ConfigurationProfile"
+kind = "aws_app_config_configuration_profile"
+view_name = "aws_cc_app_config_configuration_profile"
+service = "app_config"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ApplicationId",
+    "/ConfigurationProfileId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/Name"]
+write_only_properties = ["/DeletionProtectionCheck"]
+sensitive_properties = ["/Validators/*/Content"]
+schema_file = "aws-appconfig-configurationprofile.json"
+schema_sha256 = "383d770dfc5d1364fdd90195d9880e3dbe31d24560486780063e34b5a9145bab"
+read_permissions = [
+    "appconfig:GetConfigurationProfile",
+    "appconfig:ListTagsForResource",
+]
+list_permissions = ["appconfig:ListConfigurationProfiles"]
+
+[[resource_types.relationships]]
+pointer = "/RetrievalRoleArn"
+relation = "ASSUMES_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.columns]]
+name = "application_id"
+pointer = "/ApplicationId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "configuration_profile_id"
+pointer = "/ConfigurationProfileId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "kms_key_arn"
+pointer = "/KmsKeyArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "kms_key_identifier"
+pointer = "/KmsKeyIdentifier"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "location_uri"
+pointer = "/LocationUri"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_name"
+pointer = "/Name"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "retrieval_role_arn"
+pointer = "/RetrievalRoleArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "type"
+pointer = "/Type"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "validators"
+pointer = "/Validators"
+json_type = "array"
+
+[[resource_types]]
+type_name = "AWS::AppConfig::Environment"
+kind = "aws_app_config_environment"
+view_name = "aws_cc_app_config_environment"
+service = "app_config"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ApplicationId",
+    "/EnvironmentId",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/Name"]
+write_only_properties = ["/DeletionProtectionCheck"]
+sensitive_properties = []
+schema_file = "aws-appconfig-environment.json"
+schema_sha256 = "bb09b7e48e156b5af8a51b816d0c9966f8969369851ca13e3fecd02063ab58d7"
+read_permissions = [
+    "appconfig:GetEnvironment",
+    "appconfig:ListTagsForResource",
+]
+list_permissions = ["appconfig:ListEnvironments"]
+
+[[resource_types.relationships]]
+pointer = "/Monitors/*/AlarmArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.relationships]]
+pointer = "/Monitors/*/AlarmRoleArn"
+relation = "ASSUMES_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.columns]]
+name = "application_id"
+pointer = "/ApplicationId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "description"
+pointer = "/Description"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "environment_id"
+pointer = "/EnvironmentId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "monitors"
+pointer = "/Monitors"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "provider_name"
+pointer = "/Name"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types]]
+type_name = "AWS::AppConfig::ExperimentDefinition"
+kind = "aws_app_config_experiment_definition"
+view_name = "aws_cc_app_config_experiment_definition"
+service = "app_config"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ApplicationId",
+    "/Id",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/Name"]
+write_only_properties = []
+sensitive_properties = []
+relationships = []
+schema_file = "aws-appconfig-experimentdefinition.json"
+schema_sha256 = "61346ffd9e72295f71fb6c87636231d75b13a7094a3e85c78ce8afcf0f3e770d"
+read_permissions = [
+    "appconfig:GetExperimentDefinition",
+    "appconfig:ListTagsForResource",
+]
+list_permissions = ["appconfig:ListExperimentDefinitions"]
+
+[[resource_types.columns]]
+name = "application_id"
+pointer = "/ApplicationId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "application_identifier"
+pointer = "/ApplicationIdentifier"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "audience_description"
+pointer = "/AudienceDescription"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "audience_rule"
+pointer = "/AudienceRule"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "configuration_profile_identifier"
+pointer = "/ConfigurationProfileIdentifier"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "control"
+pointer = "/Control"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "created_at"
+pointer = "/CreatedAt"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "environment_identifier"
+pointer = "/EnvironmentIdentifier"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "flag_key"
+pointer = "/FlagKey"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "hypothesis"
+pointer = "/Hypothesis"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_id"
+pointer = "/Id"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "launch_criteria"
+pointer = "/LaunchCriteria"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_name"
+pointer = "/Name"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "status"
+pointer = "/Status"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "treatments"
+pointer = "/Treatments"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "updated_at"
+pointer = "/UpdatedAt"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::EKS::AccessEntry"
+kind = "aws_eks_access_entry"
+view_name = "aws_cc_eks_access_entry"
+service = "eks"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/PrincipalArn",
+    "/ClusterName",
+]
+identifier_is_arn = false
+arn_pointers = [
+    "/AccessEntryArn",
+    "/PrincipalArn",
+]
+name_pointers = []
+write_only_properties = []
+sensitive_properties = []
+schema_file = "aws-eks-accessentry.json"
+schema_sha256 = "b288e899d706ca2563ff67286d235c62bc87ba9245cf9eee616690bdd8c81edf"
+read_permissions = [
+    "eks:DescribeAccessEntry",
+    "eks:ListAssociatedAccessPolicies",
+]
+list_permissions = ["eks:ListAccessEntries"]
+
+[[resource_types.relationships]]
+pointer = "/AccessPolicies/*/PolicyArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.columns]]
+name = "access_entry_arn"
+pointer = "/AccessEntryArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "access_policies"
+pointer = "/AccessPolicies"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "cluster_name"
+pointer = "/ClusterName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "kubernetes_groups"
+pointer = "/KubernetesGroups"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "principal_arn"
+pointer = "/PrincipalArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "type"
+pointer = "/Type"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "username"
+pointer = "/Username"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::EKS::Addon"
+kind = "aws_eks_addon"
+view_name = "aws_cc_eks_addon"
+service = "eks"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ClusterName",
+    "/AddonName",
+]
+identifier_is_arn = false
+arn_pointers = ["/Arn"]
+name_pointers = ["/AddonName"]
+write_only_properties = [
+    "/PodIdentityAssociations",
+    "/PreserveOnDelete",
+    "/ResolveConflicts",
+]
+sensitive_properties = ["/ConfigurationValues"]
+schema_file = "aws-eks-addon.json"
+schema_sha256 = "39866b619b7b47bec192cd3b61a50b994c32a84236cc67be33a6a1c361048298"
+read_permissions = ["eks:DescribeAddon"]
+list_permissions = ["eks:ListAddons"]
+
+[[resource_types.relationships]]
+pointer = "/ServiceAccountRoleArn"
+relation = "ASSUMES_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.columns]]
+name = "addon_name"
+pointer = "/AddonName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "addon_version"
+pointer = "/AddonVersion"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_arn"
+pointer = "/Arn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "cluster_name"
+pointer = "/ClusterName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "namespace_config"
+pointer = "/NamespaceConfig"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "service_account_role_arn"
+pointer = "/ServiceAccountRoleArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types]]
+type_name = "AWS::EKS::FargateProfile"
+kind = "aws_eks_fargate_profile"
+view_name = "aws_cc_eks_fargate_profile"
+service = "eks"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/ClusterName",
+    "/FargateProfileName",
+]
+identifier_is_arn = false
+arn_pointers = ["/Arn"]
+name_pointers = ["/FargateProfileName"]
+write_only_properties = []
+sensitive_properties = []
+schema_file = "aws-eks-fargateprofile.json"
+schema_sha256 = "6ab138576df9be056e7e3f3c9d114dffc8b780afe417211bbf7d80d7677b9f58"
+read_permissions = ["eks:DescribeFargateProfile"]
+list_permissions = ["eks:ListFargateProfiles"]
+
+[[resource_types.relationships]]
+pointer = "/PodExecutionRoleArn"
+relation = "USES_EXECUTION_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.relationships]]
+pointer = "/Subnets/*"
+relation = "USES_SUBNET"
+target_kind = "aws_vpc_subnet"
+target_format = "template"
+arn_template = "arn:{partition}:ec2:{region}:{account}:subnet/{identifier}"
+evidence = "schema_ec2_identifier_reference"
+identifier_prefix = "subnet-"
+
+[[resource_types.columns]]
+name = "provider_arn"
+pointer = "/Arn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "cluster_name"
+pointer = "/ClusterName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "fargate_profile_name"
+pointer = "/FargateProfileName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "pod_execution_role_arn"
+pointer = "/PodExecutionRoleArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "selectors"
+pointer = "/Selectors"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "subnets"
+pointer = "/Subnets"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types]]
+type_name = "AWS::EKS::Nodegroup"
+kind = "aws_eks_node_group"
+view_name = "aws_cc_eks_nodegroup"
+service = "eks"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = ["/Id"]
+identifier_is_arn = false
+arn_pointers = ["/Arn"]
+name_pointers = ["/NodegroupName"]
+write_only_properties = ["/ForceUpdateEnabled"]
+sensitive_properties = []
+schema_file = "aws-eks-nodegroup.json"
+schema_sha256 = "d5a918faac81ff5aaddc36a8a6db817b400e66b440c5f42fff5b049a8e1ac2e2"
+read_permissions = ["eks:DescribeNodegroup"]
+list_permissions = ["eks:ListNodegroups"]
+
+[[resource_types.relationships]]
+pointer = "/NodeRole"
+relation = "ASSUMES_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "provider_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.relationships]]
+pointer = "/Subnets/*"
+relation = "USES_SUBNET"
+target_kind = "aws_vpc_subnet"
+target_format = "template"
+arn_template = "arn:{partition}:ec2:{region}:{account}:subnet/{identifier}"
+evidence = "schema_ec2_identifier_reference"
+identifier_prefix = "subnet-"
+
+[[resource_types.columns]]
+name = "ami_type"
+pointer = "/AmiType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_arn"
+pointer = "/Arn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "capacity_type"
+pointer = "/CapacityType"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "cluster_name"
+pointer = "/ClusterName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "disk_size"
+pointer = "/DiskSize"
+json_type = "integer"
+
+[[resource_types.columns]]
+name = "provider_id"
+pointer = "/Id"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "instance_types"
+pointer = "/InstanceTypes"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "labels"
+pointer = "/Labels"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "launch_template"
+pointer = "/LaunchTemplate"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "node_repair_config"
+pointer = "/NodeRepairConfig"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "node_role"
+pointer = "/NodeRole"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "nodegroup_name"
+pointer = "/NodegroupName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "release_version"
+pointer = "/ReleaseVersion"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "remote_access"
+pointer = "/RemoteAccess"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "scaling_config"
+pointer = "/ScalingConfig"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "subnets"
+pointer = "/Subnets"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "taints"
+pointer = "/Taints"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "update_config"
+pointer = "/UpdateConfig"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "version"
+pointer = "/Version"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "warm_pool_config"
+pointer = "/WarmPoolConfig"
+json_type = "object"
+
+[[resource_types]]
+type_name = "AWS::EKS::PodIdentityAssociation"
+kind = "aws_eks_pod_identity_association"
+view_name = "aws_cc_eks_pod_identity_association"
+service = "eks"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = ["/AssociationArn"]
+identifier_is_arn = true
+arn_pointers = ["/AssociationArn"]
+name_pointers = []
+write_only_properties = []
+sensitive_properties = []
+schema_file = "aws-eks-podidentityassociation.json"
+schema_sha256 = "d8afa6d266b49670e5490813b15453dcf2ee22c8d9db531b8827605f6976af27"
+read_permissions = ["eks:DescribePodIdentityAssociation"]
+list_permissions = ["eks:ListPodIdentityAssociations"]
+
+[[resource_types.relationships]]
+pointer = "/RoleArn"
+relation = "ASSUMES_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.relationships]]
+pointer = "/TargetRoleArn"
+relation = "ASSUMES_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.columns]]
+name = "association_arn"
+pointer = "/AssociationArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "association_id"
+pointer = "/AssociationId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "cluster_name"
+pointer = "/ClusterName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "disable_session_tags"
+pointer = "/DisableSessionTags"
+json_type = "boolean"
+
+[[resource_types.columns]]
+name = "external_id"
+pointer = "/ExternalId"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "namespace"
+pointer = "/Namespace"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "policy"
+pointer = "/Policy"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "role_arn"
+pointer = "/RoleArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "service_account"
+pointer = "/ServiceAccount"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "target_role_arn"
+pointer = "/TargetRoleArn"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::ElasticLoadBalancingV2::Listener"
+kind = "aws_elbv2_listener"
+view_name = "aws_cc_elastic_load_balancing_v2_listener"
+service = "elastic_load_balancing_v2"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = ["/ListenerArn"]
+identifier_is_arn = true
+arn_pointers = ["/ListenerArn"]
+name_pointers = []
+write_only_properties = ["/DefaultActions/*/AuthenticateOidcConfig/ClientSecret"]
+sensitive_properties = []
+schema_file = "aws-elasticloadbalancingv2-listener.json"
+schema_sha256 = "e27728ec1cd4aed8f30a02bcc87e6dd9f8b880e01b7ed1e81809974d6ea43c16"
+read_permissions = [
+    "elasticloadbalancing:DescribeListenerAttributes",
+    "elasticloadbalancing:DescribeListeners",
+    "elasticloadbalancing:DescribeTags",
+]
+list_permissions = ["elasticloadbalancing:DescribeListeners"]
+
+[[resource_types.relationships]]
+pointer = "/Certificates/*/CertificateArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.relationships]]
+pointer = "/DefaultActions/*/AuthenticateCognitoConfig/UserPoolArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.relationships]]
+pointer = "/DefaultActions/*/ForwardConfig/TargetGroups/*/TargetGroupArn"
+relation = "USES_TARGET_GROUP"
+target_kind = "aws_elbv2_target_group"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "elasticloadbalancing"
+arn_resource_prefix = "targetgroup/"
+
+[[resource_types.relationships]]
+pointer = "/DefaultActions/*/TargetGroupArn"
+relation = "USES_TARGET_GROUP"
+target_kind = "aws_elbv2_target_group"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "elasticloadbalancing"
+arn_resource_prefix = "targetgroup/"
+
+[[resource_types.relationships]]
+pointer = "/LoadBalancerArn"
+relation = "USES_LOAD_BALANCER"
+target_kind = "aws_elbv2_load_balancer"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "elasticloadbalancing"
+arn_resource_prefix = "loadbalancer/"
+
+[[resource_types.relationships]]
+pointer = "/MutualAuthentication/TrustStoreArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.columns]]
+name = "alpn_policy"
+pointer = "/AlpnPolicy"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "certificates"
+pointer = "/Certificates"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "default_actions"
+pointer = "/DefaultActions"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "listener_arn"
+pointer = "/ListenerArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "listener_attributes"
+pointer = "/ListenerAttributes"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "load_balancer_arn"
+pointer = "/LoadBalancerArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "mutual_authentication"
+pointer = "/MutualAuthentication"
+json_type = "object"
+
+[[resource_types.columns]]
+name = "port"
+pointer = "/Port"
+json_type = "integer"
+
+[[resource_types.columns]]
+name = "protocol"
+pointer = "/Protocol"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "ssl_policy"
+pointer = "/SslPolicy"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "provider_tags"
+pointer = "/Tags"
+json_type = "array"
+
+[[resource_types]]
+type_name = "AWS::Logs::LogStream"
+kind = "aws_logs_log_stream"
+view_name = "aws_cc_logs_log_stream"
+service = "logs"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/LogGroupName",
+    "/LogStreamName",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = ["/LogStreamName"]
+write_only_properties = []
+sensitive_properties = []
+relationships = []
+schema_file = "aws-logs-logstream.json"
+schema_sha256 = "9a2e1bc1993d0339bbb02e917cbf1737e5774f7990ca9e93a299eca285e121c9"
+read_permissions = ["logs:DescribeLogStreams"]
+list_permissions = ["logs:DescribeLogStreams"]
+
+[[resource_types.columns]]
+name = "log_group_name"
+pointer = "/LogGroupName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "log_stream_name"
+pointer = "/LogStreamName"
+json_type = "string"
+
+[[resource_types]]
+type_name = "AWS::Logs::SubscriptionFilter"
+kind = "aws_logs_subscription_filter"
+view_name = "aws_cc_logs_subscription_filter"
+service = "logs"
+scope = "regional"
+read_supported = true
+list_supported = true
+list_requires_model = true
+list_model_validation = "reviewed_parent_model"
+primary_identifier = [
+    "/FilterName",
+    "/LogGroupName",
+]
+identifier_is_arn = false
+arn_pointers = []
+name_pointers = []
+write_only_properties = []
+sensitive_properties = []
+schema_file = "aws-logs-subscriptionfilter.json"
+schema_sha256 = "78543de7d8efb9e46d50f5ab7c4e7e9158a9fed8887c1c53c4316c76f85b5bf2"
+read_permissions = ["logs:DescribeSubscriptionFilters"]
+list_permissions = ["logs:DescribeSubscriptionFilters"]
+
+[[resource_types.relationships]]
+pointer = "/DestinationArn"
+relation = "REFERENCES"
+target_kind = "aws_reference"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+
+[[resource_types.relationships]]
+pointer = "/RoleArn"
+relation = "ASSUMES_ROLE"
+target_kind = "aws_iam_role"
+target_format = "arn"
+evidence = "schema_arn_property_reference"
+arn_service = "iam"
+arn_resource_prefix = "role/"
+
+[[resource_types.columns]]
+name = "apply_on_transformed_logs"
+pointer = "/ApplyOnTransformedLogs"
+json_type = "boolean"
+
+[[resource_types.columns]]
+name = "destination_arn"
+pointer = "/DestinationArn"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "distribution"
+pointer = "/Distribution"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "emit_system_fields"
+pointer = "/EmitSystemFields"
+json_type = "array"
+
+[[resource_types.columns]]
+name = "field_selection_criteria"
+pointer = "/FieldSelectionCriteria"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "filter_name"
+pointer = "/FilterName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "filter_pattern"
+pointer = "/FilterPattern"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "log_group_name"
+pointer = "/LogGroupName"
+json_type = "string"
+
+[[resource_types.columns]]
+name = "role_arn"
+pointer = "/RoleArn"
+json_type = "string"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::Authorizer"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::Deployment"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::DocumentationVersion"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::GatewayResponse"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::Model"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::RequestValidator"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::Resource"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGateway::Stage"
+parent_type = "AWS::ApiGateway::RestApi"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/RestApiId"
+model_property = "RestApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGatewayV2::Authorizer"
+parent_type = "AWS::ApiGatewayV2::Api"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApiId"
+model_property = "ApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGatewayV2::Deployment"
+parent_type = "AWS::ApiGatewayV2::Api"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApiId"
+model_property = "ApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGatewayV2::Integration"
+parent_type = "AWS::ApiGatewayV2::Api"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApiId"
+model_property = "ApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGatewayV2::Route"
+parent_type = "AWS::ApiGatewayV2::Api"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApiId"
+model_property = "ApiId"
+
+[[parent_plans]]
+type_name = "AWS::ApiGatewayV2::Stage"
+parent_type = "AWS::ApiGatewayV2::Api"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApiId"
+model_property = "ApiId"
+
+[[parent_plans]]
+type_name = "AWS::AppConfig::ConfigurationProfile"
+parent_type = "AWS::AppConfig::Application"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApplicationId"
+model_property = "ApplicationId"
+
+[[parent_plans]]
+type_name = "AWS::AppConfig::Environment"
+parent_type = "AWS::AppConfig::Application"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApplicationId"
+model_property = "ApplicationId"
+
+[[parent_plans]]
+type_name = "AWS::AppConfig::ExperimentDefinition"
+parent_type = "AWS::AppConfig::Application"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/ApplicationId"
+model_property = "ApplicationIdentifier"
+
+[[parent_plans]]
+type_name = "AWS::EKS::AccessEntry"
+parent_type = "AWS::EKS::Cluster"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/Name"
+model_property = "ClusterName"
+
+[[parent_plans]]
+type_name = "AWS::EKS::Addon"
+parent_type = "AWS::EKS::Cluster"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/Name"
+model_property = "ClusterName"
+
+[[parent_plans]]
+type_name = "AWS::EKS::FargateProfile"
+parent_type = "AWS::EKS::Cluster"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/Name"
+model_property = "ClusterName"
+
+[[parent_plans]]
+type_name = "AWS::EKS::Nodegroup"
+parent_type = "AWS::EKS::Cluster"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/Name"
+model_property = "ClusterName"
+
+[[parent_plans]]
+type_name = "AWS::EKS::PodIdentityAssociation"
+parent_type = "AWS::EKS::Cluster"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/Name"
+model_property = "ClusterName"
+
+[[parent_plans]]
+type_name = "AWS::ElasticLoadBalancingV2::Listener"
+parent_type = "AWS::ElasticLoadBalancingV2::LoadBalancer"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/LoadBalancerArn"
+model_property = "LoadBalancerArn"
+
+[[parent_plans]]
+type_name = "AWS::Logs::LogStream"
+parent_type = "AWS::Logs::LogGroup"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/LogGroupName"
+model_property = "LogGroupName"
+
+[[parent_plans]]
+type_name = "AWS::Logs::SubscriptionFilter"
+parent_type = "AWS::Logs::LogGroup"
+relation = "CHILD_OF"
+evidence = "reviewed_parent_resource_model_and_matching_read_properties"
+
+[[parent_plans.bindings]]
+source_pointer = "/LogGroupName"
+model_property = "LogGroupName"

@@ -39,83 +39,19 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
         // Alphanumeric identifier
         if current.is_ascii_alphanumeric() || current == b'_' {
             let start = position;
-            while position < bytes.len() {
-                let byte = match bytes.get(position) {
-                    Some(b) => *b,
-                    None => break,
-                };
-                if !(byte.is_ascii_alphanumeric() || byte == b'_') {
-                    break;
-                }
-                position = position.saturating_add(1);
-            }
-            tokens.push(Token {
-                text: text[start..position].to_string(),
-                start,
-            });
+            skip_word_bytes(bytes, &mut position);
+            tokens.push(token_between(text, start, position));
         }
         // Lifetime parameter: 'name
         else if current == b'\'' {
-            let start = position;
-            let next_pos = position.saturating_add(1);
-            if let Some(next_byte) = bytes.get(next_pos) {
-                if next_byte.is_ascii_alphanumeric() {
-                    position = next_pos;
-                    while position < bytes.len() {
-                        let byte = match bytes.get(position) {
-                            Some(b) => *b,
-                            None => break,
-                        };
-                        if !(byte.is_ascii_alphanumeric() || byte == b'_') {
-                            break;
-                        }
-                        position = position.saturating_add(1);
-                    }
-                    tokens.push(Token {
-                        text: text[start..position].to_string(),
-                        start,
-                    });
-                } else {
-                    position = position.saturating_add(1);
-                    tokens.push(Token {
-                        text: text[start..position].to_string(),
-                        start,
-                    });
-                }
-            } else {
-                position = position.saturating_add(1);
-                tokens.push(Token {
-                    text: text[start..position].to_string(),
-                    start,
-                });
-            }
+            scan_quote_token(text, bytes, &mut tokens, &mut position);
         }
         // Single character token (delimiters, operators, punctuation)
         // Multi-byte UTF-8 characters are treated as a single token
         else {
             let start = position;
-            // Find the end of the UTF-8 character
-            if current >= 0x80 {
-                // Multi-byte character: find the end
-                let mut end = position.saturating_add(1);
-                while end < bytes.len() {
-                    let byte = match bytes.get(end) {
-                        Some(b) => *b,
-                        None => break,
-                    };
-                    if (byte & 0xC0) != 0x80 {
-                        break;
-                    }
-                    end = end.saturating_add(1);
-                }
-                position = end;
-            } else {
-                position = position.saturating_add(1);
-            }
-            tokens.push(Token {
-                text: text[start..position].to_string(),
-                start,
-            });
+            scan_single_char(bytes, current, &mut position);
+            tokens.push(token_between(text, start, position));
         }
         if tokens.len() > max_tokens {
             return Err(HarnessError::invalid("Rust token budget exceeded"));
@@ -123,6 +59,57 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
     }
 
     Ok(tokens)
+}
+
+fn token_between(text: &str, start: usize, end: usize) -> Token {
+    Token {
+        text: text[start..end].to_string(),
+        start,
+    }
+}
+
+fn skip_word_bytes(bytes: &[u8], position: &mut usize) {
+    while *position < bytes.len() {
+        let byte = match bytes.get(*position) {
+            Some(b) => *b,
+            None => break,
+        };
+        if !(byte.is_ascii_alphanumeric() || byte == b'_') {
+            break;
+        }
+        *position = position.saturating_add(1);
+    }
+}
+
+fn scan_quote_token(text: &str, bytes: &[u8], tokens: &mut Vec<Token>, position: &mut usize) {
+    let start = *position;
+    let next_pos = position.saturating_add(1);
+    *position = next_pos;
+    if bytes.get(next_pos).is_some_and(u8::is_ascii_alphanumeric) {
+        skip_word_bytes(bytes, position);
+    }
+    tokens.push(token_between(text, start, *position));
+}
+
+fn scan_single_char(bytes: &[u8], current: u8, position: &mut usize) {
+    // Find the end of the UTF-8 character
+    if current >= 0x80 {
+        // Multi-byte character: find the end
+        let mut end = position.saturating_add(1);
+        while end < bytes.len() {
+            let byte = match bytes.get(end) {
+                Some(b) => *b,
+                None => break,
+            };
+            if (byte & 0xC0) != 0x80 {
+                break;
+            }
+            end = end.saturating_add(1);
+        }
+        *position = end;
+    } else {
+        *position = position.saturating_add(1);
+    }
 }
 
 /// Tokenize Rust source and pair matching delimiters.
@@ -148,54 +135,77 @@ pub fn tokens_and_pairs_with_budget(
         if token.text == "(" || token.text == "[" || token.text == "{" {
             stack.push(position);
         } else if token.text == ")" || token.text == "]" || token.text == "}" {
-            let expected = match token.text.as_str() {
-                ")" => "(",
-                "]" => "[",
-                _ => "{",
-            };
-            if stack.is_empty() {
-                let (line, column) = source_location(text, token.start);
-                return Err(HarnessError::invalid(format!(
-                    "{}:{}:{}: unexpected closing Rust delimiter {}",
-                    path, line, column, token.text
-                )));
-            }
-            if let Some(open) = stack.pop() {
-                let open_token = match tokens.get(open) {
-                    Some(t) => t,
-                    None => {
-                        return Err(HarnessError::invalid(format!(
-                            "{}: unbalanced Rust delimiters; stack corruption at token index {}",
-                            path, open
-                        )));
-                    }
-                };
-                if open_token.text != expected {
-                    let (line, column) = source_location(text, token.start);
-                    let (open_line, open_column) = source_location(text, open_token.start);
-                    return Err(HarnessError::invalid(format!(
-                        "{}:{}:{}: unbalanced Rust delimiters: {} closes {} opened at {}:{}; expected {}",
-                        path,
-                        line,
-                        column,
-                        token.text,
-                        open_token.text,
-                        open_line,
-                        open_column,
-                        match expected {
-                            "(" => ")",
-                            "[" => "]",
-                            _ => "}",
-                        }
-                    )));
-                }
-                pairs.insert(position, open);
-                pairs.insert(open, position);
-            }
+            pair_closing_delimiter(path, text, &tokens, &mut stack, &mut pairs, position, token)?;
         }
         position = position.saturating_add(1);
     }
 
+    reject_unclosed_delimiter(path, text, &tokens, &stack)?;
+    Ok((tokens, pairs))
+}
+
+fn pair_closing_delimiter(
+    path: &str,
+    text: &str,
+    tokens: &[Token],
+    stack: &mut Vec<usize>,
+    pairs: &mut HashMap<usize, usize>,
+    position: usize,
+    token: &Token,
+) -> Result<(), HarnessError> {
+    let expected = match token.text.as_str() {
+        ")" => "(",
+        "]" => "[",
+        _ => "{",
+    };
+    if stack.is_empty() {
+        let (line, column) = source_location(text, token.start);
+        return Err(HarnessError::invalid(format!(
+            "{}:{}:{}: unexpected closing Rust delimiter {}",
+            path, line, column, token.text
+        )));
+    }
+    if let Some(open) = stack.pop() {
+        let open_token = match tokens.get(open) {
+            Some(t) => t,
+            None => {
+                return Err(HarnessError::invalid(format!(
+                    "{}: unbalanced Rust delimiters; stack corruption at token index {}",
+                    path, open
+                )));
+            }
+        };
+        if open_token.text != expected {
+            let (line, column) = source_location(text, token.start);
+            let (open_line, open_column) = source_location(text, open_token.start);
+            return Err(HarnessError::invalid(format!(
+                "{}:{}:{}: unbalanced Rust delimiters: {} closes {} opened at {}:{}; expected {}",
+                path,
+                line,
+                column,
+                token.text,
+                open_token.text,
+                open_line,
+                open_column,
+                match expected {
+                    "(" => ")",
+                    "[" => "]",
+                    _ => "}",
+                }
+            )));
+        }
+        pairs.insert(position, open);
+        pairs.insert(open, position);
+    }
+    Ok(())
+}
+
+fn reject_unclosed_delimiter(
+    path: &str,
+    text: &str,
+    tokens: &[Token],
+    stack: &[usize],
+) -> Result<(), HarnessError> {
     if let Some(open) = stack.last() {
         let open_token = match tokens.get(*open) {
             Some(t) => t,
@@ -217,6 +227,5 @@ pub fn tokens_and_pairs_with_budget(
             path, line, column, open_token.text, expected
         )));
     }
-
-    Ok((tokens, pairs))
+    Ok(())
 }

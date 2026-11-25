@@ -1,26 +1,38 @@
 mod defaults;
 mod identity;
+mod limits;
 mod template;
 #[path = "scenario/validation.rs"]
 mod validation;
+mod values;
 use super::config::SeedError;
 pub use identity::{SeedIdentity, SeedIdentityEvidence, SeedScope};
 pub use template::{SeedNestedBinding, SeedTemplate, SeedValuePart};
 use validation::*;
 
-const MAX_STEPS: usize = 12;
-const MAX_INPUTS_PER_STEP: usize = 8;
-const MAX_TOTAL_INPUTS: usize = 24;
+const MAX_STEPS: usize = 4096;
+const MAX_INPUTS_PER_STEP: usize = 64;
+const MAX_TOTAL_INPUTS: usize = 65536;
 const MAX_BINDING_DEPTH: usize = 8;
 const MAX_FIELD_NAME: usize = 128;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-pub struct StepId(pub u8);
+pub struct StepId(pub u16);
 
 impl StepId {
-    pub fn new(value: u8) -> Self {
+    pub fn new(value: u16) -> Self {
         Self(value)
+    }
+}
+
+impl TryFrom<usize> for StepId {
+    type Error = SeedError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        let id = u16::try_from(value)
+            .map_err(|_| SeedError::Invalid("seed step id value exceeds its limit"))?;
+        Ok(Self::new(id))
     }
 }
 
@@ -55,6 +67,8 @@ pub enum SeedInputValue {
     PreviousOutput { step: StepId, path: FieldPath },
     Literal(inventory_core::record::Value),
     Template(SeedTemplate),
+    List(Vec<SeedInputValue>),
+    Structure(Vec<(String, SeedInputValue)>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -190,7 +204,6 @@ impl SeedScenario {
     ) -> Result<Self, SeedError> {
         validate_limits(&steps, &relationships)?;
         steps.iter().enumerate().try_for_each(validate_step)?;
-        validate_bindings(&steps)?;
         validate_relationships(&steps, &relationships)?;
         Ok(Self {
             steps,
@@ -215,20 +228,5 @@ fn validate_limits(
     steps: &[SeedStep],
     relationships: &[SeedRelationship],
 ) -> Result<(), SeedError> {
-    if !(1..=MAX_STEPS).contains(&steps.len()) || relationships.len() > 6 {
-        return Err(SeedError::Invalid(
-            "seed scenario exceeds its step or relationship limit",
-        ));
-    }
-    let input_count = steps.iter().try_fold(0_usize, |count, step| {
-        count
-            .checked_add(step.inputs.len())
-            .ok_or(SeedError::Invalid("seed scenario input count is invalid"))
-    })?;
-    if input_count > MAX_TOTAL_INPUTS {
-        return Err(SeedError::Invalid(
-            "seed scenario exceeds its input binding limit",
-        ));
-    }
-    Ok(())
+    limits::validate(steps, relationships)
 }

@@ -1,0 +1,12 @@
+format = 1
+service = "kinesis"
+
+[[step]]
+id = "stream"
+operation = "CreateStream"
+kind = "AWS::Kinesis::Stream"
+identity = { input = "StreamName", template = "arn:{partition}:kinesis:{region}:{account}:stream/{value}" }
+repeat = 2
+[step.input]
+StreamName = "inventory-seed-stream-{n}"
+ShardCount = 1

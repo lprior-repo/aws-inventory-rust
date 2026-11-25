@@ -1,6 +1,6 @@
 mod state;
 use state::State;
-pub(in crate::overlay::check) use state::StateArgs;
+pub(in crate::overlay) use state::StateArgs;
 mod inputs;
 mod selection;
 mod special_inputs;
@@ -13,7 +13,7 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
-pub(in crate::overlay::check) fn operation(args: StateArgs<'_, '_, '_>) -> OperationResult {
+pub(in crate::overlay) fn operation(args: StateArgs<'_, '_, '_>) -> OperationResult {
     let Some(operation_id) = args.model.operation_id(args.name) else {
         return unknown_operation(args.service, args.name);
     };
@@ -168,11 +168,11 @@ fn validate_identity(state: &mut State<'_, '_, '_>) {
         state.item.emission == crate::overlay::Emission::DiscoveryOnly
     } else {
         state.item.branches.iter().all(|branch| {
-            branch
-                .emission
-                .as_ref()
-                .map_or(&state.item.emission, |emission| emission)
-                == &crate::overlay::Emission::DiscoveryOnly
+            let effective = match branch.emission {
+                Some(e) => e,
+                None => state.item.emission,
+            };
+            effective == crate::overlay::Emission::DiscoveryOnly
         })
     };
     if discovery_only || state.item.tag_endpoint.is_some() || state.item.endpoint_discovery {
@@ -227,6 +227,7 @@ fn callable_handle(state: &State<'_, '_, '_>) -> crate::overlay::check::Callable
         operation: state.name.to_owned(),
         class,
         plan,
+        origin: crate::overlay::Origin::Hand,
     }
 }
 fn modeled_items(state: &State<'_, '_, '_>) -> Option<ItemSelector> {

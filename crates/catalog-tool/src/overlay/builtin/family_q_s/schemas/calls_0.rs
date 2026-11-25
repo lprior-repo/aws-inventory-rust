@@ -19,7 +19,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("RegistryArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::String("Scope", "Local")],
         tags: Some("Tags"),
         queryable: &["RegistryName"],
     },

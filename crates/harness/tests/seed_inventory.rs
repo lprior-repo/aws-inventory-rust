@@ -2,6 +2,8 @@
 mod collection;
 #[path = "seed_inventory/compute.rs"]
 mod compute;
+#[path = "seed_inventory/draft.rs"]
+mod draft;
 #[path = "seed_inventory/global.rs"]
 mod global;
 #[path = "seed_inventory/messaging.rs"]

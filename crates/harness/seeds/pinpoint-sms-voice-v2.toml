@@ -1,0 +1,13 @@
+format = 1
+service = "pinpoint-sms-voice-v2"
+
+[[step]]
+id = "resource"
+operation = "RequestPhoneNumber"
+kind = "AWS::SMSVOICE::PhoneNumber"
+identity = "PhoneNumberArn"
+[step.input]
+"IsoCountryCode" = "US"
+"MessageType" = "TRANSACTIONAL"
+"NumberCapabilities" = ["SMS"]
+"NumberType" = "SIMULATOR"

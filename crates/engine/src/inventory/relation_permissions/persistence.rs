@@ -95,9 +95,11 @@ pub(in crate::inventory) async fn open_with_catalog(
     if registry.operations() != store.registry.operations() {
         return Err(StoreError::CatalogMismatch);
     }
-    let mut tx = store.writer.begin().await?;
-    persist(&mut tx, &registry).await?;
-    tx.commit().await?;
+    {
+        let (_turn, mut tx) = store.begin_write().await?;
+        persist(&mut tx, &registry).await?;
+        tx.commit().await?;
+    }
     store.registry = registry;
     Ok(store)
 }

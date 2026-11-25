@@ -141,7 +141,8 @@ pub(super) async fn serve(
         let Some(arguments) = command(&mut reader).await? else {
             return Ok(());
         };
-        if arguments.first().map(Vec::as_slice) != Some(b"GRAPH.QUERY") {
+        if arguments.first().map(Vec::as_slice) != Some(inventory_graph::cypher::COMMAND.as_bytes())
+        {
             reader.get_mut().write_all(b"+OK\r\n").await?;
             continue;
         }
@@ -165,7 +166,7 @@ pub(super) async fn serve(
         state.query_started.notify_waiters();
         let mut response = Vec::new();
         if let Some(connection) = &mut upstream {
-            let mut command = redis::cmd("GRAPH.QUERY");
+            let mut command = redis::cmd(inventory_graph::cypher::COMMAND);
             for argument in arguments.iter().skip(1) {
                 command.arg(argument);
             }

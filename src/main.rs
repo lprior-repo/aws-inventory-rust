@@ -23,15 +23,14 @@ mod scan;
 mod serve_command;
 #[cfg(test)]
 mod serve_tests;
+mod sql_command;
 mod sweep_command;
-#[cfg(feature = "aws")]
-mod sweep_runtime;
 mod tag_mapping;
 mod tag_sources;
 mod targets;
 
 use anyhow::{Context, Result};
-use cli::Command;
+use cli::{Command, InspectionCommand};
 use futures_util::future::BoxFuture;
 use inventory_engine::{graph, store::Store};
 use serde_json::Value;
@@ -49,6 +48,9 @@ fn main() -> ExitCode {
 
 fn dispatch(command: Command) -> BoxFuture<'static, Result<CommandOutput>> {
     let legacy: BoxFuture<'static, Result<Value>> = match command {
+        Command::Sql(options) => return sql_command::run_sql(options),
+        Command::Sweep(options) => return native(sweep_command::run(options)),
+        Command::Serve(options) => return native(serve_command::run(options)),
         Command::Catalog {
             tag_sources: true, ..
         } => Box::pin(std::future::ready(tag_sources::report())),
@@ -71,38 +73,7 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<CommandOutput>> {
         Command::Export(options) => Box::pin(delivery::export_command(options)),
         Command::Deliver(options) => Box::pin(delivery::command(options)),
         Command::Query { db, sql, limit } => Box::pin(query(db, sql, limit)),
-        Command::Report { db, scan_id } => Box::pin(report::report(db, scan_id)),
-        Command::Architecture { db, scan_id, limit } => {
-            Box::pin(architecture::report(db, scan_id, limit))
-        }
-        Command::Diff {
-            db,
-            before,
-            after,
-            limit,
-            max_items,
-        } => Box::pin(analysis::diff(db, before, after, limit, max_items)),
-        Command::Neighbors {
-            db,
-            scan_id,
-            resource_id,
-            traversal,
-        } => Box::pin(analysis::neighborhood(
-            db,
-            scan_id,
-            resource_id,
-            traversal.into(),
-        )),
-        Command::Path {
-            db,
-            scan_id,
-            from,
-            to,
-            traversal,
-        } => Box::pin(analysis::path(db, scan_id, from, to, traversal.into())),
-        Command::Findings { db, scan_id, limit } => {
-            Box::pin(analysis::findings(db, scan_id, limit))
-        }
+        Command::Inspection(command) => Box::pin(inspect(command)),
         Command::Discover(options) => Box::pin(run_discovery(options)),
         Command::Job { command } => Box::pin(jobs::execute(command)),
         Command::GraphExport {
@@ -125,20 +96,46 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<CommandOutput>> {
             graph_name,
         } => Box::pin(graph_rebuild::run(database, catalog, graph_url, graph_name)),
         Command::Scan(options) => Box::pin(run_scan(options)),
-        Command::Sweep(options) => {
-            return Box::pin(async move {
-                let code = sweep_command::run(options).await?;
-                Ok(CommandOutput::Native(code))
-            });
-        }
-        Command::Serve(options) => {
-            return Box::pin(async move {
-                let code = serve_command::run(options).await?;
-                Ok(CommandOutput::Native(code))
-            });
-        }
     };
     Box::pin(async move { legacy.await.map(CommandOutput::Legacy) })
+}
+
+fn native(
+    command: impl Future<Output = Result<ExitCode>> + Send + 'static,
+) -> BoxFuture<'static, Result<CommandOutput>> {
+    Box::pin(async move { command.await.map(CommandOutput::Native) })
+}
+
+async fn inspect(command: InspectionCommand) -> Result<Value> {
+    match command {
+        InspectionCommand::Report { db, scan_id } => report::report(db, scan_id).await,
+        InspectionCommand::Architecture { db, scan_id, limit } => {
+            architecture::report(db, scan_id, limit).await
+        }
+        InspectionCommand::Diff {
+            db,
+            before,
+            after,
+            limit,
+            max_items,
+        } => analysis::diff(db, before, after, limit, max_items).await,
+        InspectionCommand::Neighbors {
+            db,
+            scan_id,
+            resource_id,
+            traversal,
+        } => analysis::neighborhood(db, scan_id, resource_id, traversal.into()).await,
+        InspectionCommand::Path {
+            db,
+            scan_id,
+            from,
+            to,
+            traversal,
+        } => analysis::path(db, scan_id, from, to, traversal.into()).await,
+        InspectionCommand::Findings { db, scan_id, limit } => {
+            analysis::findings(db, scan_id, limit).await
+        }
+    }
 }
 
 fn plan_command(options: cli::PlanArgs) -> Result<Value> {

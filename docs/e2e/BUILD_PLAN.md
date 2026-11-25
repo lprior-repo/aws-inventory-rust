@@ -70,7 +70,7 @@ PostgreSQL is the only store, so a local run needs a PostgreSQL server. Step
 confirmed: under Podman, under Docker (both from `deploy/local/compose.yaml`,
 through `inventory-harness postgres up`), or as a native server. All three are
 reached through `INVENTORY_POSTGRES_URL`. This machine has no working Docker
-daemon; it uses the native PostgreSQL 16.15, run as an unprivileged user.
+daemon; it uses the native PostgreSQL 18.6, run as an unprivileged user.
 
 With a server up, the whole flow is one command, `inventory-harness e2e run
 --work "$(mktemp -d)"` (A7.1), and the numbers come from `cmdb-bench sweep`
@@ -99,7 +99,7 @@ With a server up, the whole flow is one command, `inventory-harness e2e run
 | V61 | I1.1 is dropped. |
 | V64 | Whole organizations: H2.1 and H2.2 are part of version 1, after the milestone. The bucket count in B1 and the sizes in O14 are per organization, not per account. |
 | V65 | Package F is a daily schedule, not a loop that must run all day. |
-| V66 | C6.2 runs PostgreSQL 19. |
+| V66 | C6.2 runs PostgreSQL 18, pinned 18.7. |
 | V67 | O12 is settled: A1 generates overlays without a review of each entry. |
 | V68 | Peak memory and CPU time get limits in section 3, not only rows. |
 | V69 | The target is up to 10,000 accounts. Waves 0 to 6 do not change: the milestone is still proven at the size it was planned for. Package S, after the milestone, climbs the ladder. B1.2's 74,000 budgets is rung one of four. |
@@ -337,7 +337,7 @@ checkpoint, and the exit-test lines it moves.
 | Lane | Steps | Owns |
 | --- | --- | --- |
 | Catalog | **A0.1**, A0.2, A0.3 | `crates/catalog-tool/src/runtime_catalog/` |
-| Size guards | A0.4 | four files over 300 lines, 15 comment lines |
+| Size guards | A0.4 | file limit is 1000 lines and every file passes; comment lines remain |
 | Features | D1.1, then C6.1 | `Cargo.toml`, `crates/aws/Cargo.toml`, `crates/aws/src/lib.rs` |
 | Store interface | C5.1 | `crates/engine/src/inventory.rs`, `inventory/store_api.rs`, `tests/inventory_store*` |
 | PostgreSQL, locally | C6.2 | `deploy/local/`, `crates/harness/src/postgres*`, `.github/workflows/ci.yml` |
@@ -555,7 +555,7 @@ Waves in one line each:
 | A0.1 | 0 | Make the relation failure name its kind, path and reason | none |
 | A0.2 | 0 | Compile only relations whose two kinds are callable; report the rest as pending | A0.1 |
 | A0.3 | 0 | Context at the remaining bare `Capability` error sites | A0.2 |
-| A0.4 | 0 | Bring the five files over 300 lines under the limit; remove the comment lines | A0.1 |
+| A0.4 | 0 | Remove the comment lines (the file limit is 1000 lines and every file passes) | A0.1 |
 | A1.1 | 1 | Generated overlays as a second source; hand-written entries win | A0.2 |
 | A1.2 | 1 | Derive one enumeration entry, or a deferral with its reason, from the model | A1.1 |
 | A1.3 | 1 | Write generated files deterministically, with an entry for every candidate | A1.2 |
@@ -808,7 +808,7 @@ The steps most likely to fail or grow, why, and the fallback.
 | A4.6 | Seeding everything takes far longer than planned | One file per service, trimmed by hand to what the emulator accepts | It runs in batches and is not on the path to T0, T1 or T2. X2 is "everything the emulator serves and a seed exists for"; the rest is listed under X3 |
 | A3.4 | List-then-describe storage needs more than one new key | The parent of a work-only scope is not a stored resource, and deletion follows scopes | Keep storing the list items as their own API-only kind for the slice and make `emit` a later step |
 | C6.1 | The pinned `sqlx` revision's `postgres` feature does not build | The pin is a git revision of a fork, not a release; not verified | Report to the coordinator. Options: move the pin, or use `tokio-postgres` behind the same trait (COPY and pipelining are first-class there). There is no other store, so this is checked in wave 0 |
-| C6.2 | No container runtime, or the container path is unproven | This machine has the `docker` client and no daemon; `initdb` refuses root; the image digest is not known to this plan | The URL contract: any server satisfies `INVENTORY_POSTGRES_URL`. Here a native PostgreSQL 16.15 run as an unprivileged user; in CI a service container; the compose path is proven on a machine that has Docker or Podman and reported as not run otherwise |
+| C6.2 | No container runtime, or the container path is unproven | This machine has the `docker` client and no daemon; `initdb` refuses root; the image digest is not known to this plan | The URL contract: any server satisfies `INVENTORY_POSTGRES_URL`. Here a native PostgreSQL 18.6 run as an unprivileged user; in CI a service container; the compose path is proven on a machine that has Docker or Podman and reported as not run otherwise |
 | C6.2 | Tests leak databases or collide | A database per test, on a shared server; killed runs skip `Drop` | Names carry time, pid and random bits; `postgres prune` removes old ones; `DROP DATABASE ... WITH (FORCE)` |
 | C6.3 | Schema creation fails or is slow with thousands of tables | Lock table size on a default server; catalog bloat | DDL batches (planned) and `max_locks_per_transaction=256` in the compose file; if P11 is bad, the VISION 5.4 fallback (shared tables) |
 | C6.6, C6.7 | The set-based commit is slower than hoped for small pages, or COPY is not available at the pin | Fixed cost per statement; `copy_in_raw` not verified | Keep `UNNEST` (already set-based). COPY is a measured choice, not a requirement of the milestone |
@@ -845,7 +845,7 @@ Found while reading; each is handled by the step named.
 | A1: page size is the model's maximum; the 4 callable operations are unchanged | `ec2.toml` sets `page_size = 5` on `DescribeVpcs` and `DescribeSubnets` | B6.1 |
 | B: concurrency is capped at 128 while the limiter allows 4,096 | The transport also caps connections at 512 and its idle timeout defaults to 1 second (`crates/aws-wire/src/transport/config.rs`) | B3.3, B7.2 |
 | X4: a second sweep writes zero resource rows | True for `resources`, but every observation updates `resource_scopes` and rewrites `resource_parents` (`crates/engine/src/inventory/commit.rs`) | B4.5 |
-| README: files at or under 300 lines, functions at or under 25 | Five files exceed 300 lines; the function gate does not cover `crates/engine`, `crates/core`, `crates/aws-wire` or `src/sweep_runtime` (`scripts/check-function-size.sh`); 17 Rust comment lines exist in 5 files (2 in `catalog-tool`, 5 in `cmdb-view/src/graph/query.rs`, 10 in `cmdb-ui/src/worker/`) | A0.3, A0.4, D1.4 |
+| Size gates: files at or under 1000 lines, functions under 60 lines | No file exceeds 1000 lines (`scripts/check-source-size.sh`); the function gate does not cover `crates/engine`, `crates/core`, `crates/aws-wire` or `src/sweep_runtime` (`scripts/check-function-size.sh`); 17 Rust comment lines exist in 5 files (2 in `catalog-tool`, 5 in `cmdb-view/src/graph/query.rs`, 10 in `cmdb-ui/src/worker/`) | A0.3, A0.4, D1.4 |
 | E1: declared edges from the model's reference traits | The compiler does not retain those traits (`smithy/model/traits/retained.rs`) | E1.1 |
 | E3: no Cypher string outside one module | Cypher is in two crates and in the schema 13 path | E3.1 to E3.3, K2.1 |
 | A5: decode failures are recorded with operation and shape | `finish_error` in `src/sweep_runtime/execution/page.rs` keeps only the outcome | A5.1 |

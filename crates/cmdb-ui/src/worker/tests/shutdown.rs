@@ -97,7 +97,7 @@ fn given_real_runner_blocked_on_output_when_closed_then_join_and_no_retained_rea
             .await?;
         let queued = queued(
             WorkerConfig {
-                database: Some(fixture.path.clone()),
+                database: Some(fixture.path.to_string_lossy().into_owned()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
@@ -210,7 +210,7 @@ fn given_missing_path_or_invalid_schema_when_real_worker_starts_then_database_di
         ] {
             let worker = DataWorker::start(
                 WorkerConfig {
-                    database: Some(path),
+                    database: Some(path.to_string_lossy().into_owned()),
                     graph_limits: DEFAULT_GRAPH_LIMITS,
                     ..WorkerConfig::default()
                 },

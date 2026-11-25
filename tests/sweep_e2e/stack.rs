@@ -1,10 +1,9 @@
-#[path = "stack/graph.rs"]
-mod graph;
 use super::guard::{Environment, static_keys};
 use anyhow::{Context, Result, ensure};
 use aws_wire::sign::Credentials;
-use graph::GraphServer;
+use inventory_harness::e2e::graph::GraphServer;
 use inventory_harness::emulator::Emulator;
+use inventory_harness::postgres::{TestDatabase, admin_url};
 use std::path::{Path, PathBuf};
 
 const EMULATOR_DEFAULT: &str = ".local/runtime/unpacked/opt/aws-emulator/bin/aws-emulator";
@@ -16,6 +15,7 @@ const IDLE_SECONDS: u64 = 900;
 pub(super) struct Stack {
     environment: Environment,
     credentials: Credentials,
+    _database: Option<TestDatabase>,
     _graph: GraphServer,
     _emulator: Emulator,
     _directory: tempfile::TempDir,
@@ -29,9 +29,13 @@ struct Profile {
 
 impl Stack {
     pub(super) async fn start() -> Result<Self> {
-        tokio::task::spawn_blocking(Self::start_blocking)
+        let database = database().await?;
+        let mut stack = tokio::task::spawn_blocking(Self::start_blocking)
             .await
-            .context("joining E2E stack startup")?
+            .context("joining E2E stack startup")??;
+        stack.environment.database_url = database.as_ref().map(|value| value.url().to_owned());
+        stack._database = database;
+        Ok(stack)
     }
 
     pub(super) fn environment(&self) -> &Environment {
@@ -55,6 +59,7 @@ impl Stack {
         Ok(Self {
             environment,
             credentials: profile.keys,
+            _database: None,
             _graph: graph,
             _emulator: emulator,
             _directory: directory,
@@ -106,7 +111,18 @@ fn environment(emulator: &Emulator, graph_url: &str, profile: &Profile) -> Envir
         region: REGION.to_owned(),
         profile: PROFILE.to_owned(),
         catalog: Path::new(env!("CARGO_MANIFEST_DIR")).join("catalog/aws-api.catalog"),
+        database_url: None,
         aws_config: profile.config.clone(),
         aws_credentials: profile.credentials.clone(),
+    }
+}
+
+async fn database() -> Result<Option<TestDatabase>> {
+    match std::env::var("INVENTORY_E2E_STORE").as_deref() {
+        Ok("file") => Ok(None),
+        Ok("postgres") | Err(std::env::VarError::NotPresent) => {
+            Ok(Some(TestDatabase::create(&admin_url()?).await?))
+        }
+        _ => anyhow::bail!("INVENTORY_E2E_STORE must be postgres or file"),
     }
 }

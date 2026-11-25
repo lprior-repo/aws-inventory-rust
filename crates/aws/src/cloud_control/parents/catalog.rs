@@ -1,7 +1,7 @@
 use super::*;
 
 pub(in super::super) fn read_catalog() -> Result<ParentCatalog, AwsScanError> {
-    let catalog: ParentCatalog = serde_json::from_str(PARENT_CATALOG_JSON)
+    let catalog: ParentCatalog = toml::from_str(PARENT_CATALOG_TOML)
         .map_err(|error| invalid(format!("embedded parent catalog: {error}")))?;
     if catalog.schema_version != 1
         || catalog.resource_types.len() != PARENT_TYPE_COUNT

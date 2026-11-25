@@ -23,6 +23,14 @@ pub fn read_json_document(path: &Path) -> Result<(Value, String), HarnessError> 
     Ok((serde_json::from_slice(&bytes)?, digest))
 }
 
+pub fn read_toml_audit(path: &Path) -> Result<(Value, String), HarnessError> {
+    crate::catalog::toml_doc::read(path, MAX_INPUT_BYTES)
+}
+
+pub fn read_toml_document(path: &Path) -> Result<(Value, String), HarnessError> {
+    crate::catalog::toml_doc::read(path, MAX_DOCUMENT_BYTES).map_err(budget_message)
+}
+
 pub(crate) fn budget_message(error: HarnessError) -> HarnessError {
     match error {
         HarnessError::Invalid(reason) if reason.contains("input byte budget exceeded") => {

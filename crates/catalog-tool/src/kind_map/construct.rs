@@ -3,17 +3,34 @@ use super::validation::{
     row_error, valid_date, valid_operation, valid_path, valid_reason, valid_service,
 };
 use super::{
-    BootstrapMapping, BootstrapPurpose, KindMap, KindMapError, MAX_ROWS, MappingSource,
-    ReviewedRelation, RuntimeOperation, rows, validate_operations,
+    ApiOnlyKind, BootstrapMapping, BootstrapPurpose, KindEntry, KindMap, KindMapError, MAX_ROWS,
+    MappingSource, ReviewedRelation, RuntimeOperation, rows, validate_operations,
 };
 use crate::names::Exceptions;
 use std::collections::BTreeSet;
+
+struct ParsedRows {
+    entries: Vec<KindEntry>,
+    api_only: Vec<ApiOnlyKind>,
+    operations: Vec<RuntimeOperation>,
+    relations: Vec<ReviewedRelation>,
+    bootstraps: Vec<BootstrapEntry>,
+}
 
 pub(super) fn compile(
     source: &MappingSource<'_>,
     exceptions: &Exceptions,
 ) -> Result<KindMap, KindMapError> {
     validate_metadata(source)?;
+    let parsed = parse_rows(source, exceptions)?;
+    validate_keys(&parsed)?;
+    build_kind_map(source, parsed)
+}
+
+fn parse_rows(
+    source: &MappingSource<'_>,
+    exceptions: &Exceptions,
+) -> Result<ParsedRows, KindMapError> {
     let entries = source
         .cfn
         .iter()
@@ -32,7 +49,7 @@ pub(super) fn compile(
         .enumerate()
         .map(|(index, entry)| rows::operation(*entry, index))
         .collect::<Result<Vec<_>, _>>()?;
-    let mut relations = source
+    let relations = source
         .relations
         .iter()
         .enumerate()
@@ -44,34 +61,54 @@ pub(super) fn compile(
         .copied()
         .map(BootstrapMapping::owned)
         .collect::<Vec<_>>();
-    validate_bootstrap_fields(&bootstraps)?;
-    rows::validate_collisions(&entries, &api_only)?;
-    validate_duplicates(entries.iter().map(|entry| entry.cfn_type.as_str()))?;
-    validate_operation_keys(&operations)?;
-    validate_bootstrap_keys(&bootstraps)?;
-    validate_relation_keys(&relations)?;
-    let known = super::operations::known_kinds(&entries, &api_only);
-    validate_operations(&known, &api_only, &operations, &relations, &bootstraps)?;
+    Ok(ParsedRows {
+        entries,
+        api_only,
+        operations,
+        relations,
+        bootstraps,
+    })
+}
+
+fn validate_keys(parsed: &ParsedRows) -> Result<(), KindMapError> {
+    validate_bootstrap_fields(&parsed.bootstraps)?;
+    rows::validate_collisions(&parsed.entries, &parsed.api_only)?;
+    validate_duplicates(parsed.entries.iter().map(|entry| entry.cfn_type.as_str()))?;
+    validate_operation_keys(&parsed.operations)?;
+    validate_bootstrap_keys(&parsed.bootstraps)?;
+    validate_relation_keys(&parsed.relations)
+}
+
+fn build_kind_map(source: &MappingSource<'_>, parsed: ParsedRows) -> Result<KindMap, KindMapError> {
+    let known = super::operations::known_kinds(&parsed.entries, &parsed.api_only);
+    validate_operations(
+        &known,
+        &parsed.api_only,
+        &parsed.operations,
+        &parsed.relations,
+        &parsed.bootstraps,
+    )?;
+    let mut relations = parsed.relations;
     super::relation_targets::fold(source.relation_targets, &known, &mut relations)?;
     let parent_relations = super::relation_modes::compile_parents(source.parent_relations, &known)?;
     let compound_relations =
         super::relation_modes::compile_compounds(source.compound_relations, &known)?;
     let additional_emissions =
-        super::emissions::compile(source.additional_emissions, &operations, &known)?;
+        super::emissions::compile(source.additional_emissions, &parsed.operations, &known)?;
     let mut map = KindMap {
         source_version: source.version,
         source_sha256: [0; 32],
         reviewer: source.reviewer.to_owned(),
         reviewed: source.reviewed.to_owned(),
         default_unmapped_reason: source.default_unmapped_reason.map(str::to_owned),
-        entries,
-        api_only,
+        entries: parsed.entries,
+        api_only: parsed.api_only,
         relations,
         parent_relations,
         compound_relations,
         additional_emissions,
-        bootstraps,
-        operations,
+        bootstraps: parsed.bootstraps,
+        operations: parsed.operations,
     };
     sort(&mut map);
     map.source_sha256 = super::fingerprint::digest(&map);

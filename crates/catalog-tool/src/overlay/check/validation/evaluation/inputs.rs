@@ -180,21 +180,7 @@ fn binding_valid(
             binding,
             transform: crate::overlay::BindingTransform::StripPrefix(prefix),
         } => {
-            if prefix.is_empty()
-                || prefix.len() > 256
-                || prefix.chars().any(char::is_control)
-                || !matches!(
-                    plans::model::shape_type(target.value),
-                    Some("string" | "enum")
-                )
-                || !matches!(
-                    binding.as_ref(),
-                    Binding::From { .. }
-                        | Binding::Context { .. }
-                        | Binding::FromArn { .. }
-                        | Binding::FromService { .. }
-                )
-            {
+            if !transformed_strip_prefix_valid(prefix, target, binding) {
                 return false;
             }
             binding.as_ref()
@@ -202,46 +188,22 @@ fn binding_valid(
         binding => binding,
     };
     match binding {
-        Binding::Account | Binding::Region => {
-            plans::model::shape_type(target.value) == Some("string")
-        }
+        Binding::Account | Binding::Region => account_region_valid(target),
         Binding::RegionList => binding_values::region_list(context.model, target),
         Binding::FromAny(alternatives) => {
             binding_values::alternatives(context, alternatives, target)
         }
-        Binding::From {
-            operation,
-            path: source,
-        }
+        Binding::From { operation, path }
         | Binding::FromBranch {
-            operation,
-            path: source,
-            ..
+            operation, path, ..
         }
         | Binding::FromArn {
-            operation,
-            path: source,
-            ..
+            operation, path, ..
         }
         | Binding::FromUrl {
-            operation,
-            path: source,
-            ..
-        } => source_binding_valid(
-            context.model,
-            context.overlays,
-            context.vocabulary,
-            operation,
-            source,
-            target,
-        ),
-        Binding::FromService { service, .. } => {
-            inventory_core::inventory::ServiceId::parse(service).is_ok()
-                && matches!(
-                    plans::model::shape_type(target.value),
-                    Some("string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean")
-                )
-        }
+            operation, path, ..
+        } => source_operation_binding_valid(context, operation, path, target),
+        Binding::FromService { service, .. } => from_service_valid(service, target),
         Binding::Context {
             operation,
             source,
@@ -252,30 +214,92 @@ fn binding_valid(
             source,
             path,
             ..
-        } => match source {
-            crate::overlay::ContextSource::SelectedItem => source_binding_valid(
-                context.model,
-                context.overlays,
-                context.vocabulary,
-                operation,
-                path,
-                target,
-            ),
-            crate::overlay::ContextSource::Response | crate::overlay::ContextSource::Request => {
-                let side = if *source == crate::overlay::ContextSource::Response {
-                    "output"
-                } else {
-                    "input"
-                };
-                context
-                    .model
-                    .resolve_path(operation.as_str(), side, path.as_str())
-                    .ok()
-                    .flatten()
-                    .is_some_and(|source| compatible(context.model, &source, target))
-            }
-        },
+        } => context_binding_valid(context, operation, source, path, target),
         Binding::Transformed { .. } => false,
+    }
+}
+
+fn transformed_strip_prefix_valid(
+    prefix: &str,
+    target: &crate::plans::model::ShapeRef<'_>,
+    inner: &Binding,
+) -> bool {
+    if prefix.is_empty()
+        || prefix.len() > 256
+        || prefix.chars().any(char::is_control)
+        || !matches!(
+            plans::model::shape_type(target.value),
+            Some("string" | "enum")
+        )
+    {
+        return false;
+    }
+    matches!(
+        inner,
+        Binding::From { .. }
+            | Binding::Context { .. }
+            | Binding::FromArn { .. }
+            | Binding::FromService { .. }
+    )
+}
+
+fn account_region_valid(target: &crate::plans::model::ShapeRef<'_>) -> bool {
+    plans::model::shape_type(target.value) == Some("string")
+}
+
+fn source_operation_binding_valid(
+    context: &InputContext<'_, '_>,
+    operation: &crate::overlay::OperationName,
+    path: &crate::overlay::MemberPath,
+    target: &crate::plans::model::ShapeRef<'_>,
+) -> bool {
+    source_binding_valid(
+        context.model,
+        context.overlays,
+        context.vocabulary,
+        operation,
+        path,
+        target,
+    )
+}
+
+fn from_service_valid(service: &str, target: &crate::plans::model::ShapeRef<'_>) -> bool {
+    inventory_core::inventory::ServiceId::parse(service).is_ok()
+        && matches!(
+            plans::model::shape_type(target.value),
+            Some("string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean")
+        )
+}
+
+fn context_binding_valid(
+    context: &InputContext<'_, '_>,
+    operation: &crate::overlay::OperationName,
+    source: &crate::overlay::ContextSource,
+    path: &crate::overlay::MemberPath,
+    target: &crate::plans::model::ShapeRef<'_>,
+) -> bool {
+    match source {
+        crate::overlay::ContextSource::SelectedItem => source_binding_valid(
+            context.model,
+            context.overlays,
+            context.vocabulary,
+            operation,
+            path,
+            target,
+        ),
+        crate::overlay::ContextSource::Response | crate::overlay::ContextSource::Request => {
+            let side = if *source == crate::overlay::ContextSource::Response {
+                "output"
+            } else {
+                "input"
+            };
+            context
+                .model
+                .resolve_path(operation.as_str(), side, path.as_str())
+                .ok()
+                .flatten()
+                .is_some_and(|source| compatible(context.model, &source, target))
+        }
     }
 }
 

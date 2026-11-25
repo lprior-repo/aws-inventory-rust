@@ -3,6 +3,7 @@ mod exponents;
 
 use super::request_body_fixtures_support::compile_fixture_service;
 use super::request_body_values::{BoxError, expect_ok};
+use crate::protocol_fixtures::load;
 use aws_wire::request::{
     CompressionPolicy, EncodeError, Protocol, RequestContext, RequestLimits, body,
 };
@@ -118,8 +119,9 @@ fn rpc_big_decimal_honors_small_body_budget_before_conversion() -> Result<(), Bo
 }
 
 fn rpc_fixture() -> Result<Json, BoxError> {
+    let source = load("rpcv2Cbor.json")?;
     let mut fixture: Json = expect_ok(
-        serde_json::from_str(include_str!("../fixtures/protocol-tests/rpcv2Cbor.json")),
+        serde_json::from_str(&source),
         "published RPCv2 fixture is JSON",
     )?;
     fixture

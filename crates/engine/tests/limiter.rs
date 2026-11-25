@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use futures_util::{StreamExt, TryStreamExt, stream};
 use inventory_engine::limiter::{
-    ApiError, ApiExecutor, BucketLimits, BucketPolicy, ExecutorConfig, MAX_BUCKETS,
+    AdaptiveLimits, ApiError, ApiExecutor, BucketLimits, BucketPolicy, ExecutorConfig, MAX_BUCKETS,
     MAX_RATE_PERIOD_MS, MAX_RETRY_AFTER_MS, PeriodLimits, RetryAfter, RetryKind,
 };
 use tokio::sync::Barrier;
@@ -87,12 +87,16 @@ fn directed(kind: RetryKind, retry_after: RetryAfter) -> ApiError {
 
 #[path = "limiter/accepted_hint_boundary_and_retry_exhaustion_remain_bounded.rs"]
 mod accepted_hint_boundary_and_retry_exhaustion_remain_bounded;
+#[path = "limiter/adaptive_policy.rs"]
+mod adaptive_policy;
 #[path = "limiter/adaptive_recovery_stops_at_the_bucket_policy_ceiling.rs"]
 mod adaptive_recovery_stops_at_the_bucket_policy_ceiling;
 #[path = "limiter/backoff_holds_no_global_permit.rs"]
 mod backoff_holds_no_global_permit;
 #[path = "limiter/bucket_keys_have_a_hard_byte_bound.rs"]
 mod bucket_keys_have_a_hard_byte_bound;
+#[path = "limiter/bucket_keys_pace_independently.rs"]
+mod bucket_keys_pace_independently;
 #[path = "limiter/bucket_policies_validate_limits_and_exact_key_bounds.rs"]
 mod bucket_policies_validate_limits_and_exact_key_bounds;
 #[path = "limiter/bucket_policy_json_rejects_unknown_fields.rs"]
@@ -113,6 +117,8 @@ mod cancelling_a_server_cooldown_wakes_all_bucket_waiters;
 mod dropping_a_call_releases_capacity_and_records_cancellation;
 #[path = "limiter/every_concurrent_start_obeys_bucket_rate.rs"]
 mod every_concurrent_start_obeys_bucket_rate;
+#[path = "limiter/eviction.rs"]
+mod eviction;
 #[path = "limiter/final_attempt_retry_hint_delays_queued_peers.rs"]
 mod final_attempt_retry_hint_delays_queued_peers;
 #[path = "limiter/fractional_and_sub_one_rps_policies_pace_every_concurrent_start.rs"]

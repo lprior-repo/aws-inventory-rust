@@ -58,7 +58,7 @@ fn add_resources(model: &ModelFile, out: &mut Vec<(CatalogKey, Value)>) {
     let values = model
         .shapes
         .iter()
-        .filter(|(_, shape)| matches!(&shape.kind, ShapeKind::Resource))
+        .filter(|(_, shape)| matches!(&shape.kind, ShapeKind::Resource { .. }))
         .map(|(id, _)| name(id))
         .collect::<Vec<_>>();
     out.push((CatalogKey::Resources, Value::List(values)));

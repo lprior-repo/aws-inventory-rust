@@ -5,8 +5,8 @@ use serde_json::{Value, json};
 
 use inventory_harness::HarnessError;
 use inventory_harness::catalog::{
-    ARCHIVE, ARCHIVE_SHA256, CAPABILITY_MATRIX, Json, PARENT_CATALOG, ROOT_CATALOG,
-    UPSTREAM_MANIFEST, check, reproduce,
+    ARCHIVE, ARCHIVE_SHA256, CAPABILITY_MATRIX, PARENT_CATALOG, ROOT_CATALOG, UPSTREAM_MANIFEST,
+    check, reproduce,
 };
 use inventory_harness::provenance::{canonical_sha256, file_sha256, sha256_hex};
 
@@ -14,7 +14,7 @@ const FILES: [&str; 6] = [
     ROOT_CATALOG,
     CAPABILITY_MATRIX,
     PARENT_CATALOG,
-    "catalog/cloudcontrol-regional-additions.json",
+    "catalog/cloudcontrol-regional-additions.toml",
     ARCHIVE,
     UPSTREAM_MANIFEST,
 ];
@@ -70,7 +70,7 @@ fn given_committed_tree_when_reproduced_then_documents_match_bytes()
     assert_eq!(root_digest.len(), 64);
     assert_eq!(
         root_digest,
-        "7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4"
+        "14569b1faab78fa6f91cc7b8d682226e1b089730328673f131bce3d268aa38b0"
     );
     assert_eq!(file_sha256(&root.join(ARCHIVE))?, ARCHIVE_SHA256);
     let reports = reproduce(&root)?;
@@ -84,11 +84,12 @@ fn given_committed_tree_when_reproduced_then_documents_match_bytes()
     }
     let resources = report(&reports, ROOT_CATALOG)?;
     assert_eq!(sha256_hex(resources.contents.as_bytes()), root_digest);
-    let parent = Json::parse(&std::fs::read_to_string(root.join(PARENT_CATALOG))?)?;
+    let parent: toml::Value = toml::from_str(&std::fs::read_to_string(root.join(PARENT_CATALOG))?)?;
     assert_eq!(
         parent
-            .at(&["evidence", "root_catalog_sha256"])
-            .and_then(Json::as_str),
+            .get("evidence")
+            .and_then(|evidence| evidence.get("root_catalog_sha256"))
+            .and_then(toml::Value::as_str),
         Some(root_digest.as_str())
     );
     check(&root)?;
@@ -99,8 +100,7 @@ fn given_committed_tree_when_reproduced_then_documents_match_bytes()
 fn given_committed_tree_when_checked_then_capability_partition_is_exact()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace();
-    let matrix: Value =
-        serde_json::from_str(&std::fs::read_to_string(root.join(CAPABILITY_MATRIX))?)?;
+    let matrix: Value = toml::from_str(&std::fs::read_to_string(root.join(CAPABILITY_MATRIX))?)?;
     let rows = field(&matrix, "resource_types")?
         .as_array()
         .ok_or_else(|| HarnessError::invalid("capability rows"))?;
@@ -110,9 +110,9 @@ fn given_committed_tree_when_checked_then_capability_partition_is_exact()
     for row in rows {
         if field(row, "selected")?.as_bool() == Some(true) {
             selected = selected.saturating_add(1);
-            assert_eq!(field(row, "exclusion")?.as_null(), Some(()));
+            assert!(row.get("exclusion").is_none());
         }
-        if let Some(reason) = field(row, "exclusion")?.as_str() {
+        if let Some(reason) = row.get("exclusion").and_then(Value::as_str) {
             let count = exclusions.entry(reason.to_string()).or_insert(0);
             *count = count.saturating_add(1);
         }
@@ -127,7 +127,7 @@ fn given_committed_tree_when_checked_then_capability_partition_is_exact()
             ("scope_unreviewed".to_string(), 894),
         ])
     );
-    let catalog: Value = serde_json::from_str(&std::fs::read_to_string(root.join(ROOT_CATALOG))?)?;
+    let catalog: Value = toml::from_str(&std::fs::read_to_string(root.join(ROOT_CATALOG))?)?;
     let types = field(&catalog, "resource_types")?
         .as_array()
         .ok_or_else(|| HarnessError::invalid("resource types"))?;
@@ -158,7 +158,7 @@ fn given_committed_tree_when_checked_then_capability_partition_is_exact()
 fn given_first_two_hundred_rows_when_canonicalized_then_v04_projection_is_frozen()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = workspace();
-    let catalog: Value = serde_json::from_str(&std::fs::read_to_string(root.join(ROOT_CATALOG))?)?;
+    let catalog: Value = toml::from_str(&std::fs::read_to_string(root.join(ROOT_CATALOG))?)?;
     let types = field(&catalog, "resource_types")?
         .as_array()
         .ok_or_else(|| HarnessError::invalid("resource types"))?;
@@ -187,8 +187,8 @@ fn given_tampered_root_row_when_checked_then_rejects_with_location()
     copy_tree(&workspace(), temporary.path())?;
     replace(
         &temporary.path().join(ROOT_CATALOG),
-        "\"view_name\": \"aws_cc_ec2_instance\"",
-        "\"view_name\": \"aws_cc_ec2_instance_tampered\"",
+        "view_name = \"aws_cc_ec2_instance\"",
+        "view_name = \"aws_cc_ec2_instance_tampered\"",
     )?;
     let error = check(temporary.path()).err();
     let message = error
@@ -208,8 +208,8 @@ fn given_tampered_parent_row_when_checked_then_rejects_with_rust_message()
     copy_tree(&workspace(), temporary.path())?;
     replace(
         &temporary.path().join(PARENT_CATALOG),
-        "\"kind\": \"aws_eks_node_group\"",
-        "\"kind\": \"aws_eks_node_group_tampered\"",
+        "kind = \"aws_eks_node_group\"",
+        "kind = \"aws_eks_node_group_tampered\"",
     )?;
     let message = check(temporary.path())
         .err()
@@ -230,8 +230,8 @@ fn given_tampered_capability_row_when_checked_then_rejects_after_evidence_projec
     copy_tree(&workspace(), temporary.path())?;
     replace(
         &temporary.path().join(CAPABILITY_MATRIX),
-        "\"selected_count\": 397",
-        "\"selected_count\": 396",
+        "selected_count = 397",
+        "selected_count = 396",
     )?;
     let message = check(temporary.path())
         .err()

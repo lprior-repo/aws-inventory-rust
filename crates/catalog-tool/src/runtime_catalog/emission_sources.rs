@@ -14,6 +14,8 @@ pub(super) struct ResourceSource<'a> {
     pub items: Option<&'a ItemSelector>,
     pub projection: Option<&'a ResourceProjection>,
     pub classification: Option<&'a KindClassification>,
+    pub identity: Option<&'a crate::overlay::Identity>,
+    pub scope: Option<crate::overlay::Scope>,
 }
 
 impl ResourceSource<'_> {
@@ -41,6 +43,8 @@ pub(super) fn sources<'a>(
             items: overlay.items.as_ref(),
             projection: overlay.projection.as_ref(),
             classification: overlay.classification.as_ref(),
+            identity: overlay.identity.as_ref(),
+            scope: overlay.scope,
         })
     });
     let additional = kinds.additional_emissions().iter().filter_map(|row| {
@@ -56,6 +60,8 @@ pub(super) fn sources<'a>(
             items: Some(&emission.items),
             projection: emission.projection.as_ref(),
             classification: emission.classification.as_ref(),
+            identity: Some(&emission.identity),
+            scope: overlay.scope,
         })
     });
     primary.chain(additional)
@@ -81,9 +87,14 @@ fn callable<'a>(
 }
 
 fn emits(overlay: &OperationOverlay) -> bool {
+    // Overlay emission is always set (default EmitMetadata).
     overlay.emission == Emission::EmitMetadata
-        || overlay
-            .branches
-            .iter()
-            .any(|branch| branch.emission.unwrap_or(overlay.emission) == Emission::EmitMetadata)
+        || overlay.branches.iter().any(|branch| {
+            // Branch emission overrides overlay emission; None falls back to overlay.
+            let effective = match branch.emission {
+                Some(e) => e,
+                None => overlay.emission,
+            };
+            effective == Emission::EmitMetadata
+        })
 }

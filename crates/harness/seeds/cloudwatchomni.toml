@@ -1,0 +1,11 @@
+format = 1
+service = "cloudwatchomni"
+
+[[step]]
+id = "view"
+operation = "CreateView"
+kind = "AWS::ApiOnly::CloudWatchOmniView"
+identity = { input = "name" }
+[step.input]
+name = "view.inventory_seed"
+definition = "SELECT 1 AS inventory_seed"

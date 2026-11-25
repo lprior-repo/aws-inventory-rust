@@ -1,0 +1,57 @@
+format = 1
+service = "bedrock-agent"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-bedrock-agent"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"bedrock.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "permissions"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-bedrock-agent"
+PolicyName = "inventory-seed-vectors"
+PolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"bedrock:InvokeModel\",\"Resource\":\"arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0\"},{\"Effect\":\"Allow\",\"Action\":[\"s3vectors:QueryVectors\",\"s3vectors:GetIndex\",\"s3vectors:PutVectors\"],\"Resource\":\"arn:aws:s3vectors:us-east-1:000000000000:bucket/inventory-thin-bedrock-agent/*\"}]}"
+
+[[step]]
+id = "bucket"
+service = "s3vectors"
+operation = "CreateVectorBucket"
+kind = "AWS::S3Vectors::VectorBucket"
+identity = "vectorBucketArn"
+[step.input]
+vectorBucketName = "inventory-thin-bedrock-agent"
+
+[[step]]
+id = "index"
+service = "s3vectors"
+operation = "CreateIndex"
+kind = "AWS::S3Vectors::Index"
+identity = "indexArn"
+[step.input]
+vectorBucketArn = { from = "bucket", path = "vectorBucketArn" }
+indexName = "inventory-seed-index"
+dataType = "float32"
+dimension = 1024
+distanceMetric = "cosine"
+metadataConfiguration = { nonFilterableMetadataKeys = ["AMAZON_BEDROCK_TEXT", "AMAZON_BEDROCK_METADATA"] }
+
+[[step]]
+id = "knowledge"
+operation = "CreateKnowledgeBase"
+kind = "AWS::Bedrock::KnowledgeBase"
+identity = "knowledgeBase.knowledgeBaseId"
+[step.input]
+name = "inventory-thin-bedrock-agent"
+roleArn = { from = "role", path = "Role.Arn" }
+knowledgeBaseConfiguration = { type = "VECTOR", vectorKnowledgeBaseConfiguration = { embeddingModelArn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0" } }
+storageConfiguration = { type = "S3_VECTORS", s3VectorsConfiguration = { indexArn = { from = "index", path = "indexArn" } } }

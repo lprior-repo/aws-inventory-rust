@@ -110,11 +110,17 @@ impl WorkerContext {
                     return false;
                 }
                 let status = runtime.block_on(self.cancellation.run(query_graph(state, None)));
-                status.is_some_and(|event| self.emit(revision, event))
+                status.is_some_and(|event| {
+                    (matches!(event, WorkerEvent::GraphStatus { .. })
+                        || self.emit(revision, state.graph.status()))
+                        && self.emit(revision, event)
+                })
             }
             Command::Expand { revision, node } => {
                 let event = runtime.block_on(self.cancellation.run(query_graph(state, Some(node))));
-                event.is_some_and(|event| self.emit(revision, event))
+                event.is_some_and(|event| {
+                    self.emit(revision, state.graph.status()) && self.emit(revision, event)
+                })
             }
             Command::Stop => false,
         }

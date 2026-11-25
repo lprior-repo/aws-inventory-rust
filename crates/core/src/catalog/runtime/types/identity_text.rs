@@ -217,6 +217,7 @@ mod tests {
                 min_length: Some(2),
                 max_length: Some(2),
                 pattern: Some("^[éβ]+$"),
+                ..ValueConstraints::default()
             }),
             &mut cache,
         )?;
@@ -260,11 +261,13 @@ mod tests {
             min_length: Some(2),
             max_length: Some(6),
             pattern: Some("^a"),
+            ..ValueConstraints::default()
         };
         let member = ValueConstraints {
             min_length: Some(4),
             max_length: Some(5),
             pattern: Some("z$"),
+            ..ValueConstraints::default()
         };
         let mut cache = IdentityPatternCache::default();
         // When the immutable intersection is compiled once.
@@ -292,11 +295,13 @@ mod tests {
             min_length: Some(4),
             max_length: Some(5),
             pattern: None,
+            ..ValueConstraints::default()
         };
         let member = ValueConstraints {
             min_length: Some(2),
             max_length: Some(6),
             pattern: None,
+            ..ValueConstraints::default()
         };
         let mut cache = IdentityPatternCache::default();
         let rules = CompiledTextConstraints::compile(target, Some(member), &mut cache)?;
@@ -318,11 +323,13 @@ mod tests {
             min_length: Some(2),
             max_length: Some(3),
             pattern: None,
+            ..ValueConstraints::default()
         };
         let member = ValueConstraints {
             min_length: Some(4),
             max_length: Some(5),
             pattern: None,
+            ..ValueConstraints::default()
         };
         let mut cache = IdentityPatternCache::default();
         assert!(matches!(
@@ -360,8 +367,8 @@ mod tests {
         ) {
             let shape_max = shape_min.saturating_add(shape_width);
             let member_max = member_min.saturating_add(member_width);
-            let target = ValueConstraints { min_length: Some(shape_min), max_length: Some(shape_max), pattern: None };
-            let member = ValueConstraints { min_length: Some(member_min), max_length: Some(member_max), pattern: None };
+            let target = ValueConstraints { min_length: Some(shape_min), max_length: Some(shape_max), ..ValueConstraints::default() };
+            let member = ValueConstraints { min_length: Some(member_min), max_length: Some(member_max), ..ValueConstraints::default() };
             let mut cache = IdentityPatternCache::default();
             let disjoint = shape_max < member_min || member_max < shape_min;
             match CompiledTextConstraints::compile(target, Some(member), &mut cache) {
@@ -392,6 +399,7 @@ mod tests {
                 min_length: Some(1),
                 max_length: Some(255),
                 pattern: Some("^[0-9a-z_]*$"),
+                ..ValueConstraints::default()
             }),
             &mut cache,
         )?;

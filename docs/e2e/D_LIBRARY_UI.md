@@ -32,8 +32,9 @@ What the tree has today (`crates/cmdb-ui`):
   and cannot hold 120 fps on a whole account.
 - There is no account, region, service hierarchy and no level of detail.
 
-The sweep itself lives in the binary crate (`src/sweep_runtime/`,
-`src/sweep_command/`), so nothing but the CLI can run it.
+The collector now lives in `crates/sweep`, with generic `InventoryStore`
+collection, caller-owned cancellation and bounded progress. CLI credential,
+projection and signal wiring remains in `src/sweep_command/`.
 
 ## Packages
 
@@ -81,3 +82,55 @@ UI-thread time, and X8 is restated for a 120 Hz display.
   unavailable", as today.
 - V63: this crate is MIT like the rest. It may depend on the collector,
   store and SQL crates. Nothing may depend on it.
+
+## Wave 0 implementation evidence (2026-11-22)
+
+D1.1 now has separate `sweep` and adapter-inclusive `aws` features, with a
+dependency-graph regression for each and an unconditional bounded IAM
+trust-summary parser required by the current sweep. Build time, peak RSS and
+binary sizes are recorded in [RUN_HERE](RUN_HERE.md#wave-0-feature-split-2026-11-22).
+The measurements use `-j2` and warm caches, not the step's proposed `-j1`
+clean comparison.
+
+The ignored end-to-end suite uses the pinned, checksum-verified emulator and
+Redis/FalkorDB. Its first run exposed a stale test-local 16 MiB catalog bound:
+`compiled catalog exceeds its 16 MiB bound`. The E2E helper now reads with
+the production `inventory_core::catalog::MAX_CATALOG_BYTES` bound (64 MiB),
+without changing the generated catalog or production limits. The coordinator
+must still run the workspace-wide all-target/all-feature gate after integration.
+
+The rerun after that fix reached the sweep CLI, but both scenarios failed:
+`sweep CLI exceeded its 60-second deadline` (0 passed, 2 failed, 135.34 s).
+This remains an unresolved end-to-end blocker; no deadline was increased.
+
+## Wave 1 library status (2026-11-23)
+
+D1.2 and D1.3 are implemented. D1.4's behavior-preserving split and
+structural gate are complete: `bash scripts/check-function-size.sh
+crates/sweep/src` exits 0. The default gate now includes the sweep; explicit
+path arguments select a scoped check without changing other crates' existing
+findings. Test-only fixtures retain their assertions and are excluded from
+the production function gate by the existing test-path convention.
+
+All 331 Rust files under `crates/sweep/src`, including tests, are at most
+298 lines (53,605 lines total; the limit is 1000). Production functions pass
+the function-length gate (under 60 lines). Formatting and all-target `clippy -D warnings` pass.
+Regression suites pass: `inventory-sweep` has 461 passing tests; the root
+`aws-inventory --features sweep` run has 99 passing tests and two ignored.
+The root run includes the separate B5.1 stdout-golden migration (`670b16b0`),
+which retains exact two-line output equality.
+
+Rust additions and deletions below use `git show --no-renames --numstat`
+with `*.rs` paths, so extraction and fixture moves count on both sides.
+Interleaved C5.3 and B5.1 work is not included.
+
+| Step | Commits | Rust added | Rust deleted |
+| --- | --- | ---: | ---: |
+| D1.1 | `58d78566`, `973fd0fd` | 478 | 145 |
+| D1.2 | `72c6568f` | 49,301 | 49,304 |
+| D1.3 | `d77a6985` | 1,176 | 252 |
+| D1.4 | `d366339e`, `2b726e83`, `4b882f12`, `85f56594`, `e1c22073`, `5806eaee` | 17,648 | 15,837 |
+
+D1 as a whole is not declared end-to-end complete: the existing ignored E2E
+timeout above remains unresolved and was not rerun. P1/P6 are **unverified**;
+the required benchmark does not exist yet. No performance claim is made.

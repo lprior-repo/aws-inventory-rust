@@ -1,482 +1,305 @@
 use super::*;
 
-fn sweep_works(sweep: &str, regions: &[(&str, &[(&str, &str)])]) -> TestResult<Vec<WorkSpec>> {
-    regions
-        .iter()
-        .map(|(region, _)| relationship_work(sweep, region, None, Some("beta")))
-        .collect()
+use inventory_core::{
+    catalog::runtime::{ContextProjectionPlan, RuntimeCatalog},
+    inventory::{DiscoveryContext, DiscoveryFrame, OperationId, ResourceId, ServiceId},
+    record::{FieldId, Key, Record, Value},
+};
+use inventory_engine::inventory::{ChangeStats, SchemaRegistry, WorkLease};
+use std::collections::BTreeMap;
+
+async fn work_only_fixture() -> TestResult<(tempfile::TempDir, BinaryStore)> {
+    let directory = tempfile::tempdir()?;
+    let bytes = branch_catalog_bytes(false)?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let registry = SchemaRegistry::new(&bytes, catalog.schemas().to_vec())?;
+    let store = BinaryStore::create(&directory.path().join("inventory.sqlite"), registry).await?;
+    Ok((directory, store))
 }
 
-async fn process_region(
-    store: &BinaryStore,
+fn native_work(
     sweep: &SweepId,
-    regions: &[(&str, &[(&str, &str)])],
-    claimed_at: i64,
-    committed_at: i64,
-    edges: Option<Vec<Edge>>,
-) -> TestResult<inventory_engine::inventory::ChangeStats> {
-    let lease = store
-        .claim(sweep, claimed_at, 20)
-        .await?
-        .ok_or("missing sweep lease")?;
-    let region = lease.scope().region().as_str().to_owned();
-    let ids = regions
-        .iter()
-        .find(|(candidate, _)| *candidate == region)
-        .map(|(_, ids)| *ids)
-        .ok_or("lease for unknown region")?;
-    let observations = ids
-        .iter()
-        .map(|(id, value)| regional(id, value, &region))
-        .collect::<TestResult<Vec<_>>>()?;
-    let mut commit = page(lease, observations, true, None, committed_at);
-    commit.edges = edges.unwrap_or_default();
-    let result = store.commit_page(commit).await?;
-    Ok(result.stats)
-}
-
-async fn sweep_once(
-    store: &BinaryStore,
-    sweep: &str,
-    regions: &[(&str, &[(&str, &str)])],
-    base: i64,
-    edges: Vec<Edge>,
-) -> TestResult<inventory_engine::inventory::ChangeStats> {
-    let works = sweep_works(sweep, regions)?;
-    store.seed_works(&works).await?;
-    let id = SweepId::new(sweep.to_owned())?;
-    let mut total = inventory_engine::inventory::ChangeStats::default();
-    let mut edge_opt = Some(edges);
-    for offset in 0..i64::try_from(regions.len())? {
-        let claimed_at = base.saturating_add(offset);
-        let committed_at = claimed_at.saturating_add(1);
-        let stats = process_region(
-            store,
-            &id,
-            regions,
-            claimed_at,
-            committed_at,
-            edge_opt.take(),
-        )
-        .await?;
-        total.resources_deleted = total
-            .resources_deleted
-            .saturating_add(stats.resources_deleted);
-    }
-    Ok(total)
-}
-
-fn regional(id: &str, value: &str, region: &str) -> TestResult<Observation> {
-    let mut observed = observation(id, value)?;
-    if region != "us-east-1" {
-        let key = ResourceKey {
-            region: Region::parse(region)?,
-            ..resource(id)?
-        };
-        let record = observed.record().clone();
-        observed = Observation::new(key, record, &Exclusions::none(), None)?;
-    }
-    Ok(observed)
-}
-
-fn account_observation(
-    id: &str,
-    value: &str,
-    account: &str,
-    region: &str,
-) -> TestResult<Observation> {
-    let key = ResourceKey {
-        account: AccountId::parse(account)?,
-        region: Region::parse(region)?,
-        ..resource(id)?
+    branch: &str,
+    selector: &str,
+    ordinal: u32,
+    token: Option<Vec<u8>>,
+) -> TestResult<WorkSpec> {
+    let fixed = match branch {
+        "DISCOVER" => "discovery-name",
+        "EMIT" => "emitting-name",
+        _ => return Err("unknown fixture branch".into()),
     };
-    let record = observation(id, value)?.record().clone();
-    Ok(Observation::new(key, record, &Exclusions::none(), None)?)
-}
-
-use inventory_core::inventory::Observation;
-use inventory_core::record::Exclusions;
-
-fn account_scope(account: &str, region: &str) -> TestResult<ScopeKey> {
-    Ok(ScopeKey::new(
-        AccountId::parse(account)?,
-        Region::parse(region)?,
+    let selector_field = FieldId::new(3)?;
+    let bindings = Record::encode(&Value::Map(BTreeMap::from([
+        (Key::Field(FieldId::new(2)?), Value::Text(fixed.to_owned())),
+        (Key::Field(selector_field), Value::Text(selector.to_owned())),
+    ])))?;
+    let projection = ContextProjectionPlan {
+        selected: vec![vec![selector_field].into_boxed_slice()].into_boxed_slice(),
+        ..ContextProjectionPlan::default()
+    };
+    let frame = DiscoveryFrame::project(
         ServiceId::parse("example")?,
         OperationId::parse("ListThings")?,
-        None,
-    )?)
+        ordinal,
+        &projection,
+        &bindings,
+        &bindings,
+        &bindings,
+    )?;
+    let context = DiscoveryContext::empty().push(frame)?;
+    let scope = scope("us-east-1")?
+        .with_branch(branch.to_owned())?
+        .with_context(context.discriminator()?);
+    Ok(
+        WorkSpec::new(sweep.clone(), scope, token, bindings.into_bytes())?
+            .with_context(context.encode()?)?,
+    )
 }
 
-fn account_work(sweep: &str, account: &str, region: &str) -> TestResult<WorkSpec> {
-    WorkSpec::new(
-        SweepId::new(sweep.to_owned())?,
-        account_scope(account, region)?,
-        None,
-        vec![1, 2],
-    )
-    .map_err(Into::into)
+async fn claim_native(store: &BinaryStore, sweep: &SweepId, at: i64) -> TestResult<WorkLease> {
+    store
+        .claim(sweep, at, 20)
+        .await?
+        .ok_or_else(|| "native work was not scheduled".into())
 }
 
-async fn get_scope_key_bytes(
-    pool: &sqlx::SqlitePool,
-    sweep: &str,
-    _region: &str,
-) -> TestResult<Vec<u8>> {
-    let bytes: Vec<u8> = sqlx::query_scalar(
-        "SELECT scope_key FROM scope_outcomes WHERE sweep_id=?1 AND outcome='complete' LIMIT 1",
-    )
-    .bind(sweep)
-    .fetch_one(pool)
-    .await?;
-    Ok(bytes)
+async fn claim_native_work(store: &BinaryStore, work: WorkSpec, at: i64) -> TestResult<WorkLease> {
+    let sweep = work.sweep().clone();
+    store.seed_work(work).await?;
+    claim_native(store, &sweep, at).await
+}
+
+async fn observe_native_member(
+    store: &BinaryStore,
+    sweep: &SweepId,
+    list: &str,
+    ordinal: u32,
+    at: i64,
+) -> TestResult {
+    let listing = native_work(sweep, "DISCOVER", list, ordinal, None)?;
+    let lease = claim_native_work(store, listing, at).await?;
+    let mut describe = native_work(sweep, "EMIT", "listed-id", ordinal, None)?;
+    describe.mark_scope_member(ResourceId::parse("listed-id")?);
+    let describe_scope = describe.scope().clone();
+    let mut commit = page(lease, Vec::new(), true, None, at.saturating_add(1));
+    commit.children.push(describe);
+    assert_eq!(store.commit_page(commit).await?.stats.resources_deleted, 0);
+
+    let lease = claim_native(store, sweep, at.saturating_add(2)).await?;
+    assert_eq!(lease.scope(), &describe_scope);
+    let commit = page(
+        lease,
+        vec![observation("modeled-id", "described value")?.with_facet_precedence(100)],
+        true,
+        None,
+        at.saturating_add(3),
+    );
+    assert_eq!(store.commit_page(commit).await?.stats.resources_deleted, 0);
+    Ok(())
+}
+
+async fn finish_native_listing(
+    store: &BinaryStore,
+    listing: WorkSpec,
+    outcome: ScopeOutcome,
+    at: i64,
+) -> TestResult<ChangeStats> {
+    let lease = claim_native_work(store, listing, at).await?;
+    Ok(store
+        .finish_scope(lease, outcome, at.saturating_add(1), None)
+        .await?)
 }
 
 #[tokio::test]
-async fn given_a_resource_that_vanishes_when_two_complete_sweeps_miss_it_then_row_edges_and_projection_are_gone()
+async fn given_a_listed_description_when_two_full_listings_miss_it_then_only_the_second_retires_it()
 -> TestResult {
-    let (directory, store, _) = fixture().await?;
-    let east = "us-east-1";
-    let edge = Edge {
-        from: resource("gone")?,
-        to: resource("keep")?,
-        relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
-    };
-    sweep_once(
-        &store,
-        "s1",
-        &[(east, &[("keep", "beta"), ("gone", "alpha")][..])],
-        100,
-        vec![edge],
-    )
-    .await?;
-    for key in ["keep", "gone"] {
-        assert!(store.projection_resource(&resource(key)?).await?.is_some());
-    }
-    // Drain the inserts so only deletion work remains in the outbox.
-    for pending in store.drain_projection(100).await? {
-        store
-            .ack_projection(match pending.key {
-                Some(key) => {
-                    inventory_engine::inventory::ProjectionAck::new(key, pending.revision)?
-                }
-                None => inventory_engine::inventory::ProjectionAck::full_rebuild(pending.revision)?,
-            })
-            .await?;
-    }
+    let (_directory, store) = work_only_fixture().await?;
+    let key = resource("modeled-id")?;
+    let baseline = SweepId::new("listed".to_owned())?;
+    observe_native_member(&store, &baseline, "primary", 0, 100).await?;
+    assert!(store.projection_resource(&key).await?.is_some());
 
-    // First complete sweep that misses it: still stored.
-    let first = sweep_once(
-        &store,
-        "s2",
-        &[(east, &[("keep", "beta")][..])],
-        200,
-        Vec::new(),
-    )
-    .await?;
-    assert_eq!(first.resources_deleted, 0);
+    let first = SweepId::new("first-miss".to_owned())?;
+    let listing = native_work(&first, "DISCOVER", "primary", 1, None)?;
+    let stats = finish_native_listing(&store, listing, ScopeOutcome::Complete, 200).await?;
+    assert_eq!(stats.resources_deleted, 0);
+    let unrelated = native_work(&first, "DISCOVER", "unrelated", 1, None)?;
+    let stats = finish_native_listing(&store, unrelated, ScopeOutcome::Complete, 210).await?;
+    assert_eq!(stats.resources_deleted, 0);
+    assert!(store.projection_resource(&key).await?.is_some());
+
+    let partial = SweepId::new("interrupted".to_owned())?;
+    let listing = native_work(&partial, "DISCOVER", "primary", 2, None)?;
+    let lease = claim_native_work(&store, listing, 300).await?;
+    let started = page(lease, Vec::new(), false, Some(vec![b'A']), 301);
+    assert_eq!(store.commit_page(started).await?.stats.resources_deleted, 0);
+    let tail = claim_native(&store, &partial, 302).await?;
+    let stats = store
+        .finish_scope(tail, ScopeOutcome::Partial, 303, None)
+        .await?;
+    assert_eq!(stats.resources_deleted, 0);
+    assert!(store.projection_resource(&key).await?.is_some());
+
+    let tail_only = SweepId::new("tail-only".to_owned())?;
+    let listing = native_work(&tail_only, "DISCOVER", "primary", 3, Some(vec![b'B']))?;
+    let lease = claim_native_work(&store, listing, 400).await?;
+    assert_eq!(lease.token(), Some(b"B".as_slice()));
+    let stats = store
+        .commit_page(page(lease, Vec::new(), true, None, 401))
+        .await?
+        .stats;
+    assert_eq!(stats.resources_deleted, 0);
+    assert!(store.projection_resource(&key).await?.is_some());
+
+    let second = SweepId::new("second-miss".to_owned())?;
+    let listing = native_work(&second, "DISCOVER", "primary", 4, None)?;
+    let stats = finish_native_listing(&store, listing, ScopeOutcome::Complete, 500).await?;
+    assert_eq!(stats.resources_deleted, 1);
+    assert!(store.projection_resource(&key).await?.is_none());
     assert!(
         store
-            .projection_resource(&resource("gone")?)
+            .drain_projection(100)
             .await?
-            .is_some()
+            .iter()
+            .any(|entry| entry.deleted && entry.key.as_ref() == Some(&key))
     );
+    Ok(())
+}
+
+async fn miss_both_native_listings(
+    store: &BinaryStore,
+    sweep: &str,
+    at: i64,
+) -> TestResult<ChangeStats> {
+    let sweep = SweepId::new(sweep.to_owned())?;
+    let first = native_work(&sweep, "DISCOVER", "primary", 0, None)?;
+    let second = native_work(&sweep, "DISCOVER", "alternate", 1, None)?;
+    let first = claim_native_work(store, first, at).await?;
+    let second = claim_native_work(store, second, at).await?;
+    let stats = store
+        .finish_scope(first, ScopeOutcome::Complete, at.saturating_add(1), None)
+        .await?;
+    assert_eq!(stats.resources_deleted, 0);
+    Ok(store
+        .finish_scope(second, ScopeOutcome::Complete, at.saturating_add(2), None)
+        .await?)
+}
+
+#[tokio::test]
+async fn given_shared_native_describe_authority_when_the_last_live_memberships_expire_then_it_retires_once()
+-> TestResult {
+    let (_directory, store) = work_only_fixture().await?;
+    let key = resource("modeled-id")?;
+    let baseline = SweepId::new("shared-listed".to_owned())?;
+    observe_native_member(&store, &baseline, "primary", 0, 100).await?;
+    observe_native_member(&store, &baseline, "alternate", 1, 110).await?;
+
+    for (name, at) in [("primary-miss-one", 200), ("primary-miss-two", 300)] {
+        let sweep = SweepId::new(name.to_owned())?;
+        let listing = native_work(&sweep, "DISCOVER", "primary", 0, None)?;
+        let stats = finish_native_listing(&store, listing, ScopeOutcome::Complete, at).await?;
+        assert_eq!(stats.resources_deleted, 0);
+        assert!(store.projection_resource(&key).await?.is_some());
+    }
+
+    let reappeared = SweepId::new("shared-listed-again".to_owned())?;
+    observe_native_member(&store, &reappeared, "primary", 0, 400).await?;
     assert_eq!(
-        store
-            .projection_edges_for(&resource("gone")?, None, 10)
+        miss_both_native_listings(&store, "shared-miss-one", 500)
             .await?
-            .edges
-            .len(),
+            .resources_deleted,
+        0
+    );
+    assert!(store.projection_resource(&key).await?.is_some());
+    assert_eq!(
+        miss_both_native_listings(&store, "shared-miss-two", 600)
+            .await?
+            .resources_deleted,
         1
     );
+    assert!(store.projection_resource(&key).await?.is_none());
+    Ok(())
+}
 
-    // Second complete sweep that misses it: deleted everywhere.
-    let second = sweep_once(
-        &store,
-        "s3",
-        &[(east, &[("keep", "beta")][..])],
-        300,
-        Vec::new(),
-    )
-    .await?;
-    assert_eq!(second.resources_deleted, 1);
-    assert!(
-        store
-            .projection_resource(&resource("gone")?)
-            .await?
-            .is_none()
-    );
-    assert!(
-        store
-            .projection_resource(&resource("keep")?)
-            .await?
-            .is_some()
-    );
-    assert!(
-        store
-            .projection_edges_for(&resource("keep")?, None, 10)
-            .await?
-            .edges
-            .is_empty()
-    );
+#[tokio::test]
+async fn given_an_independent_facet_when_the_listed_facet_expires_then_the_survivor_is_published()
+-> TestResult {
+    let (directory, store) = work_only_fixture().await?;
+    let baseline = SweepId::new("preferred-description".to_owned())?;
+    observe_native_member(&store, &baseline, "primary", 0, 100).await?;
+    let fallback = SweepId::new("independent-description".to_owned())?;
+    let work = native_work(&fallback, "EMIT", "independent-id", 0, None)?;
+    let lease = claim_native_work(&store, work, 200).await?;
+    let secondary = observation("modeled-id", "independent value")?.with_facet_precedence(0);
+    store
+        .commit_page(page(lease, vec![secondary], true, None, 201))
+        .await?;
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
             SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
         )
         .await?;
-    let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resources WHERE id='gone'")
-        .fetch_one(&pool)
-        .await?;
-    let edges: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM edges")
-        .fetch_one(&pool)
-        .await?;
-    let typed: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM thing_table")
-        .fetch_one(&pool)
-        .await?;
+    let value = "SELECT f_1 FROM thing_table WHERE id='modeled-id'";
+    let before: String = sqlx::query_scalar(value).fetch_one(&pool).await?;
+    assert_eq!(before, "described value");
+
+    let first = SweepId::new("preferred-miss-one".to_owned())?;
+    let listing = native_work(&first, "DISCOVER", "primary", 0, None)?;
+    let stats = finish_native_listing(&store, listing, ScopeOutcome::Complete, 300).await?;
+    assert_eq!((stats.resources_deleted, stats.resources_changed), (0, 0));
+    let second = SweepId::new("preferred-miss-two".to_owned())?;
+    let listing = native_work(&second, "DISCOVER", "primary", 0, None)?;
+    let stats = finish_native_listing(&store, listing, ScopeOutcome::Complete, 400).await?;
+    assert_eq!((stats.resources_deleted, stats.resources_changed), (0, 1));
+
+    let after: String = sqlx::query_scalar(value).fetch_one(&pool).await?;
+    assert_eq!(after, "independent value");
+    let retired: (i64, i64) = sqlx::query_as(
+        "SELECT COUNT(*),max(last_seen) FROM resource_scopes WHERE id='modeled-id' AND missing_complete=2",
+    )
+    .fetch_one(&pool)
+    .await?;
+    assert_eq!(retired, (1, 401));
+    let facets: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM resource_facets WHERE id='modeled-id'")
+            .fetch_one(&pool)
+            .await?;
+    assert_eq!(facets, 1);
     pool.close().await;
-    assert_eq!(
-        (rows, edges, typed),
-        (0, 0, 1),
-        "only keep remains in the typed table"
-    );
-    // The graph is told: the outbox carries a deletion for the removed key.
-    let gone = resource("gone")?;
-    let pending = store.drain_projection(100).await?;
-    assert!(
-        pending
-            .iter()
-            .any(|entry| entry.deleted && entry.key.as_ref() == Some(&gone)),
-        "outbox must carry the deletion for the graph projection: {pending:?}"
-    );
     Ok(())
 }
 
 #[tokio::test]
-async fn given_narrowed_regions_when_sweeps_complete_then_nothing_is_deleted_and_skipped_scope_is_unobserved_with_age()
+async fn given_a_fresh_describe_when_its_last_membership_expires_then_the_observation_survives()
 -> TestResult {
-    let (_directory, store, _) = fixture().await?;
-    let both = [
-        ("us-east-1", &[("east", "beta")][..]),
-        ("us-west-2", &[("west", "beta")][..]),
-    ];
-    sweep_once(&store, "n1", &both, 100, Vec::new()).await?;
-    let narrowed = [("us-east-1", &[("east", "beta")][..])];
-    let mut deleted: u64 = 0;
-    for (index, sweep) in ["n2", "n3", "n4"].into_iter().enumerate() {
-        let offset = i64::try_from(index)?;
-        let result = sweep_once(
-            &store,
-            sweep,
-            &narrowed,
-            1_000_i64.saturating_add(offset.saturating_mul(100_i64)),
-            Vec::new(),
-        )
-        .await?;
-        deleted = deleted.saturating_add(result.resources_deleted);
-    }
-    assert_eq!(deleted, 0);
-    let west = ResourceKey {
-        region: Region::parse("us-west-2")?,
-        ..resource("west")?
-    };
-    assert!(store.projection_resource(&west).await?.is_some());
+    let (_directory, store) = work_only_fixture().await?;
+    let baseline = SweepId::new("initial-description".to_owned())?;
+    observe_native_member(&store, &baseline, "primary", 0, 100).await?;
+    let first = SweepId::new("first-stale-membership".to_owned())?;
+    let listing = native_work(&first, "DISCOVER", "primary", 0, None)?;
+    let stats = finish_native_listing(&store, listing, ScopeOutcome::Complete, 200).await?;
+    assert_eq!(stats.resources_deleted, 0);
 
-    let last = SweepId::new("n4".to_owned())?;
-    assert_eq!(store.sweep_summary(&last).await?.unobserved_scopes, 1);
-    let skipped = store.unobserved_scopes(&last, 5_000).await?;
-    let [only] = skipped.as_slice() else {
-        return Err("expected exactly one unobserved scope".into());
-    };
-    assert_eq!(only.scope, scope("us-west-2")?);
-    assert_eq!(only.last_observed_ms, 102);
-    assert_eq!(only.age_ms, 4_898);
-    // A full-width sweep observes it again and clears the report.
-    sweep_once(&store, "n5", &both, 6_000, Vec::new()).await?;
-    let again = SweepId::new("n5".to_owned())?;
-    assert!(store.unobserved_scopes(&again, 7_000).await?.is_empty());
-    assert_eq!(store.sweep_summary(&again).await?.unobserved_scopes, 0);
-    Ok(())
-}
-
-#[tokio::test]
-async fn given_failed_outcome_when_scope_becomes_absent_then_age_measured_from_last_complete()
--> TestResult {
-    let (directory, store, _) = fixture().await?;
-    // S1: complete observation at t=100
-    sweep_once(
-        &store,
-        "s1",
-        &[("us-east-1", &[("x", "v1")][..])],
-        100,
-        Vec::new(),
-    )
-    .await?;
-    // Manually record a failed outcome at t=200 (simulating a failed sweep)
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(
-            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
-        )
-        .await?;
-    let scope_key_bytes = get_scope_key_bytes(&pool, "s1", "us-east-1").await?;
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES('s2',?1,'failed',200) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='failed',observed_at=200")
-        .bind(&scope_key_bytes)
-        .execute(&pool)
-        .await?;
-    pool.close().await;
-    // S3: scope absent (different scope entirely); should report unobserved with last_observed=101 (from complete), not 200 (from failed)
-    sweep_once(
-        &store,
-        "s3",
-        &[("us-west-2", &[("y", "v2")][..])],
-        300,
-        Vec::new(),
-    )
-    .await?;
-    let s3 = SweepId::new("s3".to_owned())?;
-    let unobserved = store.unobserved_scopes(&s3, 1_000).await?;
-    let [only] = unobserved.as_slice() else {
-        return Err("expected exactly one unobserved scope".into());
-    };
-    assert_eq!(only.scope, scope("us-east-1")?);
-    assert_eq!(
-        only.last_observed_ms, 101,
-        "age measured from last complete, not failed outcome"
-    );
-    Ok(())
-}
-
-#[tokio::test]
-async fn given_scope_with_non_complete_last_outcome_when_scope_becomes_absent_then_not_reported_unobserved()
--> TestResult {
-    let (directory, store, _) = fixture().await?;
-    // S1: complete observation
-    sweep_once(
-        &store,
-        "s1",
-        &[("us-east-1", &[("x", "v1")][..])],
-        100,
-        Vec::new(),
-    )
-    .await?;
-    // Manually record a partial outcome at t=200 (last outcome is not complete)
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(
-            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
-        )
-        .await?;
-    let scope_key_bytes = get_scope_key_bytes(&pool, "s1", "us-east-1").await?;
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES('s2',?1,'partial',200) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='partial',observed_at=200")
-        .bind(&scope_key_bytes)
-        .execute(&pool)
-        .await?;
-    pool.close().await;
-    // S3: scope absent; should NOT report as unobserved because last outcome was not complete
-    sweep_once(
-        &store,
-        "s3",
-        &[("us-east-1", &[("y", "v2")][..])],
-        300,
-        Vec::new(),
-    )
-    .await?;
-    let s3 = SweepId::new("s3".to_owned())?;
-    let unobserved = store.unobserved_scopes(&s3, 1_000).await?;
-    // The us-east-1 scope should not be reported because its last outcome was 'partial', not 'complete'
-    // (the history query only considers 'complete' outcomes)
-    let reported: Vec<_> = unobserved
-        .iter()
-        .filter(|u| u.scope.region().as_str() == "us-east-1")
-        .collect();
-    assert!(
-        reported.is_empty(),
-        "scope with last non-complete outcome should not be reported unobserved"
-    );
-    Ok(())
-}
-
-#[tokio::test]
-async fn given_removed_account_profile_when_later_sweep_runs_only_other_account_then_removed_account_scopes_are_unobserved()
--> TestResult {
-    let (_directory, store, _) = fixture().await?;
-    // S1: account A complete
-    let work_a = account_work("s1", "111111111111", "us-east-1")?;
-    store.seed_work(work_a).await?;
+    let second = SweepId::new("fresh-description".to_owned())?;
+    let listing = native_work(&second, "DISCOVER", "primary", 0, None)?;
+    let list = claim_native_work(&store, listing, 300).await?;
+    let describe = native_work(&second, "EMIT", "listed-id", 1, None)?;
+    let describe = claim_native_work(&store, describe, 300).await?;
+    let fresh = observation("modeled-id", "fresh value")?;
+    let hash = *fresh.content_hash().as_bytes();
     store
-        .create_sweep_manifest(&SweepId::new("s1".to_owned())?, "111111111111")
+        .commit_page(page(describe, vec![fresh], true, None, 301))
         .await?;
-    let lease_a = store
-        .claim(&SweepId::new("s1".to_owned())?, 100, 20)
+    let stats = store
+        .finish_scope(list, ScopeOutcome::Complete, 302, None)
+        .await?;
+    assert_eq!(stats.resources_deleted, 0);
+    let projected = store
+        .projection_resource(&resource("modeled-id")?)
         .await?
-        .ok_or("missing lease a")?;
-    store
-        .commit_page(page(
-            lease_a,
-            vec![account_observation("a", "va", "111111111111", "us-east-1")?],
-            true,
-            None,
-            101,
-        ))
-        .await?;
-    // S2: account B complete
-    let work_b = account_work("s2", "222222222222", "us-west-2")?;
-    store.seed_work(work_b).await?;
-    store
-        .create_sweep_manifest(&SweepId::new("s2".to_owned())?, "222222222222")
-        .await?;
-    let lease_b = store
-        .claim(&SweepId::new("s2".to_owned())?, 200, 20)
-        .await?
-        .ok_or("missing lease b")?;
-    store
-        .commit_page(page(
-            lease_b,
-            vec![account_observation("b", "vb", "222222222222", "us-west-2")?],
-            true,
-            None,
-            201,
-        ))
-        .await?;
-    // S3: only account A runs again; account B should be reported unobserved
-    let work_a3 = account_work("s3", "111111111111", "us-east-1")?;
-    store.seed_work(work_a3).await?;
-    store
-        .create_sweep_manifest(&SweepId::new("s3".to_owned())?, "111111111111")
-        .await?;
-    let lease_a3 = store
-        .claim(&SweepId::new("s3".to_owned())?, 300, 20)
-        .await?
-        .ok_or("missing lease a3")?;
-    store
-        .commit_page(page(
-            lease_a3,
-            vec![account_observation(
-                "a2",
-                "va2",
-                "111111111111",
-                "us-east-1",
-            )?],
-            true,
-            None,
-            301,
-        ))
-        .await?;
-    // Verify account B's scope is reported unobserved
-    let s3 = SweepId::new("s3".to_owned())?;
-    let unobserved = store.unobserved_scopes(&s3, 1_000).await?;
-    let b_unobserved = unobserved
-        .iter()
-        .find(|u| u.scope.account().as_str() == "222222222222");
-    assert!(
-        b_unobserved.is_some(),
-        "account B's scope should be reported unobserved when account B is not run in current sweep"
-    );
-    let b_scope = b_unobserved.ok_or("account B scope not found")?;
-    assert_eq!(
-        b_scope.last_observed_ms, 201,
-        "age measured from account B's last complete observation"
-    );
+        .ok_or("fresh described resource disappeared")?;
+    assert_eq!(projected.content_hash, hash);
     Ok(())
 }

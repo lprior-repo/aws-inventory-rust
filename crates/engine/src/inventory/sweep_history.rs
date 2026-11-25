@@ -15,6 +15,7 @@ pub async fn last_completed_sweep(
     store: &BinaryStore,
     account: &str,
 ) -> Result<Option<LastSweep>, StoreError> {
+    let _turn = store.read_turn().await;
     let row = sqlx::query(
         "SELECT sweep_id,ended_at FROM sweeps WHERE account=?1 AND completed=1 ORDER BY ended_at DESC LIMIT 1",
     )

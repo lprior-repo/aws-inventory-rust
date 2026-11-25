@@ -81,6 +81,7 @@ mod support {
                 (4, Value::List(target_path)),
                 (5, Value::Text("references".into())),
                 (6, Value::Int(0)),
+                (7, Value::Int(1)),
                 (10, Value::Int(source)),
                 (11, Value::Int(0)),
                 (12, Value::Int(mode)),
@@ -99,6 +100,7 @@ mod support {
             (4, Value::List(vec![])),
             (5, Value::Text("references".into())),
             (6, Value::Int(0)),
+            (7, Value::Int(1)),
             (10, Value::Int(1)),
             (11, Value::Int(0)),
             (12, Value::Int(4)),
@@ -171,7 +173,7 @@ fn reference(value: &str, mode: RelationTargetMode) -> TestResult<UnresolvedRefe
     Ok(UnresolvedReference {
         from: resource("source")?,
         relation: Relation::parse("references")?,
-        source: EdgeSource::InferredExact,
+        source: EdgeSource::ReviewedRule,
         target: ReferenceTarget::typed(
             key.account,
             key.region,
@@ -274,8 +276,8 @@ async fn given_reviewed_text_list_when_exact_members_commit_then_both_edges_surv
             assert_edges(
                 &reopened,
                 &[
-                    ("other", EdgeSource::InferredExact),
-                    ("target", EdgeSource::InferredExact),
+                    ("other", EdgeSource::ReviewedRule),
+                    ("target", EdgeSource::ReviewedRule),
                 ],
             )
             .await?;
@@ -304,13 +306,13 @@ async fn given_reviewed_text_list_when_direct_edge_names_a_member_then_its_exact
                 from: resource("source")?,
                 to: resource("target")?,
                 relation: Relation::parse("references")?,
-                source: EdgeSource::Model,
+                source: EdgeSource::ReviewedRule,
             });
             // When an existing supported same-page direct edge is persisted.
             store.commit_page(page).await?;
             // Then target-mode matching selects the member even when target Name differs from its canonical ID.
             let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-            assert_edges(&reopened, &[("target", EdgeSource::Model)]).await?;
+            assert_edges(&reopened, &[("target", EdgeSource::ReviewedRule)]).await?;
         }
     }
     Ok(())
@@ -355,7 +357,7 @@ async fn given_reviewed_list_when_member_is_absent_or_a_later_element_is_malform
                         from: resource("source")?,
                         to: resource("target")?,
                         relation: Relation::parse("references")?,
-                        source: EdgeSource::Model,
+                        source: EdgeSource::ReviewedRule,
                     });
                 } else {
                     page.unresolved.push(reference(
@@ -420,7 +422,7 @@ async fn given_scalar_guard_or_component_when_only_a_list_contains_its_value_the
                     from: resource("source")?,
                     to: resource("target")?,
                     relation: Relation::parse("references")?,
-                    source: EdgeSource::Model,
+                    source: EdgeSource::ReviewedRule,
                 });
             } else {
                 let mut reference = reference("target", RelationTargetMode::CanonicalId)?;

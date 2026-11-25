@@ -1,0 +1,10 @@
+format = 1
+service = "iot-managed-integrations"
+
+[[step]]
+id = "resource"
+operation = "CreateCredentialLocker"
+kind = "AWS::ApiOnly::IoTManagedIntegrationsCredentialLocker"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-iot-managed-integrations"

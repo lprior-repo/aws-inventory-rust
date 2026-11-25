@@ -127,3 +127,47 @@ async fn given_unfinished_operators_when_querying_then_native_syntax_errors_rema
     store.close().await;
     Ok(())
 }
+
+#[tokio::test]
+async fn given_legacy_dialect_when_reading_quotes_then_select_and_with_keep_their_values()
+-> TestResult {
+    let store = Store::open(":memory:").await?;
+    for sql in [
+        "SELECT 1 AS `semi;column`",
+        "SELECT 1 AS [semi;column]",
+        "WITH row AS (SELECT 1 AS n) SELECT n AS `semi;column` FROM row",
+    ] {
+        assert_eq!(store.query(sql, 10).await?, json!([{"semi;column": 1}]));
+    }
+    assert_eq!(
+        store.query("SELECT 1 AS \"pg_cancel_backend\"", 10).await?,
+        json!([{"pg_cancel_backend": 1}])
+    );
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_postgres_only_prefixes_when_querying_legacy_then_they_are_denied() -> TestResult {
+    let store = Store::open(":memory:").await?;
+    for sql in [
+        "VALUES (1)",
+        "EXPLAIN SELECT 1",
+        "TABLE resources",
+        "SHOW search_path",
+    ] {
+        let error = store
+            .query(sql, 10)
+            .await
+            .err()
+            .ok_or("expected an error")?;
+        match error {
+            StoreError::QueryDenied(reason) => {
+                assert_eq!(reason, "only SELECT or WITH queries are permitted")
+            }
+            error => return Err(format!("unexpected error: {error}").into()),
+        }
+    }
+    store.close().await;
+    Ok(())
+}

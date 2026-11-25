@@ -1,0 +1,10 @@
+format = 1
+service = "lakeformation"
+
+[[step]]
+id = "resource"
+operation = "CreateLFTag"
+kind = ""
+[step.input]
+"TagKey" = "inventory-thin-lakeformation"
+"TagValues" = ["inventory-thin-lakeformation"]

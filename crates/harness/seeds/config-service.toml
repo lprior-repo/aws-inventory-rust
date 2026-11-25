@@ -1,0 +1,28 @@
+format = 1
+service = "config-service"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-config-service"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"config.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "recorder"
+operation = "PutConfigurationRecorder"
+kind = ""
+[step.input]
+ConfigurationRecorder = { name = "inventory-thin-config-service", roleARN = { from = "role", path = "Role.Arn" }, recordingGroup = { allSupported = true, includeGlobalResourceTypes = false } }
+
+[[step]]
+id = "recorder_identity"
+operation = "DescribeConfigurationRecorders"
+kind = "AWS::Config::ConfigurationRecorder"
+identity = "ConfigurationRecorders.0.arn"
+[step.input]
+ConfigurationRecorderNames = ["inventory-thin-config-service"]

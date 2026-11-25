@@ -50,42 +50,9 @@ fn overlay_paginator(
             input,
             output,
             truncated,
-        } => {
-            let request = resolve_request_path(model, operation, input.as_str());
-            let response = model
-                .resolve_path(operation, "output", output.as_str())
-                .ok()
-                .flatten();
-            let element = response
-                .as_ref()
-                .filter(|shape| plans::model::shape_type(shape.value) == Some("list"))
-                .and_then(|shape| shape.value.get("member"))
-                .and_then(plans::model::target)
-                .and_then(|target| model.shape(target));
-            let valid = request
-                .as_ref()
-                .zip(element.as_ref())
-                .is_some_and(|(request, element)| {
-                    matches!(
-                        plans::model::shape_type(request.value),
-                        Some("string" | "enum")
-                    ) && matches!(
-                        plans::model::shape_type(element.value),
-                        Some("string" | "enum")
-                    ) && compatible(model, request, element)
-                });
-            if !valid {
-                super::pagination_tokens::invalid_token(
-                    service,
-                    operation,
-                    input.as_str(),
-                    violations,
-                );
-            }
-            let flag_valid =
-                validate_truncated(service, operation, model, Some(truncated), violations);
-            valid && flag_valid
-        }
+        } => validate_last_list_item(
+            service, operation, model, input, output, truncated, violations,
+        ),
         Paginator::Tokens { pairs, truncated } => validate_tokens(
             service,
             operation,
@@ -95,6 +62,45 @@ fn overlay_paginator(
             violations,
         ),
     }
+}
+
+fn validate_last_list_item(
+    service: &str,
+    operation: &str,
+    model: &Model<'_>,
+    input: &crate::overlay::MemberPath,
+    output: &crate::overlay::MemberPath,
+    truncated: &crate::overlay::MemberPath,
+    violations: &mut Vec<Violation>,
+) -> bool {
+    let request = resolve_request_path(model, operation, input.as_str());
+    let response = model
+        .resolve_path(operation, "output", output.as_str())
+        .ok()
+        .flatten();
+    let element = response
+        .as_ref()
+        .filter(|shape| plans::model::shape_type(shape.value) == Some("list"))
+        .and_then(|shape| shape.value.get("member"))
+        .and_then(plans::model::target)
+        .and_then(|target| model.shape(target));
+    let valid = request
+        .as_ref()
+        .zip(element.as_ref())
+        .is_some_and(|(request, element)| {
+            matches!(
+                plans::model::shape_type(request.value),
+                Some("string" | "enum")
+            ) && matches!(
+                plans::model::shape_type(element.value),
+                Some("string" | "enum")
+            ) && compatible(model, request, element)
+        });
+    if !valid {
+        super::pagination_tokens::invalid_token(service, operation, input.as_str(), violations);
+    }
+    let flag_valid = validate_truncated(service, operation, model, Some(truncated), violations);
+    valid && flag_valid
 }
 
 fn resolve_request_path<'m>(

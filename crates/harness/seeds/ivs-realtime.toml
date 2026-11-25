@@ -1,0 +1,10 @@
+format = 1
+service = "ivs-realtime"
+
+[[step]]
+id = "resource"
+operation = "CreateStage"
+kind = "AWS::IVS::Stage"
+identity = "stage.arn"
+[step.input]
+name = "inventory-thin-ivs-realtime"

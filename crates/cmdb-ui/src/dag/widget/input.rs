@@ -6,6 +6,11 @@ use crate::dag::view::{ViewTransform, f32_of};
 
 const CLICK_SLOP: f64 = 4.0;
 
+pub(super) fn scripted_click(view: &mut DagView, cx: &mut Cx, abs: DVec2) {
+    let node = hit_node(view, abs);
+    select_node(view, cx, node);
+}
+
 pub(super) fn handle_event(view: &mut DagView, cx: &mut Cx, event: &Event) {
     let area = view.draw_bg.area();
     match event.hits_with_capture_overload(cx, area, true) {

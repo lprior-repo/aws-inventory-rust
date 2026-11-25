@@ -1,0 +1,15 @@
+format = 1
+service = "dynamodb-streams"
+
+[[step]]
+id = "table"
+service = "dynamodb"
+operation = "CreateTable"
+kind = "AWS::DynamoDB::Table"
+identity = "TableDescription.TableArn"
+[step.input]
+TableName = "inventory-thin-streams"
+AttributeDefinitions = [{ AttributeName = "id", AttributeType = "S" }]
+KeySchema = [{ AttributeName = "id", KeyType = "HASH" }]
+BillingMode = "PAY_PER_REQUEST"
+StreamSpecification = { StreamEnabled = true, StreamViewType = "NEW_AND_OLD_IMAGES" }

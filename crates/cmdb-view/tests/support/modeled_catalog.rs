@@ -141,6 +141,7 @@ fn runtime(model: &Model) -> TestResult<Value> {
                 (4, Value::List(vec![Value::Int(1)])),
                 (5, text(relation)),
                 (6, Value::Int(0)),
+                (7, Value::Int(0)),
                 (10, Value::Int(1)),
             ])
         })
@@ -151,7 +152,7 @@ fn runtime(model: &Model) -> TestResult<Value> {
         (3, Value::Int(0)),
     ])?;
     wire([
-        (1, Value::Int(2)),
+        (1, Value::Int(3)),
         (2, Value::List(vec![plan(model)?])),
         (3, Value::List(vec![schema])),
         (4, Value::List(relations)),

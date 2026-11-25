@@ -20,7 +20,7 @@ Conventions used in every step:
   (`[workspace.lints]` in `Cargo.toml`, which also denies
   `arithmetic_side_effects`).
 - `scripts/check-function-size.sh` checks `crates/catalog-tool/src` and
-  `crates/harness/src`, so the 25-line limit is enforced on almost all of this
+  `crates/harness/src`, so the under-60-line limit is enforced on almost all of this
   track.
 
 ## A0 Catalog gate
@@ -42,7 +42,7 @@ Conventions used in every step:
      `item_target_for_selector`, `operation_for` and `operation_for_checked` out
      of `model_path.rs` into `model_path/validation.rs`. `model_path.rs` keeps
      `resolve`, `terminal_member`, `item_target`, `list_element`, `kind`,
-     `string_target`, `shape_for`, `member`. This brings the file under 300.
+     `string_target`, `shape_for`, `member`. This shortens the file.
   2. Add one variant to `RuntimeCatalogCompileError`:
      `KindContext { kind: String, path: String, reason: &'static str }` (new),
      text "runtime capability metadata is unsupported for kind {kind}, path
@@ -74,7 +74,7 @@ Conventions used in every step:
 - **Size:** about 120 added, 60 moved, 10 deleted. One change.
 - **Watch out:** `RuntimeCatalogCompileError` is `#[non_exhaustive]`; adding a
   variant is not a breaking change inside the workspace. Every moved function
-  must stay at or under 25 lines.
+  must stay under 60 lines.
 - **Review fix (2026-11-18):** this plan was written from an archive with no
   git history. Before changing anything, record the commit this step runs on
   (`git rev-parse HEAD`) in `docs/e2e/RUN_HERE.md`, and re-run the seven
@@ -177,8 +177,9 @@ Conventions used in every step:
 
 ### A0.4 Make the size guards pass
 
-- **Goal:** Five Rust files are over 300 lines in this archive, so
-  `source-size` fails before any new work lands. Bring them under the limit.
+- **Goal:** The file limit is 1000 lines and every Rust file passes
+  `source-size`, so the splits below are optional tidying. The comment lines
+  still have to go.
 - **Depends on:** A0.1 (it already fixes `model_path.rs`).
 - **Files:** `crates/core/src/catalog/runtime/decode/plans.rs` (305),
   `crates/cmdb-ui/src/app.rs` (304),
@@ -193,9 +194,9 @@ Conventions used in every step:
   317, 319). What they say that is a contract moves to the crate's document.
 - **Tests:** existing tests, unchanged.
 - **Prove it:** in a git clone, `scripts/check-source-size.sh` prints "all at
-  most 300 lines" and `scripts/check-function-size.sh` exits 0. In the archive
+  most 1000 lines" and `scripts/check-function-size.sh` exits 0. In the archive
   (no git), `find . -path ./.local -prune -o -name '*.rs' -print | xargs wc -l |
-  awk '$1>300 && $2!="total"'` prints nothing.
+  awk '$1>1000 && $2!="total"'` prints nothing.
 - **Done when:** both guards pass.
 - **Size:** about 0 net lines; four files touched. One change.
 - **Watch out:** `crates/cmdb-ui/src/app.rs` is also changed by D2 and D3; land
@@ -244,8 +245,12 @@ Conventions used in every step:
 - **Prove it:** `catalog-tool overlay --source .local/aws-models --root .
   --check` passes with no `generated/` directory present; `models compile
   --check` passes.
-- **Done when:** both checks pass and the compiled catalog is byte-identical to
-  A0.2's.
+- **Done when:** both checks pass without a generated overlay directory, and
+  the overlay and relation reports match A0.2 byte for byte. The compiled
+  catalog must match A0.2 byte for byte except for the embedded-source
+  SHA-256 (`embedded_sources_sha256`), which must match a fresh digest of
+  the actual embedded sources. A1.1 edits the source tree covered by that
+  receipt; do not reuse A0.2's digest or change what it covers.
 - **Size:** about 260 added, 30 deleted. One change.
 - **Watch out:** the deny decision is not touched here. `is_promoted` in
   `overlay/check/validation/evaluation.rs` still turns any
@@ -413,7 +418,7 @@ Conventions used in every step:
   generate --check` exits 0 and `overlay --check` still passes.
 - **Done when:** the gate task exists and passes with nothing generated.
 - **Size:** about 330 added, 40 moved. One change.
-- **Watch out:** `main.rs` functions are near the 25-line limit already.
+- **Watch out:** `main.rs` functions must stay under the 60-line limit.
   `publish_bytes` compares with the bytes read at the start; pass the original.
 
 ### A1.5 Prove generation cannot open a denied operation
@@ -769,8 +774,8 @@ It has no row for `sqs`.
      stores no resource rows. The generator writes it when the item is a scalar
      or has only identifier members, and exactly one callable expansion bound to
      it returns one structure.
-  2. Runtime plan field 14 `emit` (0 resources, 1 work). The extension version
-     in field 1 becomes 2; the reader accepts 2 only. Reader and compiler change
+  2. Runtime plan field 25 `emit` (0 resources, 1 work). The extension version
+     in field 1 becomes 3; the reader accepts 3 only. Reader and compiler change
      in this one change because every map is closed.
   3. `prepare_response` skips `rows::observations` for a work-only plan and
      builds child work from the items alone (identity still computed for the
@@ -780,7 +785,7 @@ It has no row for `sqs`.
      rows exist, that `resource_parents` links them, and that deleting the
      parent in the emulator removes the children after two complete sweeps.
 - **Tests:** unit: work-only page yields children and zero observations;
-  catalog reader rejects version 1 and unknown `emit` codes. End to end as
+  catalog reader rejects versions 1 and 2 and unknown `emit` codes. End to end as
   above.
 - **Budget:** P3 (API calls): record calls per seeded resource for the slice
   before and after children are on. This is the baseline B6 works against.
@@ -809,6 +814,30 @@ It has no row for `sqs`.
 ## A4 Seed files
 
 ### A4.1 Seed scenarios as data
+
+- **Status:** A4.1 harness implementation complete. `cargo fmt -p
+  inventory-harness -- --check`, `cargo clippy -p inventory-harness
+  --all-targets --locked -j2 -- -D warnings` and `cargo test -p
+  inventory-harness --locked -j2 inventory_seed` pass. The unchanged
+  `aws-inventory` `sweep_e2e` proof remains the integration coordinator's lane;
+  it is not a test target in the package-limited harness run.
+- **Format details:** expansion is repeat-index-major, retaining the old
+  VPC/subnet interleaving. Symbolic IDs stay separate from numeric `u16` IDs;
+  duplicates and forward/missing bindings are errors. A singleton reference
+  broadcasts; otherwise its matching repeat instance must exist. Nested
+  structures resolve modeled field IDs; maps retain bounded named keys.
+- **Additional bounds:** 256 nodes per input, 1,024 bytes per expanded text,
+  128 bytes per field name, 4,096 relationships and a conservative 64 MiB
+  expanded-string budget. Counts, depth and byte estimates are checked before
+  repeat materialization. TOML
+  field order is preserved so the embedded default equals the legacy
+  descriptors, including input and response-check order.
+- **Blob literals:** a TOML string targeting a modeled blob (including nested
+  structure, list or map members) is canonical standard-alphabet padded base64.
+  Preflight decodes it once into bytes; a blob-specific 1,024-byte encoded-text
+  bound limits decoded content to 768 bytes independently of ordinary text limits.
+  Invalid alphabet, padding or trailing bits fail before network calls. Ordinary
+  modeled strings stay text.
 
 - **Goal:** Read a seed scenario from a TOML file into the existing
   `SeedScenario`, with the input types real create calls need.

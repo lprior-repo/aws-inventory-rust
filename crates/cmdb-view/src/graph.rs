@@ -1,14 +1,9 @@
 #[path = "graph/path.rs"]
 mod path;
-#[path = "graph/query.rs"]
-mod query;
-#[path = "graph/response.rs"]
-mod response;
-#[path = "graph/tags.rs"]
-mod tags;
 use crate::ViewError;
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
-pub use tags::{ScopedTag, TagAffiliation, TagAffiliations};
+use inventory_graph::{GraphBackend, GraphError, falkor::FalkorDb};
+pub use inventory_graph::{ScopedTag, TagAffiliation, TagAffiliations};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GraphNode {
@@ -39,33 +34,34 @@ pub struct GraphLimits {
     pub edges: usize,
 }
 
-/// Result of a shortest-path query: distinguishes no path, zero-hop
-/// (source and target are the same node), and a found path with edges.
+/// Outcome of a shortest-path search, including searches cut short by a bound.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PathResult {
     /// No path exists between the source and target within the depth limit.
     NotFound,
+    /// A search bound prevented establishing whether a path exists.
+    Truncated,
     /// Source and target are the same node; the path has zero hops.
     SameNode,
     /// A path was found. Edges are returned in traversal order.
     Path(Vec<GraphEdge>),
 }
 
-pub struct GraphConnection {
-    client: redis::Client,
-    graph: String,
+pub struct GraphConnection<G = FalkorDb> {
+    backend: G,
 }
 
-impl GraphConnection {
+impl GraphConnection<FalkorDb> {
     pub fn connect(endpoint: &str, graph: &str) -> Result<Self, ViewError> {
-        if graph.is_empty() || graph.chars().any(char::is_control) {
-            return Err(ViewError::GraphName);
-        }
-        let client = redis::Client::open(endpoint).map_err(ViewError::Graph)?;
-        Ok(Self {
-            client,
-            graph: graph.to_owned(),
-        })
+        Ok(Self::from_backend(
+            FalkorDb::connect(endpoint, graph).map_err(graph_error)?,
+        ))
+    }
+}
+
+impl<G: GraphBackend> GraphConnection<G> {
+    pub fn from_backend(backend: G) -> Self {
+        Self { backend }
     }
     /// Live native tag membership, separate from AWS dependency traversal.
     /// This does not share SQLite's retained snapshot or pin a native revision.
@@ -77,7 +73,13 @@ impl GraphConnection {
         if limit == 0 || limit > crate::MAX_PAGE_LIMIT {
             return Err(ViewError::PageLimit);
         }
-        tags::read(&self.client, &self.graph, node, limit).await
+        self.backend
+            .tag_affiliations(
+                &node_key(node)?,
+                u16::try_from(limit).map_err(|_| ViewError::PageLimit)?,
+            )
+            .await
+            .map_err(graph_error)
     }
 
     pub async fn neighbors(
@@ -85,8 +87,13 @@ impl GraphConnection {
         node: &GraphNode,
         limits: GraphLimits,
     ) -> Result<GraphNeighborhood, ViewError> {
-        validate_limits(limits)?;
-        query::neighborhood(&self.client, &self.graph, node, limits).await
+        let limits = backend_limits(limits)?;
+        let result = self
+            .backend
+            .neighbors(&node_key(node)?, limits)
+            .await
+            .map_err(graph_error)?;
+        Ok(neighborhood(result))
     }
 
     /// Returns upstream dependents only (what is affected if this node
@@ -99,8 +106,13 @@ impl GraphConnection {
         node: &GraphNode,
         limits: GraphLimits,
     ) -> Result<GraphNeighborhood, ViewError> {
-        validate_limits(limits)?;
-        query::blast_radius(&self.client, &self.graph, node, limits).await
+        let limits = backend_limits(limits)?;
+        let result = self
+            .backend
+            .blast_radius(&node_key(node)?, limits)
+            .await
+            .map_err(graph_error)?;
+        Ok(neighborhood(result))
     }
 
     /// Finds the shortest path between two nodes. Returns a PathResult that
@@ -113,44 +125,64 @@ impl GraphConnection {
         to: &GraphNode,
         limits: GraphLimits,
     ) -> Result<PathResult, ViewError> {
-        validate_limits(limits)?;
-        key_digest(from)?;
-        key_digest(to)?;
-        if from == to {
-            return Ok(PathResult::SameNode);
-        }
-        let neighborhood = self.neighbors(from, limits).await?;
-        match path::shortest(&neighborhood.edges, from, to, limits.depth)? {
-            Some(edges) => Ok(PathResult::Path(edges)),
-            None => Ok(PathResult::NotFound),
-        }
+        let limits = backend_limits(limits)?;
+        let result = self
+            .backend
+            .path(&node_key(from)?, &node_key(to)?, limits)
+            .await;
+        path::convert(result)
     }
 }
 
-fn validate_limits(limits: GraphLimits) -> Result<(), ViewError> {
-    if limits.depth == 0
-        || limits.depth > 3
-        || limits.edges == 0
-        || limits.edges > 2000
-        || limits.nodes == 0
-        || limits.nodes > 500
-    {
-        return Err(ViewError::GraphLimits);
-    }
-    Ok(())
+fn backend_limits(limits: GraphLimits) -> Result<inventory_graph::GraphLimits, ViewError> {
+    inventory_graph::GraphLimits::new(limits.depth, limits.nodes, limits.edges).map_err(graph_error)
 }
 
-fn key_digest(node: &GraphNode) -> Result<String, ViewError> {
-    let key = ResourceKey {
+fn node_key(node: &GraphNode) -> Result<ResourceKey, ViewError> {
+    Ok(ResourceKey {
         account: AccountId::parse(&node.account)?,
         region: Region::parse(&node.region)?,
         kind: Kind::parse(&node.kind)?,
         id: ResourceId::parse(&node.id)?,
-    };
-    let mut digest = String::with_capacity(64);
-    key.digest().as_bytes().iter().try_for_each(|byte| {
-        std::fmt::Write::write_fmt(&mut digest, format_args!("{byte:02x}"))
-            .map_err(|_| ViewError::GraphResponse)
-    })?;
-    Ok(digest)
+    })
 }
+
+fn graph_error(error: GraphError) -> ViewError {
+    match error {
+        GraphError::Timeout => ViewError::GraphTimeout,
+        GraphError::GraphName => ViewError::GraphName,
+        GraphError::Limits => ViewError::GraphLimits,
+        GraphError::Response | GraphError::InvalidRow => ViewError::GraphResponse,
+        error => ViewError::Backend(error),
+    }
+}
+
+fn neighborhood(result: inventory_graph::GraphNeighborhood) -> GraphNeighborhood {
+    let truncated = result.truncated();
+    GraphNeighborhood {
+        edges: result.edges.into_iter().map(graph_edge).collect(),
+        truncated,
+    }
+}
+
+fn graph_node(key: ResourceKey) -> GraphNode {
+    GraphNode {
+        account: key.account.as_str().to_owned(),
+        region: key.region.as_str().to_owned(),
+        kind: key.kind.as_str().to_owned(),
+        id: key.id.as_str().to_owned(),
+    }
+}
+
+fn graph_edge(edge: inventory_graph::EdgeRow) -> GraphEdge {
+    GraphEdge {
+        from: graph_node(edge.from),
+        to: graph_node(edge.to),
+        relation: edge.relation.as_str().to_owned(),
+        provenance: edge.provenance.as_str().to_owned(),
+    }
+}
+
+#[cfg(test)]
+#[path = "graph/view_tests.rs"]
+mod view_tests;

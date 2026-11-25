@@ -1,0 +1,16 @@
+format = 1
+service = "transfer"
+
+[[step]]
+id = "resource"
+operation = "CreateServer"
+kind = ""
+[step.input]
+
+[[step]]
+id = "server"
+operation = "DescribeServer"
+kind = "AWS::Transfer::Server"
+identity = "Server.Arn"
+[step.input]
+ServerId = { from = "resource", path = "ServerId" }

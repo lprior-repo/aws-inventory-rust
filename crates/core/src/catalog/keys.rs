@@ -163,6 +163,10 @@ pub enum CatalogKey {
     ShapeOffsets,
     EnumValues,
     ValueConstraints,
+    References,
+    ArnReference,
+    ResourceOperations,
+    ResourceIdentifiers,
 }
 
 impl CatalogKey {
@@ -268,6 +272,10 @@ impl CatalogKey {
             Self::ShapeOffsets => 94,
             Self::EnumValues => 95,
             Self::ValueConstraints => 96,
+            Self::References => 97,
+            Self::ArnReference => 98,
+            Self::ResourceOperations => 99,
+            Self::ResourceIdentifiers => 100,
         }
     }
 }

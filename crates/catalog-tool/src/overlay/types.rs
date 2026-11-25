@@ -1,6 +1,7 @@
 use super::FixedValue;
 use super::NameError;
 use super::ResourceEmission;
+use super::{Batch, Binding, Origin};
 use crate::classes::DenyReason;
 use std::{collections::BTreeMap, fmt};
 
@@ -61,6 +62,12 @@ impl fmt::Display for OperationName {
     }
 }
 
+impl std::borrow::Borrow<str> for OperationName {
+    fn borrow(&self) -> &str {
+        self.as_str()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct ServiceOverlay {
@@ -70,6 +77,7 @@ pub struct ServiceOverlay {
     pub(super) reviewer: String,
     pub(super) evidence: ReviewEvidence,
     pub(super) operations: BTreeMap<OperationName, OperationOverlay>,
+    pub(super) origin: BTreeMap<OperationName, Origin>,
 }
 
 /// Evidence kinds are separate: a machine review never implies a human, fixture or emulator check.
@@ -82,6 +90,14 @@ pub struct ReviewEvidence {
 }
 
 impl ServiceOverlay {
+    #[must_use]
+    pub fn origin_of(&self, operation: &OperationName) -> Origin {
+        match self.origin.get(operation) {
+            Some(origin) => *origin,
+            None => Origin::Hand,
+        }
+    }
+
     #[must_use]
     pub fn evidence(&self) -> &ReviewEvidence {
         &self.evidence
@@ -148,6 +164,8 @@ pub struct OperationOverlay {
     pub row_policy: super::RowPolicy,
     pub tag_endpoint: Option<super::TagEndpoint>,
     pub emission: super::Emission,
+    /// Distinguishes an explicit `emit: resources` from the default.
+    pub emission_explicit: bool,
     pub projection: Option<super::ResourceProjection>,
     pub classification: Option<super::KindClassification>,
     pub routing: super::RequestRouting,
@@ -155,6 +173,7 @@ pub struct OperationOverlay {
     pub endpoint_discovery: bool,
     pub class: Option<OverlayClass>,
     pub defer_reason: Option<String>,
+    pub generation_blocker: Option<super::GenerationBlocker>,
 
     pub scope: Option<Scope>,
 
@@ -164,6 +183,8 @@ pub struct OperationOverlay {
 
     pub exclude_from_hash: Vec<MemberPath>,
     pub exclude_map_keys: Vec<super::MapKeyExclusion>,
+    /// Output-root paths validating member names dropped throughout this response.
+    pub exclude_response_members: Vec<MemberPath>,
 
     pub skip: Vec<OperationName>,
 
@@ -275,78 +296,4 @@ pub enum Identity {
         resource_kind: super::ArnResourceKind,
         request_url: Option<MemberPath>,
     },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum Binding {
-    Context {
-        operation: OperationName,
-        source: super::ContextSource,
-        path: MemberPath,
-    },
-    FromBranch {
-        operation: OperationName,
-        branch: String,
-        path: MemberPath,
-    },
-    ContextFromBranch {
-        operation: OperationName,
-        branch: String,
-        source: super::ContextSource,
-        path: MemberPath,
-    },
-    From {
-        operation: OperationName,
-        path: MemberPath,
-    },
-    FromArn {
-        operation: OperationName,
-        path: MemberPath,
-        arn_service: String,
-        resource_kind: super::ArnResourceKind,
-    },
-    FromUrl {
-        operation: OperationName,
-        path: MemberPath,
-        resource_kind: super::UrlResourceKind,
-    },
-    FromService {
-        service: String,
-        operation: OperationName,
-        path: MemberPath,
-    },
-    /// One value from the current producer, never a cross-product of producers.
-    FromAny(Vec<super::BindingAlternative>),
-    Transformed {
-        binding: Box<Binding>,
-        transform: super::BindingTransform,
-    },
-
-    Account,
-
-    Region,
-    /// Singleton list containing the actual routed request region.
-    RegionList,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub struct Batch {
-    pub member: MemberPath,
-
-    pub max: i64,
-
-    pub replaces: OperationName,
-}
-
-impl Batch {
-    #[must_use]
-    pub const fn new(member: MemberPath, max: i64, replaces: OperationName) -> Self {
-        Self {
-            member,
-            max,
-            replaces,
-        }
-    }
 }

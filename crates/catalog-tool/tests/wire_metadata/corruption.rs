@@ -94,7 +94,7 @@ fn service_record(
 }
 
 #[test]
-fn compiler_bytes_are_repeatable_and_catalog_is_exactly_v3() -> TestResult {
+fn compiler_bytes_are_repeatable_and_catalog_is_exactly_v4() -> TestResult {
     let model = r#"{"smithy":"2.0","shapes":{"example#Service":{"type":"service","version":"1"},"example#Input":{"type":"structure","members":{"Value":{"target":"smithy.api#String"}}}}}"#;
     let (_source, first) = compile_model(model, "Value\n")?;
     let (_source_again, second) = compile_model(model, "Value\n")?;
@@ -103,7 +103,7 @@ fn compiler_bytes_are_repeatable_and_catalog_is_exactly_v3() -> TestResult {
         .service("example")?
         .ok_or("compiled service missing")?;
     assert_eq!(service.version()?, "1");
-    assert_eq!(CATALOG_VERSION, 3);
+    assert_eq!(CATALOG_VERSION, 4);
     Ok(())
 }
 

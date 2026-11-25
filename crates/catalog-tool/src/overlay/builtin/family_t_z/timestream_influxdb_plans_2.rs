@@ -4,7 +4,7 @@ use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 pub(super) fn get_db_parameter_group() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
         "$",
-        Identity::Arn(path("arn")?),
+        Identity::Key(vec![path("id")?]),
         Paginator::None,
         Scope::Region,
     )?;

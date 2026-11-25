@@ -1,76 +1,14 @@
-use super::super::{PageCommit, SchemaRegistry, StoreError};
+mod encode;
+
+pub(in crate::inventory) use encode::encode;
+
+use super::super::{SchemaRegistry, StoreError};
 use super::merge::{Path, dependency_paths, encode_paths};
-use inventory_core::inventory::{
-    Observation, Relation, ResourceId, ResourceKey, UnresolvedReference,
-};
+use inventory_core::inventory::{Relation, ResourceId, ResourceKey, UnresolvedReference};
 use inventory_core::record::{FieldId, Key, Record, Value, ValueRef};
 use std::{collections::BTreeMap, sync::Arc};
 
-pub(super) fn encode(
-    registry: &SchemaRegistry,
-    page: &PageCommit,
-    observation: &Observation,
-    direct_references: &[(UnresolvedReference, ResourceId)],
-    authority: Option<&super::super::relation_permissions::SourceAuthority<'_, '_>>,
-) -> Result<Record, StoreError> {
-    let references = page
-        .unresolved
-        .iter()
-        .map(|reference| (reference, None))
-        .chain(
-            direct_references
-                .iter()
-                .map(|(reference, target)| (reference, Some(target))),
-        )
-        .filter(|(reference, _)| &reference.from == observation.key())
-        .map(|(reference, pin)| {
-            let authority = authority
-                .ok_or(StoreError::Invalid(
-                    "checked facet source authority is absent",
-                ))?
-                .reference_authority(reference)?;
-            let target = &reference.target;
-            let key = ResourceKey {
-                account: target.account().clone(),
-                region: target.region().clone(),
-                kind: target.kind().clone(),
-                id: target.value().clone(),
-            };
-            let dependencies = super::super::relation_permissions::reference_dependencies(
-                registry,
-                &page.lease,
-                observation,
-                reference,
-            )?;
-            Ok(Value::List(vec![
-                Value::Bytes(super::super::work::resource_bytes(&key)?),
-                Value::Text(reference.relation.as_str().to_owned()),
-                Value::Text(reference.source.as_str().to_owned()),
-                Value::Bytes(super::super::reference_candidates::stored_path(target)?),
-                encode_dependencies(dependencies)?,
-                if target.candidate_kinds().len() == 1 {
-                    Value::Null
-                } else {
-                    Value::List(
-                        target
-                            .candidate_kinds()
-                            .iter()
-                            .map(|kind| Value::Text(kind.as_str().to_owned()))
-                            .collect(),
-                    )
-                },
-                pin.map_or(Value::Null, |id| Value::Text(id.as_str().to_owned())),
-                Value::Bytes(authority.to_vec()),
-            ]))
-        })
-        .collect::<Result<Vec<_>, StoreError>>()?;
-    Ok(Record::encode(&Value::Map(BTreeMap::from([(
-        Key::Field(FieldId::new(2)?),
-        Value::List(references),
-    )])))?)
-}
-
-pub(super) fn decode(
+pub(in crate::inventory) fn decode(
     _registry: &SchemaRegistry,
     record: &Record,
     from: &ResourceKey,

@@ -126,28 +126,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             )?,
         ),
         (
-            "ListContainerGroupDefinitions",
-            policy::query(
-                policy::enumerate(
-                    "ContainerGroupDefinitions",
-                    policy::arn("ContainerGroupDefinitionArn")?,
-                    Some(("NextToken", "NextToken")),
-                )?,
-                &["ContainerGroupDefinitionArn"],
-            )?,
-        ),
-        (
-            "DescribeMatchmakingConfigurations",
-            policy::query(
-                policy::enumerate(
-                    "Configurations",
-                    policy::arn("ConfigurationArn")?,
-                    Some(("NextToken", "NextToken")),
-                )?,
-                &["ConfigurationArn"],
-            )?,
-        ),
-        (
             "DescribeMatchmakingRuleSets",
             policy::query(
                 policy::enumerate(
@@ -283,11 +261,14 @@ const CONTENT: &[&str] = &[
     "DescribeGameSessionQueues",
     "DescribeGameSessions",
     "DescribeMatchmaking",
+    "DescribeMatchmakingConfigurations",
     "DescribePlayerSessions",
     "GetGameSessionLogUrl",
 ];
 
 const SECRET: &[&str] = &[
+    // Nested container environment values can contain customer credentials.
+    "ListContainerGroupDefinitions",
     "GetComputeAccess",
     "GetComputeAuthToken",
     "GetInstanceAccess",

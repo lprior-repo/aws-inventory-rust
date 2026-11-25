@@ -1,0 +1,11 @@
+format = 1
+service = "rolesanywhere"
+
+[[step]]
+id = "resource"
+operation = "CreateProfile"
+kind = "AWS::RolesAnywhere::Profile"
+identity = "profile.profileArn"
+[step.input]
+"name" = "inventory-thin-rolesanywhere"
+"roleArns" = ["arn:aws:iam::000000000000:role/inventory-thin"]

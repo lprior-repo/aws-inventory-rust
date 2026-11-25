@@ -10,7 +10,7 @@ async fn generated_binary_database_round_trips_through_reader() -> TestResult {
     let directory = tempdir()?;
     let path = directory.path().join("benchmark.sqlite");
     generate(path.clone(), 2, 3).await?;
-    let database = Database::open(&path).await?;
+    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     let counts = database.counts().await?;
     assert_eq!(counts.accounts, 2);
     assert_eq!(counts.regions, 3);
@@ -83,4 +83,17 @@ fn generator_refuses_nonempty_existing_database() -> TestResult {
     std::fs::write(&path, b"preserve existing")?;
     assert!(ensure_fresh(&path).is_err());
     Ok(())
+}
+
+#[test]
+fn layout_command_parses_target_nodes() -> TestResult {
+    let command = parse_command(["layout", "1000"].map(str::to_owned).into_iter())?;
+    assert!(matches!(command, Command::Layout(_)));
+    Ok(())
+}
+
+#[test]
+fn layout_command_rejects_zero_and_extra_arguments() {
+    assert!(parse_command(["layout", "0"].map(str::to_owned).into_iter()).is_err());
+    assert!(parse_command(["layout", "10", "extra"].map(str::to_owned).into_iter()).is_err());
 }

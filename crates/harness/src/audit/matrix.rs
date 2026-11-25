@@ -5,7 +5,7 @@ use serde_json::Value;
 use crate::HarnessError;
 use crate::provenance::expected_runtime_catalog;
 
-use super::files::read_json_audit;
+use super::files::read_toml_audit;
 
 pub struct Catalogs {
     pub catalog: Value,
@@ -21,9 +21,9 @@ pub struct Catalogs {
 
 pub fn catalogs(root: &Path) -> Result<Catalogs, HarnessError> {
     let (catalog, catalog_sha256) =
-        read_json_audit(&root.join("catalog/cloudcontrol-resources.json"))?;
+        read_toml_audit(&root.join("catalog/cloudcontrol-resources.toml"))?;
     let (parents, parent_sha256) =
-        read_json_audit(&root.join("catalog/cloudcontrol-parent-resources.json"))?;
+        read_toml_audit(&root.join("catalog/cloudcontrol-parent-resources.toml"))?;
     let bound = parents
         .pointer("/evidence/root_catalog_sha256")
         .and_then(Value::as_str);

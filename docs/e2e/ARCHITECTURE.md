@@ -31,7 +31,7 @@ Version 1, as decided:
 | Collects | Every resource of every service, children included. Never content, secrets or paid calls (V36, V06) |
 | How often | One full sweep a day (V65) |
 | Priority | Sweep time, and how little of the laptop it uses (V68) |
-| Store | PostgreSQL 19, the latest major version (V66) |
+| Store | PostgreSQL 18, pinned 18.7 (V66) |
 | Licence | All of it MIT (V63) |
 | Not in it | Running in AWS, SSO, Windows, change history, change events |
 
@@ -49,7 +49,7 @@ The rest of this document is the detail behind those five parts.
 | Executor | Admission, rate limits, retries. The only place a retry is decided | `inventory-engine` | Built. Limits are low and coarse (section 4) |
 | Wire engine | Signs, sends, pages and decodes any operation of any service | `aws-wire` | Built: five request serializers, three streaming decoders, SigV4 |
 | Reconciler | Hashes each record, compares, writes only changes | `inventory-engine` | Built |
-| Store | PostgreSQL 19: one table per kind plus shared tables | `inventory-engine` | Planned (C6). Today's store is a local single-file database that the plan replaces |
+| Store | PostgreSQL 18: one table per kind plus shared tables | `inventory-engine` | Planned (C6). Today's store is a local single-file database that the plan replaces |
 | Graph projection | Copies changed resources and edges to the graph database | `inventory-engine` | Built, for one edge |
 | Query layer | Reads SQL and the graph for the app | `cmdb-view` | Built against today's store; moves to PostgreSQL (C6.11) |
 | Desktop app | Tables, SQL console, sweep control, whole-account graph | `cmdb-ui` | Built in part: tables and one neighbourhood |
@@ -316,7 +316,7 @@ in [MAKEPAD_UI.md](MAKEPAD_UI.md).
 ![Version 1: everything on one laptop](img/15-deploy-laptop.png)
 
 This is version 1 (V54), on macOS and Linux (V58). The graph engine ships
-inside the product (V60); PostgreSQL 19 comes from a container or a native
+inside the product (V60); PostgreSQL 18 comes from a container or a native
 install (V66).
 
 ### Whole organizations from one laptop

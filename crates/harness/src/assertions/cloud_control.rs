@@ -1,4 +1,5 @@
 mod checks;
+pub(crate) mod identities;
 
 use std::collections::BTreeSet;
 use std::path::Path;
@@ -48,14 +49,19 @@ pub fn golden_fixtures(root: &Path) -> Result<(Vec<Value>, String), HarnessError
 }
 
 fn fixture_document(root: &Path) -> Result<(Vec<u8>, Value), HarnessError> {
-    let path = root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.json");
+    let path = root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.toml");
     if std::fs::metadata(&path)?.len() > MAX_FIXTURE_BYTES {
         return Err(HarnessError::invalid(
             "architecture fixture byte budget exceeded",
         ));
     }
     let bytes = std::fs::read(&path)?;
-    let document: Value = serde_json::from_slice(&bytes)?;
+    let text = std::str::from_utf8(&bytes)
+        .map_err(|_| HarnessError::invalid("architecture fixture is not UTF-8"))?;
+    let document: Value = serde_json::to_value(
+        toml::from_str::<toml::Table>(text)
+            .map_err(|error| HarnessError::invalid(format!("architecture fixture: {error}")))?,
+    )?;
     if document.get("schema_version") != Some(&Value::from(1)) {
         return Err(HarnessError::invalid(
             "unknown architecture fixture version",

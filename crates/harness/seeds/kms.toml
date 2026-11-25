@@ -1,0 +1,21 @@
+format = 1
+service = "kms"
+
+[[step]]
+id = "key"
+operation = "CreateKey"
+kind = "AWS::KMS::Key"
+identity = "KeyMetadata.Arn"
+repeat = 2
+[step.input]
+Origin = "EXTERNAL"
+
+[[step]]
+id = "alias"
+operation = "CreateAlias"
+kind = "AWS::KMS::Alias"
+identity = { input = "AliasName", template = "arn:{partition}:kms:{region}:{account}:{value}" }
+repeat = 2
+[step.input]
+AliasName = "alias/inventory-thin-key-{n}"
+TargetKeyId = { from = "key", path = "KeyMetadata.Arn" }

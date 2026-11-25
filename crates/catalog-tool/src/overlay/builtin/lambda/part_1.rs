@@ -10,22 +10,22 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     Ok(vec![
 ("GetFunctionCodeSigningConfig", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires FunctionName from a safe complete function discovery source; ListFunctions is secret-bearing. Output FunctionName is a possible region/account-scoped key, but CodeSigningConfigArn identifies a different shared resource. Do not replace discovery with the code-signed or capacity-provider subset.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions now supplies complete FunctionName discovery. This output identifies the function by FunctionName while the canonical function identity is FunctionArn; CodeSigningConfigArn belongs to a different shared resource. Requires parent-identity enrichment rather than publishing a duplicate function or misidentifying the signing configuration.".to_owned()),
         ..empty()
     }),
 ("GetFunctionConcurrency", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires safe complete FunctionName discovery and response identity inherited from that input: output contains only ReservedConcurrentExecutions. Current identity paths address response members, not request/parent identity. No pagination.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions supplies FunctionName, but output contains only ReservedConcurrentExecutions. Requires canonical function identity inherited from the bound input and parent enrichment; current identity paths address response members. No pagination.".to_owned()),
         ..empty()
     }),
 ("GetFunctionEventInvokeConfig", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Output root FunctionArn is usable, but FunctionName requires safe complete function discovery; version/alias Qualifier needs correlated discovery to cover qualified configurations. ListFunctionEventInvokeConfigs is the complete per-function paginated alternative once discovery is safe.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions supplies FunctionName and root FunctionArn is usable, but complete version/alias Qualifier coverage requires correlated discovery and a reviewed qualified-configuration kind. ListFunctionEventInvokeConfigs is the paginated per-function alternative; do not collapse qualified configurations onto the unqualified function identity.".to_owned()),
         ..empty()
     }),
 ("GetFunctionRecursionConfig", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires safe complete unqualified FunctionName discovery and input-inherited identity: RecursiveLoop is the only output member and cannot identify a function. Current response-only identity cannot encode this configuration attachment.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions supplies unqualified FunctionName, but RecursiveLoop is the only output member and cannot identify a function. Requires canonical parent-input identity and configuration enrichment rather than a second function resource.".to_owned()),
         ..empty()
     }),
 ("GetFunctionScalingConfig", OperationOverlay {
@@ -35,7 +35,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("GetFunctionUrlConfig", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Returns endpoint configuration, not function invocation content, and root FunctionArn is usable; requires safe complete FunctionName and alias Qualifier discovery. Do not send requests to returned FunctionUrl. ListFunctionUrlConfigs is the paginated per-function alternative once discovery is safe.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions and ListAliases discover function and alias metadata, but complete Qualifier correlation and a reviewed URL-configuration kind are required to preserve qualified configurations without overwriting function records. FunctionUrl is configuration only; inventory must never invoke it.".to_owned()),
         ..empty()
     }),
 ("GetLayerVersionPolicy", OperationOverlay {
@@ -64,23 +64,28 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("ListAliases", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("Aliases[].AliasArn is a valid identity and pagination is Marker/NextMarker/MaxItems, but required FunctionName lacks a safe complete discovery source. ListFunctions is secret-bearing; code-signing/capacity-provider/event-mapping subsets would silently omit functions.".to_owned()),
+        class: Some(OverlayClass::Expand),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("Aliases")?),
+        identity: Some(Identity::Arn(path("AliasArn")?)),
+        bind: [(path("FunctionName")?, Binding::From { operation: name("ListFunctions")?, path: path("FunctionName")? })].into_iter().collect(),
+        page_size: Some(50),
+        paginator: Some(Paginator::Token(TokenPair { input: path("Marker")?, output: path("NextMarker")?, optional: false })),
         ..empty()
     }),
 ("ListDurableExecutionsByFunction", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("DurableExecutions[] contains execution metadata only (DurableExecutionArn, FunctionArn, status, timestamps, KMSKeyArn), with Marker/NextMarker/MaxItems pagination. Required FunctionName lacks safe complete discovery; do not invoke functions to generate executions or enable the separate payload/history/state APIs.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions supplies FunctionName. DurableExecutions contains execution metadata, not function resources; enabling it additionally requires a reviewed execution kind and lifecycle/scope semantics. Never invoke functions to generate executions or enable the separate payload/history/state APIs.".to_owned()),
         ..empty()
     }),
 ("ListFunctionEventInvokeConfigs", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("FunctionEventInvokeConfigs[].FunctionArn is usable with Marker/NextMarker/MaxItems and page size 50; required FunctionName lacks safe complete discovery. Do not substitute a subset of code-signed, mapped, or capacity-provider functions.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions supplies FunctionName, and FunctionEventInvokeConfigs has FunctionArn plus Marker/NextMarker/MaxItems. Qualified configuration rows need a reviewed configuration kind and owner relation; treating them as canonical function resources would conflate configuration and function identity.".to_owned()),
         ..empty()
     }),
 ("ListFunctionUrlConfigs", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("FunctionUrlConfigs[].FunctionArn is usable with Marker/NextMarker/MaxItems and page size 50; required FunctionName lacks safe complete discovery. FunctionUrl is configuration and must never be invoked by inventory.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions supplies FunctionName, and FunctionUrlConfigs has FunctionArn plus Marker/NextMarker/MaxItems. Qualified URL configurations need a reviewed configuration kind and owner relation rather than overwriting function records. Never invoke returned FunctionUrl values.".to_owned()),
         ..empty()
     }),
 ("ListFunctionsByCodeSigningConfig", OperationOverlay {
@@ -98,7 +103,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("ListProvisionedConcurrencyConfigs", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("ProvisionedConcurrencyConfigs[].FunctionArn identifies the qualified configuration owner; Marker/NextMarker/MaxItems pagination and page size 50 are supported. Required FunctionName lacks safe complete discovery; do not use concurrency counts/status as resource identity.".to_owned()),
+        defer_reason: Some("Sanitized ListFunctions supplies FunctionName. ProvisionedConcurrencyConfigs identifies qualified configuration owners with FunctionArn, not unqualified function resources; requires a reviewed configuration kind and qualified-owner relation. Marker/NextMarker/MaxItems is supported; concurrency counts/status cannot be resource identity.".to_owned()),
         ..empty()
     }),
 ("ListTags", OperationOverlay {

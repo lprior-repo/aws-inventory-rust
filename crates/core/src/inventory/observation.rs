@@ -61,6 +61,18 @@ impl Observation {
     }
 }
 
+impl AsRef<ResourceKey> for Observation {
+    fn as_ref(&self) -> &ResourceKey {
+        self.key()
+    }
+}
+
+impl AsRef<ResourceKey> for ResourceKey {
+    fn as_ref(&self) -> &ResourceKey {
+        self
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum EdgeSource {
     Model,
@@ -108,3 +120,6 @@ impl ScopeOutcome {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

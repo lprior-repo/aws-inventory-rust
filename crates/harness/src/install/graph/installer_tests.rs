@@ -5,7 +5,7 @@ use std::path::Path;
 use serde_json::{Value, json};
 
 use super::{
-    FALKOR_VERSION, Layout, MODULE_SHA256, MODULE_URL, OwnedDirectory, REDIS_SHA256, REDIS_URL,
+    FALKOR_VERSION, LINUX_X86_64_MODULE, Layout, OwnedDirectory, REDIS_SHA256, REDIS_URL,
     REDIS_VERSION, build, complete, install, receipt,
 };
 use crate::HarnessError;
@@ -18,7 +18,7 @@ pub(super) const CLIENT_VERSION: &str = "redis-cli 8.10.3 (git:6018c5a5)";
 
 pub(super) fn fixture() -> Result<(tempfile::TempDir, Layout), Box<dyn std::error::Error>> {
     let directory = tempfile::tempdir()?;
-    let layout = Layout::new(&fs::canonicalize(directory.path())?);
+    let layout = Layout::new(&fs::canonicalize(directory.path())?, LINUX_X86_64_MODULE);
     fs::create_dir_all(layout.source.join("src"))?;
     fs::write(&layout.server, b"abc")?;
     fs::write(&layout.client, b"client")?;
@@ -36,8 +36,8 @@ pub(super) fn value(layout: &Layout) -> Result<Value, HarnessError> {
         "falkordb_version": FALKOR_VERSION,
         "redis_url": REDIS_URL,
         "redis_archive_sha256": REDIS_SHA256,
-        "module_url": MODULE_URL,
-        "module_sha256": MODULE_SHA256,
+        "module_url": LINUX_X86_64_MODULE.url,
+        "module_sha256": LINUX_X86_64_MODULE.sha256,
         "versions": {"server": SERVER_VERSION, "client": CLIENT_VERSION},
         "redis_server": layout.server,
         "redis_cli": layout.client,
@@ -104,7 +104,7 @@ fn given_foreign_receipt_pins_when_installing_then_cache_is_rejected_without_exe
 fn given_receipt_pins_when_any_pin_changes_then_verification_fails() -> TestResult {
     let (_directory, layout) = fixture()?;
     let original = value(&layout)?;
-    receipt::verify_pins(&original)?;
+    receipt::verify_pins(&original, layout.asset)?;
     [
         "redis_version",
         "falkordb_version",
@@ -117,7 +117,7 @@ fn given_receipt_pins_when_any_pin_changes_then_verification_fails() -> TestResu
     .try_for_each(|key| -> TestResult {
         let mut changed = original.clone();
         replace(&mut changed, key, json!("foreign"))?;
-        assert!(receipt::verify_pins(&changed).is_err());
+        assert!(receipt::verify_pins(&changed, layout.asset).is_err());
         Ok(())
     })?;
     Ok(())
@@ -167,7 +167,7 @@ fn given_symlinked_binary_or_ancestor_when_verifying_then_both_are_rejected() ->
 #[test]
 fn given_exclusive_lock_when_installing_then_existing_tree_is_untouched() -> TestResult {
     let directory = tempfile::tempdir()?;
-    let layout = Layout::new(directory.path());
+    let layout = Layout::new(directory.path(), LINUX_X86_64_MODULE);
     fs::create_dir(&layout.lock)?;
     fs::write(layout.lock.join("owner"), b"concurrent")?;
     assert!(install(directory.path(), 1).is_err());

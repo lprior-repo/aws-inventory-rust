@@ -1,4 +1,5 @@
 use super::{FieldId, MAX_DEPTH, RecordError};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MapKeyExclusion {
@@ -32,8 +33,8 @@ impl MapKeyExclusion {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Exclusions {
-    paths: Vec<Box<[FieldId]>>,
-    map_keys: Vec<MapKeyExclusion>,
+    paths: Option<Arc<[Box<[FieldId]>]>>,
+    map_keys: Option<Arc<[MapKeyExclusion]>>,
 }
 
 impl Exclusions {
@@ -52,13 +53,16 @@ impl Exclusions {
         paths.sort_unstable();
         paths.dedup();
         Ok(Self {
-            paths,
-            map_keys: Vec::new(),
+            paths: (!paths.is_empty()).then(|| Arc::from(paths)),
+            map_keys: None,
         })
     }
 
     pub fn paths(&self) -> &[Box<[FieldId]>] {
-        &self.paths
+        match &self.paths {
+            Some(paths) => paths,
+            None => &[],
+        }
     }
 
     pub fn with_map_keys(
@@ -74,11 +78,14 @@ impl Exclusions {
         if map_keys.windows(2).any(|pair| pair.first() == pair.last()) {
             return Err(RecordError::DuplicateExclusion);
         }
-        self.map_keys = map_keys;
+        self.map_keys = (!map_keys.is_empty()).then(|| Arc::from(map_keys));
         Ok(self)
     }
 
     pub fn map_keys(&self) -> &[MapKeyExclusion] {
-        &self.map_keys
+        match &self.map_keys {
+            Some(map_keys) => map_keys,
+            None => &[],
+        }
     }
 }

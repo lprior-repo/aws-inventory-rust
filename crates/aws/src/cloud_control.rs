@@ -26,7 +26,7 @@ use crate::{
 
 mod parents;
 
-const CATALOG_JSON: &str = include_str!("../../../catalog/cloudcontrol-resources.json");
+const CATALOG_TOML: &str = include_str!("../../../catalog/cloudcontrol-resources.toml");
 const ROOT_TYPE_COUNT: usize = 397;
 const TYPE_COUNT: usize = ROOT_TYPE_COUNT + parents::PARENT_TYPE_COUNT;
 const TYPE_CONCURRENCY: usize = 4;

@@ -236,11 +236,11 @@ const ROOT_FILES: [&str; 3] = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml"
 const EMBEDDED_FILES: [&str; 7] = [
     ".cargo/config.toml",
     "catalog/aws-api.catalog",
-    "catalog/cloudcontrol-capabilities.json",
+    "catalog/cloudcontrol-capabilities.toml",
     "catalog/cloudcontrol-universal.json",
-    "catalog/cloudcontrol-resources.json",
-    "catalog/cloudcontrol-parent-resources.json",
-    "catalog/cloudcontrol-v04-types.json",
+    "catalog/cloudcontrol-resources.toml",
+    "catalog/cloudcontrol-parent-resources.toml",
+    "catalog/cloudcontrol-v04-types.toml",
 ];
 
 fn source_files(root: &Path) -> Result<Vec<PathBuf>, HarnessError> {

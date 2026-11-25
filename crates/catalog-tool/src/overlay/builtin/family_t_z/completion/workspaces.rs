@@ -2,6 +2,12 @@ use super::*;
 use crate::overlay::FixedValue;
 
 pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    addins_plan(service)?;
+    sessions_plan(service)?;
+    association_plans(service)
+}
+
+fn addins_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut addins = child(
         "AddIns",
         correlated(&["ResourceId"], &["AddInId"])?,
@@ -13,7 +19,10 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     addins
         .fixed
         .insert(path("MaxResults")?, FixedValue::Integer(25));
-    insert(service, "DescribeConnectClientAddIns", addins)?;
+    insert(service, "DescribeConnectClientAddIns", addins)
+}
+
+fn sessions_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut sessions = child(
         "Sessions",
         correlated(&["PoolId"], &["SessionId"])?,
@@ -26,7 +35,10 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     sessions
         .fixed
         .insert(path("Limit")?, FixedValue::Integer(50));
-    insert(service, "DescribeWorkspacesPoolSessions", sessions)?;
+    insert(service, "DescribeWorkspacesPoolSessions", sessions)
+}
+
+fn association_plans(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
         (
             "DescribeApplicationAssociations",

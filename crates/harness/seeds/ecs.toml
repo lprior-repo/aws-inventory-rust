@@ -1,0 +1,10 @@
+format = 1
+service = "ecs"
+
+[[step]]
+id = "resource"
+operation = "CreateCluster"
+kind = "AWS::ECS::Cluster"
+identity = "cluster.clusterArn"
+[step.input]
+"clusterName" = "inventory-thin-ecs"

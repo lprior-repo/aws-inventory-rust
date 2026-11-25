@@ -142,133 +142,139 @@ pub fn calls_in_source_with_budget(
 ) -> Result<(Vec<Callsite>, usize), HarnessError> {
     let masked = mask::mask_noncode(path, source)?;
     let (tokens, pairs) = lexical::tokens_and_pairs_with_budget(path, &masked, max_tokens)?;
+    let scan = SendScan {
+        tokens: &tokens,
+        pairs: &pairs,
+        masked: &masked,
+        path,
+        source,
+    };
     let mut calls: Vec<Callsite> = Vec::new();
     let mut nonempty_sends: usize = 0;
 
     let mut index = 0;
     let limit = tokens.len().saturating_sub(2);
     while index < limit {
-        let current = match tokens.get(index) {
-            Some(t) => t,
-            None => break,
-        };
-        let next_index = index.saturating_add(1);
-        let send_index = index.saturating_add(2);
-        let next = match tokens.get(next_index) {
-            Some(t) => t,
-            None => break,
-        };
-        let open = match tokens.get(send_index) {
-            Some(t) => t,
-            None => break,
-        };
-        if current.text == "." && next.text == "send" && open.text == "(" {
-            let open_pair = send_index.saturating_add(1);
-            if *pairs.get(&send_index).unwrap_or(&send_index) != open_pair {
-                nonempty_sends = nonempty_sends.saturating_add(1);
-                index = index.saturating_add(1);
-                continue;
-            }
-
-            // Walk backwards through the method call chain
-            // Python: cursor = index - 1, walk while token is ")"
-            let mut cursor = index.saturating_sub(1);
-            let mut methods: Vec<(String, usize)> = Vec::new();
-            while let Some(tok) = tokens.get(cursor) {
-                if tok.text != ")" {
-                    break;
+        match scan.step(index)? {
+            Step::Stop => break,
+            Step::Skip => {}
+            Step::NonEmpty => nonempty_sends = nonempty_sends.saturating_add(1),
+            Step::Call(call) => {
+                calls.push(call);
+                if calls.len() > MAX_CALLS {
+                    return Err(HarnessError::invalid("SDK send call budget exceeded"));
                 }
-                let open = pairs.get(&cursor).copied().unwrap_or(0);
-                if open < 2 {
-                    break;
-                }
-                let method_index = open.saturating_sub(1);
-                let method_token = match tokens.get(method_index) {
-                    Some(t) => t,
-                    None => break,
-                };
-                let method_name = &method_token.text;
-                let prev_index = open.saturating_sub(2);
-                let prev_token = match tokens.get(prev_index) {
-                    Some(t) => t,
-                    None => break,
-                };
-                if prev_token.text != "." {
-                    break;
-                }
-                if !method_name
-                    .chars()
-                    .all(|c| c.is_ascii_alphanumeric() || c == '_')
-                {
-                    break;
-                }
-                methods.push((method_name.clone(), open));
-                cursor = open.saturating_sub(3);
-            }
-
-            // Python uses methods[-1] (last method found)
-            let (operation, last_open) = match methods.last() {
-                Some((m, o)) => (m.clone(), *o),
-                None => {
-                    let tok = match tokens.get(index) {
-                        Some(t) => t,
-                        None => break,
-                    };
-                    return Err(source_error(
-                        path,
-                        source,
-                        tok.start,
-                        "unrecognized empty send call chain",
-                    ));
-                }
-            };
-            let op_index = last_open.saturating_sub(1);
-            let op_token = match tokens.get(op_index) {
-                Some(t) => t,
-                None => break,
-            };
-            let operation_offset = op_token.start;
-            let cursor_token = match tokens.get(cursor) {
-                Some(t) => t,
-                None => break,
-            };
-            let receiver = cursor_token.text.clone();
-
-            let index_token = match tokens.get(index) {
-                Some(t) => t,
-                None => break,
-            };
-            let (function, function_start) = function_at(&masked, index_token.start)?;
-            let service =
-                receiver_service(&masked, &receiver, function_start, index_token.start)
-                    .map_err(|e| source_error(path, source, index_token.start, &e.to_string()))?;
-            let operation_line = line_column(source, operation_offset).0;
-            let next_index = index.saturating_add(1);
-            let next_token = match tokens.get(next_index) {
-                Some(t) => t,
-                None => break,
-            };
-            let send_line = line_column(source, next_token.start).0;
-
-            calls.push(Callsite {
-                id: format!("{}.{}", service, operation),
-                path: path.to_string(),
-                function,
-                sdk_service: service,
-                sdk_operation: operation,
-                receiver,
-                operation_line,
-                send_line,
-            });
-
-            if calls.len() > MAX_CALLS {
-                return Err(HarnessError::invalid("SDK send call budget exceeded"));
             }
         }
         index = index.saturating_add(1);
     }
 
     Ok((calls, nonempty_sends))
+}
+
+struct SendScan<'a> {
+    tokens: &'a [lexical::Token],
+    pairs: &'a HashMap<usize, usize>,
+    masked: &'a str,
+    path: &'a str,
+    source: &'a str,
+}
+
+/// Outcome of inspecting the token triple that starts at one index.
+enum Step {
+    /// The token stream ended; the scan returns what it has collected.
+    Stop,
+    /// Not an empty `.send()` call.
+    Skip,
+    /// A `.send(...)` call with arguments.
+    NonEmpty,
+    Call(Callsite),
+}
+
+impl<'a> SendScan<'a> {
+    fn step(&self, index: usize) -> Result<Step, HarnessError> {
+        let send_index = index.saturating_add(2);
+        let (Some(current), Some(next), Some(open)) = (
+            self.tokens.get(index),
+            self.tokens.get(index.saturating_add(1)),
+            self.tokens.get(send_index),
+        ) else {
+            return Ok(Step::Stop);
+        };
+        if current.text != "." || next.text != "send" || open.text != "(" {
+            return Ok(Step::Skip);
+        }
+        let open_pair = send_index.saturating_add(1);
+        if *self.pairs.get(&send_index).unwrap_or(&send_index) != open_pair {
+            return Ok(Step::NonEmpty);
+        }
+
+        let (last_method, cursor) = self.method_chain(index);
+        // Python uses methods[-1] (last method found)
+        let Some((operation, last_open)) = last_method else {
+            return Err(source_error(
+                self.path,
+                self.source,
+                current.start,
+                "unrecognized empty send call chain",
+            ));
+        };
+        let (Some(op_token), Some(cursor_token)) = (
+            self.tokens.get(last_open.saturating_sub(1)),
+            self.tokens.get(cursor),
+        ) else {
+            return Ok(Step::Stop);
+        };
+        let receiver = cursor_token.text.clone();
+
+        let (function, function_start) = function_at(self.masked, current.start)?;
+        let service = receiver_service(self.masked, &receiver, function_start, current.start)
+            .map_err(|e| source_error(self.path, self.source, current.start, &e.to_string()))?;
+        Ok(Step::Call(Callsite {
+            id: format!("{}.{}", service, operation),
+            path: self.path.to_string(),
+            function,
+            sdk_service: service,
+            sdk_operation: operation.to_string(),
+            receiver,
+            operation_line: line_column(self.source, op_token.start).0,
+            send_line: line_column(self.source, next.start).0,
+        }))
+    }
+
+    /// Returns the last method found with its opening delimiter, and the receiver cursor.
+    fn method_chain(&self, index: usize) -> (Option<(&'a str, usize)>, usize) {
+        // Walk backwards through the method call chain
+        // Python: cursor = index - 1, walk while token is ")"
+        let mut cursor = index.saturating_sub(1);
+        let mut last = None;
+        while let Some(tok) = self.tokens.get(cursor) {
+            if tok.text != ")" {
+                break;
+            }
+            let open = self.pairs.get(&cursor).copied().unwrap_or(0);
+            if open < 2 {
+                break;
+            }
+            let (Some(method), Some(prev)) = (
+                self.tokens.get(open.saturating_sub(1)),
+                self.tokens.get(open.saturating_sub(2)),
+            ) else {
+                break;
+            };
+            if prev.text != "."
+                || !method
+                    .text
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_')
+            {
+                break;
+            }
+            last = Some((method.text.as_str(), open));
+            cursor = open.saturating_sub(3);
+        }
+        (last, cursor)
+    }
 }
 
 fn walk_directory(

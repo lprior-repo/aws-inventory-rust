@@ -7,7 +7,22 @@ use crate::overlay::{
 };
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    let mut approved = vec![
+    let mut approved = Vec::new();
+    approved.extend(accelerator_rows()?);
+    approved.extend(detail_rows()?);
+    approved.extend(tag_byoip_rows()?);
+    set_routing(&mut approved);
+    policy::finish(
+        "global-accelerator",
+        approved,
+        DEFERRED,
+        "Account-scoped standard/custom accelerators, listeners, endpoint groups and cross-account attachments are metadata. Requests and signing use the service's us-west-2 control plane without changing global resource identity. Paginated child listeners and endpoint groups bind only the corresponding routing family's parent.",
+        &[(policy::DenyReason::Mutating, MUTATING)],
+    )
+}
+
+fn accelerator_rows() -> Result<Vec<(&'static str, crate::overlay::OperationOverlay)>, NameError> {
+    Ok(vec![
         (
             "ListAccelerators",
             policy::query(
@@ -50,6 +65,11 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["AcceleratorArn"],
             )?,
         ),
+    ])
+}
+
+fn detail_rows() -> Result<Vec<(&'static str, crate::overlay::OperationOverlay)>, NameError> {
+    Ok(vec![
         (
             "DescribeAccelerator",
             policy::query(
@@ -101,6 +121,11 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 "ListCustomRoutingListeners",
             )?,
         ),
+    ])
+}
+
+fn tag_byoip_rows() -> Result<Vec<(&'static str, crate::overlay::OperationOverlay)>, NameError> {
+    Ok(vec![
         (
             "ListTagsForResource",
             TagEndpoint {
@@ -138,19 +163,15 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["Cidr"],
             )?,
         ),
-    ];
-    for (_, operation) in &mut approved {
+    ])
+}
+
+fn set_routing(approved: &mut Vec<(&'static str, crate::overlay::OperationOverlay)>) {
+    for (_, operation) in approved.iter_mut() {
         operation.routing = RequestRouting::FixedRegion {
             region: "us-west-2".to_owned(),
         };
     }
-    policy::finish(
-        "global-accelerator",
-        approved,
-        DEFERRED,
-        "Account-scoped standard/custom accelerators, listeners, endpoint groups and cross-account attachments are metadata. Requests and signing use the service's us-west-2 control plane without changing global resource identity. Paginated child listeners and endpoint groups bind only the corresponding routing family's parent.",
-        &[(policy::DenyReason::Mutating, MUTATING)],
-    )
 }
 
 fn child(

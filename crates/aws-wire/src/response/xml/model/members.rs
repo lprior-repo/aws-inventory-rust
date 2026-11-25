@@ -50,6 +50,9 @@ impl<'a, 'd> Model<'a, 'd, '_> {
         member: Member<'a>,
         layout: Layout,
     ) -> Result<bool, DecodeError> {
+        if self.context.limits.excluded_members.contains(member.id) {
+            return Ok(false);
+        }
         match member.wire()?.binding()? {
             HttpBinding::Header(_) | HttpBinding::PrefixHeaders(_) | HttpBinding::ResponseCode => {
                 headers::decode_member(self.context, member, self.builder)?;

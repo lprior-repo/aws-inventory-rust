@@ -1,11 +1,19 @@
 mod tags;
-pub use tags::{ProjectionTag, ProjectionTagCursor, ProjectionTagPage};
+mod types;
+pub use types::{
+    ProjectionEdgeCursor, ProjectionEdgeHeader, ProjectionEdgePage, ProjectionResource,
+    ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
+};
 
 use super::{BinaryStore, StoreError};
 use inventory_core::inventory::{AccountId, Kind, Region, Relation, ResourceId, ResourceKey};
 use sqlx::{Row, Sqlite, Transaction};
+use std::sync::Arc;
+use tokio::sync::OwnedMutexGuard;
+
 pub struct ProjectionSnapshot {
     tx: Transaction<'static, Sqlite>,
+    _turn: Option<OwnedMutexGuard<()>>,
 }
 
 impl ProjectionSnapshot {
@@ -54,52 +62,19 @@ impl ProjectionSnapshot {
 }
 
 pub(super) async fn begin_snapshot(store: &BinaryStore) -> Result<ProjectionSnapshot, StoreError> {
+    let turn = if store.reader_shares_writer {
+        Some(Arc::clone(&store.writer_turn).lock_owned().await)
+    } else {
+        None
+    };
     Ok(ProjectionSnapshot {
         tx: store.reader.begin().await?,
+        _turn: turn,
     })
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ProjectionState {
-    pub pending: u64,
-    pub rebuild_required: bool,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionResource {
-    pub key: ResourceKey,
-    pub name: Option<String>,
-    pub content_hash: [u8; 32],
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionEdgeHeader {
-    pub from: ResourceKey,
-    pub to: ResourceKey,
-    pub relation: Relation,
-    pub source: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionEdgeCursor {
-    from_account: String,
-    from_region: String,
-    from_kind: String,
-    from_id: String,
-    to_account: String,
-    to_region: String,
-    to_kind: String,
-    to_id: String,
-    relation: String,
-    source: String,
-}
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionEdgePage {
-    pub edges: Vec<ProjectionEdgeHeader>,
-    pub next: Option<ProjectionEdgeCursor>,
-}
-
 pub(super) async fn state(store: &BinaryStore) -> Result<ProjectionState, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let pending: i64 = sqlx::query("SELECT COUNT(*) FROM projection_outbox")
         .fetch_one(&mut *tx)
@@ -122,6 +97,7 @@ pub(super) async fn resources(
     after: Option<ResourceKey>,
     limit: u16,
 ) -> Result<Vec<ProjectionResource>, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let rows = read_resources(&mut tx, after, limit).await?;
     tx.commit().await?;
@@ -132,6 +108,7 @@ pub(super) async fn resource(
     store: &BinaryStore,
     key: &ResourceKey,
 ) -> Result<Option<ProjectionResource>, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let row = read_resource(&mut tx, key).await?;
     tx.commit().await?;
@@ -144,6 +121,7 @@ pub(super) async fn edges_for(
     after: Option<ProjectionEdgeCursor>,
     limit: u16,
 ) -> Result<ProjectionEdgePage, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let page = read_edges_for(&mut tx, key, after, limit).await?;
     tx.commit().await?;
@@ -155,6 +133,7 @@ pub(super) async fn edges(
     after: Option<ProjectionEdgeCursor>,
     limit: u16,
 ) -> Result<ProjectionEdgePage, StoreError> {
+    let _turn = store.read_turn().await;
     let mut tx = store.reader.begin().await?;
     let page = read_edges(&mut tx, after, limit).await?;
     tx.commit().await?;

@@ -56,7 +56,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         items: Some(ItemSelector::parse("clusters")?),
         page_size: Some(5),
         fixed: [(path("include")?, FixedValue::Strings(vec!["all".to_owned()]))].into_iter().collect(),
-        identity: Some(Identity::Key(vec![path("$")?])),
+        identity: Some(Identity::Template("arn:{partition}:eks:{region}:{account}:cluster/{$}".to_owned())),
         paginator: Some(Paginator::Token(TokenPair { input: path("nextToken")?, output: path("nextToken")?, optional: false })),
         ..empty()
     }),

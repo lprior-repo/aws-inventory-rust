@@ -10,6 +10,23 @@ use crate::report::{ReportError, ReportMode};
 
 const MODELS_LOCK_PATH: &str = "models.lock";
 const MANIFEST_PATH: &str = "MANIFEST.sha256";
+/// Catalog outputs that scripts/bootstrap-catalog.sh regenerates. They are gitignored,
+/// so `git ls-files` does not list them, but the manifest still pins their digests.
+const GENERATED_CATALOG_FILES: &[&str] = &[
+    "catalog/aws-api.catalog",
+    "catalog/aws-models.report",
+    "catalog/aws-endpoints.report",
+    "catalog/aws-classes.report",
+    "catalog/aws-plans.report",
+    "catalog/aws-overlay.report",
+    "catalog/aws-kinds-generated.report",
+    "catalog/aws-names.report",
+    "catalog/kinds.generated.tsv",
+    "catalog/coverage-denominator.report",
+    "catalog/cloudcontrol-parent-candidates.json",
+    "catalog/cloudcontrol-universal.json",
+    "catalog/iam-read-only-policy.json",
+];
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -21,6 +38,9 @@ pub enum Error {
 
     #[error("git ls-tree failed for .local/aws-models: {source}")]
     GitModelsRevision { source: io::Error },
+
+    #[error("generated catalog file {file} is missing; run scripts/bootstrap-catalog.sh")]
+    MissingGenerated { file: PathBuf },
 
     #[error("no catalog files found")]
     NoCatalogFiles,
@@ -84,17 +104,33 @@ fn tracked_catalog_files(root: &Path) -> Result<Vec<(PathBuf, String)>, Error> {
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let files = stdout
+    let mut files = stdout
         .lines()
-        .filter(|line| !line.is_empty())
+        .filter(|line| !line.is_empty() && !is_dotfile(line))
         .map(|line| (root.join(line), line.to_string()))
         .collect::<Vec<(PathBuf, String)>>();
+
+    for relative in GENERATED_CATALOG_FILES {
+        let path = root.join(relative);
+        if !path.is_file() {
+            return Err(Error::MissingGenerated { file: path });
+        }
+        files.push((path, (*relative).to_owned()));
+    }
 
     if files.is_empty() {
         return Err(Error::NoCatalogFiles);
     }
+    files.sort_by(|left, right| left.1.cmp(&right.1));
 
     Ok(files)
+}
+
+/// `catalog/.gitignore` is tooling metadata, not catalog data, so it is not pinned.
+fn is_dotfile(relative: &str) -> bool {
+    Path::new(relative)
+        .file_name()
+        .is_some_and(|name| name.to_string_lossy().starts_with('.'))
 }
 
 fn manifest_content(files: &[(PathBuf, String)]) -> Result<String, Error> {
@@ -122,3 +158,6 @@ fn manifest_content(files: &[(PathBuf, String)]) -> Result<String, Error> {
 
     Ok(content)
 }
+
+#[cfg(test)]
+mod tests;

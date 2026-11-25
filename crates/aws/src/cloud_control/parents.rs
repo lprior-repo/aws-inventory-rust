@@ -3,8 +3,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use super::*;
 
 pub(super) const PARENT_TYPE_COUNT: usize = 24;
-const PARENT_CATALOG_JSON: &str =
-    include_str!("../../../../catalog/cloudcontrol-parent-resources.json");
+const PARENT_CATALOG_TOML: &str =
+    include_str!("../../../../catalog/cloudcontrol-parent-resources.toml");
 const CHILD_TYPE_CONCURRENCY: usize = 2;
 const MAX_MODELS_PER_ROOT: usize = 10_000;
 const MAX_MODEL_BYTES: usize = 8_192;

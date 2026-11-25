@@ -1,0 +1,11 @@
+format = 1
+service = "codeguruprofiler"
+
+[[step]]
+id = "resource"
+operation = "CreateProfilingGroup"
+kind = "AWS::CodeGuruProfiler::ProfilingGroup"
+identity = "profilingGroup.arn"
+[step.input]
+"profilingGroupName" = "inventory-thin-codeguruprofiler"
+"clientToken" = "12345678-1234-4234-8234-123456789abc"

@@ -1,0 +1,10 @@
+format = 1
+service = "pinpoint"
+
+[[step]]
+id = "resource"
+operation = "CreateApp"
+kind = "AWS::Pinpoint::App"
+identity = "ApplicationResponse.Arn"
+[step.input]
+"CreateApplicationRequest" = { "Name" = "inventory-thin-pinpoint" }
