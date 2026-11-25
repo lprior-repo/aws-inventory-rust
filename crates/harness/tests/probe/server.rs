@@ -51,6 +51,14 @@ impl Server {
     }
 
     pub async fn serve(&self, count: usize) -> TestResult<Vec<String>> {
+        self.serve_with(count, response).await
+    }
+
+    pub async fn serve_with(
+        &self,
+        count: usize,
+        respond: impl Fn(&str) -> TestResult<(u16, &'static str)>,
+    ) -> TestResult<Vec<String>> {
         if count > 32 {
             return Err(io::Error::other("probe test request bound exceeded").into());
         }
@@ -60,7 +68,8 @@ impl Server {
             let (socket, _) = self.listener.accept().await?;
             let mut socket = self.acceptor.accept(socket).await?;
             let request = read_request(&mut socket).await?;
-            reply(&mut socket, &request).await?;
+            let (status, body) = respond(&request)?;
+            reply(&mut socket, status, body).await?;
             requests.push(request);
         }
         Ok(requests)
@@ -101,24 +110,30 @@ fn content_length(head: &str) -> io::Result<usize> {
     }
 }
 
-fn response(request: &str) -> TestResult<(u16, &'static str)> {
-    let target = request
+pub fn target(request: &str) -> TestResult<&str> {
+    request
         .lines()
         .filter_map(|line| line.split_once(':'))
         .find(|(name, _)| name.eq_ignore_ascii_case("x-amz-target"))
-        .map(|(_, value)| value.trim())
-        .ok_or("probe target missing")?;
-    match target.rsplit('.').next() {
-        Some("ListParents0") => Ok((200, ITEMS)),
-        Some("ListParents1") => Ok((200, r#"{"Items":[]}"#)),
-        Some("ListParents2") => Ok((400, UNSUPPORTED)),
-        Some("ListParents3") => Ok((200, "malformed JSON")),
+        .and_then(|(_, value)| value.trim().rsplit('.').next())
+        .ok_or_else(|| "probe target missing".into())
+}
+
+pub fn response(request: &str) -> TestResult<(u16, &'static str)> {
+    match target(request)? {
+        "ListParents0" => Ok((200, ITEMS)),
+        "ListParents1" => Ok((200, r#"{"Items":[]}"#)),
+        "ListParents2" => Ok((400, UNSUPPORTED)),
+        "ListParents3" => Ok((200, "malformed JSON")),
+        "ListChildren" => Ok((
+            200,
+            r#"{"Items":[{"Id":"child"}],"NextToken":"do-not-fetch"}"#,
+        )),
         _ => Err("unexpected probe operation".into()),
     }
 }
 
-async fn reply(socket: &mut Socket, request: &str) -> TestResult {
-    let (status, body) = response(request)?;
+async fn reply(socket: &mut Socket, status: u16, body: &str) -> TestResult {
     let response = format!(
         "HTTP/1.1 {status} Response\r\nContent-Type: application/x-amz-json-1.1\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
         body.len(),

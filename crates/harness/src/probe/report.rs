@@ -10,8 +10,14 @@ pub(super) enum Outcome {
     Empty,
     EmptyReason(String),
     Unsupported(String),
-    Failed { class: &'static str, detail: String },
-    SkippedChild,
+    Failed {
+        class: &'static str,
+        detail: String,
+    },
+    SkippedChild {
+        reason: &'static str,
+        detail: Option<String>,
+    },
 }
 
 pub(super) struct Row<'a> {
@@ -64,7 +70,13 @@ impl Row<'_> {
             Outcome::EmptyReason(reason) => writeln!(report, "empty {reason}"),
             Outcome::Unsupported(detail) => writeln!(report, "unsupported {detail}"),
             Outcome::Failed { class, detail } => writeln!(report, "failed {class} {detail}"),
-            Outcome::SkippedChild => writeln!(report, "skipped child"),
+            Outcome::SkippedChild { reason, detail } => {
+                write!(report, "skipped child {reason}")?;
+                if let Some(detail) = detail {
+                    write!(report, ": {detail}")?;
+                }
+                writeln!(report)
+            }
         }
     }
 }
@@ -85,7 +97,7 @@ impl Totals {
             Outcome::Empty | Outcome::EmptyReason(_) => &mut self.empty,
             Outcome::Unsupported(_) => &mut self.unsupported,
             Outcome::Failed { .. } => &mut self.failed,
-            Outcome::SkippedChild => &mut self.skipped,
+            Outcome::SkippedChild { .. } => &mut self.skipped,
         };
         *total = total.checked_add(1).ok_or(ProbeError::TotalOverflow)?;
         Ok(())

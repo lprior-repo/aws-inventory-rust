@@ -6,7 +6,7 @@ use inventory_core::{
         CallablePlan, ContextSource, ExecutionBranch, MissingSelected, RowPolicyPlan,
         RowPredicatePlan, RowValueType,
     },
-    inventory::{DiscoveryContext, ScopeKey},
+    inventory::DiscoveryContext,
     record::{FieldId, MapRef, Record, ValueRef},
 };
 
@@ -70,7 +70,7 @@ pub(crate) fn child(
     parent: &CallablePlan<'_>,
     row: &Record,
     ancestry: &DiscoveryContext,
-    scope: &ScopeKey,
+    parent_branch: Option<&str>,
 ) -> Result<bool, SweepError> {
     policies(plan, branch)
         .filter_map(|policy| policy.child.as_ref())
@@ -84,7 +84,7 @@ pub(crate) fn child(
                 if source == ContextSource::SelectedItem {
                     return lookup(row, path);
                 }
-                ancestry_value(parent, ancestry, scope, source, path)
+                ancestry_value(parent, ancestry, parent_branch, source, path)
             })?;
             Ok(eligible & matches)
         })
@@ -93,11 +93,11 @@ pub(crate) fn child(
 fn ancestry_value<'a>(
     parent: &CallablePlan<'_>,
     ancestry: &'a DiscoveryContext,
-    scope: &ScopeKey,
+    branch: Option<&str>,
     source: ContextSource,
     path: &[FieldId],
 ) -> Result<Option<ValueRef<'a>>, SweepError> {
-    let value = match scope.branch() {
+    let value = match branch {
         Some(branch) => ancestry.value_from_branch(
             parent.service_name(),
             parent.operation_name(),

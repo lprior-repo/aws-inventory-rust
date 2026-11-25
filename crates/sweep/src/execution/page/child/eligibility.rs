@@ -1,7 +1,7 @@
 use crate::{SweepError, record};
 use inventory_core::{
     catalog::runtime::ArnResourceKind,
-    inventory::{Region, ScopeKey},
+    inventory::{AccountId, Region},
     record::{FieldId, Record, Value, ValueRef},
 };
 
@@ -10,7 +10,7 @@ pub(super) fn value(
     path: &[FieldId],
     expected_service: &str,
     kind: ArnResourceKind,
-    scope: &ScopeKey,
+    scope: (Option<&AccountId>, &Region),
 ) -> Result<Option<Value>, SweepError> {
     let Some(ValueRef::Text(text)) = record::path_value(row.root(), path)? else {
         return Err(SweepError::Operation(
@@ -30,15 +30,17 @@ fn validate(
     text: &str,
     expected_service: &str,
     kind: &ArnResourceKind,
-    scope: &ScopeKey,
+    (account, region): (Option<&AccountId>, &Region),
 ) -> Result<(), SweepError> {
-    let Region::Regional(region) = scope.region() else {
+    let Region::Regional(region) = region else {
         return Err(SweepError::Operation(
             "reviewed parent ARN has no trusted request region",
         ));
     };
     let trusted = record::IdentityContext {
-        account: scope.account(),
+        account: account.ok_or(SweepError::Operation(
+            "reviewed parent ARN requires caller identity",
+        ))?,
         region,
     };
     if expected_service != record::trusted_arn::resource_service(kind)

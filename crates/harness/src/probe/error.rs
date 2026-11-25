@@ -23,4 +23,6 @@ pub enum ProbeError {
     Report(#[from] std::fmt::Error),
     #[error("probe total overflow")]
     TotalOverflow,
+    #[error("probe child scheduling failed: {0}")]
+    ChildSchedule(#[from] inventory_sweep::SweepError),
 }

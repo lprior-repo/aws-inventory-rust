@@ -40,7 +40,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
         assert!(matches!(
             Args::parse(&args),
             Err(ProbeError::Invalid(
-                "probe requires five option-value pairs and optional service pairs"
+                "probe requires five option-value pairs plus optional child samples and service pairs"
             ))
         ));
     }
@@ -49,7 +49,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
     assert!(matches!(
         Args::parse(&args),
         Err(ProbeError::Invalid(
-            "probe requires five option-value pairs and optional service pairs"
+            "probe requires five option-value pairs plus optional child samples and service pairs"
         ))
     ));
 }
@@ -143,4 +143,18 @@ fn given_too_many_services_when_parsed_then_argument_bound_is_enforced() {
     let mut args = arguments();
     args.extend(std::iter::repeat_n("--service".to_owned(), 514));
     assert!(Args::parse(&args).is_err());
+}
+
+#[test]
+fn given_out_of_range_child_samples_when_parsed_then_the_bound_is_reported() {
+    for count in ["0", "65", "negative"] {
+        let mut args = arguments();
+        args.extend(["--child-samples", count].map(str::to_owned));
+        assert!(matches!(
+            Args::parse(&args),
+            Err(ProbeError::Invalid(
+                "--child-samples requires a count from 1 through 64"
+            ))
+        ));
+    }
 }

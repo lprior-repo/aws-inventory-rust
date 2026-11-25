@@ -1,4 +1,5 @@
 use super::super::ProbeError;
+use inventory_sweep::ChildProbeSamples;
 use std::{net::IpAddr, path::PathBuf};
 
 pub(super) struct Args {
@@ -8,13 +9,14 @@ pub(super) struct Args {
     pub region: String,
     pub report: PathBuf,
     pub services: Vec<String>,
+    pub child_samples: ChildProbeSamples,
 }
 
 impl Args {
     pub(super) fn parse(arguments: &[String]) -> Result<Self, ProbeError> {
-        if arguments.len() < 10 || arguments.len() > 522 || !arguments.len().is_multiple_of(2) {
+        if arguments.len() < 10 || arguments.len() > 524 || !arguments.len().is_multiple_of(2) {
             return Err(ProbeError::Invalid(
-                "probe requires five option-value pairs and optional service pairs",
+                "probe requires five option-value pairs plus optional child samples and service pairs",
             ));
         }
         let options = arguments.as_chunks::<2>().0.iter().try_fold(
@@ -35,6 +37,7 @@ struct Options<'a> {
     ca_bundle: Option<&'a str>,
     region: Option<&'a str>,
     report: Option<&'a str>,
+    child_samples: Option<&'a str>,
     services: Vec<&'a str>,
 }
 
@@ -46,6 +49,11 @@ impl<'a> Options<'a> {
             ));
         }
         if name == "--service" {
+            if self.services.len() == 256 {
+                return Err(ProbeError::Invalid(
+                    "probe accepts at most 256 service options",
+                ));
+            }
             self.services.try_reserve(1)?;
             self.services.push(value);
             return Ok(());
@@ -56,6 +64,7 @@ impl<'a> Options<'a> {
             "--ca-bundle" => &mut self.ca_bundle,
             "--region" => &mut self.region,
             "--report" => &mut self.report,
+            "--child-samples" => &mut self.child_samples,
             _ => return Err(ProbeError::Invalid("unknown probe option")),
         };
         if slot.replace(value).is_some() {
@@ -72,6 +81,18 @@ impl<'a> Options<'a> {
             region: required(self.region)?.into(),
             report: required(self.report)?.into(),
             services: self.services.into_iter().map(str::to_owned).collect(),
+            child_samples: self.child_samples.map_or_else(
+                || Ok(ChildProbeSamples::default()),
+                |value| {
+                    value
+                        .parse::<usize>()
+                        .ok()
+                        .and_then(ChildProbeSamples::new)
+                        .ok_or(ProbeError::Invalid(
+                            "--child-samples requires a count from 1 through 64",
+                        ))
+                },
+            )?,
         };
         endpoint(&args.endpoint)?;
         Ok(args)

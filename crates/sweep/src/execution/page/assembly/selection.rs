@@ -29,36 +29,25 @@ pub(super) fn select(
         .enumerate()
         .try_for_each(|(ordinal, row)| {
             chunk.raw_count = add_ordinal(chunk.raw_count, 1)?;
-            let row = row?;
-            if !selected_row(page, &row)? {
+            let Some(row) = resource_projection::select_item(
+                page.plan,
+                page.branch,
+                row?,
+                &page.request.record,
+                &page.response.record,
+            )?
+            else {
                 return Ok::<_, SweepError>(());
-            }
+            };
             let ordinal = add_ordinal(offset, ordinal)?;
             *retained.next().ok_or(SweepError::Operation(
                 "discovery item ordinal exceeds bound",
             ))? = ordinal;
-            let projected = match page.plan.projection() {
-                Some(projection) => resource_projection::project_with(projection, &row)?,
-                None => row,
-            };
             chunk.items.try_reserve(1)?;
-            chunk.items.push(projected);
+            chunk.items.push(row);
             Ok(())
         })?;
     Ok(chunk)
-}
-
-fn selected_row(
-    page: &page::Page<'_, '_>,
-    row: &inventory_core::record::Record,
-) -> Result<bool, SweepError> {
-    crate::row_policy::selected(
-        page.plan,
-        page.branch,
-        row,
-        &page.request.record,
-        &page.response.record,
-    )
 }
 
 pub(super) fn add_ordinal(offset: usize, count: usize) -> Result<usize, SweepError> {

@@ -1,7 +1,7 @@
 use super::*;
 use inventory_core::catalog::runtime::{BindingAlternativePlan, ContextSource, UrlResourceKind};
 
-pub(super) fn consumes_current(
+pub(crate) fn consumes_current(
     source: &BindingSource,
     parent: &CallablePlan<'_>,
     branch: Option<&str>,
@@ -47,17 +47,29 @@ fn matches_producer(service: &str, operation: &str, parent: &CallablePlan<'_>) -
     service == parent.service_name() && operation == parent.operation_name()
 }
 
+#[cfg(test)]
 pub(crate) fn resolve_binding(
     context: &Context<'_, '_>,
     request_region: &RegionId,
     row: &RowContext<'_>,
     source: &BindingSource,
 ) -> Result<(bool, Option<Value>), SweepError> {
+    resolve(&context.bindings(), request_region, &row.bindings(), source)
+}
+
+pub(super) fn resolve(
+    context: &BindingContext<'_, '_>,
+    request_region: &RegionId,
+    row: &BindingRow<'_>,
+    source: &BindingSource,
+) -> Result<(bool, Option<Value>), SweepError> {
     match source {
-        BindingSource::Account => Ok((
-            false,
-            Some(Value::Text(context.account.as_str().to_owned())),
-        )),
+        BindingSource::Account => context
+            .account
+            .map(|account| (false, Some(Value::Text(account.as_str().to_owned()))))
+            .ok_or(SweepError::Operation(
+                "child account binding requires caller identity",
+            )),
         BindingSource::Region => Ok((false, Some(Value::Text(request_region.as_str().to_owned())))),
         BindingSource::RegionList => Ok((
             false,
@@ -74,9 +86,9 @@ pub(crate) fn resolve_binding(
 }
 
 fn binding_value(
-    context: &Context<'_, '_>,
+    context: &BindingContext<'_, '_>,
     request_region: &RegionId,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     source: &BindingSource,
 ) -> Result<(bool, Option<Value>), SweepError> {
     match source {
@@ -96,13 +108,13 @@ fn binding_value(
 }
 
 fn transformed(
-    context: &Context<'_, '_>,
+    context: &BindingContext<'_, '_>,
     request_region: &RegionId,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     source: &BindingSource,
     transform: &inventory_core::catalog::runtime::BindingTransform,
 ) -> Result<(bool, Option<Value>), SweepError> {
-    let (dependent, value) = resolve_binding(context, request_region, row, source)?;
+    let (dependent, value) = resolve(context, request_region, row, source)?;
     Ok((
         dependent,
         value
@@ -112,8 +124,8 @@ fn transformed(
 }
 
 fn alternative(
-    context: &Context<'_, '_>,
-    row: &RowContext<'_>,
+    context: &BindingContext<'_, '_>,
+    row: &BindingRow<'_>,
     alternatives: &[BindingAlternativePlan],
 ) -> Result<(bool, Option<Value>), SweepError> {
     let Some(alternative) = producer_match(context.parent_plan, alternatives) else {
@@ -144,16 +156,16 @@ fn producer_match<'a>(
 }
 
 fn stage_value(
-    context: &Context<'_, '_>,
-    row: &RowContext<'_>,
+    context: &BindingContext<'_, '_>,
+    row: &BindingRow<'_>,
     service: &str,
     operation: &str,
     branch: &str,
     source: ContextSource,
     path: &[FieldId],
 ) -> Result<(bool, Option<Value>), SweepError> {
-    let current = matches_producer(service, operation, context.parent_plan)
-        && row.scope.branch() == Some(branch);
+    let current =
+        matches_producer(service, operation, context.parent_plan) && row.branch == Some(branch);
     let value = row
         .ancestry
         .value_from_branch(service, operation, branch, source, path)
@@ -162,9 +174,9 @@ fn stage_value(
 }
 
 fn ancestor_or_operation(
-    context: &Context<'_, '_>,
+    context: &BindingContext<'_, '_>,
     request_region: &RegionId,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     source: &BindingSource,
 ) -> Result<(bool, Option<Value>), SweepError> {
     match source {
@@ -179,8 +191,8 @@ fn ancestor_or_operation(
 }
 
 fn ancestor_value(
-    context: &Context<'_, '_>,
-    row: &RowContext<'_>,
+    context: &BindingContext<'_, '_>,
+    row: &BindingRow<'_>,
     service: &str,
     operation: &str,
     source: ContextSource,
@@ -195,21 +207,21 @@ fn ancestor_value(
 }
 
 fn operation_value(
-    context: &Context<'_, '_>,
+    context: &BindingContext<'_, '_>,
     request_region: &RegionId,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     source: &BindingSource,
 ) -> Result<(bool, Option<Value>), SweepError> {
-    if !consumes_current(source, context.parent_plan, row.scope.branch()) {
+    if !consumes_current(source, context.parent_plan, row.branch) {
         return Ok((false, None));
     }
     current_operation(context, request_region, row, source)
 }
 
 fn current_operation(
-    context: &Context<'_, '_>,
+    context: &BindingContext<'_, '_>,
     request_region: &RegionId,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     source: &BindingSource,
 ) -> Result<(bool, Option<Value>), SweepError> {
     match source {
@@ -219,8 +231,14 @@ fn current_operation(
             arn_service,
             resource_kind,
             ..
-        } => eligibility::value(row.row, path, arn_service, *resource_kind, row.scope)
-            .map(|value| (true, value)),
+        } => eligibility::value(
+            row.row,
+            path,
+            arn_service,
+            *resource_kind,
+            (context.account, row.region),
+        )
+        .map(|value| (true, value)),
         BindingSource::OperationUrl {
             path,
             resource_kind,
@@ -231,9 +249,9 @@ fn current_operation(
 }
 
 fn trusted_url(
-    context: &Context<'_, '_>,
+    context: &BindingContext<'_, '_>,
     request_region: &RegionId,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     path: &[FieldId],
     resource_kind: UrlResourceKind,
 ) -> Result<(bool, Option<Value>), SweepError> {
@@ -243,7 +261,9 @@ fn trusted_url(
         ));
     };
     let trusted = record::IdentityContext {
-        account: context.account,
+        account: context.account.ok_or(SweepError::Operation(
+            "reviewed parent URL requires caller identity",
+        ))?,
         region: request_region,
     };
     match resource_kind {

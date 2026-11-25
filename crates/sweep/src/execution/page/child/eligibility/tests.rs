@@ -1,18 +1,9 @@
 use super::*;
-use inventory_core::{
-    inventory::{AccountId, OperationId, ServiceId},
-    record::Key,
-};
+use inventory_core::record::Key;
 use std::collections::BTreeMap;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-fn scope() -> Result<ScopeKey, Box<dyn std::error::Error>> {
-    Ok(ScopeKey::new(
-        AccountId::parse("123456789012")?,
-        Region::parse("us-east-1")?,
-        ServiceId::parse("sns")?,
-        OperationId::parse("ListSubscriptions")?,
-        None,
-    )?)
+fn account() -> Result<AccountId, Box<dyn std::error::Error>> {
+    Ok(AccountId::parse("123456789012")?)
 }
 fn row(text: &str) -> Result<Record, Box<dyn std::error::Error>> {
     Ok(Record::encode(&Value::Map(BTreeMap::from([(
@@ -29,7 +20,7 @@ fn given_confirmed_subscription_when_selected_then_exact_arn_is_bound() -> TestR
             &[FieldId::new(1)?],
             "sns",
             ArnResourceKind::SnsSubscription,
-            &scope()?
+            (Some(&account()?), &Region::parse("us-east-1")?)
         )?,
         Some(Value::Text(text.to_owned()))
     );
@@ -44,7 +35,7 @@ fn given_only_documented_sentinels_when_selected_then_detail_is_not_scheduled() 
                 &[FieldId::new(1)?],
                 "sns",
                 ArnResourceKind::SnsSubscription,
-                &scope()?
+                (Some(&account()?), &Region::parse("us-east-1")?)
             )?,
             None
         );
@@ -71,7 +62,7 @@ fn given_malformed_or_wrong_owner_arns_when_selected_then_failure_is_explicit() 
                     &[FieldId::new(1)?],
                     "sns",
                     ArnResourceKind::SnsSubscription,
-                    &scope()?
+                    (Some(&account()?), &Region::parse("us-east-1")?)
                 ),
                 Err(SweepError::Operation(
                     "reviewed parent ARN is invalid or outside its trusted scope"
@@ -87,7 +78,7 @@ fn given_malformed_or_wrong_owner_arns_when_selected_then_failure_is_explicit() 
             &[FieldId::new(1)?],
             "sns",
             ArnResourceKind::SnsSubscription,
-            &scope()?
+            (Some(&account()?), &Region::parse("us-east-1")?)
         ),
         Err(SweepError::Operation(
             "reviewed parent ARN is missing or not text"

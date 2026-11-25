@@ -9,12 +9,19 @@ pub use error::ProbeError;
 use aws_wire::transport::Client;
 use futures_util::{StreamExt, stream};
 use inventory_core::{
-    catalog::runtime::{BindingSource, CallablePlan, PlanPurpose, RuntimeCatalog},
+    catalog::runtime::{CallablePlan, PlanPurpose, RuntimeCatalog},
     inventory::{AccountId, RegionId},
 };
 use inventory_engine::limiter::ApiExecutor;
-use inventory_sweep::{CredentialSource, ProbeAnswer, ProbeScope, SweepError, call_once};
+use inventory_sweep::{
+    ChildProbeSamples, CredentialSource, ProbeAnswer, ProbeChildren, ProbeScope, SweepError,
+    call_once, probe_children,
+};
 use report::{Outcome, Row};
+use std::time::{Duration, Instant};
+
+type RootResult<'a, 'catalog> = (&'a CallablePlan<'catalog>, Result<ProbeAnswer, SweepError>);
+type ParentPage<'a, 'catalog> = (&'a CallablePlan<'catalog>, ProbeAnswer);
 
 pub async fn run(
     catalog: &RuntimeCatalog<'_>,
@@ -25,8 +32,7 @@ pub async fn run(
     endpoint: &str,
     services: &[String],
 ) -> Result<String, ProbeError> {
-    validate_services(catalog, services)?;
-    Probe {
+    let (text, _) = Probe {
         catalog,
         credentials,
         client,
@@ -34,9 +40,11 @@ pub async fn run(
         region,
         endpoint,
         services,
+        child_samples: ChildProbeSamples::default(),
     }
     .run()
-    .await
+    .await?;
+    Ok(text)
 }
 
 struct Probe<'a, 'catalog, C> {
@@ -47,69 +55,100 @@ struct Probe<'a, 'catalog, C> {
     region: &'a RegionId,
     endpoint: &'a str,
     services: &'a [String],
+    child_samples: ChildProbeSamples,
 }
 
-impl<C: CredentialSource> Probe<'_, '_, C> {
-    async fn run(&self) -> Result<String, ProbeError> {
-        let (identity, account) = self.bootstrap().await;
-        let mut rows = Vec::new();
-        rows.try_reserve_exact(self.selected_count())?;
-        rows.extend(identity.filter(|row| self.selected(row.service)));
-        let tasks = self
+impl<'a, 'catalog, C: CredentialSource> Probe<'a, 'catalog, C> {
+    async fn run(&self) -> Result<(String, Duration), ProbeError> {
+        validate_services(self.catalog, self.services)?;
+        let started = Instant::now();
+        let identity = self.bootstrap().await;
+        let account = identity
+            .as_ref()
+            .and_then(|(_, answer)| answer.as_ref().ok())
+            .and_then(|answer| answer.account.clone());
+        let plans = self
             .catalog
             .plans()
             .iter()
-            .filter(|plan| !matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. }))
             .filter(|plan| self.selected(plan.service_name()))
-            .map(|plan| self.row(plan, account.as_ref()));
-        let rows = stream::iter(tasks)
-            .buffer_unordered(8)
-            .fold(rows, |mut rows, row| async move {
-                rows.push(row);
-                rows
-            })
-            .await;
-        report::render(rows)
+            .collect::<Vec<_>>();
+        let mut roots = self.roots(&plans, account.as_ref()).await;
+        roots.extend(identity);
+        let root_wall = started.elapsed();
+        let mut rows = Vec::new();
+        rows.try_reserve_exact(plans.len())?;
+        let parents = self.parent_pages(roots, &mut rows)?;
+        let children = probe_children(
+            self.catalog,
+            self.credentials,
+            self.client,
+            self.executor,
+            self.scope(account.as_ref()),
+            ProbeChildren::new(&plans, parents, self.child_samples),
+        )
+        .await?;
+        rows.extend(
+            children
+                .into_iter()
+                .map(|(plan, result)| row(plan, outcome::child(plan, result))),
+        );
+        Ok((report::render(rows)?, root_wall))
+    }
+
+    async fn roots(
+        &self,
+        plans: &[&'a CallablePlan<'catalog>],
+        account: Option<&AccountId>,
+    ) -> Vec<RootResult<'a, 'catalog>> {
+        let tasks = plans
+            .iter()
+            .copied()
+            .filter(|plan| !matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. }))
+            .filter(|plan| !ProbeAnswer::requires_parent(plan))
+            .map(|plan| async move { (plan, self.call(plan, account).await) });
+        stream::iter(tasks).buffer_unordered(8).collect().await
+    }
+
+    fn parent_pages(
+        &self,
+        roots: Vec<RootResult<'a, 'catalog>>,
+        rows: &mut Vec<Row<'a>>,
+    ) -> Result<Vec<ParentPage<'a, 'catalog>>, ProbeError> {
+        let mut parents = Vec::new();
+        parents.try_reserve_exact(roots.len())?;
+        roots.into_iter().for_each(|(plan, answer)| {
+            if self.selected(plan.service_name()) {
+                rows.push(row(plan, outcome(plan, answer.as_ref())));
+            }
+            if let Ok(answer) = answer
+                && answer.items != 0
+            {
+                parents.push((plan, answer));
+            }
+        });
+        Ok(parents)
     }
 
     fn selected(&self, service: &str) -> bool {
         self.services.is_empty() || self.services.iter().any(|selected| selected == service)
     }
 
-    fn selected_count(&self) -> usize {
-        self.catalog
-            .plans()
-            .iter()
-            .filter(|plan| self.selected(plan.service_name()))
-            .count()
-    }
-
-    async fn bootstrap(&self) -> (Option<Row<'_>>, Option<AccountId>) {
+    async fn bootstrap(&self) -> Option<RootResult<'a, 'catalog>> {
         let plan = self
             .catalog
             .plans()
             .iter()
-            .find(|plan| matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. }));
-        let Some(plan) = plan else {
-            return (None, None);
-        };
-        let answer = self.call(plan, None).await;
-        let row = row(plan, outcome(plan, answer.as_ref()));
-        let account = answer.ok().and_then(|answer| answer.account);
-        (Some(row), account)
+            .find(|plan| matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. }))?;
+        Some((plan, self.call(plan, None).await))
     }
 
-    async fn row<'a>(&self, plan: &'a CallablePlan<'_>, account: Option<&AccountId>) -> Row<'a> {
-        let outcome = if matches!(plan.purpose(), PlanPurpose::TagEndpoint(_))
-            || plan
-                .effective_bindings(plan.branches().first())
-                .any(|binding| requires_parent(&binding.source))
-        {
-            Outcome::SkippedChild
-        } else {
-            outcome(plan, self.call(plan, account).await.as_ref())
-        };
-        row(plan, outcome)
+    fn scope<'scope>(&'scope self, account: Option<&'scope AccountId>) -> ProbeScope<'scope> {
+        ProbeScope {
+            region: self.region,
+            account,
+            endpoint_override: Some(self.endpoint),
+        }
     }
 
     async fn call(
@@ -123,11 +162,7 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
             self.client,
             self.executor,
             plan,
-            ProbeScope {
-                region: self.region,
-                account,
-                endpoint_override: Some(self.endpoint),
-            },
+            self.scope(account),
         )
         .await
     }
@@ -159,22 +194,5 @@ fn outcome(plan: &CallablePlan<'_>, answer: Result<&ProbeAnswer, &SweepError>) -
         Ok(answer) if answer.items == 0 => Outcome::Empty,
         Ok(answer) => Outcome::Items(answer.items),
         Err(error) => outcome::failed(plan, error),
-    }
-}
-
-fn requires_parent(source: &BindingSource) -> bool {
-    match source {
-        BindingSource::Account
-        | BindingSource::Region
-        | BindingSource::RegionList
-        | BindingSource::Fixed(_) => false,
-        BindingSource::Transformed { source, .. } => requires_parent(source),
-        BindingSource::Alternatives(_)
-        | BindingSource::ContextFromBranch { .. }
-        | BindingSource::ParentIdentity { .. }
-        | BindingSource::Operation { .. }
-        | BindingSource::OperationArn { .. }
-        | BindingSource::OperationUrl { .. }
-        | BindingSource::Context { .. } => true,
     }
 }

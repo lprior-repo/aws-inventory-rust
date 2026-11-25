@@ -1,14 +1,22 @@
 use super::server::{Server, TestResult};
 use std::{path::Path, time::Duration};
 
-pub async fn report(bytes: &[u8], services: &[&str]) -> TestResult<String> {
+pub async fn report(bytes: &[u8], options: &[&str], count: usize) -> TestResult<String> {
+    let (report, _) = run(bytes, options, count, super::server::response).await?;
+    Ok(report)
+}
+
+pub async fn run(
+    bytes: &[u8],
+    options: &[&str],
+    count: usize,
+    respond: impl Fn(&str) -> TestResult<(u16, &'static str)>,
+) -> TestResult<(String, Vec<String>)> {
     let server = Server::new().await?;
     let work = tempfile::tempdir()?;
     tokio::fs::write(work.path().join("probe.catalog"), bytes).await?;
     let mut command = command(&server, work.path())?;
-    services.iter().for_each(|service| {
-        command.args(["--service", service]);
-    });
+    command.args(options);
     let probe = async {
         let output = command.output().await?;
         assert_eq!(
@@ -19,11 +27,12 @@ pub async fn report(bytes: &[u8], services: &[&str]) -> TestResult<String> {
         );
         Ok::<_, Box<dyn std::error::Error>>(())
     };
-    tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::try_join!(probe, server.serve(4))
+    let ((), requests) = tokio::time::timeout(Duration::from_secs(10), async {
+        tokio::try_join!(probe, server.serve_with(count, respond))
     })
     .await??;
-    Ok(tokio::fs::read_to_string(work.path().join("probe.report")).await?)
+    let report = tokio::fs::read_to_string(work.path().join("probe.report")).await?;
+    Ok((report, requests))
 }
 
 fn command(server: &Server, work: &Path) -> TestResult<tokio::process::Command> {
@@ -58,7 +67,12 @@ fn configure(command: &mut tokio::process::Command, server: &Server, work: &Path
 async fn given_repeated_service_filters_when_cli_runs_then_only_selected_service_is_reported()
 -> TestResult {
     let bytes = super::fixture::compiled(4, |_| {})?;
-    let report = report(&bytes, &["bindings", "bindings"]).await?;
+    let report = report(
+        &bytes,
+        &["--service", "bindings", "--service", "bindings"],
+        5,
+    )
+    .await?;
     assert!(report.contains("bindings ListParents0 awsJson1_1 items 2"));
     assert_eq!(
         report

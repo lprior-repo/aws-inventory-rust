@@ -15,7 +15,7 @@ pub async fn twice(catalog: &RuntimeCatalog<'_>) -> TestResult<(String, Vec<Stri
         Ok::<_, Box<dyn std::error::Error>>(first)
     };
     tokio::time::timeout(Duration::from_secs(10), async {
-        tokio::try_join!(probe, server.serve(8))
+        tokio::try_join!(probe, server.serve(10))
     })
     .await?
 }

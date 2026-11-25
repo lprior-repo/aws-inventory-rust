@@ -8,7 +8,9 @@ pub(super) fn child_for_row(
     discovery: &[u8],
     budget: &mut PageContextBudget,
 ) -> Result<Option<WorkSpec>, SweepError> {
-    if !eligible(context, child, row, branch)? {
+    let binding_row = row.bindings();
+    let bindings = context.bindings();
+    if !eligible(bindings.parent_plan, child, &binding_row, branch)? {
         return Ok(None);
     }
     let scope_kind = branch.map_or(child.scope(), |branch| branch.scope);
@@ -19,7 +21,7 @@ pub(super) fn child_for_row(
         context.home,
         branch.map(|branch| branch.discriminator.as_str()),
     )?;
-    let resolution = fields(context, child, row, branch, &request_region)?;
+    let resolution = fields(&bindings, child, &binding_row, branch, &request_region)?;
     let fields = match resolution {
         FieldResolution::Absent => return Ok(None),
         FieldResolution::Empty => {
@@ -32,43 +34,37 @@ pub(super) fn child_for_row(
     make_child(context, child, row, branch, fields, discovery).map(Some)
 }
 
-fn eligible(
-    context: &Context<'_, '_>,
+pub(crate) fn eligible(
+    parent: &CallablePlan<'_>,
     child: &CallablePlan<'_>,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     branch: Option<&ExecutionBranch>,
 ) -> Result<bool, SweepError> {
-    if !child.effective_bindings(branch).any(|binding| {
-        binding::consumes_current(&binding.source, context.parent_plan, row.scope.branch())
-    }) {
+    if !child
+        .effective_bindings(branch)
+        .any(|binding| consumes_current(&binding.source, parent, row.branch))
+    {
         return Ok(false);
     }
-    crate::row_policy::child(
-        child,
-        branch,
-        context.parent_plan,
-        row.row,
-        row.ancestry,
-        row.scope,
-    )
+    crate::row_policy::child(child, branch, parent, row.row, row.ancestry, row.branch)
 }
 
-enum FieldResolution {
+pub(crate) enum FieldResolution {
     Ready(Vec<input::InputField>),
     Absent,
     Empty,
 }
 
-fn fields(
-    context: &Context<'_, '_>,
+pub(crate) fn fields(
+    context: &BindingContext<'_, '_>,
     child: &CallablePlan<'_>,
-    row: &RowContext<'_>,
+    row: &BindingRow<'_>,
     branch: Option<&ExecutionBranch>,
     request_region: &RegionId,
 ) -> Result<FieldResolution, SweepError> {
     let mut fields = Vec::new();
     for binding in child.effective_bindings(branch) {
-        let (_, value) = resolve_binding(context, request_region, row, &binding.source)?;
+        let (_, value) = binding::resolve(context, request_region, row, &binding.source)?;
         match value {
             None => return Ok(FieldResolution::Absent),
             Some(Value::Text(text)) if text.is_empty() => return Ok(FieldResolution::Empty),
@@ -84,7 +80,7 @@ fn fields(
     Ok(FieldResolution::Ready(fields))
 }
 
-pub(super) fn child_region(scope: PlanScope, parent: &Region, home: &RegionId) -> Region {
+pub(crate) fn child_region(scope: PlanScope, parent: &Region, home: &RegionId) -> Region {
     match scope {
         PlanScope::Account => Region::Global,
         PlanScope::HomeRegion => Region::Regional(home.clone()),
@@ -139,6 +135,6 @@ fn scope_for_row(
     ))
 }
 
-pub(super) fn empty_record() -> Result<Record, SweepError> {
+pub(crate) fn empty_record() -> Result<Record, SweepError> {
     Record::encode(&Value::Map(std::collections::BTreeMap::new())).map_err(SweepError::from)
 }

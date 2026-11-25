@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The emulator probe now calls parent-bound operations using the sweep's binding
+  and wire code, sampling one parent item by default (`--child-samples 1..64`)
+  and reporting why unbound children are skipped.
 - `sweep` and `serve` accept `--idle-timeout-ms` and `--pool-idle-per-host`
   (or `INVENTORY_SWEEP_IDLE_TIMEOUT_MS` and `INVENTORY_SWEEP_POOL_IDLE_PER_HOST`).
   Idle timeout must be 1–10,000 ms; the per-endpoint cap must be between 1 and

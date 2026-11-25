@@ -55,8 +55,15 @@ fn verify_tag_children(catalog: &RuntimeCatalog<'_>, report: &str) {
             words.next() == Some(plan.service_name()) && words.next() == Some(plan.operation_name())
         });
         assert!(
-            line.is_some_and(|line| line.ends_with(" skipped child")),
-            "tag endpoint requires a resource parent: {} {}",
+            line.is_some_and(|line| {
+                let mut fields = line.split_whitespace().skip(3);
+                match fields.next() {
+                    Some("skipped") => fields.next() == Some("child") && fields.next().is_some(),
+                    Some("empty" | "items" | "failed" | "unsupported") => true,
+                    _ => false,
+                }
+            }),
+            "tag endpoint must report a call outcome or a reason it could not bind: {} {}",
             plan.service_name(),
             plan.operation_name()
         );

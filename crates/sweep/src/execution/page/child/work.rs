@@ -221,7 +221,7 @@ fn selected_tag_row(
         context.parent_plan,
         row.row.row,
         row.row.ancestry,
-        row.row.scope,
+        row.row.scope.branch(),
     )
 }
 

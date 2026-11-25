@@ -7,7 +7,7 @@ use args::Args;
 use credentials::EnvironmentCredentials;
 use inventory_core::{catalog::runtime::RuntimeCatalog, inventory::RegionId};
 use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};
-use std::process::ExitCode;
+use std::{process::ExitCode, time::Instant};
 
 pub async fn command(arguments: &[String]) -> ExitCode {
     match execute(arguments).await {
@@ -27,17 +27,25 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
         tokio::task::spawn_blocking(move || load::load(&args.catalog, &args.ca_bundle)).await??;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let executor = executor()?;
-    let text = super::run(
-        &catalog,
-        &credentials,
-        &client,
-        &executor,
-        &region,
-        &args.endpoint,
-        &args.services,
-    )
+    let started = Instant::now();
+    let (text, root_wall) = super::Probe {
+        catalog: &catalog,
+        credentials: &credentials,
+        client: &client,
+        executor: &executor,
+        region: &region,
+        endpoint: &args.endpoint,
+        services: &args.services,
+        child_samples: args.child_samples,
+    }
+    .run()
     .await?;
     tokio::fs::write(args.report, text).await?;
+    eprintln!(
+        "probe wall time: roots {:.3}s, full {:.3}s",
+        root_wall.as_secs_f64(),
+        started.elapsed().as_secs_f64(),
+    );
     Ok(())
 }
 
