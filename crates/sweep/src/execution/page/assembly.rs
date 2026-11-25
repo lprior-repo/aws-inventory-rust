@@ -117,6 +117,8 @@ fn append_rows(parts: &mut PageParts, next: PageParts) -> Result<(), SweepError>
 mod tests;
 
 #[cfg(test)]
+mod emit_scope_members;
+#[cfg(test)]
 mod stage_tests;
 
 #[cfg(test)]

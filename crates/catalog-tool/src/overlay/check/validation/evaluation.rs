@@ -168,11 +168,11 @@ fn validate_identity(state: &mut State<'_, '_, '_>) {
         state.item.emission == crate::overlay::Emission::DiscoveryOnly
     } else {
         state.item.branches.iter().all(|branch| {
-            branch
-                .emission
-                .as_ref()
-                .map_or(&state.item.emission, |emission| emission)
-                == &crate::overlay::Emission::DiscoveryOnly
+            let effective = match branch.emission {
+                Some(e) => e,
+                None => state.item.emission,
+            };
+            effective == crate::overlay::Emission::DiscoveryOnly
         })
     };
     if discovery_only || state.item.tag_endpoint.is_some() || state.item.endpoint_discovery {

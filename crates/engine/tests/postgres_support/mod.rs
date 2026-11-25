@@ -60,7 +60,7 @@ fn field_offsets() -> Value {
 
 fn extension(count: u32, first_table: Option<&str>) -> TestResult<Value> {
     wire([
-        (1, Value::Int(2)),
+        (1, Value::Int(3)),
         (2, values(count, model::plan)?),
         (3, values(count, |index| schema(index, first_table))?),
         (4, Value::List(Vec::new())),

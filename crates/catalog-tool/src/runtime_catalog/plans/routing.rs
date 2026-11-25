@@ -200,6 +200,7 @@ fn compile_branch_emission(branch: &crate::overlay::ExecutionBranch) -> Option<(
             Value::Int(match emission {
                 crate::overlay::Emission::EmitMetadata => 0,
                 crate::overlay::Emission::DiscoveryOnly => 1,
+                crate::overlay::Emission::WorkOnly => 2,
             }),
         )
     })

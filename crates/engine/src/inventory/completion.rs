@@ -50,9 +50,81 @@ pub(super) async fn drain_sweep(
     }
     add_stats(
         &mut stats,
+        retire_scope_members(store, tx, sweep, at).await?,
+    )?;
+    add_stats(
+        &mut stats,
         super::legacy::publish_ready(store, tx, at).await?,
     )?;
     Ok(stats)
+}
+
+async fn complete_scope_members(
+    tx: &mut Transaction<'_, Sqlite>,
+    source: &[u8],
+    sweep: &SweepId,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE scope_members SET missing_complete=missing_complete+1,completed_sweep=?2 WHERE scope_key=?1 AND observed_sweep<>?2 AND completed_sweep<>?2 AND missing_complete<2")
+        .bind(source)
+        .bind(sweep.as_str())
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
+async fn retire_scope_members(
+    store: &BinaryStore,
+    tx: &mut Transaction<'_, Sqlite>,
+    sweep: &SweepId,
+    at: i64,
+) -> Result<ChangeStats, StoreError> {
+    let rows = sqlx::query(
+        "WITH vanished AS (\
+         SELECT child_scope FROM scope_members WHERE missing_complete>=2 AND completed_sweep=?1 \
+         EXCEPT SELECT child_scope FROM scope_members WHERE missing_complete<2\
+         ) SELECT current.account,current.region,current.kind,current.id,current.scope_key \
+         FROM vanished JOIN resource_scopes current ON current.scope_key=vanished.child_scope \
+         WHERE current.missing_complete<2 AND current.observed_sweep<>?1",
+    )
+    .bind(sweep.as_str())
+    .fetch_all(&mut **tx)
+    .await?;
+    let mut stats = ChangeStats::default();
+    for row in rows {
+        let source: &[u8] = row.try_get("scope_key")?;
+        let key = resource_key_from_row(&row)?;
+        add_stats(
+            &mut stats,
+            retire_member_source(store, tx, &key, source, sweep, at).await?,
+        )?;
+    }
+    sqlx::query("DELETE FROM scope_members WHERE missing_complete>=2 AND completed_sweep=?1")
+        .bind(sweep.as_str())
+        .execute(&mut **tx)
+        .await?;
+    Ok(stats)
+}
+
+async fn retire_member_source(
+    store: &BinaryStore,
+    tx: &mut Transaction<'_, Sqlite>,
+    key: &ResourceKey,
+    source: &[u8],
+    sweep: &SweepId,
+    at: i64,
+) -> Result<ChangeStats, StoreError> {
+    let updated = sqlx::query("UPDATE resource_scopes SET missing_complete=2,last_seen=?6,completed_sweep=?7 WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND scope_key=?5 AND missing_complete<2")
+        .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
+        .bind(source).bind(at).bind(sweep.as_str()).execute(&mut **tx).await?;
+    if updated.rows_affected() == 0 {
+        return Ok(ChangeStats::default());
+    }
+    super::legacy::retire_source(tx, key, source).await?;
+    if live_owners(tx, key).await? == 0 {
+        delete_tree(store, tx, key, at).await
+    } else {
+        super::commit::retire_source(store, tx, key, source, at).await
+    }
 }
 
 async fn complete_authority(
@@ -69,7 +141,7 @@ async fn complete_authority(
     let mut stats = ChangeStats::default();
     for row in rows {
         let misses: i64 = row.try_get("missing_complete")?;
-        let key = resource_key_from_row(row)?;
+        let key = resource_key_from_row(&row)?;
         let updated = sqlx::query("UPDATE resource_scopes SET missing_complete=missing_complete+1,last_seen=?5,completed_sweep=?7 WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND scope_key=?6")
             .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
             .bind(at).bind(source).bind(sweep.as_str()).execute(&mut **tx).await?;
@@ -95,6 +167,9 @@ async fn complete_authority(
     }
     if checked {
         super::legacy::complete_source(tx, source, sweep).await?;
+    }
+    if complete_scan {
+        complete_scope_members(tx, source, sweep).await?;
     }
     Ok(stats)
 }
@@ -179,7 +254,7 @@ async fn retire_children(
     let mut stats = ChangeStats::default();
     for row in rows {
         let source: Vec<u8> = row.try_get("scope_key")?;
-        let child = resource_key_from_row(row)?;
+        let child = resource_key_from_row(&row)?;
         sqlx::query("UPDATE resource_scopes SET missing_complete=max(missing_complete,2) WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND scope_key=?5")
             .bind(child.account.as_str()).bind(child.region.as_str()).bind(child.kind.as_str()).bind(child.id.as_str())
             .bind(&source).execute(&mut **tx).await?;
@@ -199,14 +274,12 @@ async fn retire_children(
     Ok((children, stats))
 }
 
-fn resource_key_from_row(row: sqlx::sqlite::SqliteRow) -> Result<ResourceKey, StoreError> {
+fn resource_key_from_row(row: &sqlx::sqlite::SqliteRow) -> Result<ResourceKey, StoreError> {
     Ok(ResourceKey {
-        account: inventory_core::inventory::AccountId::parse(
-            &row.try_get::<String, _>("account")?,
-        )?,
-        region: inventory_core::inventory::Region::parse(&row.try_get::<String, _>("region")?)?,
-        kind: inventory_core::inventory::Kind::parse(&row.try_get::<String, _>("kind")?)?,
-        id: inventory_core::inventory::ResourceId::parse(&row.try_get::<String, _>("id")?)?,
+        account: inventory_core::inventory::AccountId::parse(row.try_get("account")?)?,
+        region: inventory_core::inventory::Region::parse(row.try_get("region")?)?,
+        kind: inventory_core::inventory::Kind::parse(row.try_get("kind")?)?,
+        id: inventory_core::inventory::ResourceId::parse(row.try_get("id")?)?,
     })
 }
 

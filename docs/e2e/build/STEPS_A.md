@@ -774,8 +774,8 @@ It has no row for `sqs`.
      stores no resource rows. The generator writes it when the item is a scalar
      or has only identifier members, and exactly one callable expansion bound to
      it returns one structure.
-  2. Runtime plan field 14 `emit` (0 resources, 1 work). The extension version
-     in field 1 becomes 2; the reader accepts 2 only. Reader and compiler change
+  2. Runtime plan field 25 `emit` (0 resources, 1 work). The extension version
+     in field 1 becomes 3; the reader accepts 3 only. Reader and compiler change
      in this one change because every map is closed.
   3. `prepare_response` skips `rows::observations` for a work-only plan and
      builds child work from the items alone (identity still computed for the
@@ -785,7 +785,7 @@ It has no row for `sqs`.
      rows exist, that `resource_parents` links them, and that deleting the
      parent in the emulator removes the children after two complete sweeps.
 - **Tests:** unit: work-only page yields children and zero observations;
-  catalog reader rejects version 1 and unknown `emit` codes. End to end as
+  catalog reader rejects versions 1 and 2 and unknown `emit` codes. End to end as
   above.
 - **Budget:** P3 (API calls): record calls per seeded resource for the slice
   before and after children are on. This is the baseline B6 works against.

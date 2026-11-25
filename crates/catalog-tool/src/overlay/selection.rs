@@ -16,6 +16,7 @@ pub enum Emission {
     #[default]
     EmitMetadata,
     DiscoveryOnly,
+    WorkOnly,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,10 +1,10 @@
 use super::*;
 
-struct Batch<'a, T: AsRef<ResourceKey>> {
-    observations: &'a [T],
-    request: &'a Record,
-    contexts: &'a [DiscoveryContext],
-    scope: &'a ScopeKey,
+pub(in crate::execution::page) struct WorkBatch<'a, T: AsRef<ResourceKey>> {
+    pub observations: &'a [T],
+    pub request: &'a Record,
+    pub contexts: &'a [DiscoveryContext],
+    pub scope: &'a ScopeKey,
 }
 
 struct BoundRow<'a> {
@@ -23,31 +23,60 @@ pub(in crate::execution::page) fn work(
     scope: &ScopeKey,
     budget: &mut PageContextBudget,
 ) -> Result<Vec<WorkSpec>, SweepError> {
+    work_with_row_children(
+        context,
+        rows,
+        WorkBatch {
+            observations,
+            request,
+            contexts,
+            scope,
+        },
+        budget,
+        |_, _, _| Ok(()),
+    )
+}
+
+pub(in crate::execution::page) fn work_with_row_children(
+    context: &Context<'_, '_>,
+    rows: &[Record],
+    batch: WorkBatch<'_, impl AsRef<ResourceKey>>,
+    budget: &mut PageContextBudget,
+    mut observe: impl FnMut(&Record, &DiscoveryContext, &mut [WorkSpec]) -> Result<(), SweepError>,
+) -> Result<Vec<WorkSpec>, SweepError> {
     let mut children = Vec::new();
-    let batch = Batch {
-        observations,
-        request,
-        contexts,
-        scope,
-    };
-    for (ordinal, row) in rows.iter().enumerate() {
-        append_row(context, row, ordinal, &batch, budget, &mut children)?;
-    }
+    rows.iter().enumerate().try_for_each(|(ordinal, row)| {
+        let start = children.len();
+        let ancestry = batch
+            .contexts
+            .get(ordinal)
+            .ok_or(SweepError::Operation("discovery item context is absent"))?;
+        append_row(
+            context,
+            row,
+            ancestry,
+            ordinal,
+            &batch,
+            budget,
+            &mut children,
+        )?;
+        let added = children
+            .get_mut(start..)
+            .ok_or(SweepError::Operation("child work range is absent"))?;
+        observe(row, ancestry, added)
+    })?;
     Ok(children)
 }
 
 fn append_row(
     context: &Context<'_, '_>,
     row: &Record,
+    next: &DiscoveryContext,
     ordinal: usize,
-    batch: &Batch<'_, impl AsRef<ResourceKey>>,
+    batch: &WorkBatch<'_, impl AsRef<ResourceKey>>,
     budget: &mut PageContextBudget,
     children: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
-    let next = batch
-        .contexts
-        .get(ordinal)
-        .ok_or(SweepError::Operation("discovery item context is absent"))?;
     let discovery = next
         .encode()
         .map_err(|_| SweepError::Operation("discovery ancestry encoding failed"))?;

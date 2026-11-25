@@ -9,6 +9,9 @@ impl page::Page<'_, '_> {
         budget: &mut child::PageContextBudget,
     ) -> Result<PageParts, SweepError> {
         let contexts = self.contexts(&chunk, budget)?;
+        if self.emission == Emission::WorkOnly {
+            return self.work_only_parts(&chunk, &contexts, child_context, budget);
+        }
         let identities = self.identities(&chunk.items, &contexts)?;
         let references = self.references(&chunk.items, &identities)?;
         let tags = if self.emission == Emission::DiscoveryOnly {
@@ -31,6 +34,49 @@ impl page::Page<'_, '_> {
             observations,
             references,
             tags,
+            children,
+            ..PageParts::default()
+        })
+    }
+
+    fn work_only_parts(
+        &self,
+        chunk: &selection::Chunk,
+        contexts: &[DiscoveryContext],
+        child_context: &child::Context<'_, '_>,
+        budget: &mut child::PageContextBudget,
+    ) -> Result<PageParts, SweepError> {
+        let identity_text =
+            record::IdentityTextValidation::Modeled(self.plan.identity_text("primary")?);
+        let children = child::work_with_row_children(
+            child_context,
+            &chunk.items,
+            child::WorkBatch::<rows::RowIdentity> {
+                observations: &[],
+                request: &self.request.record,
+                contexts,
+                scope: self.lease.scope(),
+            },
+            budget,
+            |row, ancestry, added| {
+                let identity = record::resource_id_validated(
+                    row,
+                    self.plan.identity(),
+                    Some(record::IdentityContext {
+                        account: self.context.account,
+                        region: &self.request.region,
+                    }),
+                    ancestry,
+                    &self.request.record,
+                    &identity_text,
+                )?;
+                added
+                    .iter_mut()
+                    .for_each(|child| child.mark_scope_member(identity.clone()));
+                Ok(())
+            },
+        )?;
+        Ok(PageParts {
             children,
             ..PageParts::default()
         })

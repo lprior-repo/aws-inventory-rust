@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 
 const WORK: &str = "SELECT w.scope_key,w.bindings,w.authority_complete,coalesce(o.outcome,'partial') AS outcome FROM work_queue w LEFT JOIN scope_outcomes o USING(sweep_id,scope_key) WHERE w.sweep_id=$1 AND w.authority_generation=w.generation AND w.generation>0 AND ($2::bytea IS NULL OR w.scope_key>$2) ORDER BY w.scope_key LIMIT 1000";
 const MISSES: &str = "UPDATE resource_scopes s SET missing_complete=CASE WHEN missing_complete<2 THEN missing_complete+1 ELSE missing_complete END,last_seen=$2,completed_sweep=$1 FROM inventory_complete_authorities a WHERE s.scope_key=a.source AND a.complete AND a.prefix AND s.observed_sweep<>$1 AND s.completed_sweep<>$1";
+const MEMBER_MISSES: &str = "UPDATE inventory.scope_members sm SET missing_complete=CASE WHEN missing_complete<2 THEN missing_complete+1 ELSE missing_complete END,completed_sweep=$1 FROM inventory_complete_authorities a WHERE sm.scope_key=a.source AND a.complete AND a.prefix AND sm.observed_sweep<>$1 AND sm.completed_sweep<>$1 AND sm.missing_complete<2";
 
 pub(super) async fn stage(
     tx: &mut Transaction<'_, Postgres>,
@@ -89,6 +90,17 @@ pub(super) async fn misses(
     sqlx::query(MISSES)
         .bind(sweep.as_str())
         .bind(at)
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
+pub(super) async fn member_misses(
+    tx: &mut Transaction<'_, Postgres>,
+    sweep: &SweepId,
+) -> Result<(), StoreError> {
+    sqlx::query(MEMBER_MISSES)
+        .bind(sweep.as_str())
         .execute(&mut **tx)
         .await?;
     Ok(())

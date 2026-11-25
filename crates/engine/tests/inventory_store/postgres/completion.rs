@@ -1,5 +1,5 @@
 use super::{TestResult, claim, collect, run, single, support, work};
-use inventory_core::inventory::ScopeOutcome;
+use inventory_core::inventory::{ResourceId, ScopeOutcome};
 use inventory_engine::inventory::{DatabaseUrl, PgStore};
 use sqlx::PgPool;
 
@@ -164,5 +164,88 @@ async fn failed(store: &PgStore, pool: &PgPool, _: &DatabaseUrl) -> TestResult {
         assert_eq!(stats.resources_deleted, 0);
     }
     assert_eq!(misses(pool).await?, 0);
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "requires INVENTORY_POSTGRES_URL"]
+async fn given_scope_member_when_missing_two_sweeps_then_child_is_retired() -> TestResult {
+    run(scope_member_retirement).await
+}
+
+async fn scope_member_retirement(store: &PgStore, pool: &PgPool, _: &DatabaseUrl) -> TestResult {
+    // Initial sweep: parent discovers child as scope member
+    store.seed_works(&[work("sm-init", None)?]).await?;
+    let lease = claim(store, "sm-init", 100).await?;
+    let child_resource = support::resource("child-thing")?;
+    let mut child_work = work("sm-init", Some(child_resource))?;
+    child_work.mark_scope_member(ResourceId::parse("listed-child")?);
+    let mut page = support::page(
+        lease,
+        vec![support::observation("parent", "parent")?],
+        true,
+        None,
+        101,
+    );
+    page.children.push(child_work);
+    store.commit_page(page).await?;
+
+    // Claim and observe the child resource in its own scope
+    let child_lease = claim(store, "sm-init", 102).await?;
+    let child_page = support::page(
+        child_lease,
+        vec![support::observation("child-thing", "child-value")?],
+        true,
+        None,
+        103,
+    );
+    store.commit_page(child_page).await?;
+
+    // Verify child was persisted
+    let child_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM inventory.resources WHERE id='child-thing'")
+            .fetch_one(pool)
+            .await?;
+    assert_eq!(child_count, 1);
+
+    // First miss sweep: child not listed
+    store.seed_works(&[work("sm-miss-one", None)?]).await?;
+    let lease = claim(store, "sm-miss-one", 100).await?;
+    let page = support::page(
+        lease,
+        vec![support::observation("parent", "parent")?],
+        true,
+        None,
+        101,
+    );
+    store.commit_page(page).await?;
+
+    // Child should still exist after first miss
+    let child_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM inventory.resources WHERE id='child-thing'")
+            .fetch_one(pool)
+            .await?;
+    assert_eq!(child_count, 1);
+
+    // Second miss sweep: child not listed again
+    store.seed_works(&[work("sm-miss-two", None)?]).await?;
+    let lease = claim(store, "sm-miss-two", 100).await?;
+    let page = support::page(
+        lease,
+        vec![support::observation("parent", "parent")?],
+        true,
+        None,
+        101,
+    );
+    let stats = store.commit_page(page).await?;
+
+    // Child should be retired after second miss
+    let child_count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM inventory.resources WHERE id='child-thing'")
+            .fetch_one(pool)
+            .await?;
+    assert_eq!(child_count, 0);
+    assert_eq!(stats.stats.resources_deleted, 1);
+
     Ok(())
 }

@@ -19,7 +19,7 @@ impl CallablePlan<'_> {
         &self,
         relation: &RelationshipPlan,
     ) -> Result<bool, RuntimeCatalogError> {
-        if !emits(self) {
+        if !emits_resource(self) {
             return Ok(false);
         }
         self.resource_emissions()
@@ -108,7 +108,7 @@ pub(in crate::catalog::runtime::decode) fn validate(
     relations: &[RelationshipPlan],
     coverage: &[KindCoverage],
 ) -> Result<(), RuntimeCatalogError> {
-    for plan in plans.iter().filter(|plan| emits(plan)) {
+    for plan in plans.iter().filter(|plan| emits_resource(plan)) {
         for emission in plan.resource_emissions().iter() {
             linked(emission.kind(), schemas, coverage)?;
             if let Some(classification) = emission.classification() {
@@ -157,7 +157,6 @@ pub(in crate::catalog::runtime::decode) fn validate(
     }
     Ok(())
 }
-
 fn validate_target(
     plans: &[CallablePlan<'_>],
     schemas: &[Arc<KindSchema>],
@@ -215,7 +214,7 @@ fn column_link(
     }
 }
 
-fn emits(plan: &CallablePlan<'_>) -> bool {
+fn emits_resource(plan: &CallablePlan<'_>) -> bool {
     !matches!(
         plan.purpose(),
         PlanPurpose::TagEndpoint(_) | PlanPurpose::EndpointDiscovery
@@ -228,14 +227,27 @@ fn emits(plan: &CallablePlan<'_>) -> bool {
     }
 }
 
-/// Every (plan, emission) pair that can produce `kind`, primary and additional alike.
+fn validates_model_paths(plan: &CallablePlan<'_>) -> bool {
+    !matches!(
+        plan.purpose(),
+        PlanPurpose::TagEndpoint(_) | PlanPurpose::EndpointDiscovery
+    ) && if plan.branches().is_empty() {
+        plan.emission() != Emission::DiscoveryOnly
+    } else {
+        plan.branches()
+            .iter()
+            .any(|branch| plan.effective_emission(Some(branch)) != Emission::DiscoveryOnly)
+    }
+}
+
+/// Plan emissions and work-only items provide modeled paths for a kind.
 fn emitters<'p, 'a>(
     plans: &'p [CallablePlan<'a>],
     kind: &'p Kind,
 ) -> impl Iterator<Item = (&'p CallablePlan<'a>, &'p ResourceEmissionPlan)> {
     plans
         .iter()
-        .filter(|plan| emits(plan))
+        .filter(|plan| validates_model_paths(plan))
         .flat_map(move |plan| {
             plan.resource_emissions()
                 .iter()

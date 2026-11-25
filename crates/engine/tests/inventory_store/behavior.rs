@@ -1,3 +1,5 @@
+#[path = "behavior/deletion.rs"]
+mod deletion;
 #[path = "behavior/lifecycle.rs"]
 mod lifecycle;
 #[path = "behavior/outcome_detail.rs"]

@@ -87,9 +87,14 @@ fn callable<'a>(
 }
 
 fn emits(overlay: &OperationOverlay) -> bool {
+    // Overlay emission is always set (default EmitMetadata).
     overlay.emission == Emission::EmitMetadata
-        || overlay
-            .branches
-            .iter()
-            .any(|branch| branch.emission.unwrap_or(overlay.emission) == Emission::EmitMetadata)
+        || overlay.branches.iter().any(|branch| {
+            // Branch emission overrides overlay emission; None falls back to overlay.
+            let effective = match branch.emission {
+                Some(e) => e,
+                None => overlay.emission,
+            };
+            effective == Emission::EmitMetadata
+        })
 }

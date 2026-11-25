@@ -164,6 +164,8 @@ pub struct OperationOverlay {
     pub row_policy: super::RowPolicy,
     pub tag_endpoint: Option<super::TagEndpoint>,
     pub emission: super::Emission,
+    /// Distinguishes an explicit `emit: resources` from the default.
+    pub emission_explicit: bool,
     pub projection: Option<super::ResourceProjection>,
     pub classification: Option<super::KindClassification>,
     pub routing: super::RequestRouting,

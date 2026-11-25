@@ -8,6 +8,7 @@ mod queue;
 pub(super) mod references;
 pub(super) mod resource_write;
 pub(super) mod resources;
+mod scope_members;
 mod tags;
 mod validation;
 
@@ -95,6 +96,7 @@ async fn persist(
     }
     write(tx, &context, &states, &grants).await?;
     let tags = tags::persist(tx, page).await?;
+    scope_members::persist(tx, page).await?;
     outbox::enqueue(tx, &projection(&states, tags)).await?;
     let changed: Vec<_> = states
         .values()

@@ -108,14 +108,14 @@ fn make_child(
         row.scope.region(),
         context.home,
     );
-    let scope = child_scope(context, plan, row, branch, region)?;
+    let scope = scope_for_row(context, plan, row, branch, region)?;
     let bindings = input::merge_input(&empty_record()?, &fields)?.into_bytes();
     WorkSpec::new(context.sweep.clone(), scope, None, bindings)?
         .with_context(discovery.to_vec())
         .map_err(SweepError::from)
 }
 
-fn child_scope(
+fn scope_for_row(
     context: &Context<'_, '_>,
     plan: &CallablePlan<'_>,
     row: &RowContext<'_>,

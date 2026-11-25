@@ -603,7 +603,7 @@ fn runtime_metadata(scalar: Option<ScalarType>, dual: bool) -> TestResult<Value>
         (3, Value::Int(0)),
     ])?;
     wire_map([
-        (1, Value::Int(2)),
+        (1, Value::Int(3)),
         (2, Value::List(vec![plan])),
         (3, Value::List(vec![schema])),
         (4, Value::List(relations)),

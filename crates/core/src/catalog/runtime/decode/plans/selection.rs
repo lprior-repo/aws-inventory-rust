@@ -35,6 +35,7 @@ pub(super) fn emission(fields: MapRef<'_>) -> Result<Emission, RuntimeCatalogErr
     match fields.get_field(FieldId::new(19)?)? {
         None | Some(ValueRef::Int(0)) => Ok(Emission::EmitMetadata),
         Some(ValueRef::Int(1)) => Ok(Emission::DiscoveryOnly),
+        Some(ValueRef::Int(2)) => Ok(Emission::WorkOnly),
         _ => Err(RuntimeCatalogError::Capability),
     }
 }

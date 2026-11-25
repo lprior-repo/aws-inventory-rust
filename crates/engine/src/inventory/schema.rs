@@ -4,6 +4,7 @@ use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use std::sync::Arc;
 
 const TAG_OBSERVATIONS_SQL: &str = "CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL CHECK(coverage IN('complete','partial','failed','unobserved')),observed_at INTEGER NOT NULL CHECK(observed_at>=0),last_complete_at INTEGER CHECK(last_complete_at>=0),PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID";
+const SCOPE_MEMBERS_SQL: &str = "CREATE TABLE scope_members(account TEXT NOT NULL,region TEXT NOT NULL,scope_key BLOB NOT NULL,child_scope BLOB NOT NULL,member_id TEXT NOT NULL,missing_complete INTEGER NOT NULL DEFAULT 0,observed_sweep TEXT NOT NULL,completed_sweep TEXT NOT NULL DEFAULT '',PRIMARY KEY(account,region,scope_key,child_scope,member_id)) WITHOUT ROWID";
 const SCOPE_FRESHNESS_SQL: &str = include_str!("../../sql/inventory_scope_freshness.sql");
 
 pub(super) async fn initialize(
@@ -290,6 +291,7 @@ async fn create_shared_tables(
         "CREATE INDEX IF NOT EXISTS scope_outcomes_complete ON scope_outcomes(scope_key,outcome,observed_at)",
         "CREATE INDEX IF NOT EXISTS unresolved_refs_target ON unresolved_refs(target_scope,target_kind)",
         "CREATE INDEX IF NOT EXISTS resource_scopes_key ON resource_scopes(scope_key)",
+        "CREATE INDEX IF NOT EXISTS scope_members_key ON scope_members(scope_key)",
     ];
     for statement in [
         "CREATE TABLE metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL) WITHOUT ROWID",
@@ -305,6 +307,7 @@ async fn create_shared_tables(
         "CREATE TABLE unresolved_refs(from_account TEXT NOT NULL,from_region TEXT NOT NULL,from_kind TEXT NOT NULL,from_id TEXT NOT NULL,target_scope BLOB NOT NULL,target_kind TEXT NOT NULL,target_path BLOB NOT NULL,target_value TEXT NOT NULL,relation TEXT NOT NULL,source TEXT NOT NULL,target_kinds BLOB NOT NULL DEFAULT X'',resolution TEXT NOT NULL DEFAULT 'unresolved' CHECK(resolution IN('unresolved','resolved','ambiguous')),PRIMARY KEY(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
         "CREATE TABLE resource_parents(parent_account TEXT NOT NULL,parent_region TEXT NOT NULL,parent_kind TEXT NOT NULL,parent_id TEXT NOT NULL,child_account TEXT NOT NULL,child_region TEXT NOT NULL,child_kind TEXT NOT NULL,child_id TEXT NOT NULL,scope_key BLOB NOT NULL,PRIMARY KEY(parent_account,parent_region,parent_kind,parent_id,child_account,child_region,child_kind,child_id,scope_key),FOREIGN KEY(parent_account,parent_region,parent_kind,parent_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(child_account,child_region,child_kind,child_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
         "CREATE TABLE scope_outcomes(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,outcome TEXT NOT NULL,observed_at INTEGER NOT NULL,detail TEXT CHECK(detail IS NULL OR length(CAST(detail AS BLOB))<=1024),PRIMARY KEY(sweep_id,scope_key)) WITHOUT ROWID",
+        SCOPE_MEMBERS_SQL,
         "CREATE TABLE work_queue(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,token BLOB,bindings BLOB NOT NULL,context BLOB NOT NULL DEFAULT X'',state INTEGER NOT NULL,generation INTEGER NOT NULL,authority_generation INTEGER NOT NULL DEFAULT 0 CHECK(authority_generation>=0),authority_complete INTEGER NOT NULL DEFAULT 0 CHECK(authority_complete IN(0,1)),last_complete INTEGER NOT NULL DEFAULT -1 CHECK(last_complete>=-1),lease_until INTEGER NOT NULL,PRIMARY KEY(sweep_id,scope_key)) WITHOUT ROWID",
         "CREATE TABLE work_tokens(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,digest BLOB NOT NULL CHECK(length(digest)=32),PRIMARY KEY(sweep_id,scope_key,digest),FOREIGN KEY(sweep_id,scope_key) REFERENCES work_queue(sweep_id,scope_key) ON DELETE CASCADE) WITHOUT ROWID",
         "CREATE TABLE catalog_operations(service TEXT NOT NULL,operation TEXT NOT NULL,PRIMARY KEY(service,operation)) WITHOUT ROWID",

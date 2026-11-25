@@ -60,6 +60,18 @@
 - The whole-account hierarchy layout accepts borrowed interned arrays and emits
   deterministic resource positions and contiguous account/region/service/kind
   child ranges, independently of Makepad and database I/O.
+- Catalog overlay operations gain an `emit` key with values `resources`
+  (default) and `work`. An `emit = "work"` enumeration creates child work
+  instead of resource rows. The compiler infers `work` for enumerations with
+  no explicit setting, exactly one callable expansion returning a structure,
+  and scalar or identifier-only items. The runtime plan extension version
+  moves from 2 to 3 (plan field 25 carries the flag); catalogs compiled
+  before this change are rejected and must be regenerated. The catalog
+  version stays 4.
+- Work-only pages record listed members in the same transaction that enqueues
+  describe work. SQLite and PostgreSQL retire a describe scope after two
+  complete enumerations omit its member. A still-listed member from another
+  enumeration keeps the describe scope alive.
 - `catalog-tool iam-policy` derives one read-only IAM action per callable
   runtime plan and writes the policy, the cross-account role template and a
   gap report. Must-deny findings and broad aliases are reported; write-named

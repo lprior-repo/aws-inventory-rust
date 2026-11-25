@@ -19,7 +19,7 @@ fn rewrite(
 fn given_old_extension_schema_when_loaded_then_reader_rejects_without_compatibility_shim()
 -> TestResult {
     let bytes = compiled("Items", Some("Tags"), LIST, ITEM)?;
-    for version in [1, 3] {
+    for version in [1, 2] {
         let bytes = rewrite(&bytes, |extension| {
             extension.insert(Key::Field(FieldId::new(1)?), Value::Int(version));
             Ok(())

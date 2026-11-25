@@ -285,5 +285,6 @@ pub(in crate::runtime_catalog::plans) fn emission(overlay: &OperationOverlay) ->
     Value::Int(match overlay.emission {
         crate::overlay::Emission::EmitMetadata => 0,
         crate::overlay::Emission::DiscoveryOnly => 1,
+        crate::overlay::Emission::WorkOnly => 2,
     })
 }

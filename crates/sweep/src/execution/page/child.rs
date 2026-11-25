@@ -12,7 +12,7 @@ use binding::row_value;
 pub(super) use contexts::*;
 #[cfg(test)]
 use enumeration::{child_for_row, child_region, empty_record};
-pub(super) use work::work;
+pub(super) use work::{WorkBatch, work, work_with_row_children};
 #[cfg(test)]
 pub(crate) mod policy_dfgk_tests;
 #[cfg(test)]

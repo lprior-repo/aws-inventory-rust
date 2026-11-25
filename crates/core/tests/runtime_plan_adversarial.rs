@@ -439,6 +439,18 @@ fn loader_rejects_capability_when_tag_metadata_is_not_a_map() -> TestResult {
 }
 
 #[test]
+fn loader_rejects_capability_when_emit_field_is_not_boolean_int() -> TestResult {
+    // Given/When/Then: field 25 is the emit plan field; only 0 and 1 are allowed.
+    rejects_capability(&replacing(25, Value::Int(2))?)
+}
+
+#[test]
+fn loader_rejects_capability_when_emit_field_is_null() -> TestResult {
+    // Given/When/Then: field 25 must be an integer, not null or any other type.
+    rejects_capability(&replacing(25, Value::Null)?)
+}
+
+#[test]
 fn loader_rejects_capability_when_cursor_tuple_component_path_is_empty() -> TestResult {
     // Given: tokens=[] is valid single-page metadata; an empty component path is not.
     [(path([]), path([2])), (path([1]), path([]))]

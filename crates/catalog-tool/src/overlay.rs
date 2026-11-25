@@ -40,6 +40,8 @@ mod types;
 pub use row_policy::{
     ChildEligibility, MissingSelected, RowOperand, RowPolicy, RowPredicate, RowValueType,
 };
+mod emit_rule;
+pub use emit_rule::{ExpansionBinding, expansion_conditions_met, infer_work_only};
 
 pub use check::{
     CallableOperation, CheckError, CheckedOverlays, EffectiveClass, ReviewDisposition,

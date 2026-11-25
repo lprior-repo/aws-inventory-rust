@@ -5,7 +5,7 @@ mod owned_lease;
 pub(in crate::inventory) mod transitions;
 pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};
 use super::{BinaryStore, MAX_BINDING_BYTES, MAX_TOKEN_BYTES, PageCommit, StoreError};
-use inventory_core::inventory::{ResourceKey, ScopeKey, ScopeOutcome};
+use inventory_core::inventory::{ResourceId, ResourceKey, ScopeKey, ScopeOutcome};
 use sqlx::{Row, Sqlite, Transaction};
 use std::sync::Arc;
 use transitions::*;
@@ -46,6 +46,7 @@ pub struct WorkSpec {
     pub(in crate::inventory) token: Option<Vec<u8>>,
     pub(in crate::inventory) bindings: Vec<u8>,
     pub(in crate::inventory) context: Vec<u8>,
+    pub(in crate::inventory) scope_member: Option<ResourceId>,
 }
 
 impl WorkSpec {
@@ -78,7 +79,14 @@ impl WorkSpec {
             token,
             bindings,
             context: Vec::new(),
+            scope_member: None,
         })
+    }
+
+    /// Records the source enumeration's member represented by this child work.
+    /// The page store persists the membership in the same transaction as the child.
+    pub fn mark_scope_member(&mut self, member: ResourceId) {
+        self.scope_member = Some(member);
     }
 
     pub fn with_context(mut self, context: Vec<u8>) -> Result<Self, StoreError> {
@@ -273,6 +281,42 @@ pub(crate) fn kept_until(page: &PageCommit, lease_ms: i64) -> Result<i64, StoreE
     Ok(fresh.max(past_old))
 }
 
+async fn persist_scope_members(
+    tx: &mut Transaction<'_, Sqlite>,
+    page: &PageCommit,
+) -> Result<(), StoreError> {
+    let Some(first) = page
+        .children
+        .iter()
+        .position(|child| child.scope_member.is_some())
+    else {
+        return Ok(());
+    };
+    let scope = page.lease.scope();
+    let scope_bytes = ownership_scope_bytes(scope, page.lease.bindings())?;
+    for child in page.children.iter().skip(first) {
+        let Some(member_id) = &child.scope_member else {
+            continue;
+        };
+        let child_scope_bytes = ownership_scope_bytes(child.scope(), &child.bindings)?;
+        sqlx::query(
+            "INSERT INTO scope_members(account,region,scope_key,child_scope,member_id,missing_complete,observed_sweep) \
+             VALUES(?1,?2,?3,?4,?5,0,?6) \
+             ON CONFLICT(account,region,scope_key,child_scope,member_id) DO UPDATE SET \
+             missing_complete=0,observed_sweep=excluded.observed_sweep",
+        )
+        .bind(scope.account().as_str())
+        .bind(scope.region().as_str())
+        .bind(&scope_bytes)
+        .bind(&child_scope_bytes)
+        .bind(member_id.as_str())
+        .bind(page.lease.sweep().as_str())
+        .execute(&mut **tx)
+        .await?;
+    }
+    Ok(())
+}
+
 pub(super) async fn commit_page(
     store: &BinaryStore,
     page: PageCommit,
@@ -300,6 +344,7 @@ async fn commit(
     let mut tx = store.writer.begin().await?;
     validate_lease(&mut tx, &page.lease, page.observed_at_ms).await?;
     let mut stats = super::commit::persist_page(store, &mut tx, &page).await?;
+    persist_scope_members(&mut tx, &page).await?;
     persist_children(store, &mut tx, &page).await?;
     let repeated_token = record_continuation(&mut tx, &page).await?;
     let keep_until = match keep_ms {

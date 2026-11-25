@@ -247,7 +247,7 @@ async fn consume(
             next_token,
             continuation_digest,
             done,
-            observed_at_ms: at,
+            observed_at_ms: 0,
         })
         .await?;
     Ok(true)

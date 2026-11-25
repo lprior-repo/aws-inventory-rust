@@ -1,6 +1,6 @@
 use super::{
-    Identity, ItemSelector, MemberPath, OperationOverlay, Origin, OverlayClass, OverlayError,
-    Paginator, Scope, ServiceOverlay, TokenPair,
+    Emission, Identity, ItemSelector, MemberPath, OperationOverlay, Origin, OverlayClass,
+    OverlayError, Paginator, Scope, ServiceOverlay, TokenPair,
 };
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -22,6 +22,7 @@ struct Entry {
     defer_reason: Option<String>,
     scope: Option<String>,
     items: Option<String>,
+    emit: Option<String>,
     identity: Option<IdentityEntry>,
     paginator: Option<PaginatorEntry>,
     #[serde(default)]
@@ -121,6 +122,11 @@ impl Entry {
                 .map(|(path, binding)| Ok((MemberPath::new(path)?, binding.binding()?)))
                 .collect::<Result<_, OverlayError>>()?,
             scope: self.scope.as_deref().map(scope).transpose()?,
+            emission: match self.emit.as_deref() {
+                Some(value) => emission(value)?,
+                None => Emission::default(),
+            },
+            emission_explicit: self.emit.is_some(),
             items: self.items.as_deref().map(ItemSelector::parse).transpose()?,
             identity: self
                 .identity
@@ -152,6 +158,13 @@ fn scope(value: &str) -> Result<Scope, OverlayError> {
         "account" => Ok(Scope::Account),
         "home_region" => Ok(Scope::HomeRegion),
         _ => Err(invalid("unknown scope")),
+    }
+}
+fn emission(value: &str) -> Result<Emission, OverlayError> {
+    match value {
+        "resources" => Ok(Emission::EmitMetadata),
+        "work-only" => Ok(Emission::WorkOnly),
+        _ => Err(invalid("unknown emission setting")),
     }
 }
 
@@ -186,4 +199,42 @@ impl PaginatorEntry {
 
 fn invalid(reason: &str) -> OverlayError {
     OverlayError::Invalid(reason.to_owned())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn given_resources_emission_when_overlay_parses_then_setting_is_explicit()
+    -> Result<(), OverlayError> {
+        let entry: Entry = serde_json::from_str(r#"{"class":"enumerate","emit":"resources"}"#)
+            .map_err(|error| invalid(&error.to_string()))?;
+        let overlay = entry.overlay()?;
+        assert_eq!(overlay.emission, Emission::EmitMetadata);
+        assert!(overlay.emission_explicit);
+        Ok(())
+    }
+
+    #[test]
+    fn given_work_only_emission_when_overlay_parses_then_setting_is_explicit()
+    -> Result<(), OverlayError> {
+        let entry: Entry = serde_json::from_str(r#"{"class":"enumerate","emit":"work-only"}"#)
+            .map_err(|error| invalid(&error.to_string()))?;
+        let overlay = entry.overlay()?;
+        assert_eq!(overlay.emission, Emission::WorkOnly);
+        assert!(overlay.emission_explicit);
+        Ok(())
+    }
+
+    #[test]
+    fn given_no_emission_when_overlay_parses_then_setting_remains_unset() -> Result<(), OverlayError>
+    {
+        let entry: Entry = serde_json::from_str(r#"{"class":"enumerate"}"#)
+            .map_err(|error| invalid(&error.to_string()))?;
+        let overlay = entry.overlay()?;
+        assert_eq!(overlay.emission, Emission::EmitMetadata);
+        assert!(!overlay.emission_explicit);
+        Ok(())
+    }
 }

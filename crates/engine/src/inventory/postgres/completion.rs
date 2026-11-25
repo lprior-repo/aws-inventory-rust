@@ -19,6 +19,8 @@ pub(super) async fn drain(
     unobserved::record(tx, sweep).await?;
     authorities::stage(tx, sweep).await?;
     authorities::misses(tx, sweep, at).await?;
+    authorities::member_misses(tx, sweep).await?;
+    scope_member_deletion(tx, sweep, at).await?;
     deletion::stage(tx, sweep).await?;
     let mut stats = facets::retire(store, tx, at).await?;
     stats.resources_deleted = deletion::remove(store, tx).await?;
@@ -26,6 +28,32 @@ pub(super) async fn drain(
     sqlx::query("DROP TABLE inventory_complete_authorities,inventory_retire_keys,inventory_retire_sources,inventory_retire_projection")
         .execute(&mut **tx).await?;
     Ok(stats)
+}
+
+async fn scope_member_deletion(
+    tx: &mut Transaction<'_, Postgres>,
+    sweep: &SweepId,
+    at: i64,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "WITH vanished AS (\
+         SELECT child_scope FROM inventory.scope_members WHERE missing_complete>=2 AND completed_sweep=$1 \
+         EXCEPT SELECT child_scope FROM inventory.scope_members WHERE missing_complete<2\
+         ) UPDATE inventory.resource_scopes rs \
+         SET missing_complete=2,completed_sweep=$1,last_seen=$2 FROM vanished \
+         WHERE rs.scope_key=vanished.child_scope AND rs.missing_complete<2 AND rs.observed_sweep<>$1",
+    )
+    .bind(sweep.as_str())
+    .bind(at)
+    .execute(&mut **tx)
+    .await?;
+    sqlx::query(
+        "DELETE FROM inventory.scope_members WHERE missing_complete>=2 AND completed_sweep=$1",
+    )
+    .bind(sweep.as_str())
+    .execute(&mut **tx)
+    .await?;
+    Ok(())
 }
 
 async fn pending(tx: &mut Transaction<'_, Postgres>, sweep: &SweepId) -> Result<bool, StoreError> {
