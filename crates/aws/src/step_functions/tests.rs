@@ -14,7 +14,7 @@ use tokio::sync::mpsc;
 use super::activity::map_activity;
 use super::failure::failure;
 use super::page::LIST_MAX_RESULTS;
-use super::state_machine::map_state_machine;
+use super::state_machine::{describe_request, map_state_machine};
 use super::*;
 use crate::common::error_category;
 

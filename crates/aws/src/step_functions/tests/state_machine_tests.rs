@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use serde_json::json;
+use aws_sdk_sfn::types::IncludedData;
+use serde_json::{Value, json};
 
 use super::*;
 
@@ -11,7 +12,11 @@ fn maps_state_machine_identity_and_safe_metadata() -> TestResult {
     let described =
         state_machine_description(STATE_MACHINE_ARN, STATE_MACHINE_NAME, Some(KEY_ARN))?;
     let tags = BTreeMap::from([("team".to_owned(), "orders".to_owned())]);
-    let observation = map_state_machine(&ctx, &item, &described, Some(tags))?;
+    let observation = map_state_machine(&ctx, &item, Some(&described), Some(tags))?;
+    assert_eq!(
+        observation.resource.properties.get("describe_collected"),
+        Some(&json!(true))
+    );
     assert_eq!(observation.resource.id, STATE_MACHINE_ARN);
     assert_eq!(
         observation.resource.kind,
@@ -66,7 +71,7 @@ fn definitions_and_variable_references_are_omitted() -> TestResult {
     let (ctx, _receiver) = context("us-east-1")?;
     let item = state_machine_item(STATE_MACHINE_ARN, STATE_MACHINE_NAME)?;
     let described = state_machine_description(STATE_MACHINE_ARN, STATE_MACHINE_NAME, None)?;
-    let observation = map_state_machine(&ctx, &item, &described, None)?;
+    let observation = map_state_machine(&ctx, &item, Some(&described), None)?;
     let serialized = serde_json::to_string(&observation.resource.properties)?;
     assert!(!serialized.contains("definition"));
     assert!(!serialized.contains("SECRET-DEFINITION"));
@@ -80,14 +85,14 @@ fn mismatched_or_foreign_descriptions_are_rejected() -> TestResult {
     let (ctx, _receiver) = context("us-east-1")?;
     let item = state_machine_item(STATE_MACHINE_ARN, STATE_MACHINE_NAME)?;
     let wrong_name = state_machine_description(STATE_MACHINE_ARN, "other", None)?;
-    assert!(map_state_machine(&ctx, &item, &wrong_name, None).is_err());
+    assert!(map_state_machine(&ctx, &item, Some(&wrong_name), None).is_err());
     let other_arn = "arn:aws:states:us-east-1:111111111111:stateMachine:other";
     let other_item = state_machine_item(other_arn, "other")?;
     assert!(
         map_state_machine(
             &ctx,
             &item,
-            &state_machine_description(other_arn, "other", None)?,
+            Some(&state_machine_description(other_arn, "other", None)?),
             None
         )
         .is_err()
@@ -96,7 +101,11 @@ fn mismatched_or_foreign_descriptions_are_rejected() -> TestResult {
         map_state_machine(
             &ctx,
             &other_item,
-            &state_machine_description(STATE_MACHINE_ARN, STATE_MACHINE_NAME, None)?,
+            Some(&state_machine_description(
+                STATE_MACHINE_ARN,
+                STATE_MACHINE_NAME,
+                None
+            )?),
             None
         )
         .is_err()
@@ -104,7 +113,7 @@ fn mismatched_or_foreign_descriptions_are_rejected() -> TestResult {
     let foreign = "arn:aws:states:us-west-2:111111111111:stateMachine:orders";
     let foreign_item = state_machine_item(foreign, STATE_MACHINE_NAME)?;
     let foreign_description = state_machine_description(foreign, STATE_MACHINE_NAME, None)?;
-    assert!(map_state_machine(&ctx, &foreign_item, &foreign_description, None).is_err());
+    assert!(map_state_machine(&ctx, &foreign_item, Some(&foreign_description), None).is_err());
     Ok(())
 }
 
@@ -113,7 +122,7 @@ fn tag_failure_retains_the_state_machine() -> TestResult {
     let (ctx, _receiver) = context("us-east-1")?;
     let item = state_machine_item(STATE_MACHINE_ARN, STATE_MACHINE_NAME)?;
     let described = state_machine_description(STATE_MACHINE_ARN, STATE_MACHINE_NAME, None)?;
-    let observation = map_state_machine(&ctx, &item, &described, None)?;
+    let observation = map_state_machine(&ctx, &item, Some(&described), None)?;
     assert_eq!(observation.resource.id, STATE_MACHINE_ARN);
     assert_eq!(
         observation.resource.properties.get("tags_collected"),
@@ -133,7 +142,7 @@ fn non_exact_encryption_references_do_not_emit_edges() -> TestResult {
         None,
     ] {
         let described = state_machine_description(STATE_MACHINE_ARN, STATE_MACHINE_NAME, key)?;
-        let observation = map_state_machine(&ctx, &item, &described, None)?;
+        let observation = map_state_machine(&ctx, &item, Some(&described), None)?;
         assert_eq!(observation.edges.len(), 1);
         let edge = observation.edges.first().ok_or("missing role edge")?;
         assert_eq!(edge.relation, "ASSUMES_ROLE");
@@ -152,6 +161,54 @@ fn non_exact_encryption_references_do_not_emit_edges() -> TestResult {
             );
         }
     }
+    Ok(())
+}
+
+#[test]
+fn describe_request_asks_for_metadata_only() {
+    let config = aws_sdk_sfn::Config::builder()
+        .behavior_version(aws_sdk_sfn::config::BehaviorVersion::latest())
+        .build();
+    let client = Client::from_conf(config);
+    let request = describe_request(&client, STATE_MACHINE_ARN);
+    let input = request.as_input();
+    assert_eq!(input.get_included_data(), &Some(IncludedData::MetadataOnly));
+    assert_eq!(
+        input.get_state_machine_arn().as_deref(),
+        Some(STATE_MACHINE_ARN)
+    );
+}
+
+#[test]
+fn describe_failure_keeps_the_listed_state_machine_with_explicit_coverage() -> TestResult {
+    let (ctx, _receiver) = context("us-east-1")?;
+    let item = state_machine_item(STATE_MACHINE_ARN, STATE_MACHINE_NAME)?;
+    let tags = BTreeMap::from([("team".to_owned(), "orders".to_owned())]);
+    let observation = map_state_machine(&ctx, &item, None, Some(tags))?;
+    let resource = &observation.resource;
+    assert_eq!(resource.id, STATE_MACHINE_ARN);
+    assert_eq!(resource.name.as_deref(), Some(STATE_MACHINE_NAME));
+    assert_eq!(
+        resource.properties.get("describe_collected"),
+        Some(&json!(false))
+    );
+    assert_eq!(
+        resource.properties.get("tags_collected"),
+        Some(&json!(true))
+    );
+    assert_eq!(resource.properties.get("type"), Some(&json!("STANDARD")));
+    assert_eq!(
+        resource.properties.get("creation_date"),
+        Some(&json!(2_000))
+    );
+    assert_eq!(resource.properties.get("role_arn"), Some(&Value::Null));
+    assert_eq!(resource.tags.get("team"), Some(&"orders".to_owned()));
+    assert!(observation.edges.is_empty());
+    let foreign = state_machine_item(
+        "arn:aws:states:us-west-2:111111111111:stateMachine:orders",
+        STATE_MACHINE_NAME,
+    )?;
+    assert!(map_state_machine(&ctx, &foreign, None, None).is_err());
     Ok(())
 }
 

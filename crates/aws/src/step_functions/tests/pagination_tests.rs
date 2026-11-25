@@ -9,7 +9,7 @@ fn state_machine_page_keeps_the_token_and_counts_attempted_items() -> TestResult
     let (ctx, _receiver) = context("us-east-1")?;
     let item = state_machine_item(STATE_MACHINE_ARN, STATE_MACHINE_NAME)?;
     let described = state_machine_description(STATE_MACHINE_ARN, STATE_MACHINE_NAME, None)?;
-    let observation = map_state_machine(&ctx, &item, &described, None)?;
+    let observation = map_state_machine(&ctx, &item, Some(&described), None)?;
     let output = ListStateMachinesOutput::builder()
         .state_machines(item.clone())
         .state_machines(item)
@@ -56,8 +56,8 @@ fn duplicate_identities_on_one_page_are_collapsed() -> TestResult {
     let (ctx, _receiver) = context("us-east-1")?;
     let item = state_machine_item(STATE_MACHINE_ARN, STATE_MACHINE_NAME)?;
     let described = state_machine_description(STATE_MACHINE_ARN, STATE_MACHINE_NAME, None)?;
-    let first = map_state_machine(&ctx, &item, &described, None)?;
-    let second = map_state_machine(&ctx, &item, &described, None)?;
+    let first = map_state_machine(&ctx, &item, Some(&described), None)?;
+    let second = map_state_machine(&ctx, &item, Some(&described), None)?;
     let deduped = dedupe(vec![first, second]);
     assert_eq!(deduped.len(), 1);
     assert_eq!(
