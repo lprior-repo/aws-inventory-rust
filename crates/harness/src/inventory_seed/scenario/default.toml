@@ -1,0 +1,56 @@
+format = 1
+service = "ec2"
+
+[[step]]
+id = "vpc"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+repeat = 6
+[step.input]
+CidrBlock = "10.88.0.0/16"
+[step.check]
+"Vpc.CidrBlock" = "CidrBlock"
+
+[[step]]
+id = "subnet"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+repeat = 6
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.88.{n}.0/24"
+[step.check]
+"Subnet.VpcId" = "VpcId"
+"Subnet.CidrBlock" = "CidrBlock"
+[[step]]
+id = "security_group"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+repeat = 1
+[step.input]
+Description = "seed security group {n}"
+GroupName = "seed-security-group-{n}"
+
+[[step]]
+id = "internet_gateway"
+operation = "CreateInternetGateway"
+kind = "AWS::EC2::InternetGateway"
+identity = "InternetGateway.InternetGatewayId"
+
+[[step]]
+id = "key_pair"
+operation = "CreateKeyPair"
+kind = "AWS::EC2::KeyPair"
+identity = "KeyPairId"
+[step.input]
+KeyName = "seed-key-pair"
+
+
+[[relationship]]
+source = "subnet"
+target = "vpc"
+relation = "IN_VPC"
+observed = "Subnet.VpcId"
