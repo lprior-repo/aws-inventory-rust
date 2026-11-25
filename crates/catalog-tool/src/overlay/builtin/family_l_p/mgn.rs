@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mgn/service/2020-02-26/mgn-2020-02-26.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -190,7 +189,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves all SourceServers or multiple SourceServers by ID.
     Resource {
         operation: "DescribeSourceServers",
         items: "items",
@@ -209,7 +207,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all ReplicationConfigurationTemplates, filtered by replication configuration template IDs.
     Resource {
         operation: "DescribeReplicationConfigurationTemplates",
         items: "items",
@@ -228,7 +225,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists all Launch Configuration Templates, filtered by Launch Configuration Template IDs
     Resource {
         operation: "DescribeLaunchConfigurationTemplates",
         items: "items",
@@ -245,7 +241,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of the installed vCenter clients.
     Resource {
         operation: "DescribeVcenterClients",
         items: "items",
@@ -263,7 +258,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves all applications or multiple applications by ID.
     Resource {
         operation: "ListApplications",
         items: "items",
@@ -275,7 +269,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // List Connectors.
     Resource {
         operation: "ListConnectors",
         items: "items",
@@ -287,7 +280,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves all waves or multiple waves by ID.
     Resource {
         operation: "ListWaves",
         items: "items",

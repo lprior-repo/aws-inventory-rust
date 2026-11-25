@@ -61,7 +61,6 @@ async fn given_serverless_policy_type_domains_when_every_branch_resumes_then_sam
         assert_cursor(&wire, second)?;
         assert!(seen.insert((operation.clone(), kind.clone(), second)));
         let label = if second { "second" } else { "shared" };
-        // Policy rows intentionally omit type: identity must use this branch's real request.
         let row = if operation == "ListSecurityConfigs" {
             json!({"id":format!("{kind}-{label}"),"type":kind})
         } else {

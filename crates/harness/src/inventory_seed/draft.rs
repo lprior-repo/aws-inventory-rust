@@ -67,10 +67,6 @@ enum Source {
     Request,
 }
 
-/// Drafts seed recipes from the compiled catalog without invoking AWS.
-///
-/// # Errors
-/// Returns catalog, service selection, serialization or output-bound errors.
 pub fn generate(runtime: &RuntimeCatalog<'_>, service_name: &str) -> Result<String, SeedError> {
     let service = runtime
         .catalog()
@@ -115,10 +111,6 @@ pub fn generate(runtime: &RuntimeCatalog<'_>, service_name: &str) -> Result<Stri
     Ok(text)
 }
 
-/// Writes a draft to stdout or an explicit path outside the checked-in seeds.
-///
-/// # Errors
-/// Returns bounded catalog-read, draft-generation or output I/O errors.
 pub fn run(service: &str, catalog: &Path, output: Option<&Path>) -> Result<(), SeedError> {
     if let Some(path) = output {
         validate_output(path)?;

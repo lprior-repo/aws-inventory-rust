@@ -24,7 +24,6 @@ pub(super) async fn retire(
     tags: &mut TagSets,
     target: &ResourceKey,
 ) -> TestResult {
-    // Given a genuinely tagged removable subnet; this is not DeleteTags.
     let before = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(target))
@@ -35,7 +34,6 @@ pub(super) async fn retire(
     assert!(!memberships.is_empty() && memberships.iter().all(|(_, missing)| *missing == 0));
     delete_subnet(native, target).await?;
 
-    // One distinct complete miss retains the resource and every incident edge.
     native::collect(native, database, "miss-one").await?;
     native::project(store, graph).await?;
     let once = misses(database, target).await?;
@@ -49,14 +47,10 @@ pub(super) async fn retire(
     compare::all(database, store, graph, expected).await?;
     tags::assert_sets(database, graph, expected, tags).await?;
 
-    // A real CLI request is denied for DescribeSubnets only. Bootstrap and all
-    // other operations still reach the owned emulator; no shared service stops.
     denied_miss(native, database, graph, store, target, &once).await?;
     compare::all(database, store, graph, expected).await?;
     tags::assert_sets(database, graph, expected, tags).await?;
 
-    // The second distinct complete miss retires the full key, associations and
-    // incident dependencies. The independent oracle changes at this boundary.
     native::collect(native, database, "miss-two").await?;
     assert!(expected.resources.remove(target));
     assert!(expected.safe_records.remove(target).is_some());

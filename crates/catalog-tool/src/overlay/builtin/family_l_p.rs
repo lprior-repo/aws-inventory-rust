@@ -97,7 +97,6 @@ use crate::overlay::{NameError, ServiceOverlay};
 
 type Build = fn() -> Result<ServiceOverlay, NameError>;
 
-// Static reviewed factories: no model-name or operation-prefix authorization at runtime.
 const SERVICES: &[Build] = &[
     lakeformation::overlay,
     lambda_core::overlay,

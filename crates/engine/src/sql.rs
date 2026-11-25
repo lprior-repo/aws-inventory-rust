@@ -1,5 +1,3 @@
-//! Bounded PostgreSQL queries using a verified reader connection.
-
 mod bounds;
 mod policy;
 mod reader;

@@ -94,8 +94,6 @@ pub(super) fn arn(ordinal: &str) -> String {
 }
 
 pub(super) fn row(ordinal: &str) -> Json {
-    // Exercise every pinned ContainerFleet member, including all nested metadata structures.
-    // References are not ownership evidence: the role below belongs to another account.
     json!({
         "FleetId":format!("containerfleet-{ordinal}"), "FleetArn":arn(ordinal),
         "FleetRoleArn":"arn:aws:iam::999999999999:role/shared-fleet-runtime",
@@ -127,8 +125,6 @@ pub(super) fn response(page: usize) -> TestResult<Json> {
     })
 }
 
-// Read persisted members independently of the native decoder/item selector so a dropped
-// ContainerFleet field cannot disappear from both the observation and its test oracle.
 pub(super) fn json_value(value: ValueRef<'_>, fields: &smithy::Registry) -> TestResult<Json> {
     match value {
         ValueRef::Text(value) => Ok(json!(value)),

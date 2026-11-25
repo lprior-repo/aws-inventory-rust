@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/api-gateway/service/2015-07-09/api-gateway-2015-07-09.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 use crate::overlay::IdentityField;
 
@@ -256,7 +254,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Gets information about the current Account resource.
         (
             "GetAccount",
             OperationOverlay {
@@ -276,7 +273,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires apiKey. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the current ApiKey resource.",
             ),
         ),
-        // Model: Gets information about the current ApiKeys resource.
         (
             "GetApiKeys",
             OperationOverlay {
@@ -299,7 +295,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires restApiId, authorizerId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describe an existing Authorizer resource.",
             ),
         ),
-        // Credentials are IAM-role references; this summary never contains an authorizer secret.
         (
             "GetAuthorizers",
             OperationOverlay {
@@ -342,7 +337,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires clientCertificateId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the current ClientCertificate resource.",
             ),
         ),
-        // Model: Gets a collection of ClientCertificate resources.
         (
             "GetClientCertificates",
             OperationOverlay {
@@ -392,7 +386,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires restApiId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets documentation versions.",
             ),
         ),
-        // Model: Represents a domain name that is contained in a simpler, more intuitive URL that can be called.
         (
             "GetDomainName",
             OperationOverlay {
@@ -421,7 +414,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Represents a collection on DomainNameAccessAssociations resources.
         (
             "GetDomainNameAccessAssociations",
             OperationOverlay {
@@ -435,7 +427,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Represents a collection of DomainName resources.
         (
             "GetDomainNames",
             OperationOverlay {
@@ -545,7 +536,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires restApiId, resourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists information about a resource.",
             ),
         ),
-        // Deliberately leave embed unset: methods and integration/template payloads are opt-in.
         (
             "GetResources",
             OperationOverlay {
@@ -570,7 +560,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the RestApi resource in the collection.
         (
             "GetRestApi",
             OperationOverlay {
@@ -594,7 +583,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the RestApis resources for your collection.
         (
             "GetRestApis",
             OperationOverlay {
@@ -655,7 +643,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires usagePlanId, startDate, endDate. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the usage data of a usage plan in a specified time interval.",
             ),
         ),
-        // Model: Gets a usage plan of a given plan identifier.
         (
             "GetUsagePlan",
             OperationOverlay {
@@ -691,7 +678,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires usagePlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets all the usage plan keys representing the API keys added to a specified usage plan.",
             ),
         ),
-        // Model: Gets all the usage plans of the caller's account.
         (
             "GetUsagePlans",
             OperationOverlay {
@@ -705,7 +691,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a specified VPC link under the caller's account in a region.
         (
             "GetVpcLink",
             OperationOverlay {
@@ -729,7 +714,6 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets the VpcLinks collection under the caller's account in a selected region.
         (
             "GetVpcLinks",
             OperationOverlay {

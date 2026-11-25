@@ -9,7 +9,6 @@ pub const MAX_COLLECTION: usize = inventory_core::catalog::runtime::BindingValue
 pub const MAX_STRING: usize = inventory_core::catalog::runtime::BindingValue::MAX_STRING;
 pub const MAX_TEXT_BYTES: usize = inventory_core::catalog::runtime::BindingValue::MAX_TEXT_BYTES;
 
-/// Model-shaped request literals, compiled to numeric member IDs before execution.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum FixedValue {
@@ -19,7 +18,6 @@ pub enum FixedValue {
     Float(Float),
     Bytes(Vec<u8>),
     Timestamp(Time),
-    /// Existing string-list shorthand; compiles to the same list representation.
     Strings(Vec<String>),
     List(Vec<Self>),
     Structure(BTreeMap<String, Self>),

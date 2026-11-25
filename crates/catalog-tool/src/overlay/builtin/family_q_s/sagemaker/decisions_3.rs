@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/sagemaker/service/2017-07-24/sagemaker-2017-07-24.json
 use super::super::construction::Decision;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[

@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/securityagent/service/2025-09-06/securityagent-2025-09-06.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
@@ -81,62 +80,41 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors threatJobId, agentSpaceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members threats, nextToken. Pinned purpose: Returns a paginated list of threats for a threat model job.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Initiates code remediation for one or more security findings. This creates pull requests in integrated repositories to fix the identified vulnerabilities.
     (
         "StartCodeRemediation",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts a new code review job for a code review configuration. The job executes the security-focused code analysis defined in the code review.
     ("StartCodeReviewJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts a new pentest job for a pentest configuration. The job executes the security tests defined in the pentest.
     ("StartPentestJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts a new threat model job for a threat model configuration.
     (
         "StartThreatModelJob",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Stops a running code review job. The job transitions to a stopping state and then to stopped after cleanup completes.
     ("StopCodeReviewJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Stops a running pentest job. The job transitions to a stopping state and then to stopped after cleanup completes.
     ("StopPentestJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Stops a running threat model job.
     ("StopThreatModelJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds tags to a resource.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes tags from a resource.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the configuration of an existing agent space, including its name, description, AWS resources, target domains, and code review settings.
     ("UpdateAgentSpace", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the configuration of an existing application, including the IAM role and default KMS key.
     ("UpdateApplication", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates an existing code review configuration.
     ("UpdateCodeReview", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the status or risk level of a security finding.
     ("UpdateFinding", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the integrated resources for an agent space, including their capabilities.
     (
         "UpdateIntegratedResources",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an integration's webhook, or rotates the HMAC signing secret of an existing one. The secret is returned only once, in this response, and cannot be retrieved again.
     ("UpdateIntegration", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates an existing pentest configuration.
     ("UpdatePentest", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the certificate associated with a private connection. Certificates can be added or replaced but not removed.
     (
         "UpdatePrivateConnectionCertificate",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a security requirement pack. For customer managed packs, both metadata and status can be updated. For AWS managed packs, only status can be updated.
     (
         "UpdateSecurityRequirementPack",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates the verification method for a target domain.
     ("UpdateTargetDomain", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a threat.
     ("UpdateThreat", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates an existing threat model configuration.
     ("UpdateThreatModel", Decision::Denied(DenyReason::Mutating)),
     (
         "VerifyTargetDomain",

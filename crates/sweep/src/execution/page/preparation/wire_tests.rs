@@ -13,7 +13,6 @@ use tokio::net::TcpListener;
 #[tokio::test]
 async fn given_scope_region_differs_from_home_when_page_prepared_then_wire_url_and_signature_use_scope()
 -> TestResult {
-    // Given a regional scope whose request region differs from bootstrap home.
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let bytes = test_catalog::compile(
@@ -42,7 +41,6 @@ async fn given_scope_region_differs_from_home_when_page_prepared_then_wire_url_a
     let progress = crate::control::Progress::new(None);
     let context = resources.runtime(&catalog, &store, &progress)?;
     assert_eq!(context.bootstrap.home.as_str(), "us-east-1");
-    // When production preparation resolves its cached endpoint and sends the page.
     let prepared = prepare(&context, &lease, plan, &cursor::Cursor::default()).await?;
     let again = prepare(&context, &lease, plan, &cursor::Cursor::default()).await?;
     assert!(std::sync::Arc::ptr_eq(
@@ -60,7 +58,6 @@ async fn given_scope_region_differs_from_home_when_page_prepared_then_wire_url_a
     })
     .await?;
     let response = response?;
-    // Then both wire URL and signing scope use the lease region, never home.
     let captured = captured?;
     captured.assert_route(address, "us-west-2", "cognito-identity-provider")?;
     captured.assert_operation("AWSCognitoIdentityProviderService", "ListUserPools")?;
@@ -72,7 +69,6 @@ async fn given_scope_region_differs_from_home_when_page_prepared_then_wire_url_a
 #[tokio::test]
 async fn given_discovered_scope_differs_from_home_when_prepared_then_discovery_wire_request_uses_scope()
 -> TestResult {
-    // Given an account-scoped discovery operation for a west-region inventory page.
     let listener = TcpListener::bind("127.0.0.1:0").await?;
     let address = listener.local_addr()?;
     let bytes = test_catalog::compile(
@@ -102,7 +98,6 @@ async fn given_discovered_scope_differs_from_home_when_prepared_then_discovery_w
     let context = resources.runtime(&catalog, &store, &progress)?;
     assert_eq!(context.bootstrap.home.as_str(), "us-east-1");
     let body = r#"{"Endpoints":[{"Address":"ingest-cell.timestream.us-west-2.amazonaws.com","CachePeriodInMinutes":60}]}"#;
-    // When preparation drives the real endpoint discovery and caches its lease.
     let cursor = cursor::Cursor::default();
     let (prepared, captured) = tokio::time::timeout(Duration::from_secs(5), async {
         tokio::join!(
@@ -113,7 +108,6 @@ async fn given_discovered_scope_differs_from_home_when_prepared_then_discovery_w
     .await?;
     let prepared = prepared?;
     assert_discovery_cache_entries(&catalog, context.bootstrap.resolved_endpoints).await?;
-    // Then the sent discovery URL and signing scope use page region, not home or global scope.
     captured?.assert_route(address, "us-west-2", "timestream-write")?;
     assert_eq!(prepared.region, RegionId::parse("us-west-2")?);
     assert_eq!(

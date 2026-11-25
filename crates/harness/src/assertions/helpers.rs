@@ -1,5 +1,3 @@
-//! Assertion helpers shared across all assertion modules.
-
 use serde_json::Value;
 
 pub fn check(checks: &mut Vec<Value>, name: &str, passed: bool, detail: Option<&Value>) {

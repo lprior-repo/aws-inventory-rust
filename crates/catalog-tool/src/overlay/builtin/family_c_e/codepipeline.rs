@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/codepipeline/service/2015-07-09/codepipeline-2015-07-09.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};

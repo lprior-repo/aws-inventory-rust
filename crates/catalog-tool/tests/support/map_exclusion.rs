@@ -9,7 +9,6 @@ pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 pub const COUNTER: &str = "SubscriptionsConfirmed";
 pub const FIELDS: &str = "Attributes\nEnvelope\nId\nItems\nNoise\nOtherAttributes\nScalar\nStruct\nLists\nIntKeys\nAggregate\nListValues\nDocumentValues\n";
 
-// Output.Attributes is deliberately not a map: exclusions must resolve on the selected row.
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Service":{"type":"service","version":"1","operations":[{"target":"n#ListThings"}],"traits":{"aws.api#service":{"sdkId":"Things","endpointPrefix":"things","arnNamespace":"things"},"aws.auth#sigv4":{"name":"things"},"aws.protocols#restJson1":{}}},
 "n#ListThings":{"type":"operation","output":{"target":"n#Output"},"traits":{"smithy.api#http":{"method":"GET","uri":"/things"}}},

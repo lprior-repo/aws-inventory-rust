@@ -1,45 +1,34 @@
-// Pinned operation purposes: .local/aws-models/models/route53-recovery-readiness/service/2019-12-02/route53-recovery-readiness-2019-12-02.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a cell in an account.
     ("CreateCell", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a cross-account readiness authorization. This lets you authorize another account to work with Route 53 Application Recovery Controller, for example, to check the readiness status of resources in a separate account.
     (
         "CreateCrossAccountAuthorization",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a readiness check in an account. A readiness check monitors a resource set in your application, such as a set of Amazon Aurora instances, that Application Recovery Controller is auditing recovery readiness for. The audits run once every minute on every resource that's associated with a readiness check.
     (
         "CreateReadinessCheck",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a recovery group in an account. A recovery group corresponds to an application and includes a list of the cells that make up the application.
     (
         "CreateRecoveryGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a resource set. A resource set is a set of resources of one type that span multiple cells. You can associate a resource set with a readiness check to monitor the resources for failover readiness.
     ("CreateResourceSet", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Delete a cell. When successful, the response code is 204, with no response body.
     ("DeleteCell", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes cross account readiness authorization.
     (
         "DeleteCrossAccountAuthorization",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a readiness check.
     (
         "DeleteReadinessCheck",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a recovery group.
     (
         "DeleteRecoveryGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a resource set.
     ("DeleteResourceSet", Decision::Denied(DenyReason::Mutating)),
     (
         "GetArchitectureRecommendations",
@@ -125,7 +114,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "route53-recovery-readiness has fixed control-plane routing (us-west-2), while the pinned endpoint rules are parameterized by Region and Account/HomeRegion uses caller home. Requires service-specific fixed routing; regional fan-out would misstate scope or fail.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists all readiness rules, or lists the readiness rules for a specific resource type.
     ("ListRules", Decision::Denied(DenyReason::ReferenceData)),
     (
         "ListTagsForResources",
@@ -133,22 +121,16 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceArn. Pinned purpose: Lists the tags for a resource.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds a tag to a resource.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes a tag from a resource.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a cell to replace the list of nested cells with a new list of nested cells.
     ("UpdateCell", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a readiness check.
     (
         "UpdateReadinessCheck",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a recovery group.
     (
         "UpdateRecoveryGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Updates a resource set.
     ("UpdateResourceSet", Decision::Denied(DenyReason::Mutating)),
 ];

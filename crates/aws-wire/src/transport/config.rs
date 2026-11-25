@@ -37,8 +37,6 @@ impl Default for Config {
 }
 
 impl Config {
-    /// Idle sockets retain their connection permits until evicted. Bound their
-    /// lifetime by both the connector timeout and half the request deadline.
     #[must_use]
     pub fn idle_timeout_range(&self) -> RangeInclusive<Duration> {
         let upper = self

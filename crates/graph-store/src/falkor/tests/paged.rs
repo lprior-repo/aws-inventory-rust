@@ -95,7 +95,6 @@ fn stateful_peer(owner: &NodeKey, edges: &[EdgeRow; 2], state: Edges) -> TestVal
 }
 
 async fn replay_after(failure: Failure) -> TestResult {
-    // Given: stale owner edges and an unrelated edge that must survive every replay.
     let (owner, edges, foreign) = fixture()?;
     let [first, second] = &edges;
     let mut stale = first.clone();
@@ -104,7 +103,6 @@ async fn replay_after(failure: Failure) -> TestResult {
     let peer = stateful_peer(&owner, &edges, Arc::clone(&state))?;
     let graph = FalkorDb::connect(&peer.endpoint, "paged-replay")?;
     graph.claim_projection(1).await?;
-    // When: page two fails after page one has been applied.
     let pages =
         futures_util::stream::iter([Ok(vec![first.clone()]), failure.page(second, &foreign)]);
     let error = graph
@@ -112,20 +110,17 @@ async fn replay_after(failure: Failure) -> TestResult {
         .await
         .err()
         .ok_or("expected page 2 failure")?;
-    // Then: the error is exact and only the successful prefix is visible.
     assert_eq!(error.to_string(), failure.message());
     assert_eq!(
         *state.lock().map_err(|error| error.to_string())?,
         vec![foreign.clone(), first.clone()]
     );
-    // When: the complete replacement is replayed, starting with a fresh clear.
     let pages = futures_util::stream::iter(
         edges
             .iter()
             .map(|edge| Ok::<_, GraphError>(vec![edge.clone()])),
     );
     graph.replace_edges_paged(&owner, pages).await?;
-    // Then: precisely the new set survives, without stale or duplicate edges.
     assert_eq!(
         *state.lock().map_err(|error| error.to_string())?,
         vec![foreign, first.clone(), second.clone()]

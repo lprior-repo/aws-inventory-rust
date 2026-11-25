@@ -154,7 +154,6 @@ async fn run(
 ) -> TestResult<BTreeSet<(String, String)>> {
     let mut requests = BTreeSet::new();
     for _ in 0..catalog.plans().len().saturating_sub(1).saturating_mul(4) {
-        // Reopen the durable queue before every page, including empty parent pages.
         let store = BinaryStore::open_with_catalog(path, catalog.raw_bytes()).await?;
         let lease = store
             .claim(sweep, 1001, 10000)

@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/bedrock-runtime/service/2023-09-30/bedrock-runtime-2023-09-30.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -58,7 +56,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invoke the specified Amazon Bedrock model to run inference using the prompt and inference parameters provided in the request body. The response is returned in a stream. To see if a model supports streaming, call…",
             ),
         ),
-        // Model: Lists asynchronous invocations.
         (
             "ListAsyncInvokes",
             OperationOverlay {

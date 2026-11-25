@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mediastore/service/2017-09-01/mediastore-2017-09-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -49,7 +48,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the properties of all containers in AWS Elemental MediaStore. You can query to receive all the containers in one response. Or you can include the MaxResults parameter to rece
     Resource {
         operation: "ListContainers",
         items: "Containers",
@@ -61,7 +59,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListContainers; no content-bearing expansion.
     Resource {
         operation: "DescribeContainer",
         items: "Container",

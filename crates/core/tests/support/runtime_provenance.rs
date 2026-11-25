@@ -27,7 +27,6 @@ fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
     ))
 }
 
-/// The actual compiled input, before this fixture replaces the runtime extension.
 pub fn base_bytes(base: &[u8]) -> TestResult<Vec<u8>> {
     let limit = inventory_core::catalog::MAX_CATALOG_BYTES;
     let mut root = ValueRef::Map(MapRef::from_container_bytes(base, limit)?).to_value()?;
@@ -37,9 +36,6 @@ pub fn base_bytes(base: &[u8]) -> TestResult<Vec<u8>> {
     Ok(inventory_core::record::encode_container(&root, limit)?)
 }
 
-/// Re-seals both valid and hostile metadata so its intended decoder is exercised.
-/// Source pins must come from the real compiler-generated base receipt; never invent
-/// repository evidence or claim a CFN input for these assembled fixture extensions.
 pub fn reseal(root: &mut Value, base: &[u8]) -> TestResult<()> {
     let runtime = RuntimeCatalog::from_bytes(base)?;
     let source = runtime.source_provenance();

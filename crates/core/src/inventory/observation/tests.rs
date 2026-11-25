@@ -10,7 +10,6 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn given_shared_exclusions_when_observations_are_created_then_backing_paths_are_not_copied()
 -> TestResult {
-    // Given nonempty field and map-key exclusions shared by two observations.
     let field = FieldId::new(1)?;
     let exclusions = Exclusions::new([vec![field]])?.with_map_keys(vec![MapKeyExclusion::new(
         vec![FieldId::new(2)?],
@@ -29,10 +28,8 @@ fn given_shared_exclusions_when_observations_are_created_then_backing_paths_are_
     let expected_hash =
         Record::encode(&Value::Map(BTreeMap::new()))?.content_hash(&Exclusions::none())?;
     let unexcluded_hash = record.content_hash(&Exclusions::none())?;
-    // When observations take ownership independently of the source exclusion handle.
     let first = Observation::new(key.clone(), record.clone(), &exclusions, None)?;
     let second = Observation::new(key, record, &exclusions, None)?;
-    // Then each uses the source backing allocations, not a per-row deep copy.
     for observation in [&first, &second] {
         assert_eq!(
             observation.hash_exclusions().paths().as_ptr(),

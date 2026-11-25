@@ -25,7 +25,6 @@ mod typed;
 mod unobserved;
 mod validation;
 mod work;
-/// Decode a persisted scope key using the store's canonical format.
 pub use work::persisted_scope as decode_scope_key;
 #[cfg(test)]
 mod scope_key_tests;
@@ -59,7 +58,6 @@ const MAX_CATALOG_BYTES: usize = inventory_core::catalog::MAX_CATALOG_BYTES;
 const MAX_TOKEN_BYTES: usize = 65_536;
 const MAX_BINDING_BYTES: usize = 1_048_576;
 const MAX_PROJECTION_ROWS: i64 = 100_000;
-/// Longest reason, in bytes, stored beside a scope outcome.
 pub const MAX_OUTCOME_DETAIL_BYTES: usize = 1_024;
 
 #[derive(Debug, Error)]
@@ -143,8 +141,6 @@ impl BinaryStore {
         relation_permissions::open_with_catalog(path, catalog).await
     }
 
-    /// Replaces pending projection work with one full graph rebuild from SQLite.
-    /// Delivery happens through `run_projection`; no graph endpoint is contacted here.
     pub async fn request_graph_rebuild(&self) -> Result<(), StoreError> {
         commit::request_graph_rebuild(self).await
     }
@@ -174,7 +170,6 @@ impl BinaryStore {
         work::commit_page(self, page).await
     }
 
-    /// Commits a page and keeps the lease for `lease_ms` more when the scope has another page.
     pub async fn commit_page_keeping(
         &self,
         page: PageCommit,
@@ -183,7 +178,6 @@ impl BinaryStore {
         work::commit_page_keeping(self, page, lease_ms).await
     }
 
-    /// `detail` is the reason for the outcome; a later outcome without one clears it.
     pub async fn finish_scope(
         &self,
         lease: WorkLease,
@@ -198,7 +192,6 @@ impl BinaryStore {
         projection_outbox::drain_projection(self, limit).await
     }
 
-    /// Returns the number of durable outbox rows actually acknowledged (0 or 1).
     pub async fn ack_projection(&self, ack: ProjectionAck) -> Result<u64, StoreError> {
         projection_outbox::ack_projection(self, ack).await
     }
@@ -276,8 +269,6 @@ impl BinaryStore {
     ) -> Result<(), StoreError> {
         work::create_sweep_manifest(self, sweep, account).await
     }
-    /// Top-level scopes earlier sweeps observed that `sweep` did not run,
-    /// with the time since their last observation.
     pub async fn unobserved_scopes(
         &self,
         sweep: &SweepId,

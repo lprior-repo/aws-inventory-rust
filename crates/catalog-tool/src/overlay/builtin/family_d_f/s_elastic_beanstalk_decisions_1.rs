@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/elastic-beanstalk/service/2010-12-01/elastic-beanstalk-2010-12-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "SwapEnvironmentCNAMEs",

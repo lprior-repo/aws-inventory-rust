@@ -27,7 +27,6 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 #[test]
 fn given_discovered_account_when_probing_list_analyses_then_uri_contains_caller_account()
 -> TestResult {
-    // Given the account returned by the modeled identity call.
     let account = caller_account()?;
     let bytes = compile("quicksight", "2018-04-01", "ListAnalyses")?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
@@ -39,11 +38,9 @@ fn given_discovered_account_when_probing_list_analyses_then_uri_contains_caller_
     let branch = plan.branches().first();
     let endpoint = routing::resolve(plan, &region)?;
 
-    // When the root's first-page bindings are encoded with that account.
     let base = input::root_bindings_branch(plan, branch, Some(&account), Some(&scope))?;
     let wire = request::encode(plan, &endpoint.url, &base, &first_page_fields(plan))?;
 
-    // Then the modeled REST label is bound to the caller, not a dummy account.
     assert_eq!(account.as_str(), ACCOUNT);
     assert_eq!(wire.method(), Method::GET);
     assert_eq!(wire.uri().path(), "/accounts/111122223333/analyses");
@@ -53,7 +50,6 @@ fn given_discovered_account_when_probing_list_analyses_then_uri_contains_caller_
 #[test]
 fn given_list_browsers_fixture_when_decoding_then_only_modeled_date_time_is_accepted() -> TestResult
 {
-    // Given a compiled ListBrowsers plan and two JSON representations of its timestamp.
     let service = "bedrock-agentcore-control";
     let bytes = compile(service, "2023-06-05", "ListBrowsers")?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
@@ -62,12 +58,10 @@ fn given_list_browsers_fixture_when_decoding_then_only_modeled_date_time_is_acce
         .ok_or("ListBrowsers plan absent")?;
     let numeric = BROWSERS.replace("\"2026-11-23T15:06:46.337384223Z\"", "1795446406.337384223");
 
-    // When the real wire decoder reads each response and the collector selects items.
     let valid = decode_fixture(plan, Protocol::RestJson1, BROWSERS.as_bytes())?;
     let rows = record::item_records(&valid, plan.items())?;
     let invalid = decode_fixture(plan, Protocol::RestJson1, numeric.as_bytes());
 
-    // Then the modeled format preserves nanoseconds and the nonconforming one fails.
     assert_eq!(rows.len(), 1);
     let row = rows.first().ok_or("browser summary absent")?;
     let fields = catalog_tool::smithy::Registry::parse(include_str!(concat!(

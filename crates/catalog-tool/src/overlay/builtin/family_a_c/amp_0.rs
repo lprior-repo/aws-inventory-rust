@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/amp/service/2020-08-01/amp-2020-08-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -136,7 +134,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires workspaceId, name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns complete information about one rule groups namespace. To retrieve a list of rule groups namespaces, use ListRuleGroupsNamespaces .",
             ),
         ),
-        // ScrapeConfiguration.configurationBlob is a customer-authored configuration file.
         ("DescribeScraper", denied(DenyReason::Content)),
         (
             "DescribeScraperLoggingConfiguration",
@@ -144,7 +141,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires scraperId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the logging configuration for a Amazon Managed Service for Prometheus scraper.",
             ),
         ),
-        // Model: Returns information about an existing workspace.
         (
             "DescribeWorkspace",
             OperationOverlay {
@@ -180,7 +176,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is configuration; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: The GetDefaultScraperConfiguration operation returns the default scraper configuration used when Amazon EKS creates a scraper for you.",
             ),
         ),
-        // Reviewed full response: summary identifiers/status/times/tags only; no detector configuration or metric data.
         (
             "ListAnomalyDetectors",
             OperationOverlay {
@@ -209,7 +204,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Reviewed full response: namespace summaries exclude the rule-group source returned by DescribeRuleGroupsNamespace.
         (
             "ListRuleGroupsNamespaces",
             OperationOverlay {
@@ -233,7 +227,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: The ListScrapers operation lists all of the scrapers in your account. This includes scrapers being created or deleted. You can optionally filter the returned list.
         (
             "ListScrapers",
             OperationOverlay {
@@ -253,7 +246,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: The ListTagsForResource operation returns the tags that are associated with an Amazon Managed Service for Prometheus resource. Currently, the only resources that can be tagged are scrapers, workspaces, and rule groups namespaces.",
             ),
         ),
-        // Model: Lists all of the Amazon Managed Service for Prometheus workspaces in your account. This includes workspaces being created or deleted.
         (
             "ListWorkspaces",
             OperationOverlay {

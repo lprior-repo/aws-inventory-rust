@@ -1,9 +1,7 @@
-// Pinned Batch policies continued; service jobs require their owning queue.
 use super::support::*;
 use crate::overlay::MemberPath;
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of Batch consumable resources.
         (
             "ListConsumableResources",
             OperationOverlay {
@@ -16,7 +14,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // JOB_NAME's trailing wildcard covers every top-level job name and suppresses RUNNING-only defaults.
         (
             "ListJobs",
             OperationOverlay {
@@ -66,7 +63,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of Batch scheduling policies.
         (
             "ListSchedulingPolicies",
             OperationOverlay {

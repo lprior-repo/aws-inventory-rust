@@ -20,10 +20,8 @@ pub(crate) struct EndpointTemplate {
     pub(crate) exceptions: Box<[EndpointException]>,
 }
 
-/// Concrete endpoint that overrides the template for one region label.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct EndpointException {
-    /// Region the compiled catalog names; `-` for the global pseudo-region.
     pub(crate) region: String,
     pub(crate) url: String,
     pub(crate) signing_name: String,
@@ -31,8 +29,6 @@ pub(crate) struct EndpointException {
 }
 
 impl EndpointTemplate {
-    /// Resolves one request. An exception keyed to the request region wins; the
-    /// `-` exception applies only to a Global-class endpoint at `Region::Global` scope.
     pub(crate) fn resolve(
         &self,
         region: &RegionId,
@@ -128,7 +124,6 @@ impl<'a> CallablePlan<'a> {
         self.parts.excluded_members
     }
 
-    /// Effective reviewed stage inputs, with exact-path overrides replacing common inputs.
     pub fn effective_bindings<'p>(
         &'p self,
         branch: Option<&'p ExecutionBranch>,
@@ -229,7 +224,6 @@ impl<'a> CallablePlan<'a> {
             .ok_or(RuntimeCatalogError::Capability)
     }
 
-    /// `None` means tags were not observed, not a complete empty snapshot.
     pub fn tags(&self) -> Option<&TagPlan> {
         self.parts.tags.as_ref()
     }

@@ -17,7 +17,6 @@ pub(super) fn bindings(
     let Some((parent, identifiers)) = expansion(model, operation, deny) else {
         return BTreeMap::new();
     };
-    // A list operation that is its own resource's `list` has no parent rows to bind from.
     if parent == operation {
         return BTreeMap::new();
     }

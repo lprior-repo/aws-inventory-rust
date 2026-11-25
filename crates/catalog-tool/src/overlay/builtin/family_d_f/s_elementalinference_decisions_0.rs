@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/elementalinference/service/2018-11-14/elementalinference-2018-11-14.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AssociateFeed",

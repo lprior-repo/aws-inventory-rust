@@ -1,4 +1,3 @@
-//! Regional snapshot assertion logic.
 
 use std::collections::HashMap;
 
@@ -38,13 +37,11 @@ pub fn check(
     let kms = fixtures.get("kms").unwrap_or(&Value::Object(serde_json::Map::new()));
     let workflows = fixtures.get("step_functions").unwrap_or(&Value::Object(serde_json::Map::new()));
 
-    // Kind coverage
     let regional_kinds = regional_kind_list();
     push_kind_coverage_checks(checks, resources, &regional_kinds);
 
     push_network_identity_checks(checks, resources, region, network);
 
-    // Scope pagination checks
     let regional_scopes: Vec<&Value> = regional_scopes_for_pagination(scopes, &regional_kinds);
     push_root_scope_checks(checks, &regional_scopes);
     push_scope_completion_checks(checks, &regional_scopes);
@@ -109,7 +106,6 @@ fn network_resource_map() -> [(&'static str, &'static str, &'static str, &'stati
     ]
 }
 
-// EC2 network resource identity checks
 fn push_network_identity_checks(
     checks: &mut Vec<Value>,
     resources: &HashMap<String, Value>,
@@ -179,7 +175,6 @@ fn push_network_row_source_checks(
     identity: &str,
     region: &str,
 ) {
-    // Direct source check
     let source = row
         .and_then(|r| r.get("source"))
         .and_then(Value::as_str)
@@ -191,7 +186,6 @@ fn push_network_row_source_checks(
         Some(&json!({"category": "source"})),
     );
 
-    // Account check
     let account = row
         .and_then(|r| r.get("account_id"))
         .and_then(Value::as_str)
@@ -203,7 +197,6 @@ fn push_network_row_source_checks(
         Some(&json!({"category": "source"})),
     );
 
-    // Region check
     let region_actual = row
         .and_then(|r| r.get("region"))
         .and_then(Value::as_str)
@@ -223,7 +216,6 @@ fn push_network_row_field_check(
     field: &str,
     id: &str,
 ) {
-    // Field check
     let props = row.and_then(|r| r.get("properties")).unwrap_or(&Value::Object(serde_json::Map::new()));
     let field_actual = props
         .get(field)

@@ -1,6 +1,3 @@
-//! M7.3: the `scope_freshness` SQL view and the UI-side read query
-//! (`Database::scope_freshness`) both report exactly the stored scope outcomes.
-
 #[path = "support/modeled_catalog.rs"]
 mod modeled_catalog;
 #[path = "support/scope_freshness_script.rs"]
@@ -37,7 +34,6 @@ async fn seed(path: &Path) -> TestResult<BinaryStore> {
     Ok(store)
 }
 
-/// Writes one scope through the engine's own work transitions.
 async fn seed_modeled(store: &BinaryStore, attempt: &Attempt) -> TestResult {
     let sweep = SweepId::new(attempt.sweep.to_owned())?;
     store
@@ -58,7 +54,6 @@ async fn seed_modeled(store: &BinaryStore, attempt: &Attempt) -> TestResult {
     Ok(())
 }
 
-/// Writes scopes the test catalog does not model directly into `scope_outcomes`.
 async fn seed_raw<'a>(path: &Path, attempts: impl Iterator<Item = &'a Attempt>) -> TestResult {
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -116,7 +111,6 @@ async fn sql_view_matches_the_stored_scope_outcomes() -> TestResult {
     Ok(())
 }
 
-/// The UI's read model against what was stored, with its own clock.
 fn assert_scope_matches_stored(scope: &ScopeFreshness, want: &Expected, now: i64) {
     assert_eq!(scope.account, want.account);
     assert_eq!(scope.region, want.region);
@@ -134,7 +128,6 @@ fn assert_scope_matches_stored(scope: &ScopeFreshness, want: &Expected, now: i64
     );
 }
 
-/// The UI's read model against the SQL view, row for row.
 fn assert_scope_matches_view(scope: &ScopeFreshness, view: &ViewRow) {
     assert_eq!(
         (
@@ -181,7 +174,6 @@ async fn ui_read_query_agrees_with_the_sql_view_and_stored_outcomes() -> TestRes
         assert_scope_matches_stored(scope, want, now);
         assert_scope_matches_view(scope, view);
     }
-    // Stalest first.
     assert!(report.scopes.windows(2).all(|pair| {
         pair.first().map(|a| a.observed_at_ms) <= pair.last().map(|b| b.observed_at_ms)
     }));

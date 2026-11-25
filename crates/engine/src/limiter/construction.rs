@@ -45,8 +45,6 @@ impl ApiExecutor {
         )
     }
 
-    /// An executor whose buckets follow `default_policy` unless `policies`
-    /// names their key.
     pub fn with_default_policy(
         config: ExecutorConfig,
         default_policy: BucketPolicy,

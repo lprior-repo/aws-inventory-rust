@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mediapackagev2/service/2022-12-25/mediapackagev2-2022-12-25.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -70,7 +69,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieves all channel groups that are configured in Elemental MediaPackage.
     Resource {
         operation: "ListChannelGroups",
         items: "Items",
@@ -82,7 +80,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Retrieves all channels in a specific channel group that are configured in AWS Elemental MediaPackage.
     Resource {
         operation: "ListChannels",
         items: "Items",
@@ -94,7 +91,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[("ChannelGroupName", "ListChannelGroups", "ChannelGroupName")],
         fixed: &[],
     },
-    // Retrieves all origin endpoints in a specific channel that are configured in AWS Elemental MediaPackage.
     Resource {
         operation: "ListOriginEndpoints",
         items: "Items",

@@ -27,13 +27,11 @@ fn raw(document: &str) -> Result<Record, SweepError> {
 #[tokio::test]
 async fn given_encoded_trust_when_projected_and_committed_then_only_summary_reaches_sqlite()
 -> TestResult {
-    // Given: an IAM trust document with a private condition value and one reviewed principal.
     let document = r#"%7B%22Statement%22%3A%7B%22Effect%22%3A%22Allow%22%2C%22Action%22%3A%22sts%3AAssumeRole%22%2C%22Principal%22%3A%7B%22AWS%22%3A%22arn%3Aaws%3Aiam%3A%3A222222222222%3Arole%2Ftarget%22%7D%2C%22Condition%22%3A%7B%22StringEquals%22%3A%7B%22sts%3AExternalId%22%3A%22private-secret-value%22%7D%7D%7D%7D"#;
     let projection = ResourceProjectionPlan::IamTrustSummary {
         path: vec![FieldId::new(2)?].into_boxed_slice(),
     };
     let (directory, store, _) = support::fixture().await?;
-    // When: the production projection output enters the actual page commit transaction.
     let projected = project_with(&projection, &raw(document)?)?;
     let observation = Observation::new(
         support::resource("role-one")?,
@@ -60,7 +58,6 @@ async fn given_encoded_trust_when_projected_and_committed_then_only_summary_reac
         .fetch_one(&mut connection)
         .await?
         .try_get(0)?;
-    // Then: raw document/condition values are absent, while useful declared metadata survives.
     assert!(
         !stored
             .windows(document.len())
@@ -111,15 +108,12 @@ fn given_untrusted_policies_when_projected_then_malformed_and_oversized_inputs_f
 #[test]
 fn given_sensitive_endpoint_when_projected_then_digest_is_stable_and_other_identity_fields_survive()
 -> TestResult {
-    // Given: only the explicitly reviewed metadata field is sensitive.
     let projection = ResourceProjectionPlan::SensitiveDigest {
         path: vec![FieldId::new(2)?].into_boxed_slice(),
     };
     let row = raw("https://user:password@example.test/path")?;
-    // When: production projection is applied independently to the same raw response.
     let first = project_with(&projection, &row)?;
     let second = project_with(&projection, &row)?;
-    // Then: stable identity material replaces credentials and unrelated text remains unchanged.
     assert_eq!(first, second);
     assert!(matches!(
         first.root().get_field(FieldId::new(1)?)?,

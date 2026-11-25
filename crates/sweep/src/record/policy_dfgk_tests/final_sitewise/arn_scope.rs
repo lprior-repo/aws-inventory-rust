@@ -10,7 +10,6 @@ use std::collections::BTreeMap;
 #[test]
 fn given_summary_arn_identities_when_returned_scope_is_malformed_or_foreign_then_every_new_arn_producer_fails_closed()
 -> TestResult {
-    // Given actual compiled identity plans, not locally reimplemented ARN parsing.
     let catalog = catalog()?;
     let account = AccountId::parse("123456789012")?;
     let region = RegionId::parse("us-east-1")?;
@@ -65,7 +64,6 @@ fn given_summary_arn_identities_when_returned_scope_is_malformed_or_foreign_then
             )])))?)
         };
         let valid = arn(service, resource);
-        // When resolving the modeled identity with the real request owner scope.
         assert_eq!(
             record::resource_id(
                 &row(&valid)?,
@@ -98,7 +96,6 @@ fn given_summary_arn_identities_when_returned_scope_is_malformed_or_foreign_then
                 "{service}.{operation}"
             );
         }
-        // Then foreign account/region/partition are rejected, never silently re-owned locally.
         for invalid in [
             format!("arn:aws:{service}:us-east-1:999999999999:{resource}"),
             format!("arn:aws:{service}:us-west-2:123456789012:{resource}"),

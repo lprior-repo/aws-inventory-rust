@@ -1,6 +1,3 @@
-//! Deterministic behaviour of the `serve` scheduling core on a virtual clock.
-//! No test sleeps: the simulated environment advances its own clock.
-
 use std::cell::{Cell, RefCell};
 use std::collections::{BTreeSet, VecDeque};
 use std::time::Duration;
@@ -19,19 +16,16 @@ enum Event {
     Sleep { from: u64, until: u64 },
 }
 
-/// What the simulated profile run does.
 #[derive(Clone, Copy, Debug)]
 struct Script {
     duration: u64,
     outcome: RunOutcome,
 }
 
-/// Virtual-clock environment. Runs and sleeps advance `now` and nothing else.
 struct Sim {
     now: Cell<u64>,
     events: RefCell<Vec<Event>>,
     scripts: RefCell<VecDeque<Script>>,
-    /// Freshness the store reports at start; `None` means nothing was recorded.
     seed: RefCell<Option<Vec<Option<Millis>>>>,
     default_script: Script,
     running: Cell<bool>,
@@ -147,7 +141,6 @@ fn ms(value: u64) -> Duration {
     Duration::from_millis(value)
 }
 
-/// The simulated operator asks to stop at virtual millisecond `at`.
 fn stop_after(sim: &Sim, at: u64) {
     sim.stop_at.set(Some(at));
 }
@@ -158,7 +151,6 @@ async fn given_a_short_pass_when_serving_then_it_idles_until_the_next_interval()
     stop_after(&sim, 250);
     let report = serve(&sim, ms(100), 3).await?;
 
-    // Passes start at 0, 100 and 200; each pass is three 10 ms runs.
     let pass_starts: Vec<u64> = sim
         .starts()
         .into_iter()
@@ -168,7 +160,6 @@ async fn given_a_short_pass_when_serving_then_it_idles_until_the_next_interval()
     assert_eq!(pass_starts, vec![0, 100, 200]);
     assert_eq!(report.passes, 3);
     assert_eq!(report.completed, 9);
-    // Idle time is a sleep and nothing runs inside it.
     for event in sim.events() {
         if let Event::Sleep { from, until } = event {
             for (_, at) in sim.starts() {
@@ -185,7 +176,6 @@ async fn given_a_short_pass_when_serving_then_it_idles_until_the_next_interval()
 #[tokio::test]
 async fn given_a_pass_that_overruns_the_interval_when_it_ends_then_the_next_starts_at_once()
 -> TestResult {
-    // Three runs of 60 ms: the pass lasts 180 ms against a 100 ms interval.
     let sim = Sim::new(60);
     sim.stop_after_runs.set(Some(6));
     let report = serve(&sim, ms(100), 3).await?;
@@ -197,7 +187,6 @@ async fn given_a_pass_that_overruns_the_interval_when_it_ends_then_the_next_star
             .all(|event| !matches!(event, Event::Sleep { .. })),
         "an overrunning pass must not be followed by an idle wait"
     );
-    // The second pass starts the instant the first ends (180), not at 100 or 200.
     assert_eq!(
         sim.starts(),
         vec![(0, 0), (1, 60), (2, 120), (0, 180), (1, 240), (2, 300)]
@@ -207,7 +196,6 @@ async fn given_a_pass_that_overruns_the_interval_when_it_ends_then_the_next_star
 
 #[tokio::test]
 async fn given_a_long_overrun_when_it_ends_then_missed_intervals_are_not_replayed() -> TestResult {
-    // One 450 ms run against a 100 ms interval overran four intervals.
     let sim = Sim::new(10);
     sim.script(Script {
         duration: 450,
@@ -216,7 +204,6 @@ async fn given_a_long_overrun_when_it_ends_then_missed_intervals_are_not_replaye
     sim.stop_after_runs.set(Some(3));
     serve(&sim, ms(100), 1).await?;
 
-    // Next pass starts once at 450, the one after waits a full interval from there.
     assert_eq!(sim.starts(), vec![(0, 0), (0, 450), (0, 550)]);
     assert_eq!(
         sim.events()
@@ -234,7 +221,6 @@ async fn given_any_schedule_when_serving_then_runs_never_overlap() -> TestResult
     sim.stop_after_runs.set(Some(25));
     serve(&sim, ms(100), 7).await?;
     assert_eq!(sim.overlaps.get(), 0);
-    // Every run ends before the next begins.
     let mut last_end = 0;
     for event in sim.events() {
         match event {
@@ -261,8 +247,6 @@ async fn given_a_failed_profile_when_the_next_pass_starts_then_the_stalest_goes_
     sim.stop_after_runs.set(Some(6));
     let report = serve(&sim, ms(100), 3).await?;
 
-    // Pass 1 fails profile 1; in pass 2 it has never completed, so it is first,
-    // then profile 0 (completed at 10) before profile 2 (completed at 30).
     let order: Vec<usize> = sim
         .starts()
         .into_iter()
@@ -324,20 +308,15 @@ async fn given_an_interrupted_run_when_serving_then_the_loop_ends_without_idling
     Ok(())
 }
 
-/// A pending sweep belongs to one profile. A restart must lose none of its work.
 #[tokio::test]
 async fn given_a_killed_run_when_restarted_then_the_owner_resumes_and_nothing_is_lost() -> TestResult
 {
     const SCOPES: usize = 5;
 
     struct Store {
-        /// Owner of the pending sweep, if any.
         pending_owner: Cell<Option<usize>>,
-        /// Scopes of the pending sweep not yet finished.
         remaining: RefCell<BTreeSet<usize>>,
-        /// Every scope run, in order, with its profile.
         executed: RefCell<Vec<(usize, usize)>>,
-        /// Kill the process after this many scope runs.
         kill_after: Cell<Option<usize>>,
         stopping: Cell<bool>,
         sweeps_completed: RefCell<Vec<usize>>,
@@ -401,7 +380,6 @@ async fn given_a_killed_run_when_restarted_then_the_owner_resumes_and_nothing_is
         sweeps_completed: RefCell::new(Vec::new()),
     };
 
-    // First process: profile 0 completes (5 scopes), profile 1 is killed after 2.
     let first = Restartable {
         store: &store,
         now: Cell::new(0),
@@ -412,8 +390,6 @@ async fn given_a_killed_run_when_restarted_then_the_owner_resumes_and_nothing_is
     assert_eq!(store.pending_owner.get(), Some(1));
     assert_eq!(store.remaining.borrow().len(), SCOPES - 2);
 
-    // Second process: starts at profile order [0, 1, 2]. Profile 0 is not the
-    // owner and is deferred, profile 1 resumes, profile 2 sweeps, then 0 is retried.
     store.stopping.set(false);
     let second = Restartable {
         store: &store,
@@ -424,7 +400,6 @@ async fn given_a_killed_run_when_restarted_then_the_owner_resumes_and_nothing_is
     assert_eq!(report.not_owner, 1);
     assert_eq!(*store.sweeps_completed.borrow(), vec![0, 1, 2, 0]);
 
-    // Profile 1's interrupted sweep ran each of its scopes exactly once across both processes.
     let executed = store.executed.borrow();
     let mut profile_one: Vec<usize> = executed
         .iter()
@@ -468,7 +443,6 @@ async fn given_a_pending_sweep_owned_by_nobody_configured_when_serving_then_the_
         attempts: Cell::new(0),
     };
     let report = serve(&env, ms(100), 3).await?;
-    // With no progress by anyone, each profile is tried once; no retry storm.
     assert_eq!(env.attempts.get(), 3);
     assert_eq!(report.not_owner, 3);
     Ok(())
@@ -507,7 +481,6 @@ fn given_the_scheduler_when_an_outcome_is_for_the_wrong_profile_then_it_is_refus
         scheduler.next_action(Millis::new(0)),
         Action::Run { profile: 0 }
     );
-    // Repeating the query does not advance the pass.
     assert_eq!(
         scheduler.next_action(Millis::new(5)),
         Action::Run { profile: 0 }
@@ -529,8 +502,6 @@ fn given_a_stopped_scheduler_when_asked_then_it_only_stops() -> TestResult {
     Ok(())
 }
 
-/// Freshness of each profile as the first run's completions left it: the
-/// time its last sweep ended. This is what a store records for a restart.
 fn freshness_of(sim: &Sim, profiles: usize) -> Vec<Option<Millis>> {
     let mut last = vec![None; profiles];
     for event in sim.events() {
@@ -574,7 +545,6 @@ async fn given_freshness_for_another_profile_count_when_serving_then_it_is_refus
 #[tokio::test]
 async fn given_a_stop_and_a_restart_when_serving_then_no_profile_is_skipped_and_the_stalest_runs_first()
 -> TestResult {
-    // First process: profiles 0 and 1 complete, then the operator stops it.
     let first = Sim::new(10);
     first.stop_after_runs.set(Some(2));
     serve(&first, ms(100), 3).await?;
@@ -584,7 +554,6 @@ async fn given_a_stop_and_a_restart_when_serving_then_no_profile_is_skipped_and_
         vec![Some(Millis::new(10)), Some(Millis::new(20)), None]
     );
 
-    // Restart from the stored freshness: never-run profile 2 first, then 0, then 1.
     let second = Sim::new(10);
     second.seed_freshness(freshness);
     second.stop_after_runs.set(Some(3));

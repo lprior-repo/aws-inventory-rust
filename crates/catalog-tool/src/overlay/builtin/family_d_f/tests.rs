@@ -20,7 +20,6 @@ fn operation<'a>(
 
 #[test]
 fn whole_response_credentials_content_and_paid_workloads_never_become_callable() -> TestResult {
-    // Given model-documented secrets, stored programs, artifact capabilities and billed queries.
     let policies = overlay::embedded()?;
     let cases = [
         ("ecr", "GetAuthorizationToken", DenyReason::Secret),
@@ -79,7 +78,6 @@ fn whole_response_credentials_content_and_paid_workloads_never_become_callable()
         ("emr-containers", "ListJobTemplates", DenyReason::Content),
         ("frauddetector", "GetExternalModels", DenyReason::Content),
     ];
-    // When resolving those APIs, then projected metadata never disguises the whole call as safe.
     for (service, name, reason) in cases {
         let plan = operation(&policies, service, name)?;
         assert_eq!(
@@ -97,7 +95,6 @@ fn whole_response_credentials_content_and_paid_workloads_never_become_callable()
 
 #[test]
 fn descendants_preserve_parent_context_in_the_selected_resource_identity() -> TestResult {
-    // Given identifiers whose uniqueness is limited to the parent resource.
     let policies = overlay::embedded()?;
     let cases = [
         (
@@ -117,7 +114,6 @@ fn descendants_preserve_parent_context_in_the_selected_resource_identity() -> Te
             vec!["StudioId", "IdentityType", "IdentityId"],
         ),
     ];
-    // When policies choose selected-item keys, then sibling resources cannot alias by bare name/id.
     for (service, name, members) in cases {
         let expected = members
             .into_iter()
@@ -149,7 +145,6 @@ fn descendants_preserve_parent_context_in_the_selected_resource_identity() -> Te
 
 #[test]
 fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
-    // Given services whose cursor names differ and whose outputs require an explicit more-results flag.
     let policies = overlay::embedded()?;
     let cases = [
         ("efs", "DescribeFileSystems", "Marker", "NextMarker"),
@@ -167,7 +162,6 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
         ),
         ("ecr", "DescribeImages", "nextToken", "nextToken"),
     ];
-    // When executing collection descriptors, then continuation never silently stops after the first page.
     for (service, name, input, output) in cases {
         assert_eq!(
             operation(&policies, service, name)?.paginator,
@@ -178,7 +172,6 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
             }))
         );
     }
-    // EventBridgeV2 Expand operations have no pagination.
     for (service, name) in [
         ("eventbridgev2", "DescribeEventBus"),
         ("eventbridgev2", "DescribeEventSource"),
@@ -188,8 +181,6 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
             Some(Paginator::None)
         );
     }
-    // EventBridgeV2 Describe operations are unpaginated in the pinned model and use Paginator::None.
-    // Verify the overlay policies are correctly structured for these unpaginated operations.
     for (service, name) in [
         ("eventbridgev2", "DescribeEventBus"),
         ("eventbridgev2", "DescribeEventSource"),
@@ -216,9 +207,7 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
 #[test]
 fn unsupported_last_element_cursor_and_parent_identity_are_explicit_not_fake_collection()
 -> TestResult {
-    // Given runtime paths cannot extract a list's last element or join bound inputs into identity.
     let policies = overlay::embedded()?;
-    // When these operations are resolved, then they remain noncallable with exact capability evidence.
     for (service, name, evidence) in [
         ("deadline", "ListWorkers", "credentials"),
         (

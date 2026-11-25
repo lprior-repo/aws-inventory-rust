@@ -63,7 +63,6 @@ fn pinned_operations(root: &Path, service: &str) -> Result<BTreeSet<String>, Box
 #[test]
 fn given_pinned_models_when_policies_load_then_every_partition_operation_has_a_disposition()
 -> TestResult {
-    // Given: the actual pinned Smithy model tree, independently of the authored policy tables.
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../.local/aws-models/models");
     let mut expected = BTreeSet::new();
     for entry in fs::read_dir(&root)? {
@@ -80,9 +79,7 @@ fn given_pinned_models_when_policies_load_then_every_partition_operation_has_a_d
             expected.insert(name);
         }
     }
-    // When: the real typed policies are constructed.
     let policies = overlays()?;
-    // Then: no service or operation can silently disappear, including unsafe and blocked calls.
     let actual = policies
         .iter()
         .map(|service| service.service().to_owned())
@@ -125,7 +122,6 @@ fn given_pinned_models_when_policies_load_then_every_partition_operation_has_a_d
 
 #[test]
 fn given_credential_bearing_responses_when_reviewed_then_the_whole_call_is_denied() -> TestResult {
-    // Given: models whose response bodies include credentials, arbitrary environment, or private content.
     let cases = [
         ("lightsail", "GetRelationalDatabases"),
         ("lightsail", "GetContainerServices"),
@@ -134,7 +130,6 @@ fn given_credential_bearing_responses_when_reviewed_then_the_whole_call_is_denie
         ("mwaa", "GetEnvironment"),
         ("pca-connector-scep", "GetChallengePassword"),
     ];
-    // When/Then: projection does not turn any such operation into an authorized inventory read.
     for (service, name) in cases {
         let policy = operation(service, name)?;
         assert_eq!(
@@ -151,9 +146,7 @@ fn given_credential_bearing_responses_when_reviewed_then_the_whole_call_is_denie
 #[test]
 fn given_nested_pinpoint_items_when_enumerated_then_continuation_uses_the_nested_response_token()
 -> TestResult {
-    // Given/When: Pinpoint's nonstandard wrapper response, not a guessed root-level Item list.
     let policy = operation("pinpoint", "GetApps")?;
-    // Then: selector and paginator agree with ApplicationsResponse in the pinned model.
     assert_eq!(
         policy.items,
         Some(ItemSelector::parse("ApplicationsResponse.Item")?)
@@ -169,9 +162,7 @@ fn given_nested_pinpoint_items_when_enumerated_then_continuation_uses_the_nested
 #[test]
 fn given_channel_discovery_when_listing_origin_endpoints_then_both_inputs_bind_to_the_same_parent()
 -> TestResult {
-    // Given/When: channel summaries carry both the channel group and channel name.
     let policy = operation("mediapackagev2", "ListOriginEndpoints")?;
-    // Then: neither required input is guessed, omitted, or cross-joined from a different parent.
     assert_eq!(policy.class, Some(OverlayClass::Expand));
     assert_eq!(policy.bind.len(), 2);
     for (input, member) in [
@@ -194,9 +185,7 @@ fn given_channel_discovery_when_listing_origin_endpoints_then_both_inputs_bind_t
 #[test]
 fn given_summary_only_certificate_read_when_enumerated_then_expanded_details_are_explicitly_disabled()
 -> TestResult {
-    // Given/When: certificates have a documented summary-only request switch.
     let policy = operation("lightsail", "GetCertificates")?;
-    // Then: the request is fixed to summary semantics; the response projection is not the safety gate.
     assert_eq!(
         policy.fixed.get(&crate::overlay::MemberPath::new(
             "includeCertificateDetails"
@@ -210,9 +199,7 @@ fn given_summary_only_certificate_read_when_enumerated_then_expanded_details_are
 #[test]
 fn given_safe_metadata_resources_when_loaded_then_all_callable_plans_have_complete_execution_fields()
 -> TestResult {
-    // Given/When: actual typed metadata policies across the whole family.
     let policies = overlays()?;
-    // Then: there is no prefix-only authorization with a missing selector, identity, scope or paginator.
     for service in &policies {
         for (name, policy) in service.operations().iter() {
             if !matches!(
@@ -256,10 +243,7 @@ fn given_safe_metadata_resources_when_loaded_then_all_callable_plans_have_comple
 #[test]
 fn given_discovered_lightsail_disk_when_described_then_the_read_uses_its_name_and_retains_arn_identity()
 -> TestResult {
-    // Given: the independent seed is CreateDisk(diskName, availabilityZone, sizeInGb).
-    // When: its discovered metadata is used to request the singleton detail view.
     let policy = operation("lightsail", "GetDisk")?;
-    // Then: a real detail call exists, not just an unchanged list response with a new label.
     assert_eq!(policy.class, Some(OverlayClass::Expand));
     assert_eq!(policy.items, Some(ItemSelector::parse("disk")?));
     assert_eq!(policy.paginator, Some(Paginator::None));

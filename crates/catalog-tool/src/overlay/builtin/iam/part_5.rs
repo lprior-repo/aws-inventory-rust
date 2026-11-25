@@ -5,7 +5,6 @@ use crate::overlay::{
     TagEndpointRequest, TagEndpointSelector, TokenPair,
 };
 
-// Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
 ("ListGroupPolicies", OperationOverlay {
@@ -117,7 +116,6 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         items: Some(ItemSelector::parse("Versions")?),
         bind: [(path("PolicyArn")?, Binding::From { operation: name("ListPolicies")?, path: path("Arn")? })].into_iter().collect(),
         identity: Some(Identity::CorrelatedKey(vec![IdentityField::Request(path("PolicyArn")?), IdentityField::Selected(path("VersionId")?)])),
-        // The pinned documentation explicitly excludes Document from this list response.
         queryable: vec![path("VersionId")?],
         paginator: Some(Paginator::Tokens { pairs: vec![TokenPair { input: path("Marker")?, output: path("Marker")?, optional: false }], truncated: Some(path("IsTruncated")?) }),
         ..empty()

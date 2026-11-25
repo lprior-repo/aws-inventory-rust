@@ -25,9 +25,6 @@ fn compile_pinned(
     let destination = source.path().join(&relative);
     fs::create_dir_all(destination.parent().ok_or("model parent missing")?)?;
     fs::copy(root.join(".local/aws-models").join(relative), &destination)?;
-    // The pinned model is a complete service, so submit its complete reviewed policy.
-    // A selected-operation overlay leaves unrelated candidates without a disposition.
-    // Keep built-in deny enforcement active at the same public checker boundary.
     let policies = [overlays()?
         .into_iter()
         .find(|policy| policy.service() == service)
@@ -56,7 +53,6 @@ fn compile_pinned(
 }
 
 fn fixture_endpoint(service: &str) -> TestResult<endpoints::VerifiedEndpoint> {
-    // Transport evidence is deterministic and local; model/policy/schema compilation remains real.
     let url = format!("https://{service}.test");
     let properties =
         json!({"authSchemes":[{"name":"sigv4","signingName":service,"signingRegion":"us-east-1"}]});
@@ -90,14 +86,12 @@ fn field(catalog: &RuntimeCatalog<'_>, service: &str, member: &str) -> TestResul
 #[test]
 fn given_pinpoint_scalar_names_when_pinned_pair_compiles_then_detail_keeps_root_identity_and_tags()
 -> TestResult {
-    // Given: the real Smithy scalar name list and singleton metadata response.
     let bytes = compile_pinned(
         "pinpoint-email",
         "2018-07-26",
         &["ListConfigurationSets", "GetConfigurationSet"],
         "AWS::PinpointEmail::ConfigurationSet",
     )?;
-    // When: the compiler's numeric artifact is consumed by the production runtime reader.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let list = runtime
         .lookup("pinpoint-email", "ListConfigurationSets")
@@ -107,7 +101,6 @@ fn given_pinpoint_scalar_names_when_pinned_pair_compiles_then_detail_keeps_root_
         .ok_or("detail missing")?;
     let name = field(&runtime, "pinpoint-email", "ConfigurationSetName")?;
     let tags = field(&runtime, "pinpoint-email", "Tags")?;
-    // Then: list self and detail member encode the same single-component name, not a scalar selector.
     assert_eq!(list.kind(), detail.kind());
     assert_eq!(
         list.identity(),
@@ -129,14 +122,12 @@ fn given_pinpoint_scalar_names_when_pinned_pair_compiles_then_detail_keeps_root_
 #[test]
 fn given_license_summary_when_detail_compiles_then_arn_identity_and_tag_snapshot_share_kind()
 -> TestResult {
-    // Given: the summary supplies the exact ARN required by the metadata detail request.
     let bytes = compile_pinned(
         "license-manager",
         "2018-08-01",
         &["ListLicenseConfigurations", "GetLicenseConfiguration"],
         "AWS::LicenseManager::LicenseConfiguration",
     )?;
-    // When: the pinned shapes and actual overlays compile into consumable runtime plans.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let list = runtime
         .lookup("license-manager", "ListLicenseConfigurations")
@@ -146,7 +137,6 @@ fn given_license_summary_when_detail_compiles_then_arn_identity_and_tag_snapshot
         .ok_or("detail missing")?;
     let arn = field(&runtime, "license-manager", "LicenseConfigurationArn")?;
     let tags = field(&runtime, "license-manager", "Tags")?;
-    // Then: detail cannot create a second identity or silently omit the inline tag source.
     assert_eq!(list.kind(), detail.kind());
     assert_eq!(
         list.identity(),
@@ -174,19 +164,16 @@ fn given_license_summary_when_detail_compiles_then_arn_identity_and_tag_snapshot
 #[test]
 fn given_mixed_search_engines_when_pinned_opensearch_list_compiles_then_request_retains_all_engines()
 -> TestResult {
-    // Given: ListDomainNames otherwise returns both OpenSearch and Elasticsearch domains.
     let bytes = compile_pinned(
         "opensearch",
         "2021-01-01",
         &["ListDomainNames"],
         "AWS::OpenSearchService::Domain",
     )?;
-    // When: the unfiltered operation is checked and read from the artifact.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .lookup("opensearch", "ListDomainNames")
         .ok_or("list missing")?;
-    // Then: no engine binding removes Elasticsearch-engine domains.
     assert_eq!(plan.bindings(), []);
     let name = vec![field(&runtime, "opensearch", "DomainName")?].into_boxed_slice();
     assert_eq!(
@@ -199,14 +186,12 @@ fn given_mixed_search_engines_when_pinned_opensearch_list_compiles_then_request_
 #[test]
 fn given_neptune_cluster_discovery_when_compiled_then_engine_filter_is_structured_and_endpoints_require_discovered_cluster()
 -> TestResult {
-    // Given: Neptune and RDS share the wire DescribeDBClusters API and ARN service spelling.
     let bytes = compile_pinned(
         "neptune",
         "2014-10-31",
         &["DescribeDBClusters", "DescribeDBClusterEndpoints"],
         "AWS::Neptune::DBCluster",
     )?;
-    // When: actual pinned structures are checked, encoded and decoded as runtime binding values.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let clusters = runtime
         .lookup("neptune", "DescribeDBClusters")
@@ -225,7 +210,6 @@ fn given_neptune_cluster_discovery_when_compiled_then_engine_filter_is_structure
     let [BindingValue::Object(members)] = entries.as_ref() else {
         return Err("exactly one engine filter required".into());
     };
-    // Then: numeric modeled structure keys preserve the engine name and its exact value.
     assert_eq!(
         members.iter().cloned().collect::<BTreeMap<_, _>>(),
         BTreeMap::from([

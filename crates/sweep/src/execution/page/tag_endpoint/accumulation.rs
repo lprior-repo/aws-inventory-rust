@@ -7,7 +7,6 @@ use inventory_core::{
 const PENDING: u32 = 65_529;
 const MAX_CHECKPOINT: usize = 65_536;
 
-/// Pending pairs are bound to a complete owner key and persisted atomically with page progress.
 pub(super) struct Accumulation {
     owner: ResourceKey,
     tags: Vec<Tag>,

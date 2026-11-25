@@ -1,4 +1,3 @@
-// Pinned operation purposes: .local/aws-models/models/ssm/service/2014-11-06/ssm-2014-11-06.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
@@ -21,12 +20,10 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors State are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Sessions, NextToken. Pinned purpose: Retrieves a list of all active sessions (both connected and disconnected) or terminated sessions from the past 30 days.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the association between an OpsItem and a related item. For example, this API operation can delete an Incident Manager incident from an OpsItem. Incident Manager is a tool in Amazon Web Services Systems Manager.
     (
         "DisassociateOpsItemRelatedItem",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Full modeled response contains authentication/secret material Credentials.SecretAccessKey, Credentials.SessionToken. Pinned purpose: Returns a credentials set to be used with just-in-time node access.. Projection cannot authorize this call.
     ("GetAccessToken", Decision::Denied(DenyReason::Secret)),
     (
         "GetAutomationExecution",
@@ -46,7 +43,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors CloudConnectorId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members CloudConnectorArn, DisplayName, Description, RoleArn, Configuration, ConfigConnectorArn, CreatedAt, UpdatedAt. Pinned purpose: Returns detailed information about a cloud connector.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns detailed information about command execution for an invocation or plugin. The Run Command API follows an eventual consistency model, due to the distributed nature of the system supporting the API. This means that the result of an API command you run that affects your resources might not be immediately visible to all subsequent commands you run. You should keep this in mind when you carry o
     (
         "GetCommandInvocation",
         Decision::Denied(DenyReason::Content),
@@ -69,7 +65,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors InstanceId, SnapshotId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members InstanceId, SnapshotId, SnapshotDownloadUrl, Product. Pinned purpose: Retrieves the current snapshot for the patch baseline the managed node uses. This API is primarily used by the AWS-RunPatchBaseline Systems Manager document (SSM document). If you run the command locally, such as with the Command Line Interface (CLI)",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Gets the contents of the specified Amazon Web Services Systems Manager document (SSM document).
     ("GetDocument", Decision::Denied(DenyReason::Content)),
     (
         "GetExecutionPreview",
@@ -77,9 +72,7 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors ExecutionPreviewId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ExecutionPreviewId, EndedAt, Status, StatusMessage, ExecutionPreview. Pinned purpose: Initiates the process of retrieving an existing preview that shows the effects that running a specified Automation runbook would have on the targeted resources.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Query inventory information. This includes managed node status, such as Stopped or Terminated .
     ("GetInventory", Decision::Denied(DenyReason::Content)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Return a list of inventory type names for the account, or return a list of attribute names for a specific Inventory item type.
     ("GetInventorySchema", Decision::Denied(DenyReason::Content)),
     (
         "GetMaintenanceWindow",
@@ -111,7 +104,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors WindowId, WindowTaskId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members WindowId, WindowTaskId, Targets, TaskArn, ServiceRoleArn, TaskType, TaskParameters, TaskInvocationParameters, Priority, MaxConcurrency, MaxErrors, LoggingInfo, Name, Description, CutoffBehavior, AlarmConfiguration. Pinned purpose: Retrieves the details of a maintenance window task. For maintenance window tasks without a specified target, you can't supply values for --max-errors and --max-concurrency . Instead, the system inserts a placeholder value of 1 , which may be reported",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Get information about an OpsItem by using the ID. You must have permission in Identity and Access Management (IAM) to view information about an OpsItem. For more information, see Set up OpsCenter in the Amazon Web Services Systems Manager User Guide . Operations engineers and IT professionals use Amazon Web Services Systems Manager OpsCenter to view, investigate, and remediate operational issues i
     ("GetOpsItem", Decision::Denied(DenyReason::Content)),
     (
         "GetOpsMetadata",
@@ -119,15 +111,10 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors OpsMetadataArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ResourceId, Metadata, NextToken. Pinned purpose: View operational metadata related to an application in Application Manager.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: View a summary of operations metadata (OpsData) based on specified filters and aggregators. OpsData can include information about Amazon Web Services Systems Manager OpsCenter operational workitems (OpsItems) as well as information about any Amazon Web Services resource or service configured to report OpsData to Amazon Web Services Systems Manager Explorer.
     ("GetOpsSummary", Decision::Denied(DenyReason::Content)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Get information about a single parameter by specifying the parameter name. Parameter names can't contain spaces. The service removes any spaces specified for the beginning or end of a parameter name. If the specified name for a parameter contains spaces between characters, the request fails with a ValidationException error. To get information about more than one parameter at a time, use the GetPar
     ("GetParameter", Decision::Denied(DenyReason::Content)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieves the history of all changes to a parameter. Parameter names can't contain spaces. The service removes any spaces specified for the beginning or end of a parameter name. If the specified name for a parameter contains spaces between characters, the request fails with a ValidationException error. If you change the KMS key alias for the KMS key used to encrypt a parameter, then you must also
     ("GetParameterHistory", Decision::Denied(DenyReason::Content)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Get information about one or more parameters by specifying multiple parameter names. To get information about a single parameter, you can use the GetParameter operation instead. This operation is authorized against the ssm:GetParameters action, not against ssm:GetParameter . Denying ssm:GetParameter for a parameter doesn't prevent a principal from retrieving that parameter with this operation. To
     ("GetParameters", Decision::Denied(DenyReason::Content)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieve information about one or more parameters under a specified level in a hierarchy. This operation is authorized against the ssm:GetParametersByPath action for the path that you specify in the request. It isn't authorized against the individual parameters that it returns, and it isn't authorized against ssm:GetParameter . A principal who is allowed to call this operation for the path /a with
     ("GetParametersByPath", Decision::Denied(DenyReason::Content)),
     (
         "GetPatchBaseline",
@@ -165,14 +152,11 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors AssociationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AssociationVersions, NextToken. Pinned purpose: Retrieves all versions of an association for a specific association ID.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: An invocation is copy of a command sent to a specific managed node. A command can apply to one or more managed nodes. A command invocation applies to one managed node. For example, if a user runs SendCommand against three managed nodes, then a command invocation is created for each requested managed node ID. ListCommandInvocations provide status about command execution.
     (
         "ListCommandInvocations",
         Decision::Denied(DenyReason::Content),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Lists the commands requested by users of the Amazon Web Services account.
     ("ListCommands", Decision::Denied(DenyReason::Content)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: For a specified resource ID, this API operation returns a list of compliance statuses for different resource types. Currently, you can only specify one resource ID per call. List results depend on the criteria specified in the filter.
     ("ListComplianceItems", Decision::Denied(DenyReason::Content)),
     (
         "ListDocumentMetadataHistory",
@@ -204,7 +188,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors Aggregators are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Summary, NextToken. Pinned purpose: Generates a summary of managed instance/node metadata based on the filters and aggregators you specify. Results are grouped by the input aggregator you specify.",
         ),
     ),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns a list of all OpsItem events in the current Amazon Web Services Region and Amazon Web Services account. You can limit the results to events associated with specific OpsItems by specifying a filter.
     ("ListOpsItemEvents", Decision::Denied(DenyReason::Content)),
     (
         "ListTagsForResource",
@@ -212,40 +195,30 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceType, ResourceId. Pinned purpose: Returns a list of the tags assigned to the specified resource. For information about the ID format for each supported resource type, see AddTagsToResource .",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Shares a Amazon Web Services Systems Manager document (SSM document)publicly or privately. If you share a document privately, you must specify the Amazon Web Services user IDs for those people who can use the document. If you share a document publicly, you must specify All as the account ID.
     (
         "ModifyDocumentPermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Registers a compliance type and other compliance details on a designated resource. This operation lets you register custom compliance details with a resource. This call overwrites existing compliance information on the resource, so you must provide a full list of compliance items each time that you send the request. ComplianceType can be one of the following: ExecutionId: The execution ID when the
     ("PutComplianceItems", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Bulk update custom inventory items on one or more managed nodes. The request adds an inventory item, if it doesn't already exist, or updates an inventory item, if it does exist.
     ("PutInventory", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Create or update a parameter in Parameter Store. Parameter Store throughput defines the number of API transactions per second (TPS) that Systems Manager can process. This applies to GetParameter , GetParameters , and PutParameter API calls for your Amazon Web Services account and Amazon Web Services Region. By default, Parameter Store is configured with a standard throughput quota suitable for low
     ("PutParameter", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates or updates a Systems Manager resource policy. A resource policy helps you to define the IAM entity (for example, an Amazon Web Services account) that can manage your Systems Manager resources. The following resources support Systems Manager resource policies. OpsItemGroup - The resource policy for OpsItemGroup enables Amazon Web Services accounts to view and interact with OpsCenter operati
     ("PutResourcePolicy", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Enables Default Host Management Configuration (DHMC) for the current Amazon Web Services account and Amazon Web Services Region. With DHMC enabled, you don't need to configure additional resources, such as an instance profile, to use your Amazon EC2 instances as managed nodes in Amazon Web Services Systems Manager. To use this operation, you must have the following permissions: You need the ssm:Ge
     (
         "RegisterDefaultHostManagementConfiguration",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Defines the default patch baseline for the relevant operating system. To reset the Amazon Web Services-predefined patch baseline as the default, specify the full patch baseline Amazon Resource Name (ARN) as the baseline ID value. For example, for CentOS, specify arn:aws:ssm:us-east-2:733109147000:patchbaseline/pb-0574b43a65ea646ed instead of pb-0574b43a65ea646ed .
     (
         "RegisterDefaultPatchBaseline",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Registers a patch baseline for a patch group.
     (
         "RegisterPatchBaselineForPatchGroup",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Registers a target with a maintenance window.
     (
         "RegisterTargetWithMaintenanceWindow",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds a new task to a maintenance window.
     (
         "RegisterTaskWithMaintenanceWindow",
         Decision::Denied(DenyReason::Mutating),

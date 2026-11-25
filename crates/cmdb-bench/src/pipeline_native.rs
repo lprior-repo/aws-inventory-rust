@@ -17,7 +17,6 @@ pub(super) struct Target {
 }
 impl Target {
     pub fn validate(&self) -> BenchResult {
-        // Never target ambient/cloud services or reuse an existing user graph.
         let local = ["redis://127.0.0.1:", "redis://localhost:", "redis://[::1]:"]
             .iter()
             .any(|prefix| self.endpoint.starts_with(prefix));
@@ -31,8 +30,6 @@ impl Target {
         {
             return Err("graph requires an explicit loopback redis://host:port endpoint and fresh cmdb_bench_ name".into());
         }
-        // Redis validates authority, port, and credentials; prefix checking alone
-        // is insufficient (a crafted user-info authority could escape loopback).
         let info = redis::Client::open(self.endpoint.as_str())?;
         match info.get_connection_info().addr() {
             redis::ConnectionAddr::Tcp(host, _)
@@ -76,8 +73,6 @@ pub(super) async fn consume_and_check(
     let state = store.projection_state().await?;
     let pending = state.pending;
     let started = Instant::now();
-    // Each successful call acknowledges at least one revision (or rebuild marker).
-    // No unbounded retry or silently successful offline benchmark.
     let backend = FalkorDb::connect(&target.endpoint, &target.graph)?;
     let backend = &backend;
     let acknowledged = stream::try_unfold(pending, |remaining| async move {

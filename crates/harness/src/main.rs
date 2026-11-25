@@ -233,7 +233,6 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
     }
 }
 
-/// Snapshot, install, catalog, assertion and seed commands.
 async fn dispatch_inventory(command: Command) -> Result<serde_json::Value, HarnessError> {
     match command {
         Command::Freeze {
@@ -274,8 +273,6 @@ async fn dispatch_inventory(command: Command) -> Result<serde_json::Value, Harne
         Command::SeedCloudControl { prefix, count } => {
             seed::cloud_control_topics(&prefix, count).await
         }
-        // `dispatch` consumes these before delegating here; naming them keeps the match
-        // exhaustive without a wildcard, so a new variant is a compile error in one place.
         Command::Mutate { .. }
         | Command::VerifyDelivery { .. }
         | Command::CatalogOperations { .. } => Err(HarnessError::invalid(USAGE)),

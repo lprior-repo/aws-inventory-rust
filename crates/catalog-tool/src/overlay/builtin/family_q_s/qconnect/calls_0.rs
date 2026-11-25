@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/qconnect/service/2020-10-19/qconnect-2020-10-19.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

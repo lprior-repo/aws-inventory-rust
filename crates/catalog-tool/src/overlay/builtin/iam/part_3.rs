@@ -4,7 +4,6 @@ use crate::overlay::{
     Binding, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass, Paginator, Scope,
 };
 
-// Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
 ("GenerateOrganizationsAccessReport", OperationOverlay {

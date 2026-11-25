@@ -23,7 +23,6 @@ use serde_json::{Value as Json, json};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 async fn resume_root(case: &cases::Case) -> TestResult {
-    // Given an unfiltered pinned-model root and no preexisting/parent resources.
     let catalog = fixture::catalog()?;
     let mut scenario = Scenario::new(&catalog, case).await?;
     scenario.seed(&catalog, case).await?;
@@ -32,8 +31,6 @@ async fn resume_root(case: &cases::Case) -> TestResult {
         .apply(&catalog, case, lease, 0, case.page(0)?, 0)
         .await?;
     scenario.assert_empty().await?;
-    // When the empty first page has persisted continuation, and a worker crashes
-    // while holding that continuation lease, open the actual store and reclaim it.
     let abandoned = scenario.claim(case, 1).await?;
     let token = abandoned
         .token()
@@ -62,7 +59,6 @@ async fn resume_root(case: &cases::Case) -> TestResult {
         .apply(&catalog, case, lease, 2, case.page(2)?, 13)
         .await?;
     scenario = scenario.reopen().await?;
-    // Then both pages preserve exact owned metadata, tags, SQLite rows and DAG nodes.
     assert!(
         scenario
             .store
@@ -88,7 +84,6 @@ async fn given_failover_slate_configurations_when_empty_continuation_is_reclaime
 #[tokio::test]
 async fn given_valid_owned_row_before_hostile_arn_when_native_page_is_consumed_then_scope_failure_prevents_any_page_commit()
 -> TestResult {
-    // Given both actual compiled roots and strict request account/partition/region scope.
     let catalog = fixture::catalog()?;
     for case in cases::CASES {
         for forged in [
@@ -108,7 +103,6 @@ async fn given_valid_owned_row_before_hostile_arn_when_native_page_is_consumed_t
                 .as_object_mut()
                 .ok_or("IVS row is not an object")?
                 .insert("arn".to_owned(), json!(forged));
-            // When the native wire response mixes a valid row with an invalid one.
             let body = json!({case.items:[case.row("first"), foreign]});
             let error = scenario
                 .apply(&catalog, case, lease, 0, body, 0)
@@ -120,7 +114,6 @@ async fn given_valid_owned_row_before_hostile_arn_when_native_page_is_consumed_t
                 "{}: {error}",
                 case.operation
             );
-            // Then neither the earlier row nor tags/edges/descendant work becomes durable.
             scenario = scenario.reopen().await?;
             scenario.assert_empty().await?;
             let reader = scenario.reader().await?;
@@ -140,7 +133,6 @@ async fn given_valid_owned_row_before_hostile_arn_when_native_page_is_consumed_t
 fn given_promoted_metadata_roots_when_compiling_then_secret_content_mutations_stay_denied_and_stream_key_guard_survives()
 -> TestResult {
     use inventory_core::catalog::runtime::{MissingSelected, RowPredicatePlan, RowValueType};
-    // Given the production policy including the existing dependent stream-key list.
     let catalog = fixture::catalog()?;
     let allowed = [
         "ListAdConfigurations",
@@ -148,7 +140,6 @@ fn given_promoted_metadata_roots_when_compiling_then_secret_content_mutations_st
         "ListChannels",
         "ListStreamKeys",
     ];
-    // When actual pinned plans are compiled, no detail/content/secret/mutation is callable.
     for operation in fixture::OPERATIONS {
         assert_eq!(
             catalog.lookup("ivs", operation).is_some(),
@@ -156,7 +147,6 @@ fn given_promoted_metadata_roots_when_compiling_then_secret_content_mutations_st
             "unexpected callable IVS operation {operation}"
         );
     }
-    // Then the preexisting channel/stream-key request equality is not weakened by promotion.
     let stream_keys = catalog
         .lookup("ivs", "ListStreamKeys")
         .ok_or("stream-key metadata plan absent")?;

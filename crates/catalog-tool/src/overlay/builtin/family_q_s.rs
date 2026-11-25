@@ -1,6 +1,3 @@
-//! Explicit inventory and safety decisions for every pinned non-first-wave Q–S service.
-//! Sources are pinned Smithy model paths beside each literal table.
-
 use super::{NameError, ServiceOverlay};
 mod construction;
 mod coverage_plans;

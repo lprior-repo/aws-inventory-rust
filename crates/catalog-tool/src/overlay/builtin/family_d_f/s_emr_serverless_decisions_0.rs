@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/emr-serverless/service/2021-07-13/emr-serverless-2021-07-13.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CancelJobRun",

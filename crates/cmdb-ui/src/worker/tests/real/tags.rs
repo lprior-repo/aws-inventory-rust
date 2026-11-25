@@ -14,7 +14,6 @@ fn observed(node: &GraphNode, key_name: &str, value: &str) -> TestResult<TagObse
 fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_and_identity_are_preserved()
 -> TestResult {
     supervised_async(|| async {
-        // Given identical resource IDs with distinct account and region tag values.
         let fixture = Fixture::new().await?;
         let tag_key = "owner' OR 1=1 --";
         let expected = fixture
@@ -52,7 +51,6 @@ fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_a
         let worker = fixture.worker(None);
         let (counts, initial, total) = snapshot(&worker).await?;
         assert_eq!((counts.resources, initial.len(), total), (3, 3, 3));
-        // When an exact empty tag value passes through the public worker interface.
         worker.refresh(Filter {
             tag: Some(cmdb_view::TagFilter {
                 key: tag_key.into(),
@@ -61,7 +59,6 @@ fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_a
             ..Filter::default()
         })?;
         let (counts, rows, total) = snapshot(&worker).await?;
-        // Then neither hostile SQL-looking keys nor same-id scope collisions broaden it.
         assert_eq!(rows, expected);
         assert_eq!(total, 1);
         assert_eq!(counts.resources, 3);
@@ -107,7 +104,6 @@ fn given_live_native_tags_and_committed_sql_tags_when_expanding_then_affiliation
         if !falkor_available().await? {
             return Ok(());
         }
-        // Given real SQLite tags and native topology with an independently current tag.
         let fixture = Fixture::new().await?;
         let a = root();
         let b = node(ACCOUNT, REGION, KIND, "b");
@@ -143,10 +139,8 @@ fn given_live_native_tags_and_committed_sql_tags_when_expanding_then_affiliation
                     REGION,
                 )?)
                 .await?;
-            // When the actual worker reads live native tags and pinned SQL details.
             worker.expand(a.clone())?;
             let expanded = graph(&worker).await?;
-            // Then tag membership is scoped to the requested root, never a dependency.
             assert_edges(&expanded, std::slice::from_ref(&link))?;
             assert_eq!(expanded.tag_root, Some(digest(&a)?));
             assert_eq!(
@@ -188,7 +182,6 @@ fn given_live_native_tags_and_committed_sql_tags_when_expanding_then_affiliation
 fn given_complete_tags_when_later_observation_fails_then_real_worker_exposes_retained_values_and_coverage()
 -> TestResult {
     supervised_async(|| async {
-        // Given a complete writer observation whose empty value is meaningful.
         let fixture = Fixture::new().await?;
         fixture
             .commit_tagged(
@@ -211,7 +204,6 @@ fn given_complete_tags_when_later_observation_fails_then_real_worker_exposes_ret
                 last_complete_at_ms: Some(1),
             })
         );
-        // When a failed observation publishes coverage but cannot erase known tags.
         fixture
             .commit_tagged(
                 "failed",
@@ -229,7 +221,6 @@ fn given_complete_tags_when_later_observation_fails_then_real_worker_exposes_ret
         worker.refresh(Filter::default())?;
         let (_, after, total) = snapshot(&worker).await?;
         let retained = after.first().ok_or("retained resource missing")?;
-        // Then the consumer sees exact retained values AND a non-complete latest state.
         assert_eq!(total, 1);
         assert_eq!(retained.tags, complete.tags);
         assert_eq!(

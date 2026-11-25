@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lex-model-building-service/service/2017-04-19/lex-model-building-service-2017-04-19.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -123,20 +122,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Returns bot information as follows: If you provide the nameContains field, the response includes information for the $LATEST version of all bots whose name contains the specified s
-    Resource {
-        operation: "GetBots",
-        items: "bots",
-        id: Id::Key(&["name"]),
-        scope: Scope::Region,
-        tokens: Some(("nextToken", "nextToken")),
-        query: &["name", "status"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "GetBots",
+    items: "bots",
+    id: Id::Key(&["name"]),
+    scope: Scope::Region,
+    tokens: Some(("nextToken", "nextToken")),
+    query: &["name", "status"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("lex-model-building-service", GROUPS, RESOURCES)

@@ -38,12 +38,10 @@ fn structure(model: &Json, name: &str, expected: &[(&str, &str)]) -> TestResult 
 #[test]
 fn given_pinned_ivs_model_when_reviewing_complete_root_outputs_then_every_descendant_is_metadata_not_media_or_credentials()
 -> TestResult {
-    // Given the authoritative pinned model, not just the fields selected by the overlay.
     let model: Json = serde_json::from_slice(&std::fs::read(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../.local/aws-models/models/ivs/service/2020-07-14/ivs-2020-07-14.json"),
     )?)?;
-    // When all structure/list/map edges in both output shape closures are checked exactly.
     structure(
         &model,
         "ListAdConfigurationsResponse",
@@ -159,7 +157,6 @@ fn given_pinned_ivs_model_when_reviewing_complete_root_outputs_then_every_descen
             "non-metadata leaf {name}"
         );
     }
-    // Then there is no unchecked content/media URL/passphrase/stream-key descendant.
     let state = shape(&model, "FailoverSlateConfigurationState")?
         .pointer("/traits/smithy.api#enum")
         .and_then(Json::as_array)
@@ -182,12 +179,10 @@ fn given_pinned_ivs_model_when_reviewing_complete_root_outputs_then_every_descen
 #[test]
 fn given_account_owned_unfiltered_root_docs_when_reviewing_inputs_and_registry_then_kinds_and_reference_scope_are_exact()
 -> TestResult {
-    // Given the pinned operation documentation and canonical CFN registry.
     let model: Json = serde_json::from_slice(&std::fs::read(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("../../.local/aws-models/models/ivs/service/2020-07-14/ivs-2020-07-14.json"),
     )?)?;
-    // When inputs are inspected, both lists need only pagination, not a parent or filter.
     for case in cases::CASES {
         structure(
             &model,
@@ -217,7 +212,6 @@ fn given_account_owned_unfiltered_root_docs_when_reviewing_inputs_and_registry_t
         .and_then(Json::as_str)
         .ok_or("MediaTailor reference docs absent")?;
     assert!(docs.contains("customer-created") && docs.contains("same region and account"));
-    // Then AdConfiguration has a canonical CFN kind; failover slate does not in this pin.
     let registry: Json = serde_json::from_slice(include_bytes!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../catalog/cloudcontrol-universal.json"

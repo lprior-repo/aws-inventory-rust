@@ -29,8 +29,6 @@ async fn refresh_columns(
 ) -> Result<u64, StoreError> {
     let mut inserted = 0_u64;
     let scope = commit::reference_scope(target.account.as_str(), target.region.as_str())?;
-    // ES-10: Single indexed lookup via the derived candidate index.
-    // One query drives all resolution lookups; no blob scan needed.
     let rows = sqlx::query(
         "SELECT r.from_account,r.from_region,r.from_kind,r.from_id,r.target_kind,r.target_kinds,r.target_path,r.target_value,r.relation,r.source FROM unresolved_ref_candidates c JOIN unresolved_refs r ON (r.from_account=c.from_account AND r.from_region=c.from_region AND r.from_kind=c.from_kind AND r.from_id=c.from_id AND r.target_scope=c.target_scope AND r.target_kind=c.target_kind AND r.target_path=c.target_path AND r.target_value=c.target_value AND r.relation=c.relation AND r.source=c.source) WHERE c.target_scope=?1 AND c.candidate_kind=?2",
     )

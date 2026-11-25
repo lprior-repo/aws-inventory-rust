@@ -7,7 +7,6 @@ pub(super) async fn consume(
     excluded: &[&str],
     mut pages: Vec<Page>,
 ) -> TestResult {
-    // Given the pinned models and actual embedded policies, not hand-authored runtime plans.
     let operations = pages
         .iter()
         .map(|page| page.operation)
@@ -119,7 +118,6 @@ pub(super) async fn consume(
             )?)
             .await?;
     }
-    // When real queued work is resumed through projection, requests, cursors and SQLite after every page.
     let page_count = i64::try_from(pages.len())?;
     for at in 0..page_count {
         let lease = store
@@ -233,7 +231,6 @@ pub(super) async fn consume(
         drop(store);
         store = BinaryStore::open(&path).await?;
     }
-    // Then every exact scoped identity survives persistence, including empty-first-page continuations.
     assert_eq!(pages.len(), 0);
     assert!(
         store.claim(&sweep, page_count, 10_000).await?.is_none(),

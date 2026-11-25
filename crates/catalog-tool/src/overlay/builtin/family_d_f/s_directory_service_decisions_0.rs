@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/directory-service/service/2015-04-16/directory-service-2015-04-16.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AcceptSharedDirectory",

@@ -88,8 +88,6 @@ fn started(event: &ProgressEvent) {
     } if account == "123456789012"));
 }
 
-/// Both pages of the scope are fetched under one claim, so the queue is
-/// reported once.
 fn ordered_tail(events: &[ProgressEvent], summary: SweepSummary) {
     assert_eq!(
         events,
@@ -219,8 +217,6 @@ async fn cancel_on_page(
     for _ in 0..16 {
         let event = receiver.recv().await.ok_or("progress ended before page")?;
         if matches!(event, ProgressEvent::Page { .. }) {
-            // Stop in flight without racing the fixture's TLS handshake or its
-            // second response. The peer discards the response after settlement.
             tokio::time::timeout(
                 std::time::Duration::from_secs(10),
                 pause.requested.notified(),
@@ -298,7 +294,6 @@ async fn given_sweep_when_requests_are_sent_then_attempted_actions_are_in_genera
     environment.catalog = fixture::catalog(environment.root.path(), true)?;
     let catalog = RuntimeCatalog::from_bytes(&environment.catalog)?;
     assert_eq!(catalog.plans().len(), 4);
-    // The fourth plan expands confirmed SNS subscriptions; these two are pending/deleted.
     let attempts = std::sync::Arc::new(crate::AttemptedOperations::new(&catalog));
     assert_eq!(attempts.iter().count(), 0);
     let reference = "# Source: fixture\n# Retrieved: 2026-11-24\ncontrolinventory\tGetCallerIdentity\tread\ncontrolinventory\tListResources\tread\ncontrolinventory\tListUnused\tread\n";

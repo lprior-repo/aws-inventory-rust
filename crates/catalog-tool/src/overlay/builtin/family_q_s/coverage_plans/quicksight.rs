@@ -1,8 +1,5 @@
 use super::*;
 
-// Pin: quicksight/service/2018-04-01/quicksight-2018-04-01.json.
-// These summary closures contain identifiers/configuration, not definitions, credentials or rows.
-// Topic and TopicV2 have separate create/read contracts; preserve both canonical kinds.
 pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     basic_operations(service)?;
     dlp_to_oauth_operations(service)?;
@@ -130,7 +127,6 @@ fn groups(service: &mut ServiceOverlay) -> Result<(), NameError> {
 }
 
 fn schedules(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    // Arn is optional; ScheduleId is local to its dataset. No pagination exists in this model.
     let mut plan = qualified("RefreshSchedules", &["DataSetId"], &["ScheduleId"], None)?;
     parent(&mut plan, "DataSetId", "ListDataSets", "DataSetId")?;
     plan.bind.insert(path("AwsAccountId")?, Binding::Account);

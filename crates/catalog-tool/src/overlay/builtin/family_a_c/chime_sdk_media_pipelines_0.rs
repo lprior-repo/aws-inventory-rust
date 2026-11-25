@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/chime-sdk-media-pipelines/service/2021-07-15/chime-sdk-media-pipelines-2021-07-15.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -118,7 +116,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the available media insights pipeline configurations.
         (
             "ListMediaInsightsPipelineConfigurations",
             OperationOverlay {
@@ -131,7 +128,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the video stream pools in the media pipeline.
         (
             "ListMediaPipelineKinesisVideoStreamPools",
             OperationOverlay {
@@ -144,7 +140,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of media pipelines.
         (
             "ListMediaPipelines",
             OperationOverlay {

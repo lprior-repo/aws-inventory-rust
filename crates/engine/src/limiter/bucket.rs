@@ -8,7 +8,6 @@ pub(super) struct Bucket {
     pub(super) rejected: CancellationToken,
 }
 
-/// A bucket that can be dropped without losing pacing.
 #[derive(Clone, Copy, Debug)]
 pub(super) struct Idle {
     pub(super) last_used: Option<Instant>,
@@ -33,8 +32,6 @@ impl Bucket {
         self.state.lock().map_err(|_| poisoned_pacing())?.due_at()
     }
 
-    /// When this bucket last started a call, if its pacing has nothing left
-    /// to enforce: no rejection, no cooldown and no interval still running.
     pub(super) fn idle(&self, now: Instant) -> Option<Idle> {
         let state = self.state.lock().ok()?;
         match state.due_at() {
@@ -45,13 +42,10 @@ impl Bucket {
         }
     }
 
-    /// The current rate, unless the pacing state is poisoned.
     pub(super) fn rate(&self) -> Option<AdaptiveRate> {
         Some(self.state.lock().ok()?.rate)
     }
 
-    /// The rate to resume with after eviction, when results have moved it
-    /// from where its policy starts it.
     pub(super) fn learned_rate(&self) -> Option<AdaptiveRate> {
         self.rate().filter(|rate| rate.is_learned())
     }

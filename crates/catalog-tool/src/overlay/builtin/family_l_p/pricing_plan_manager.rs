@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pricing-plan-manager/service/2025-08-05/pricing-plan-manager-2025-08-05.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -35,20 +34,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Returns a summary of all flat-rate pricing subscriptions in the calling account.
-    Resource {
-        operation: "ListSubscriptions",
-        items: "subscriptionSummaries",
-        id: Id::Arn("arn"),
-        scope: Scope::Account,
-        tokens: Some(("nextToken", "nextToken")),
-        query: &["arn", "status"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListSubscriptions",
+    items: "subscriptionSummaries",
+    id: Id::Arn("arn"),
+    scope: Scope::Account,
+    tokens: Some(("nextToken", "nextToken")),
+    query: &["arn", "status"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("pricing-plan-manager", GROUPS, RESOURCES)

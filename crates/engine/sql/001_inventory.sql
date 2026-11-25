@@ -109,8 +109,6 @@ FROM (
     FROM resource_observations r
 ) WHERE selection_rank = 1;
 
--- Provenance is retained independently for every source. A preferred source's
--- timestamp remains visible; an old direct observation is never called fresh.
 CREATE VIEW latest_resource_sources AS
 SELECT scan_id, resource_id AS id, resource_id AS arn, account_id, region, kind,
        name, source, source_priority, observed_at, resource_json,

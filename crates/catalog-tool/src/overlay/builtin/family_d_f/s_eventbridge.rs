@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/eventbridge/service/2015-10-07/eventbridge-2015-10-07.json
 use super::support::{arn, bound, describe, inventory, key, queried, reviewed, scoped, token};
 use crate::overlay::{NameError, Scope, ServiceOverlay};
 
@@ -6,7 +5,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "eventbridge",
         vec![
-            // Retrieves a list of API destination in the account in the current Region.
             queried(
                 inventory(
                     "ListApiDestinations",
@@ -21,7 +19,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "ApiDestinationState",
                 ],
             )?,
-            // Lists your archives.
             queried(
                 inventory(
                     "ListArchives",
@@ -31,7 +28,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ArchiveName", "EventSourceArn", "State", "StateReason"],
             )?,
-            // Retrieves a list of connections from the account.
             queried(
                 inventory(
                     "ListConnections",
@@ -47,7 +43,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "AuthorizationType",
                 ],
             )?,
-            // List the global endpoints associated with this account.
             queried(
                 scoped(
                     inventory(
@@ -60,7 +55,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ),
                 &["Arn", "Name", "EndpointId", "State", "StateReason"],
             )?,
-            // Expand DescribeEventBus to include event bus details.
             queried(
                 bound(
                     describe("DescribeEventBus", "$", arn("Arn")?)?,
@@ -68,7 +62,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn", "Name", "Policy", "Description"],
             )?,
-            // Expand DescribeEventSource to include partner event source details.
             queried(
                 bound(
                     describe("DescribeEventSource", "$", arn("Arn")?)?,
@@ -76,7 +69,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn", "Name", "State"],
             )?,
-            // Expand DescribeEndpoint to include global endpoint details.
             queried(
                 bound(
                     describe("DescribeEndpoint", "$", arn("Arn")?)?,
@@ -84,7 +76,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn", "Name", "EndpointId", "State"],
             )?,
-            // Lists all the event buses in your account, including the default event bus, custom event buses, and partner event buses.
             queried(
                 inventory(
                     "ListEventBuses",
@@ -94,7 +85,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn", "Name"],
             )?,
-            // You can use this to see all the partner event sources that have been shared with your Amazon Web Services account.
             queried(
                 inventory(
                     "ListEventSources",
@@ -104,7 +94,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn", "Name", "State"],
             )?,
-            // Lists your replays.
             queried(
                 inventory(
                     "ListReplays",
@@ -114,7 +103,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ReplayName", "EventSourceArn", "State", "StateReason"],
             )?,
-            // Lists your Amazon EventBridge rules.
             queried(
                 bound(
                     inventory(
@@ -127,7 +115,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn", "RoleArn", "Name", "State", "EventBusName"],
             )?,
-            // Expand DescribeRule to include rule details.
             queried(
                 bound(
                     describe("DescribeRule", "$", arn("Arn")?)?,

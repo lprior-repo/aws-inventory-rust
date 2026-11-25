@@ -15,8 +15,6 @@ fn numbered_snapshot(index: usize, pairs: usize) -> TestResult<TagObservation> {
 #[tokio::test]
 async fn tags_page_snapshot_count_accepts_50000_and_rejects_50001_valid_empty_targets() -> TestResult
 {
-    // Given 50,001 distinct targets legitimately persisted by a public resource page.
-    // Its acceptance also distinguishes the 100,000 resource bound from the 50,000 tag bound.
     let (directory, store, _) = support::fixture().await?;
     let observations = (0..50_001)
         .map(|index| support::observation(&format!("target-{index:05}"), "same"))
@@ -35,7 +33,6 @@ async fn tags_page_snapshot_count_accepts_50000_and_rejects_50001_valid_empty_ta
     page.tags = (0..50_000)
         .map(|index| numbered_snapshot(index, 0))
         .collect::<TestResult<Vec<_>>>()?;
-    // When exactly 50,000 complete-empty snapshots (zero pairs) are committed.
     assert_eq!(store.commit_page(page).await?.stats, ChangeStats::default());
     let pool = state::pool(&directory).await?;
     let coverage: Vec<(String, String, i64, Option<i64>)> = sqlx::query_as(
@@ -61,7 +58,6 @@ async fn tags_page_snapshot_count_accepts_50000_and_rejects_50001_valid_empty_ta
     let before_image = state::resource_image(&pool).await?;
     let before_outbox = store.drain_projection(1000).await?;
 
-    // Then 50,001 otherwise-valid empty snapshots fail this bound, not pair/target validation.
     let lease =
         state::scoped_work(&store, support::child_work("over-boundary", &target)?, 300).await?;
     let mut page = support::page(lease.clone(), vec![], true, None, 300);
@@ -80,7 +76,6 @@ async fn tags_page_snapshot_count_accepts_50000_and_rejects_50001_valid_empty_ta
     .fetch_all(&pool)
     .await?;
     assert_eq!(after, expected);
-    // The same unconsumed lease accepts the single previously unobserved legitimate target.
     let mut corrected = support::page(lease, vec![], true, None, 300);
     corrected.tags = vec![numbered_snapshot(50_000, 0)?];
     assert_eq!(
@@ -98,7 +93,6 @@ async fn tags_page_snapshot_count_accepts_50000_and_rejects_50001_valid_empty_ta
 #[tokio::test]
 async fn tags_page_pair_count_accepts_50000_and_rejects_50001_without_snapshot_count_mask()
 -> TestResult {
-    // Given 501 real targets, each snapshot individually within the 100-pair constructor bound.
     let (directory, store, _) = support::fixture().await?;
     let observations = (0..501)
         .map(|index| support::observation(&format!("target-{index:05}"), "same"))
@@ -143,7 +137,6 @@ async fn tags_page_pair_count_accepts_50000_and_rejects_50001_without_snapshot_c
         .map(|index| numbered_snapshot(index, 100))
         .chain(std::iter::once(numbered_snapshot(500, 1)))
         .collect::<TestResult<Vec<_>>>()?;
-    // When only the aggregate pair count is exceeded, return its exact error atomically.
     assert!(matches!(
         store.commit_page(excessive).await,
         Err(StoreError::Invalid("page exceeds tag pair storage bound"))

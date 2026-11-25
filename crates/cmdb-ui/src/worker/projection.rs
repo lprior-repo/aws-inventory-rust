@@ -23,9 +23,6 @@ pub(super) fn row_from_resource(resource: &StoredResource) -> Result<Row, String
     })
 }
 
-/// Builds a table row from a lightweight projection that omits the record
-/// payload. The byte size is provided directly by the projection query,
-/// avoiding a full payload load for each table row.
 pub(super) fn row_from_row(row: &ResourceRow) -> Result<Row, String> {
     let key = &row.key;
     let hash = hex_digest(row.content_hash.as_bytes())?;

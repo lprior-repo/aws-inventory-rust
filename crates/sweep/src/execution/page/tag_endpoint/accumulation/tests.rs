@@ -30,7 +30,6 @@ fn empty() -> Result<Record, inventory_core::record::RecordError> {
 
 #[test]
 fn given_multiple_pages_when_reopened_then_only_terminal_union_is_complete() -> TestResult {
-    // Given: an exact pair and empty value on the first page.
     let owner = owner()?;
     let pending = Accumulation::restore(&owner, None)?.append(page(
         &owner,
@@ -39,14 +38,12 @@ fn given_multiple_pages_when_reopened_then_only_terminal_union_is_complete() -> 
     )?)?;
     assert_eq!(pending.observation(false)?.coverage(), TagCoverage::Partial);
     let checkpoint = pending.checkpoint(empty()?)?;
-    // When: only the durable bytes survive the restart and later pages finish.
     let restored = Accumulation::restore(&owner, Some(checkpoint.as_bytes()))?.append(page(
         &owner,
         TagCoverage::Complete,
         &[("m", "two"), ("a", "one")],
     )?)?;
     let final_snapshot = restored.observation(true)?;
-    // Then: the complete owner snapshot contains every distinct observed pair.
     assert_eq!(final_snapshot.coverage(), TagCoverage::Complete);
     assert_eq!(final_snapshot.resource(), &owner);
     assert_eq!(
@@ -64,17 +61,14 @@ fn given_multiple_pages_when_reopened_then_only_terminal_union_is_complete() -> 
 fn given_missing_page_when_later_pages_finish_then_no_authoritative_snapshot_is_emitted()
 -> TestResult {
     let owner = owner()?;
-    // Given: a missing selector is not an explicitly empty tag collection.
     let missing =
         Accumulation::restore(&owner, None)?.append(page(&owner, TagCoverage::Unobserved, &[])?)?;
     let checkpoint = missing.checkpoint(empty()?)?;
-    // When: a later present page ends the pagination after restart.
     let restored = Accumulation::restore(&owner, Some(checkpoint.as_bytes()))?.append(page(
         &owner,
         TagCoverage::Complete,
         &[("visible", "pair")],
     )?)?;
-    // Then: even a terminal page cannot erase tags omitted by the missing page.
     assert_eq!(restored.observation(true)?.coverage(), TagCoverage::Partial);
     assert_eq!(
         restored.observation(true)?.tags(),
@@ -102,13 +96,11 @@ fn given_owner_bound_checkpoint_when_any_owner_dimension_changes_then_restore_is
     let checkpoint = Accumulation::restore(&owner, None)?
         .append(page(&owner, TagCoverage::Complete, &[("known", "pair")])?)?
         .checkpoint(empty()?)?;
-    // Given/When: the same cursor is replayed into another account, region, kind, or ID.
     let mut others = vec![owner.clone(); 4];
     others.get_mut(0).ok_or("owner absent")?.account = AccountId::parse("222222222222")?;
     others.get_mut(1).ok_or("owner absent")?.region = Region::Global;
     others.get_mut(2).ok_or("owner absent")?.kind = Kind::parse("AWS::Example::Other")?;
     others.get_mut(3).ok_or("owner absent")?.id = ResourceId::parse("different")?;
-    // Then: none can accept the pending owner's tags.
     for other in others {
         assert!(Accumulation::restore(&other, Some(checkpoint.as_bytes())).is_err());
     }

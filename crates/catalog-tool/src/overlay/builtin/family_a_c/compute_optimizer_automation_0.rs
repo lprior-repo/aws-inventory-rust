@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/compute-optimizer-automation/service/2025-09-22/compute-optimizer-automation-2025-09-22.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -64,7 +62,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is automationEventSummaries; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Provides a summary of automation events based on specified filters. Only events created within the past year will be included in the summary.",
             ),
         ),
-        // Model: Lists automation events based on specified filters. You can retrieve events that were created within the past year.
         (
             "ListAutomationEvents",
             OperationOverlay {
@@ -89,7 +86,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires ruleType, recommendedActionTypes. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a summary of the recommended actions that match your rule preview configuration and criteria.",
             ),
         ),
-        // Model: Lists the automation rules that match specified filters.
         (
             "ListAutomationRules",
             OperationOverlay {

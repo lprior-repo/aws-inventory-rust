@@ -410,7 +410,6 @@ fn given_optional_branch_structure_when_partial_members_activate_it_then_missing
 #[test]
 fn given_noncallable_common_producer_when_every_branch_overrides_then_only_effective_references_are_checked()
 -> TestResult {
-    // Given modeled request inputs of the same scalar type and an explicitly deferred producer.
     let mut model: serde_json::Value = serde_json::from_str(MODEL)?;
     let shapes = model
         .get_mut("shapes")
@@ -448,7 +447,6 @@ fn given_noncallable_common_producer_when_every_branch_overrides_then_only_effec
                     .insert(MemberPath::new("Scope")?, overlay::Binding::Region);
             }
         }
-        // When all actual branches override the common destination, then the consumer is callable.
         let when = checked(
             &given,
             vec![("ListThings", plan.clone()), ("ListTags", deferred())],
@@ -461,7 +459,6 @@ fn given_noncallable_common_producer_when_every_branch_overrides_then_only_effec
                 .iter()
                 .any(|handle| handle.operation() == "ListThings")
         );
-        // Given a sibling branch inherits that destination, then the deferred producer must be rejected.
         plan.branches.push(branch("inherited", None)?);
         let errors = violations(&given, vec![("ListThings", plan), ("ListTags", deferred())])?;
         assert!(errors.iter().any(|error| error.operation() == "ListThings"

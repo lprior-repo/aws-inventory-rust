@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/continuum/service/2022-07-26/continuum-2022-07-26.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -154,7 +152,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires environmentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists customer-visible scans for one environment in descending scanRunId order.",
             ),
         ),
-        // Model: Lists the Collectors owned by the authenticated caller's account, including a Collector whose deletion is in progress. A Collector that is still being created is omitted. The account-scoped Collector…
         (
             "ListCollectors",
             OperationOverlay {
@@ -167,7 +164,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists all environments in your account in descending environmentId order. This complete-inventory operation intentionally has no response filters; see the input documentation for the API standards…
         (
             "ListEnvironments",
             OperationOverlay {
@@ -180,7 +176,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists the integrations in your account in descending integrationId order.
         (
             "ListIntegrations",
             OperationOverlay {

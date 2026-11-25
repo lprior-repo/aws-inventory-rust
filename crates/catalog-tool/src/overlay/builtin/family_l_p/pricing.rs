@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/pricing/service/2017-10-15/pricing-2017-10-15.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

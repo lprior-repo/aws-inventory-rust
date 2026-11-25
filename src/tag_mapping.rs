@@ -11,8 +11,6 @@ pub async fn execute(command: TagMappingCommand) -> Result<Value> {
     }
 }
 
-/// Parses the mapping file and replaces the stored mapping. Takes no client and makes
-/// no AWS call: the only inputs are a local file and an existing database.
 async fn apply(db: &Path, file: &Path) -> Result<Value> {
     let text = std::fs::read_to_string(file)
         .with_context(|| format!("read tag mapping {}", file.display()))?;

@@ -1,5 +1,3 @@
--- Native KMS projections over the durable observation table. Key policies and
--- key material are never stored; rotation state is exposed only when collected.
 CREATE VIEW IF NOT EXISTS aws_kms_key AS
 SELECT r.*,
        json_extract(properties, '$.key_arn') AS key_arn,

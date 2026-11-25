@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/connect/service/2017-08-08/connect-2017-08-08.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

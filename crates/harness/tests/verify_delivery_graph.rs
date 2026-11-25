@@ -1,5 +1,3 @@
-//! Graph snapshot verification tests.
-
 use inventory_harness::verify_delivery;
 use serde_json::json;
 
@@ -21,8 +19,6 @@ fn graph_model() -> serde_json::Value {
         "tag_rows": []
     })
 }
-/// Model with one HAS_TAG membership. Only used to exercise HAS_TAG divergence: the legacy
-/// writer never emits HAS_TAG, so `graph_model` itself carries no tag rows.
 fn graph_model_with_has_tag() -> serde_json::Value {
     let mut model = graph_model();
     if let Some(slot) = model.get_mut("tag_rows") {
@@ -283,7 +279,6 @@ async fn test_build_expected_clean_verify_with_tags_and_properties()
         .execute(&pool)
         .await?;
 
-    // Node with tags and properties; the second resource is the edge target.
     let node_id = "arn:aws:ec2:us-east-1:111111111111:instance/i-1";
     let vpc_id = "arn:aws:ec2:us-east-1:111111111111:vpc/vpc-1";
     let node_json = r#"{"id":"arn:aws:ec2:us-east-1:111111111111:instance/i-1","account_id":"111111111111","region":"us-east-1","kind":"ec2","name":"web","properties":{"size":"small"},"tags":{"env":"prod"},"source":"direct","observed_at":100}"#;
@@ -305,7 +300,6 @@ async fn test_build_expected_clean_verify_with_tags_and_properties()
 
     let model = verify_delivery::build_expected(&pool, SCAN).await?;
 
-    // Literal observed rows as the writer stores them (no value derived from the model).
     let node_rows = json!([
         [
             node_id,
@@ -367,7 +361,6 @@ async fn test_build_expected_clean_verify_with_tags_and_properties()
         "writer-shaped rows must verify clean"
     );
 
-    // Tamper with a property: must diverge and name the node.
     let mut tampered = node_rows.clone();
     *tampered
         .get_mut(0)

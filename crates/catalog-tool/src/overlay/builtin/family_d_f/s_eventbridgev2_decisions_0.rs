@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/eventbridgev2/service/2025-05-15/eventbridgev2-2025-05-15.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateEventBus",

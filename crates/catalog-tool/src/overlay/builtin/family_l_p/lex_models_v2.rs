@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lex-models-v2/service/2020-08-07/lex-models-v2-2020-08-07.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -288,7 +287,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Gets a list of available bots.
     Resource {
         operation: "ListBots",
         items: "botSummaries",

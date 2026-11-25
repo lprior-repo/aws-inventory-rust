@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/appstream/service/2016-12-01/appstream-2016-12-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -243,7 +241,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Retrieves a list that describes one or more app block builders.
         (
             "DescribeAppBlockBuilders",
             OperationOverlay {
@@ -256,7 +253,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list that describes one or more app blocks.
         (
             "DescribeAppBlocks",
             OperationOverlay {
@@ -281,7 +277,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "No safe resource collection plan is approved for this modeled operation. Its output is ApplicationFleetAssociations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves a list that describes one or more application fleet associations. Either ApplicationArn or FleetName must be specified.",
             ),
         ),
-        // Model: Retrieves a list that describes one or more applications.
         (
             "DescribeApplications",
             OperationOverlay {
@@ -294,9 +289,7 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list that describes one or more specified Directory Config objects for WorkSpaces Applications, if the names for these objects are provided. Otherwise, all Directory Config objects in the…
         ("DescribeDirectoryConfigs", denied(DenyReason::Secret)),
-        // Model: Retrieves a list that describes one of more entitlements.
         (
             "DescribeEntitlements",
             OperationOverlay {
@@ -319,7 +312,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list that describes one or more specified fleets, if the fleet names are provided. Otherwise, all fleets in the account are described.
         (
             "DescribeFleets",
             OperationOverlay {
@@ -332,7 +324,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Retrieves a list that describes one or more specified image builders, if the image builder names are provided. Otherwise, all image builders in the account are described. The description of each…
         (
             "DescribeImageBuilders",
             OperationOverlay {
@@ -356,7 +347,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Retrieves a list that describes one or more specified images, if the image names or image ARNs are provided. Otherwise, all images in the account are described.
         (
             "DescribeImages",
             OperationOverlay {
@@ -384,7 +374,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AssociatedResource. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves license included application associations for a specified resource.",
             ),
         ),
-        // Model: Retrieves a list that describes one or more specified stacks, if the stack names are provided. Otherwise, all stacks in the account are described.
         (
             "DescribeStacks",
             OperationOverlay {
@@ -403,7 +392,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires StackName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves a list that describes the theme for a specified stack. A theme is custom branding that customizes the appearance of the streaming application catalog page.",
             ),
         ),
-        // Model: Retrieves a list that describes one or more usage report subscriptions.
         (
             "DescribeUsageReportSubscriptions",
             OperationOverlay {
@@ -506,7 +494,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires StackName, EntitlementName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves a list of entitled applications.",
             ),
         ),
-        // Model: Lists export image tasks, with optional filtering and pagination. Use this operation to monitor the status of multiple export operations.
         (
             "ListExportImageTasks",
             OperationOverlay {

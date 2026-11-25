@@ -38,8 +38,6 @@ use super::{ScopeOutcomes, SweepConfig, SweepError, SweepSummary, call, input, r
 
 const LEASE_MARGIN_MS: u64 = 30_000;
 const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(1);
-// Hyper only caps idle connections per authority. Capping total idle sockets
-// at half of max_connections needs a pool-wide admission or eviction hook.
 const DEFAULT_POOL_IDLE_PER_HOST: usize = 8;
 
 pub(super) struct BootstrapContext<'a, 'catalog, C: CredentialSource> {
@@ -78,9 +76,6 @@ pub async fn run<S: InventoryStore>(
     Ok(progress.finish(summary))
 }
 
-/// The binary boxes the sweep as a `Send` future. When a sweep holds a value
-/// that is not `Sync` across an await, this fails to compile in this crate
-/// instead of only in the binary.
 fn _run_is_send<'a, S, C>(
     catalog: &'a RuntimeCatalog<'a>,
     store: &'a S,
@@ -96,11 +91,6 @@ where
 }
 
 impl SweepConfig {
-    /// Check the idle-pool overrides without creating a transport.
-    ///
-    /// # Errors
-    ///
-    /// Returns a configuration error if an override exceeds the effective transport bounds.
     pub fn validate_transport_overrides(&self) -> Result<(), SweepError> {
         let max_connections =
             descriptors::connection_bound(self.concurrency, descriptors::soft_open_files());
@@ -108,7 +98,6 @@ impl SweepConfig {
     }
 }
 
-/// Bounds connections by the open-file limit; pages beyond the bound wait for a connection.
 fn transport_config(
     config: &SweepConfig,
     limit: Option<descriptors::SoftLimit>,
@@ -230,12 +219,10 @@ async fn sweep_id(
     if !config.resume {
         return SweepId::new(uuid::Uuid::new_v4().to_string()).map_err(SweepError::from);
     }
-    // Discover pending sweep without mutation.
     let pending = store
         .discover_active_sweep()
         .await?
         .ok_or(SweepError::Operation("no pending sweep to resume"))?;
-    // Verify manifest and claim the sweep atomically.
     store.resume_sweep(&pending, account).await?;
     Ok(pending)
 }

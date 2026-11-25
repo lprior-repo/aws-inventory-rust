@@ -1,13 +1,6 @@
-//! Test-only access to the pinned AWS model checkout used by policy fixtures.
-
 use serde_json::{Value, json};
 use std::{error::Error, fs, path::Path};
 
-/// Installs the pinned `service` model under `models`, retaining only `operations`.
-///
-/// Overlay checking demands a review decision for every modeled operation, so a
-/// fixture reviewing a policy subset must compile against the same model subset.
-/// A missing pinned model fails the fixture; it never skips coverage.
 pub(crate) fn install(
     models: &Path,
     service: &str,

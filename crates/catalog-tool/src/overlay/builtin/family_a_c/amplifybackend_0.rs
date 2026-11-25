@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/amplifybackend/service/2020-08-11/amplifybackend-2020-08-11.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -142,8 +140,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires AppId, BackendEnvironmentName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the jobs for the backend of an Amplify app.",
             ),
         ),
-        // Model: The list of S3 buckets in your account. Bucket names are partition-unique, so the
-        // row shares s3.ListBuckets' ARN identity domain for AWS::S3::Bucket.
         (
             "ListS3Buckets",
             OperationOverlay {

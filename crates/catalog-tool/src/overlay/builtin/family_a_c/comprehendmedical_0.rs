@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/comprehendmedical/service/2018-10-30/comprehendmedical-2018-10-30.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -70,7 +68,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires Text. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: InferSNOMEDCT detects possible medical concepts as entities and links them to codes from the Systematized Nomenclature of Medicine, Clinical Terms (SNOMED-CT) ontology",
             ),
         ),
-        // Model: Gets a list of medical entity detection jobs that you have submitted.
         (
             "ListEntitiesDetectionV2Jobs",
             OperationOverlay {
@@ -83,7 +80,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of InferICD10CM jobs that you have submitted.
         (
             "ListICD10CMInferenceJobs",
             OperationOverlay {
@@ -96,7 +92,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of protected health information (PHI) detection jobs you have submitted.
         (
             "ListPHIDetectionJobs",
             OperationOverlay {
@@ -109,7 +104,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of InferRxNorm jobs that you have submitted.
         (
             "ListRxNormInferenceJobs",
             OperationOverlay {
@@ -122,7 +116,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Gets a list of InferSNOMEDCT jobs a user has submitted.
         (
             "ListSNOMEDCTInferenceJobs",
             OperationOverlay {

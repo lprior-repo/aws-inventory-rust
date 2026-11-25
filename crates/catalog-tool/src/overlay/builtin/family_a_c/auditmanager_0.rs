@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/auditmanager/service/2017-07-25/auditmanager-2017-07-25.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -254,7 +252,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of assessment reports created in Audit Manager.
         (
             "ListAssessmentReports",
             OperationOverlay {
@@ -267,7 +264,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Returns a list of current and past assessments from Audit Manager.
         (
             "ListAssessments",
             OperationOverlay {

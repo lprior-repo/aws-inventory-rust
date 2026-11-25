@@ -73,8 +73,6 @@ async fn resume_fixture(west_generation: i64) -> TestResult<ResumeFixture> {
     pool.close().await;
     drop(store);
 
-    // The public API cannot create an exhausted lease. Alter only this fixture
-    // generation after establishing real resources/checkpoints/bindings/history.
     let writer = writable_pool(&directory).await?;
     assert_eq!(sqlx::query("UPDATE work_queue SET generation=?1 WHERE sweep_id='resume' AND scope_key=?2 AND state=1 AND generation=2 AND lease_until=230")
         .bind(west_generation).bind(&west).execute(&writer).await?.rows_affected(), 1);
@@ -186,13 +184,10 @@ async fn assert_reopened_state(
 #[tokio::test]
 async fn given_ordinary_and_exhausted_inflight_leases_when_resumed_then_exact_overflow_leaves_every_durable_row_unchanged()
 -> TestResult {
-    // Given: open succeeds with real resource/tag/facet state and nonempty token history/context.
     let fixture = resume_fixture(i64::MAX).await?;
     let before = stored_state(&fixture.pool).await?;
     assert_queue(&before, &fixture, 2, i64::MAX, 1, 230, true)?;
 
-    // When: overflow is detected inside resume_sweep, not opening or claiming the fixture.
-    // Kills RESUME-SKIPS-GENERATION-GUARD, including partial release of the ordinary row.
     let sweep = SweepId::new("resume".to_owned())?;
     let account = inventory_core::inventory::AccountId::parse("111111111111")?;
     assert!(matches!(
@@ -200,7 +195,6 @@ async fn given_ordinary_and_exhausted_inflight_leases_when_resumed_then_exact_ov
         Err(StoreError::LeaseGenerationOverflow)
     ));
 
-    // Then: the ordinary row remains in flight and all persisted tables survive reopen unchanged.
     assert_eq!(stored_state(&fixture.pool).await?, before);
     fixture.pool.close().await;
     drop(fixture.store);
@@ -224,7 +218,6 @@ async fn add_second_active_sweep(directory: &tempfile::TempDir, scope: &[u8]) ->
 #[tokio::test]
 async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_has_no_side_effects()
 -> TestResult {
-    // Given: a deliberately inconsistent durable queue; public seeding correctly forbids this state.
     let fixture = resume_fixture(2).await?;
     let initial = stored_state(&fixture.pool).await?;
     assert_queue(&initial, &fixture, 2, 2, 1, 230, true)?;
@@ -241,7 +234,6 @@ async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_h
     );
     let before = stored_state(&pool).await?;
 
-    // When: Kills RESUME-FIRST-ACTIVE-WINS; choosing either identity must not release its rows.
     let sweep = SweepId::new("resume".to_owned())?;
     let account = inventory_core::inventory::AccountId::parse("111111111111")?;
     assert!(matches!(
@@ -249,7 +241,6 @@ async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_h
         Err(StoreError::MultipleActiveSweeps)
     ));
 
-    // Then: queue generations/deadlines, both sweeps' history, and resource state are unchanged.
     assert_eq!(stored_state(&pool).await?, before);
     pool.close().await;
     drop(store);
@@ -261,14 +252,12 @@ async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_h
 #[tokio::test]
 async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_generation_can_still_commit()
 -> TestResult {
-    // Given: one ordinary lease and one at MAX-2, with genuine persisted checkpoints/history.
     let near_max = i64::MAX.checked_sub(2).ok_or("test generation underflow")?;
     let after_resume = i64::MAX.checked_sub(1).ok_or("test generation underflow")?;
     let fixture = resume_fixture(near_max).await?;
     let before = stored_state(&fixture.pool).await?;
     assert_queue(&before, &fixture, 2, near_max, 1, 230, true)?;
 
-    // When: resume advances once and a real claim advances again to the inclusive maximum.
     let sweep = SweepId::new("resume".to_owned())?;
     let account = inventory_core::inventory::AccountId::parse("111111111111")?;
     fixture.store.resume_sweep(&sweep, &account).await?;
@@ -295,7 +284,6 @@ async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_ge
         );
     }
 
-    // Then: exact resources/history remain; both independent scopes finish without over-rejection.
     let completed = stored_state(&fixture.pool).await?;
     assert_queue(&completed, &fixture, 4, i64::MAX, 2, 0, false)?;
     assert_eq!(completed.resources, before.resources);
@@ -311,8 +299,6 @@ async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_ge
         SweepSummary {
             complete_scopes: 2,
             resources_observed: 2,
-            // The initial sweep's scopes lack this sweep's discovery context, so they
-            // are distinct scopes this sweep did not run and are reported unobserved.
             unobserved_scopes: 2,
             ..SweepSummary::default()
         }

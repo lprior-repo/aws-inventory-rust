@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/endusermessaging/service/2026-09-21/endusermessaging-2026-09-21.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateBrandProfile",

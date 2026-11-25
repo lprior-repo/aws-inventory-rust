@@ -2,8 +2,6 @@ use super::{
     Identity, ItemSelector, KindClassification, MapKeyExclusion, MemberPath, ResourceProjection,
 };
 
-/// One additional resource selection from the same modeled HTTP response.
-/// Its reviewed key is resolved through the central kind map, never a fake operation.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceEmission {
     pub key: String,
@@ -33,5 +31,4 @@ impl ResourceEmission {
     }
 }
 
-/// The primary resource plus additional reviewed selections are statically bounded.
 pub const MAX_RESOURCE_EMISSIONS: usize = 8;

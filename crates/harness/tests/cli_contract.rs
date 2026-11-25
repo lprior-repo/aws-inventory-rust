@@ -81,7 +81,6 @@ fn verify_delivery_accepts_run_workspace_tests_flag() -> TestResult {
         "--run-workspace-tests",
     ])?;
 
-    // Expect failure (missing database) but not a CLI parse error
     let stderr = String::from_utf8(output.stderr)?;
     assert!(
         !stderr.starts_with("unexpected --run-workspace-tests;"),

@@ -1,5 +1,3 @@
--- Additive global-service query views. Observations and fingerprints are not
--- rewritten; all view creation and the version update share one transaction.
 CREATE VIEW aws_s3_bucket AS
 SELECT r.*, json_extract(properties, '$.bucket_name') AS bucket_name,
        json_extract(properties, '$.bucket_region') AS bucket_region,

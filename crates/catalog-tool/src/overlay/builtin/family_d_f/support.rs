@@ -29,7 +29,6 @@ pub(super) fn inventory(
     ))
 }
 
-/// Single-item operation (Describe) with no pagination.
 pub(super) fn describe(
     operation: &'static str,
     items: &str,
@@ -153,7 +152,6 @@ pub(super) fn fixed_boolean(
     Ok(entry)
 }
 
-/// Omit migration settings (large, may contain customer data) via WithoutSettings=true.
 pub(super) fn without_settings(entry: Entry) -> Result<Entry, NameError> {
     fixed_boolean(entry, "WithoutSettings", true)
 }

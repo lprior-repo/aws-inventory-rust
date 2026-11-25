@@ -1,59 +1,38 @@
-// Pinned operation purposes: .local/aws-models/models/resiliencehubv2/service/2026-02-17/resiliencehubv2-2026-02-17.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a resilience assertion for a service.
     ("CreateAssertion", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an input source for a service.
     ("CreateInputSource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a resilience policy that defines availability and disaster recovery requirements.
     ("CreatePolicy", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: On-demand report creation. Idempotent — duplicate requests with same clientToken return existing result.
     ("CreateReport", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a service.
     ("CreateService", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a service function within a service.
     (
         "CreateServiceFunction",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Associates resources with a service function.
     (
         "CreateServiceFunctionResources",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a system that represents a logical grouping of services.
     ("CreateSystem", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a test for a service by configuring a test template. Each service has one test per template.
     ("CreateTest", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a user journey within a system.
     ("CreateUserJourney", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a resilience assertion from a service.
     ("DeleteAssertion", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes an input source.
     ("DeleteInputSource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a resilience policy.
     ("DeletePolicy", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a service.
     ("DeleteService", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a service function.
     (
         "DeleteServiceFunction",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes resources from a service function.
     (
         "DeleteServiceFunctionResources",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a system.
     ("DeleteSystem", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a test.
     ("DeleteTest", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes monitoring sources from a test. The operation is transactional and idempotent — removing a source that is not attached is a no-op.
     ("DeleteTestSources", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes a user journey.
     ("DeleteUserJourney", Decision::Denied(DenyReason::Mutating)),
     (
         "GetDependencyInsights",
@@ -109,9 +88,7 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors systemArn, userJourneyId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userJourney. Pinned purpose: Retrieves a user journey.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Imports a V1 app into the V2 resource model, creating a service with the same name.
     ("ImportApp", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Imports a V1 policy into V2, mapping RTO/RPO values from V1 scenarios.
     ("ImportPolicy", Decision::Denied(DenyReason::Mutating)),
     (
         "ListAssertions",
@@ -227,7 +204,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors testId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members testSources, nextToken. Pinned purpose: Lists the monitoring sources attached to a test, optionally filtered by type.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists the available resilience test templates. A test template is a pre-configured, AWS recommended test that defines which resilience capability to validate.
     (
         "ListTestTemplates",
         Decision::Denied(DenyReason::ReferenceData),
@@ -244,9 +220,7 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors systemArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userJourneySummaries, nextToken. Pinned purpose: Lists user journeys for a system.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds or updates the monitoring sources on a test. The operation is transactional — either every source is written or the call fails and nothing is written.
     ("PutTestSources", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts generating dependency insights for a service. Generation runs asynchronously; the response returns the initial status, and you retrieve the results with GetDependencyInsights. To use this operation, you must have the resiliencehub:StartDependencyInsights permission on the service.
     (
         "StartDependencyInsights",
         Decision::Denied(DenyReason::Mutating),

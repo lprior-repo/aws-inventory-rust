@@ -28,8 +28,6 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
             .commit_page(page(&original, &catalog, "discover", "old-discover", 2, false).await?)
             .await?;
         drop(original);
-        // The historical writer accepted a source under a DiscoveryOnly stage. Rebuild
-        // its actual seven-field codec and v1 hash, not a modern fabricated proof.
         old_image(&directory, &reference).await?;
         let path = directory.path().join("inventory.sqlite");
         let sql = pool(&directory).await?;
@@ -42,8 +40,6 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
         sql.close().await;
         let store = BinaryStore::open_with_catalog(&path, &bytes).await?;
         assert_eq!(store.unattributed_authority_count().await?, 1);
-        // Reusing the OLD sweep name for a genuine unrelated target must not make
-        // the old terminal DiscoveryOnly outcome a current negative observation.
         let target = oam_page_in_sweep(
             &store,
             &catalog,
@@ -86,16 +82,12 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
         sql.close().await;
         drop(store);
         let store = BinaryStore::open_with_catalog(&path, &bytes).await?;
-        // Checked DiscoveryOnly is still not an emitting stage, even for this exact
-        // catalog, operation, bindings, source kind and reviewed relationship tuple.
         let forged = page(&store, &catalog, "discover", "forged-discover", 10, true).await?;
         let lease = forged.lease.clone();
         assert!(store.commit_page(forged).await.is_err());
         store
             .finish_scope(lease, ScopeOutcome::Partial, 11, None)
             .await?;
-        // A different genuine Metadata operation cannot certify a Link baseline
-        // merely because the supplied Link observation is itself schema-valid.
         let link = page(
             &store,
             &catalog,
@@ -180,7 +172,6 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
         }
         drop(store);
         let store = BinaryStore::open_with_catalog(&path, &bytes).await?;
-        // An old missing_complete=1 is history: it cannot accelerate the first V3 miss.
         store
             .commit_page(page(&store, &catalog, "discover", "fresh-miss-one", 30, false).await?)
             .await?;

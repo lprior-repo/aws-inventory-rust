@@ -44,8 +44,6 @@ fn background_writer_case(
         rustix::fs::OFlags::RDWR | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC,
         rustix::fs::Mode::empty(),
     )?));
-    // The recipe cannot exit until the background writer has signalled ready.
-    // Its only path to a late write is the explicit release sent after compile.
     fs::write(
         directory.path().join("Makefile"),
         format!(
@@ -65,8 +63,6 @@ fn background_writer_case(
     assert_eq!(&ready, b"ready");
     let mut diagnostics = Vec::new();
     let observed = (&mut handshake).take(4_097).read_to_end(&mut diagnostics);
-    // On a broken production finalizer this releases and drains the writer
-    // before assertions fail, so the regression itself cannot orphan it.
     release.0.write_all(b"release\n")?;
     let mut remaining = Vec::new();
     (&mut handshake).take(4_097).read_to_end(&mut remaining)?;

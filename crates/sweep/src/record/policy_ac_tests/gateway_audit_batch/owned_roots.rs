@@ -5,7 +5,6 @@ pub(super) async fn filtered_roots(
     date: &str,
     cases: &[(&str, &str, &str, &str, &str, &str)],
 ) -> TestResult {
-    // Given genuine enum-bearing pinned operations, not hand-authored callable plans.
     let excluded: &[&str] = match service {
         "auditmanager" => &[
             "GetAssessmentFramework",
@@ -67,7 +66,6 @@ pub(super) async fn filtered_roots(
             .await?;
     }
     let mut expected_keys = BTreeSet::new();
-    // When native wire requests, opaque continuation tokens and canonical rows traverse SQLite reopen boundaries.
     for at in 0..=8 {
         let Some(lease) = store.claim(&sweep, at, 10_000).await? else {
             break;
@@ -176,7 +174,6 @@ pub(super) async fn filtered_roots(
         drop(store);
         store = BinaryStore::open(&path).await?;
     }
-    // Then exact canonical kinds, account, region and native IDs survive the independent resource read model.
     assert!(store.claim(&sweep, 9, 10_000).await?.is_none());
     let resources = store.projection_resources(None, 100).await?;
     assert_eq!(

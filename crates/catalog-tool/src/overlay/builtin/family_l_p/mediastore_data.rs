@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mediastore-data/service/2017-09-01/mediastore-data-2017-09-01.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

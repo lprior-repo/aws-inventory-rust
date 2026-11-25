@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/emr/service/2009-03-31/emr-2009-03-31.json
 use super::support::{arn, bound, fixed_value, inventory, key, queried, reviewed, token};
 use crate::classes::DenyReason;
 use crate::overlay::{FixedValue, NameError, ServiceOverlay};
@@ -7,7 +6,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "emr",
         vec![
-            // Provides the status of all clusters visible to this Amazon Web Services account.
             queried(
                 inventory(
                     "ListClusters",
@@ -17,7 +15,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["ClusterArn", "Id", "Name"],
             )?,
-            // Lists all the security configurations visible to this account, providing their creation dates and times, and their names.
             queried(
                 inventory(
                     "ListSecurityConfigurations",
@@ -27,7 +24,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Name"],
             )?,
-            // Returns a list of all Amazon EMR Studios associated with the Amazon Web Services account.
             queried(
                 inventory(
                     "ListStudios",
@@ -37,7 +33,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["StudioId", "Name", "VpcId"],
             )?,
-            // Summary metadata does not contain notebook source, parameters, or execution output.
             fixed_value(
                 queried(
                     inventory(
@@ -60,7 +55,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     }
                 })?),
             )?,
-            // IdentityId is unique within its studio and principal type; keep both contextual key members.
             bound(
                 queried(
                     inventory(
@@ -79,9 +73,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             super::s_emr_decisions_1::ENTRIES,
         ],
         &[
-            // EngineConfigurations.Properties returns arbitrary customer configuration values.
             ("ListSessions", DenyReason::Secret),
-            // This endpoint API explicitly generates time-limited connection credentials.
             ("GetSessionEndpoint", DenyReason::Secret),
         ],
     )

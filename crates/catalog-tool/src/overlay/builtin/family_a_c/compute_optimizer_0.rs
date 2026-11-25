@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/compute-optimizer/service/2019-11-01/compute-optimizer-2019-11-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -10,7 +8,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Deletes a recommendation preference, such as enhanced infrastructure metrics. For more information, see Activating enhanced infrastructure metrics in the Compute Optimizer User Guide .",
             ),
         ),
-        // Model: Describes recommendation export jobs created in the last seven days. Use the ExportAutoScalingGroupRecommendations or ExportEC2InstanceRecommendations actions to request an export of your…
         (
             "DescribeRecommendationExportJobs",
             OperationOverlay {

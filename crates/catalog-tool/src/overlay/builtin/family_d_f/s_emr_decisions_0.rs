@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/emr/service/2009-03-31/emr-2009-03-31.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AddInstanceFleet",

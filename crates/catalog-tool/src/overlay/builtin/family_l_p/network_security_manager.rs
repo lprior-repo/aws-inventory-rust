@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/network-security-manager/service/2025-10-30/network-security-manager-2025-10-30.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -112,7 +111,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the scopes in the account. You can filter the results by status and page through them using maxResults and nextToken .
     Resource {
         operation: "ListScopes",
         items: "scopes",
@@ -124,7 +122,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the policies in the account. You can filter the results by status and page through them using maxResults and nextToken .
     Resource {
         operation: "ListPolicies",
         items: "policies",
@@ -142,7 +139,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the rules in the account. You can filter the results by status and page through them using maxResults and nextToken .
     Resource {
         operation: "ListRules",
         items: "rules",
@@ -161,7 +157,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the deployments in the account. You can filter the results by status and page through them using maxResults and nextToken .
     Resource {
         operation: "ListDeployments",
         items: "deployments",

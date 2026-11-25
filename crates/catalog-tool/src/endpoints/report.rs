@@ -247,9 +247,6 @@ fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, Operation>), Err
     Ok((traits, operations))
 }
 
-/// The operation's single required input member that is both a host label and
-/// an endpoint parameter. A host prefix that uses the member any other way
-/// than as its whole leading label is not understood, so no label is claimed.
 fn host_label(model: &Model, operation: &Shape) -> Option<HostLabel> {
     let input = model.shapes.get(&operation.input.as_ref()?.target)?;
     let mut bound = input.members.iter().filter_map(|(member, shape)| {

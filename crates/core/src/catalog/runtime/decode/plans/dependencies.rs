@@ -46,8 +46,6 @@ fn same_domain(left: &CallablePlan<'_>, right: &CallablePlan<'_>) -> bool {
         || correlated_domain(left, right)
 }
 
-/// Correlated keys share a domain when they differ only in self-context members: each plan
-/// reads the same member from the same side of its own operation.
 fn correlated_domain(left: &CallablePlan<'_>, right: &CallablePlan<'_>) -> bool {
     let (
         super::IdentityPlan::CorrelatedKey(left_fields),
@@ -94,8 +92,6 @@ fn own_context<'a>(
     }
 }
 
-/// A single-member key is rendered unframed, so a detail keyed by one member shares its
-/// parent's key domain exactly when its request sends that parent key through the same member.
 fn echoes_key(detail: &CallablePlan<'_>, parent: &CallablePlan<'_>) -> bool {
     let (super::IdentityPlan::Key(detail_key), super::IdentityPlan::Key(parent_key)) =
         (detail.identity(), parent.identity())
@@ -126,7 +122,6 @@ fn echoes(
     })
 }
 
-/// Two ARN-domain plans agree when their rows that carry no ARN are keyed identically.
 fn arn_domains(left: &super::IdentityPlan, right: &super::IdentityPlan) -> bool {
     arn_domain(left)
         && arn_domain(right)
@@ -166,7 +161,6 @@ fn arn_domain(identity: &super::IdentityPlan) -> bool {
         super::IdentityPlan::Choice(IdentityChoicePlan::Discriminated(branches)) => branches
             .iter()
             .all(|branch| leaf_arn(&branch.identity) || arn_sentinel(branch, branches)),
-        // A single field is rendered unframed, so one validated ARN operand is the ARN itself.
         super::IdentityPlan::CorrelatedKey(fields) => matches!(
             &**fields,
             [IdentityFieldPlan::SelectedArn(_) | IdentityFieldPlan::RequestArn(_)]
@@ -175,8 +169,6 @@ fn arn_domain(identity: &super::IdentityPlan) -> bool {
     }
 }
 
-/// A branch selected by a literal in the member another branch reads as the ARN covers rows
-/// that provably carry no ARN, so no ARN-keyed plan of the kind can name the same resource.
 fn arn_sentinel(branch: &IdentityBranchPlan, branches: &[IdentityBranchPlan]) -> bool {
     let IdentityPredicatePlan::TextEquals { path, .. } = &branch.predicate else {
         return false;

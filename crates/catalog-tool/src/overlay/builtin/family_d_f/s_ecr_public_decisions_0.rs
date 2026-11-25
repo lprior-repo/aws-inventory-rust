@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/ecr-public/service/2020-10-30/ecr-public-2020-10-30.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "BatchCheckLayerAvailability",

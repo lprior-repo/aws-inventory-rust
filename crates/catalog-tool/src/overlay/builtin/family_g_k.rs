@@ -1,4 +1,3 @@
-//! Reviewed pinned-model decisions, not emulator-verified service support.
 mod gamelift;
 mod gameliftstreams;
 mod geo_maps;

@@ -1,6 +1,5 @@
 use crate::HarnessError;
 
-/// Targets with pinned installation artifacts.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Platform {
     LinuxX86_64,

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/neptunedata/service/2023-08-01/neptunedata-2023-08-01.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

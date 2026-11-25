@@ -150,7 +150,6 @@ fn append_binds_one_directed_provenance_edge_without_clearing() -> TestResult {
 
 #[test]
 fn given_one_or_a_thousand_edges_when_compiled_then_statement_depth_is_constant() -> TestResult {
-    // Given: the same relation represented by either one or one thousand rows.
     let key = owner()?;
     let edge = EdgeRow {
         from: key.clone(),
@@ -158,7 +157,6 @@ fn given_one_or_a_thousand_edges_when_compiled_then_statement_depth_is_constant(
         relation: Relation::parse("CONTAINS")?,
         provenance: Provenance::parse("fixture")?,
     };
-    // When: the fixed-shape append statement is compiled for both row counts.
     let one = append_edges(&key, std::slice::from_ref(&edge))?;
     let thousand = append_edges(&key, &vec![edge; 1_000])?;
     let clauses = |query: &str| {
@@ -169,7 +167,6 @@ fn given_one_or_a_thousand_edges_when_compiled_then_statement_depth_is_constant(
             query.matches(" WITH ").count(),
         ]
     };
-    // Then: rows change data only, never the recursive execution-plan depth.
     assert_eq!(clauses(&one), [1, 2, 1, 1]);
     assert_eq!(clauses(&thousand), [1, 2, 1, 1]);
     Ok(())

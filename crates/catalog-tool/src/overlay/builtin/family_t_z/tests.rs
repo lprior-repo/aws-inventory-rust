@@ -28,7 +28,6 @@ fn policy<'a>(
 
 #[test]
 fn embedded_registry_exposes_every_pinned_t_z_namespace_and_explicit_operation() -> TestResult {
-    // Given: all 28 pinned non-first-wave namespaces in this partition.
     let expected = [
         "taxsettings",
         "textract",
@@ -61,13 +60,11 @@ fn embedded_registry_exposes_every_pinned_t_z_namespace_and_explicit_operation()
     ]
     .into_iter()
     .collect::<BTreeSet<_>>();
-    // When: the application's public embedded registry is loaded.
     let services = overlay::embedded()?;
     let selected = services
         .iter()
         .filter(|service| service.service.as_str() >= "t")
         .collect::<Vec<_>>();
-    // Then: no namespace or operation in the pinned partition silently disappears.
     let actual = selected
         .iter()
         .map(|service| service.service.as_str())
@@ -79,7 +76,6 @@ fn embedded_registry_exposes_every_pinned_t_z_namespace_and_explicit_operation()
 
 #[test]
 fn secret_or_content_bearing_calls_remain_denied_before_any_projection() -> TestResult {
-    // Given: calls with documented credential, document, transcript, or trace payloads.
     let cases = [
         ("wickr", "GetOidcInfo", DenyReason::Secret),
         ("wickr", "GetOpentdfConfig", DenyReason::Secret),
@@ -113,9 +109,7 @@ fn secret_or_content_bearing_calls_remain_denied_before_any_projection() -> Test
         ),
         ("xray", "ListRetrievedTraces", DenyReason::Content),
     ];
-    // When: callers inspect the public reviewed policy rather than infer from read names.
     let services = overlay::embedded()?;
-    // Then: every whole call is denied, not allowed by hiding its sensitive fields.
     for (service, operation, reason) in cases {
         let operation = policy(&services, service, operation)?;
         assert_eq!(operation.class, Some(OverlayClass::Deny(reason)));
@@ -127,12 +121,9 @@ fn secret_or_content_bearing_calls_remain_denied_before_any_projection() -> Test
 
 #[test]
 fn classic_waf_uses_documented_markers_and_distinguishes_global_from_regional() -> TestResult {
-    // Given: Classic WAF APIs have explicit marker fields without paginator traits.
     let services = overlay::embedded()?;
-    // When: both endpoint scopes expose their IP set inventory.
     let global = policy(&services, "waf", "ListIPSets")?;
     let regional = policy(&services, "waf-regional", "ListIPSets")?;
-    // Then: all pages are requested and global resources are not duplicated per region.
     let paginator = Some(Paginator::Token(TokenPair {
         input: MemberPath::new("NextMarker")?,
         output: MemberPath::new("NextMarker")?,
@@ -156,12 +147,9 @@ fn classic_waf_uses_documented_markers_and_distinguishes_global_from_regional() 
 #[test]
 fn bound_adapter_details_retain_both_version_identifiers_and_application_owner_is_account()
 -> TestResult {
-    // Given: adapter versions need two input identifiers, and applications can be vendor-owned.
     let services = overlay::embedded()?;
-    // When: the public registry supplies the executable detail and enumeration policies.
     let adapter = policy(&services, "textract", "GetAdapterVersion")?;
     let applications = policy(&services, "workspaces", "DescribeApplications")?;
-    // Then: the version is not queried with a sibling's ID and vendor apps are excluded.
     assert_eq!(adapter.class, Some(OverlayClass::Expand));
     for field in ["AdapterId", "AdapterVersion"] {
         assert_eq!(
@@ -245,7 +233,6 @@ fn required_endpoint_discovery_and_both_waf_scopes_are_executable_typed_plans() 
 
 #[test]
 fn agreement_details_bind_both_identifiers_from_the_same_list_item() -> TestResult {
-    // Given: agreements retain their server identity in each paginated list row.
     let services = overlay::embedded()?;
     let list = policy(&services, "transfer", "ListAgreements")?;
     assert_eq!(
@@ -256,7 +243,6 @@ fn agreement_details_bind_both_identifiers_from_the_same_list_item() -> TestResu
             optional: false,
         }))
     );
-    // When: safe detail configuration is requested, both bindings use that row.
     let detail = policy(&services, "transfer", "DescribeAgreement")?;
     assert_eq!(detail.class, Some(OverlayClass::Expand));
     assert_eq!(detail.bind.len(), 2);
@@ -269,7 +255,6 @@ fn agreement_details_bind_both_identifiers_from_the_same_list_item() -> TestResu
             })
         );
     }
-    // Then: canonical ARN, tags and safe detail-only fields remain collectable.
     assert_eq!(
         detail.identity,
         Some(Identity::Arn(MemberPath::selected("Arn")?))

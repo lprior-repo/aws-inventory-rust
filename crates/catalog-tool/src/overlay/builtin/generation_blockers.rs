@@ -1,8 +1,5 @@
 use crate::overlay::{GenerationBlocker, OverlayClass, ServiceOverlay};
 
-// These reviewed defers describe missing request bindings, not a safety veto.
-// Their pinned models and advisory service audits were compared before migration.
-// The marker authorizes no call: generation must still derive and validate every field.
 const REQUIRED_BINDINGS: &[(&str, &[&str])] = &[
     ("account-access", &["GetApplication"]),
     (

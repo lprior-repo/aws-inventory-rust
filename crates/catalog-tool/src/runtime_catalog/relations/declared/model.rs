@@ -39,7 +39,6 @@ impl Declaration {
     }
 }
 
-/// Bounds scheduled shape visits without charging their exit markers.
 #[derive(Default)]
 struct WalkBudget {
     visits: usize,

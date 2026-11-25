@@ -1,4 +1,3 @@
-//! Exact IAM grants for the compiled catalog's callable plans.
 mod documents;
 mod gaps;
 mod reference;
@@ -130,12 +129,10 @@ impl<'a> Operation<'a> {
 #[derive(Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub struct Rendered {
-    /// Bundle of individually attachable managed policy documents.
     pub text: String,
     pub template: String,
     pub actions: BTreeSet<String>,
     pub policies: Vec<String>,
-    /// Default-name grants absent from the pinned reference, not confirmed by AWS.
     pub unconfirmed: BTreeSet<String>,
     pub gap_report: String,
     pub operation_actions: BTreeMap<String, String>,
@@ -166,7 +163,6 @@ pub fn operations<'a>(catalog: &'a RuntimeCatalog<'_>) -> Result<Vec<Operation<'
         .collect()
 }
 
-/// Only callable plans enter this boundary; deny/defer decisions never grant actions.
 pub fn render(
     operations: &[Operation<'_>],
     mappings: &str,
@@ -509,7 +505,6 @@ mod catalog_tests {
             root.join("catalog/field-ids.txt"),
         )?)?;
         let base = crate::smithy::build_catalog(&source, &fields, "iam-policy-pinned-models")?;
-        // Only tracked TOML is input: no generated CFN JSON, kinds TSV or binary catalog.
         let cfn: toml::Value = toml::from_str(&std::fs::read_to_string(
             root.join("catalog/cloudcontrol-capabilities.toml"),
         )?)?;

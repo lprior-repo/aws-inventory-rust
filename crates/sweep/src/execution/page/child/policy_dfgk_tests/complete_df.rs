@@ -35,7 +35,6 @@ static FIELDS: std::sync::LazyLock<Result<catalog_tool::smithy::Registry, String
         .map_err(|error| error.to_string())
     });
 
-// Expected identities deliberately do not call the identity compiler/projector under test.
 fn key(parts: &[&str]) -> String {
     parts
         .iter()

@@ -1,5 +1,3 @@
-//! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/kendra/service.
-//! Review is source-only; no live service or emulator support claim.
 use super::policy;
 use crate::overlay::{
     Identity, IdentityField, MemberPath, NameError, OperationOverlay, ServiceOverlay,
@@ -30,7 +28,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             "ListFeaturedResultsSets",
             child("FeaturedResultsSetSummaryItems", "FeaturedResultsSetId")?,
         ),
-        // The complete summary contains only Id, not document ACLs or user/group lists.
         (
             "ListAccessControlConfigurations",
             child("AccessControlConfigurations", "Id")?,
@@ -67,8 +64,6 @@ fn child(items: &str, id: &str) -> Result<OperationOverlay, NameError> {
     )
 }
 
-// Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
-// Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
     "BatchGetDocumentStatus",
     "DescribeAccessControlConfiguration",

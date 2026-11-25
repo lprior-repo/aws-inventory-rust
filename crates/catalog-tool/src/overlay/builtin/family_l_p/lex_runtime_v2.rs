@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/lex-runtime-v2/service/2020-08-07/lex-runtime-v2-2020-08-07.json
 use super::policy::{Group, compile};
 use crate::{
     classes::DenyReason,

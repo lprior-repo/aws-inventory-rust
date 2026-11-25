@@ -219,7 +219,6 @@ impl Drop for Peer {
         if let Some(shutdown) = self.shutdown.take() {
             let _ = shutdown.send(());
         }
-        // Aborting the owner drops its JoinSet, which aborts every connection handler.
         if let Some(task) = &self.task {
             task.abort();
         }

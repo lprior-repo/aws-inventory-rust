@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mediaconvert/service/2017-08-29/mediaconvert-2017-08-29.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -74,7 +73,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Retrieve a JSON array of up to twenty of your queues. This will return the queues themselves, not just a list of them. To retrieve the next twenty queues, use the nextToken string
     Resource {
         operation: "ListQueues",
         items: "Queues",
@@ -86,7 +84,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListQueues; no content-bearing expansion.
     Resource {
         operation: "GetQueue",
         items: "Queue",

@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/service-catalog-appregistry/service/2020-06-24/service-catalog-appregistry-2020-06-24.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

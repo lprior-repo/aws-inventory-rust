@@ -74,14 +74,11 @@ fn paced(actual: &[Duration], expected_ns: &[u64]) {
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_a_rising_policy_when_calls_succeed_then_each_gap_is_shorter() -> TestResult
 {
-    // Given: 1 request per second to start with, up to 100.
     let executor = rising(1, 1, 100)?;
     let starts = Mutex::new(Vec::new());
 
-    // When: four calls succeed.
     succeed(&executor, KEY, &starts, 4).await?;
 
-    // Then: the rate was 2.0, 2.5 and 2.9 requests per second.
     paced(&gaps(&starts)?, &[500_000_000, 400_000_000, 344_827_587]);
     Ok(())
 }
@@ -89,15 +86,12 @@ pub(super) async fn given_a_rising_policy_when_calls_succeed_then_each_gap_is_sh
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_a_rising_policy_when_throttled_then_the_rate_drops_to_seventy_percent()
 -> TestResult {
-    // Given: 10 requests per second to start with.
     let executor = rising(10, 1, 100)?;
     let starts = Mutex::new(Vec::new());
 
-    // When: the first attempt is throttled and three attempts then succeed.
     throttled_then_succeed(&executor, KEY, &starts).await?;
     succeed(&executor, KEY, &starts, 2).await?;
 
-    // Then: the rate was 7.000, 7.142 and 7.282 requests per second.
     paced(&gaps(&starts)?, &[142_857_143, 140_016_803, 137_324_911]);
     assert_eq!(executor.stats().throttles, 1);
     Ok(())
@@ -106,25 +100,20 @@ pub(super) async fn given_a_rising_policy_when_throttled_then_the_rate_drops_to_
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_a_throttle_when_calls_succeed_then_the_rate_holds_at_ninety_percent_for_a_minute()
 -> TestResult {
-    // Given: a throttle arrived at 10 requests per second.
     let executor = rising(10, 1, 100)?;
     let starts = Mutex::new(Vec::new());
     throttled_then_succeed(&executor, KEY, &starts).await?;
 
-    // When: 19 more calls succeed inside the minute.
     succeed(&executor, KEY, &starts, 19).await?;
 
-    // Then: the rate stopped at 9 requests per second.
     let held = gaps(&starts)?;
     assert_eq!(held.len(), 20);
     paced(held.get(17..).ok_or("three held gaps")?, &[111_111_112; 3]);
 
-    // When: the minute has passed and two more calls succeed.
     sleep(Duration::from_secs(60)).await;
     let later = Mutex::new(Vec::new());
     succeed(&executor, KEY, &later, 2).await?;
 
-    // Then: the rate rose to 9.111 requests per second.
     paced(&gaps(&later)?, &[109_757_437]);
     Ok(())
 }
@@ -132,15 +121,12 @@ pub(super) async fn given_a_throttle_when_calls_succeed_then_the_rate_holds_at_n
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_equal_floor_start_and_ceiling_when_throttled_then_the_rate_is_unchanged()
 -> TestResult {
-    // Given: floor, start and ceiling are all 5 requests per second.
     let executor = rising(5, 5, 5)?;
     let starts = Mutex::new(Vec::new());
 
-    // When: one attempt is throttled and three succeed.
     throttled_then_succeed(&executor, KEY, &starts).await?;
     succeed(&executor, KEY, &starts, 2).await?;
 
-    // Then: every gap is one fifth of a second.
     paced(&gaps(&starts)?, &[200_000_000; 3]);
     Ok(())
 }
@@ -148,7 +134,6 @@ pub(super) async fn given_equal_floor_start_and_ceiling_when_throttled_then_the_
 #[test]
 pub(super) fn given_out_of_range_adaptive_limits_when_building_then_the_configuration_is_rejected()
 -> TestResult {
-    // Given: limits just outside and just inside each bound (global concurrency is 4).
     let rejected = [
         (1, 0, 100, 2),
         (1, 2, 100, 2),
@@ -159,7 +144,6 @@ pub(super) fn given_out_of_range_adaptive_limits_when_building_then_the_configur
     ];
     let accepted = [(1, 1, 1, 1), (100_000, 1, 100_000, 4), (10, 10, 100, 4)];
 
-    // When, Then: as the default policy and as a keyed policy.
     for (start, floor, ceiling, concurrency) in rejected {
         let policy = adaptive(start, floor, ceiling, concurrency);
         let invalid = |error: &ApiError| matches!(error, ApiError::InvalidConfig(_));
@@ -182,13 +166,10 @@ pub(super) fn given_out_of_range_adaptive_limits_when_building_then_the_configur
 
 #[test]
 pub(super) fn given_adaptive_policy_json_when_read_then_the_shape_is_exact() -> TestResult {
-    // Given
     let text = r#"{"start_rps":10,"floor_rps":1,"ceiling_rps":100,"concurrency":2}"#;
 
-    // When
     let policy = serde_json::from_str::<BucketPolicy>(text)?;
 
-    // Then
     assert_eq!(policy, adaptive(10, 1, 100, 2));
     assert_eq!(serde_json::to_string(&policy)?, text);
     for invalid in [
@@ -205,7 +186,6 @@ pub(super) fn given_adaptive_policy_json_when_read_then_the_shape_is_exact() -> 
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_a_rising_default_when_a_key_has_its_own_policy_then_only_other_keys_rise()
 -> TestResult {
-    // Given: a rising default and a fixed 20 requests per second for one key.
     let executor = ApiExecutor::with_default_policy(
         config(),
         adaptive(1, 1, 100, 2),
@@ -220,11 +200,9 @@ pub(super) async fn given_a_rising_default_when_a_key_has_its_own_policy_then_on
     let fixed = Mutex::new(Vec::new());
     let risen = Mutex::new(Vec::new());
 
-    // When
     succeed(&executor, KEY, &fixed, 3).await?;
     succeed(&executor, OTHER, &risen, 3).await?;
 
-    // Then
     paced(&gaps(&fixed)?, &[50_000_000; 2]);
     paced(&gaps(&risen)?, &[500_000_000, 400_000_000]);
     Ok(())
@@ -233,7 +211,6 @@ pub(super) async fn given_a_rising_default_when_a_key_has_its_own_policy_then_on
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_a_fixed_default_when_a_key_has_a_rising_policy_then_only_that_key_rises()
 -> TestResult {
-    // Given: the fixed default of 10 requests per second and one rising key.
     let executor = ApiExecutor::with_rate_policies(
         config(),
         BTreeMap::from([(KEY.into(), adaptive(1, 1, 100, 2))]),
@@ -241,11 +218,9 @@ pub(super) async fn given_a_fixed_default_when_a_key_has_a_rising_policy_then_on
     let risen = Mutex::new(Vec::new());
     let fixed = Mutex::new(Vec::new());
 
-    // When
     succeed(&executor, KEY, &risen, 3).await?;
     succeed(&executor, OTHER, &fixed, 3).await?;
 
-    // Then
     paced(&gaps(&risen)?, &[500_000_000, 400_000_000]);
     paced(&gaps(&fixed)?, &[100_000_000; 2]);
     Ok(())
@@ -254,7 +229,6 @@ pub(super) async fn given_a_fixed_default_when_a_key_has_a_rising_policy_then_on
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_rising_and_fixed_buckets_when_rates_are_listed_then_only_rising_ones_appear()
 -> TestResult {
-    // Given: a rising default, a fixed policy for one key, and no call yet.
     let executor = ApiExecutor::with_default_policy(
         config(),
         adaptive(1, 1, 100, 2),
@@ -269,11 +243,9 @@ pub(super) async fn given_rising_and_fixed_buckets_when_rates_are_listed_then_on
     let starts = Mutex::new(Vec::new());
     assert!(executor.bucket_rates().is_empty());
 
-    // When: the fixed key succeeds three times and the rising key four times.
     succeed(&executor, KEY, &starts, 3).await?;
     succeed(&executor, OTHER, &starts, 4).await?;
 
-    // Then: only the rising key is listed, at 3.244 requests per second after four results.
     assert_eq!(executor.bucket_rates(), vec![(OTHER.to_owned(), 3, 4)]);
     Ok(())
 }
@@ -281,14 +253,11 @@ pub(super) async fn given_rising_and_fixed_buckets_when_rates_are_listed_then_on
 #[tokio::test(start_paused = true)]
 pub(super) async fn given_a_throttle_when_rates_are_listed_then_the_cut_rate_counts_both_results()
 -> TestResult {
-    // Given: 10 requests per second to start with.
     let executor = rising(10, 1, 100)?;
     let starts = Mutex::new(Vec::new());
 
-    // When: one attempt is throttled and the retry succeeds.
     throttled_then_succeed(&executor, KEY, &starts).await?;
 
-    // Then: the rate is 7.142 requests per second after two results.
     assert_eq!(executor.bucket_rates(), vec![(KEY.to_owned(), 7, 2)]);
     Ok(())
 }

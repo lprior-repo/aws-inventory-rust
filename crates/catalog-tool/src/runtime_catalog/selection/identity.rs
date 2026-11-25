@@ -136,7 +136,6 @@ fn validate_single_field(
             max_item_bytes,
         } => validate_string_list(service, item, path, *max_items, *max_item_bytes),
         IdentityField::MapValue { path, .. } => text_map(service, item, path.as_str()),
-        // Cross-plan context paths are checked against reviewed producer selectors by the runtime catalog dependency validator.
         IdentityField::Context { .. } => Ok(()),
     }
 }

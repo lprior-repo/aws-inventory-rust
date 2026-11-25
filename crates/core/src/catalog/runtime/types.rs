@@ -176,7 +176,6 @@ pub enum IdentityPlan {
     },
 }
 
-/// Numeric tag extraction relative to the selected resource item.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TagPlan {
@@ -307,13 +306,10 @@ pub struct PageSizeBinding {
 }
 
 impl PageSizeBinding {
-    /// The model's largest page size, in the member's wire type.
     pub fn value(&self) -> crate::record::Value {
         self.capped(None)
     }
 
-    /// The page size to ask for: the model's largest, lowered to `cap` when
-    /// one is given. A cap above the model's largest changes nothing.
     pub fn capped(&self, cap: Option<u32>) -> crate::record::Value {
         let size = cap.map_or(self.max, |cap| self.max.min(cap));
         match self.value_type {

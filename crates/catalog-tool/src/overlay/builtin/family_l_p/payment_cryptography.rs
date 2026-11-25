@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/payment-cryptography/service/2021-09-14/payment-cryptography-2021-09-14.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -85,7 +84,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists the keys in the caller's Amazon Web Services account and Amazon Web Services Region. You can filter the list of keys. This is a paginated operation, which means that each res
     Resource {
         operation: "ListKeys",
         items: "Keys",
@@ -97,7 +95,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists the aliases for all keys in the caller's Amazon Web Services account and Amazon Web Services Region. You can filter the aliases by keyARN . For more information, see Using al
     Resource {
         operation: "ListAliases",
         items: "Aliases",
@@ -109,7 +106,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListAliases; no content-bearing expansion.
     Resource {
         operation: "GetAlias",
         items: "Alias",

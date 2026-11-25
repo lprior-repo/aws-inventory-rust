@@ -2,7 +2,6 @@ use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
 use std::sync::LazyLock;
 
-// Actual production overlays and pinned Smithy inputs; no substitute catalog or model.
 const SERVICES: &[(&str, &str, &[&str])] = &[
     (
         "quicksight",

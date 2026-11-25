@@ -2,15 +2,12 @@ use super::*;
 #[test]
 fn given_embedded_logging_destinations_when_compiled_then_firehose_is_canonical_and_edges_keep_their_selectors()
 -> TestResult {
-    // Given the real pinned registry and all reviewed native families.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
-    // When resolving the destination resource, the exact CFN identity is mapped.
     let kind = "AWS::KinesisFirehose::DeliveryStream";
     assert!(matches!(map.lookup(kind).map(|entry| &entry.target),
         Some(KindTarget::Mapped { kind: target, .. }) if target == kind));
-    // Then each logging consumer retains its selected ARN-to-canonical-ID edge.
     for (source, path, scope) in [
         (
             "AWS::VpcLattice::AccessLogSubscription",
@@ -45,7 +42,6 @@ fn given_embedded_logging_destinations_when_compiled_then_firehose_is_canonical_
         assert_eq!(edge.scope, scope, "{source}");
         assert_eq!(edge.guard, None);
     }
-    // Alternative destinations must not disappear when the Firehose target is registered.
     let alternatives = map
         .relations()
         .iter()
@@ -68,11 +64,9 @@ fn given_embedded_logging_destinations_when_compiled_then_firehose_is_canonical_
 #[test]
 fn given_s3files_resources_when_embedded_compiles_then_native_operations_and_access_point_edges_share_canonical_kinds()
 -> TestResult {
-    // Given the real pinned source, when all native mappings compile together.
     let map = embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
-    // Then native collection and CloudControl cannot create separate alias nodes.
     for (operation, kind, alias) in [
         (
             "ListFileSystems",
@@ -144,7 +138,6 @@ fn given_s3files_resources_when_embedded_compiles_then_native_operations_and_acc
 #[test]
 fn given_registered_destination_absent_from_pin_when_embedded_compiles_then_exact_extra_type_is_rejected()
 -> TestResult {
-    // Given a pinned source missing one otherwise registered canonical destination.
     for kind in [
         "AWS::KinesisFirehose::DeliveryStream",
         "AWS::S3Files::FileSystem",
@@ -157,9 +150,7 @@ fn given_registered_destination_absent_from_pin_when_embedded_compiles_then_exac
             .and_then(serde_json::Value::as_array_mut)
             .ok_or("missing pinned resource types")?
             .retain(|row| row.get("type_name").and_then(serde_json::Value::as_str) != Some(kind));
-        // When compiling all families, registration never bypasses pinned-source validation.
         let result = embedded(&serde_json::to_vec(&pin)?);
-        // Then the exact missing pinned identity, not an arbitrary replacement, is reported.
         assert!(
             matches!(result, Err(KindMapError::ExtraType(actual)) if actual == kind),
             "{kind}"
@@ -173,8 +164,6 @@ fn given_unregistered_relation_target_when_compiled_with_pin_then_unknown_kind_i
     use crate::kind_map::{
         CfnMapping, RelationMapping, RelationPath, RelationSource, RelationTarget,
     };
-    // Given a valid source kind but no reviewed registration for the target.
-    // The first target really exists in the pin; the second is an unknown spelling.
     for target in [
         "AWS::KinesisFirehose::DeliveryStream",
         "AWS::KinesisFirehose::UnknownStream",
@@ -196,12 +185,10 @@ fn given_unregistered_relation_target_when_compiled_with_pin_then_unknown_kind_i
             relations: &relations,
             ..MappingSource::default()
         };
-        // When applying the same merged compilation path as embedded().
         let result = super::super::super::merge::compile(
             std::iter::once(source),
             include_bytes!("../../../../../../catalog/cloudcontrol-universal.json"),
         );
-        // Then even a pinned target requires an explicit reviewed mapping.
         assert!(
             matches!(result, Err(KindMapError::UnknownRelationKind { relation, kind })
             if relation == "LOGS_TO" && kind == target),
@@ -212,22 +199,16 @@ fn given_unregistered_relation_target_when_compiled_with_pin_then_unknown_kind_i
 
 #[test]
 fn production_embedded_map_pins_the_complete_api_only_count() -> TestResult {
-    // Given the production embedded map compiled from the overlay registry,
-    // the api_only count is a complete, reviewed pin.
     let map = crate::kind_map::builtin::embedded(include_bytes!(
         "../../../../../../catalog/cloudcontrol-universal.json"
     ))?;
     let api_only = map.api_only();
-    // The production map includes family_d_f rows that the source-only map does not.
-    // This count is measured by running this test and observed, not guessed.
     assert_eq!(api_only.len(), 678);
-    // DMSCertificate was removed from api_only in this overlay update.
     assert!(
         !api_only
             .iter()
             .any(|r| r.kind == "AWS::ApiOnly::DMSCertificate")
     );
-    // The rename from DescribeEventRule to DescribeRule was completed.
     assert!(
         !api_only
             .iter()

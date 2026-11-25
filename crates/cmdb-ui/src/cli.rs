@@ -23,14 +23,12 @@ pub enum Command {
 
 static STARTUP: OnceLock<WorkerConfig> = OnceLock::new();
 
-/// Parses the process arguments and `CMDB_UI_LOD`. Nothing here touches the GUI.
 pub fn from_process_args() -> Result<Command, String> {
     let arguments: Vec<String> = std::env::args().skip(1).take(65).collect();
     let lod = std::env::var("CMDB_UI_LOD").ok();
     with_lod(parse(&arguments)?, lod.as_deref())
 }
 
-/// Applies a level-of-detail override; an invalid value is a startup error, never a silent default.
 pub fn with_lod(command: Command, lod: Option<&str>) -> Result<Command, String> {
     match (command, lod) {
         (Command::Run(config), Some(value)) => Ok(Command::Run(WorkerConfig {
@@ -41,12 +39,10 @@ pub fn with_lod(command: Command, lod: Option<&str>) -> Result<Command, String> 
     }
 }
 
-/// Records the validated configuration for the app's worker. Set once, before the window.
 pub fn set_startup_config(config: WorkerConfig) {
     let _ = STARTUP.set(config);
 }
 
-/// The configuration recorded at startup; defaults when none was recorded (tests).
 pub fn startup_config() -> WorkerConfig {
     match STARTUP.get() {
         Some(config) => config.clone(),

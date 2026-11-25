@@ -106,9 +106,6 @@ fn decode_plan<'a>(
         purpose(purpose_fields)?
     };
     let emission = selection::emission(fields)?;
-    // Field 25 is the effective emit flag: 1 = work, 0 = resources.
-    // If the emit flag is 1, the effective emission is WorkOnly.
-    // The field is optional for backward compatibility.
     let effective_emission = match fields.get_field(FieldId::new(25)?)? {
         None | Some(ValueRef::Int(0)) => emission,
         Some(ValueRef::Int(1)) => super::super::Emission::WorkOnly,

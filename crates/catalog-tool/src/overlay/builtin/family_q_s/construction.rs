@@ -10,8 +10,6 @@ pub(super) enum ResourceIdentity {
     Arn(&'static str),
     Key(&'static [&'static str]),
     Correlated(&'static str, &'static [&'static str]),
-    /// ARN template plus the item members it reads; aligns services that list one resource
-    /// store under different member names.
     Template(&'static str, &'static [&'static str]),
 }
 

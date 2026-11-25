@@ -29,7 +29,6 @@ pub struct Comparison<'a> {
     pub differences: Vec<Difference<'a>>,
 }
 
-/// More than one stored ARN can represent the same listed identifier.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 #[error("ambiguous identifier {identifier:?}: {candidates:?}")]
 pub struct AmbiguousIdentity {
@@ -37,10 +36,6 @@ pub struct AmbiguousIdentity {
     pub candidates: Vec<String>,
 }
 
-/// Compare exact identities first, then a non-ARN identifier with an ARN resource part.
-///
-/// # Errors
-/// Returns both candidates when two stored ARNs normalize to one listed identifier.
 pub fn compare<'a>(
     listed: &'a BTreeSet<String>,
     stored: &'a BTreeSet<String>,
@@ -98,7 +93,6 @@ fn arn_resource(id: &str) -> Option<&str> {
         .filter(|part| !part.is_empty())
 }
 
-/// An explanation names a direction and a resource-prefix class, never one resource ID.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Rule<'a> {
     pub type_name: &'a str,

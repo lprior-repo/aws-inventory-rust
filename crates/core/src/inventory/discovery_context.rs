@@ -24,7 +24,6 @@ pub enum ContextError {
     Missing,
 }
 
-/// All fields are private: a frame can only be constructed by exact-path projection.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DiscoveryFrame {
     service: ServiceId,
@@ -37,7 +36,6 @@ pub struct DiscoveryFrame {
 }
 
 impl DiscoveryFrame {
-    /// `selected` must already have the producer's reviewed privacy projection applied.
     pub fn project(
         service: ServiceId,
         operation: OperationId,
@@ -94,12 +92,10 @@ impl DiscoveryContext {
         codec::encode(self).map(Record::into_bytes)
     }
 
-    /// Exact canonical wire size, computed without allocating or serializing.
     pub fn encoded_len(&self) -> Result<usize, ContextError> {
         codec::encoded_len(self, None)
     }
 
-    /// Exact wire size after appending a frame, checked before cloning any ancestry.
     pub fn pushed_encoded_len(&self, frame: &DiscoveryFrame) -> Result<usize, ContextError> {
         codec::encoded_len(self, Some(frame))
     }

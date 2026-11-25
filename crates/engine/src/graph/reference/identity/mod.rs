@@ -11,11 +11,7 @@ struct Target {
     id: String,
     account_id: String,
     region: String,
-    /// AWS service extracted from ARN, if the ID is an ARN. Used to prevent
-    /// ARN-tail inference from matching across different services.
     service: Option<String>,
-    /// AWS resource type extracted from ARN, if the ID is an ARN. Used to
-    /// prevent ARN-tail inference from matching across different types.
     resource_type: Option<String>,
 }
 
@@ -120,10 +116,6 @@ impl IdentityIndex {
         let Some((account_id, region, component)) = arn_component(value) else {
             return Lookup::Unresolved;
         };
-        // Extract service and resource type from the ARN to prevent
-        // ARN-tail inference from matching across different services.
-        // If the ARN has an unparseable service/type, fail open rather than
-        // dropping the filter (which would allow cross-service resolution).
         let (service, resource_type) = match arn_service_type(value) {
             Some((s, t)) => (Some(s.to_owned()), Some(t.to_owned())),
             None => return Lookup::Unresolved,
@@ -220,8 +212,6 @@ impl IdentityIndex {
     }
 }
 
-/// Checks if a target matches the lookup criteria (account, region, service, type).
-/// Service and type filters are only applied when the lookup has them (ARN lookups).
 fn target_matches(
     target: &Target,
     account_id: &str,

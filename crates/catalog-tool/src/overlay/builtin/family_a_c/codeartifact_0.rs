@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/codeartifact/service/2018-09-22/codeartifact-2018-09-22.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -76,7 +74,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domain, repository. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the resource policy that is set on a repository. After a resource policy is deleted, the permissions allowed and denied by the deleted policy are removed. The effect of deleting a resource policy might not be immediate.…",
             ),
         ),
-        // Model: Returns a DomainDescription object that contains information about the requested domain.
         (
             "DescribeDomain",
             OperationOverlay {
@@ -126,7 +123,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domain, repository, format, package, packageVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a PackageVersionDescription object that contains information about the requested package version.",
             ),
         ),
-        // Model: Returns a RepositoryDescription object that contains detailed information about the requested repository.
         (
             "DescribeRepository",
             OperationOverlay {
@@ -183,7 +179,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domain, format, package. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the most closely associated package group to the specified package. This API does not require that the package exist in any repository in the domain. As such, GetAssociatedPackageGroup can be used to see which package…",
             ),
         ),
-        // Model: Generates a temporary authorization token for accessing repositories in the domain. This API requires the codeartifact:GetAuthorizationToken and sts:GetServiceBearerToken permissions. For more…
         ("GetAuthorizationToken", denied(DenyReason::Secret)),
         (
             "GetDomainPermissionsPolicy",
@@ -232,7 +227,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Returns a list of DomainSummary objects for all domains owned by the Amazon Web Services account that makes this call. Each returned DomainSummary object contains information about a domain.
         (
             "ListDomains",
             OperationOverlay {
@@ -245,7 +239,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Reviewed full response: package-group identifiers, descriptions/contact and origin restriction/reference metadata, not assets/tokens.
         (
             "ListPackageGroups",
             OperationOverlay {
@@ -301,7 +294,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires domain, repository. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of PackageSummary objects for packages in a repository that match the request parameters.",
             ),
         ),
-        // Model: Returns a list of RepositorySummary objects. Each RepositorySummary contains information about a repository in the specified Amazon Web Services account and that matches the input parameters.
         (
             "ListRepositories",
             OperationOverlay {

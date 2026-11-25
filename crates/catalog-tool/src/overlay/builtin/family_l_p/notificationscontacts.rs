@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/notificationscontacts/service/2018-05-10/notificationscontacts-2018-05-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -29,7 +28,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists all email contacts created under the Account.
     Resource {
         operation: "ListEmailContacts",
         items: "emailContacts",
@@ -41,7 +39,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Same pinned response resource shape as ListEmailContacts; no content-bearing expansion.
     Resource {
         operation: "GetEmailContact",
         items: "emailContact",

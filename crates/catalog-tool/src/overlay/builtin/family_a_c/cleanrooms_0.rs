@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/cleanrooms/service/2022-02-17/cleanrooms-2022-02-17.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -208,7 +206,6 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires membershipIdentifier, analysisTemplateIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves an analysis template.",
             ),
         ),
-        // Model: Returns metadata about a collaboration.
         (
             "GetCollaboration",
             OperationOverlay {
@@ -272,7 +269,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires configuredAudienceModelAssociationIdentifier, membershipIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about a configured audience model association.",
             ),
         ),
-        // Model: Retrieves a configured table.
         (
             "GetConfiguredTable",
             OperationOverlay {
@@ -337,7 +333,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires membershipIdentifier, intermediateTableIdentifier, analysisRuleType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the analysis rule for an intermediate table.",
             ),
         ),
-        // Model: Retrieves a specified membership for an identifier.
         (
             "GetMembership",
             OperationOverlay {
@@ -396,7 +391,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires membershipIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists analysis log exports, sorted by the most recent export. Results are paginated. Use the nextToken parameter to retrieve additional results.",
             ),
         ),
-        // Reviewed full summary closure: identifiers, descriptions, flags and times; no SQL source.
         (
             "ListAnalysisTemplates",
             OperationOverlay {
@@ -460,7 +454,6 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        // Model: Lists collaborations the caller owns, is active in, or has been invited to.
         (
             "ListCollaborations",
             OperationOverlay {
@@ -473,7 +466,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Reviewed membership-owned association metadata; no audience or table contents.
         (
             "ListConfiguredAudienceModelAssociations",
             OperationOverlay {
@@ -518,7 +510,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Model: Lists configured tables.
         (
             "ListConfiguredTables",
             OperationOverlay {
@@ -531,7 +522,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Input references are Entity Resolution ARNs and policy flags, never identity records.
         (
             "ListIdMappingTables",
             OperationOverlay {
@@ -585,7 +575,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires membershipIdentifier, intermediateTableIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the version history of an intermediate table. Each call to PopulateIntermediateTable creates a new version. We recommend using pagination to ensure that the operation returns quickly and successfully.",
             ),
         ),
-        // Summary contains status, retention and analysis-rule type names, not populated rows.
         (
             "ListIntermediateTables",
             OperationOverlay {
@@ -614,7 +603,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires collaborationIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all members within a collaboration.",
             ),
         ),
-        // Model: Lists all memberships resources within the caller's account.
         (
             "ListMemberships",
             OperationOverlay {
@@ -627,7 +615,6 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 )?
             },
         ),
-        // Summary contains membership/collaboration identity, budget type and timestamps only.
         (
             "ListPrivacyBudgetTemplates",
             OperationOverlay {

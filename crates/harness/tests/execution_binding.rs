@@ -92,7 +92,6 @@ fn test_changed_source_or_descriptor_cannot_reuse_an_old_run()
     let catalog = make_catalog();
     let canonical = canonical_sha256(&catalog);
 
-    // Changed source
     let summary = make_summary(
         "c".repeat(64).as_str(),
         "b".repeat(64).as_str(),
@@ -110,7 +109,6 @@ fn test_changed_source_or_descriptor_cannot_reuse_an_old_run()
         err
     );
 
-    // Changed catalog
     let mut changed_catalog = catalog.clone();
     if let Some(rt) = changed_catalog
         .get_mut("resource_types")
@@ -191,7 +189,6 @@ fn test_duplicate_or_missing_operation_identity_fails_closed()
     let catalog = make_catalog();
     let canonical = canonical_sha256(&catalog);
 
-    // Duplicate operation
     let checks = [
         "provenance:embedded_catalog_matches",
         "provenance:source_unchanged",
@@ -297,7 +294,6 @@ fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence()
     let catalog = make_catalog();
     let canonical = canonical_sha256(&catalog);
 
-    // Missing both
     let summary = make_summary(
         "a".repeat(64).as_str(),
         "b".repeat(64).as_str(),
@@ -315,7 +311,6 @@ fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence()
         err
     );
 
-    // Wrong parent
     let checks = [
         "provenance:embedded_catalog_matches",
         "provenance:source_unchanged",
@@ -352,7 +347,6 @@ fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence()
         err
     );
 
-    // Wrong merged
     let summary = serde_json::json!({
         "schema_version": 1,
         "failed_checks": 0,
@@ -381,7 +375,6 @@ fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence()
         err
     );
 
-    // Correct
     let summary = serde_json::json!({
         "schema_version": 1,
         "failed_checks": 0,

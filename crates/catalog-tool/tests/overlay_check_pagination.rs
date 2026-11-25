@@ -15,9 +15,6 @@ const PAGINATED_MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}
 }}"#;
 
-/// Operation with NeedsOverlay pagination (heuristic detection, no explicit trait).
-/// Has input cursor field and output cursor field, so it's detected as paginated
-/// but without the formal smithy.api#paginated trait.
 const NEEDS_OVERLAY_MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Service":{"type":"service","operations":[{"target":"n#ListNeedsOverlay"}]},
 "n#ListNeedsOverlay":{"type":"operation","input":{"target":"n#Input"},"output":{"target":"n#Output"}},
@@ -115,7 +112,6 @@ fn paginator_none_accepted_for_needs_overlay_pagination() -> Result<(), Box<dyn 
         &[policy],
         &DenyList::builtin(),
     );
-    // NeedsOverlay means the SDK handles pagination; Paginator::None is valid here.
     match &checked {
         Err(overlay::CheckError::Violations(errors)) => {
             for e in errors {

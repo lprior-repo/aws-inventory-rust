@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/location/service/2020-11-19/location-2020-11-19.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -143,7 +142,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Lists geofence collections in your Amazon Web Services account.
     Resource {
         operation: "ListGeofenceCollections",
         items: "Entries",
@@ -155,7 +153,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // This operation is no longer current and may be deprecated in the future. We recommend upgrading to the Maps API V2 unless you require Grab data. ListMaps is part of a previous Amaz
     Resource {
         operation: "ListMaps",
         items: "Entries",
@@ -167,7 +164,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // This operation is no longer current and may be deprecated in the future. We recommend you upgrade to the Places API V2 unless you require Grab data. ListPlaceIndexes is part of a p
     Resource {
         operation: "ListPlaceIndexes",
         items: "Entries",
@@ -179,7 +175,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // This operation is no longer current and may be deprecated in the future. We recommend you upgrade to the Routes API V2 unless you require Grab data. ListRouteCalculators is part of
     Resource {
         operation: "ListRouteCalculators",
         items: "Entries",
@@ -191,7 +186,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Lists tracker resources in your Amazon Web Services account.
     Resource {
         operation: "ListTrackers",
         items: "Entries",

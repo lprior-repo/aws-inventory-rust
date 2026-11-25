@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/shield/service/2016-06-02/shield-2016-06-02.json
 use super::super::construction::{Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

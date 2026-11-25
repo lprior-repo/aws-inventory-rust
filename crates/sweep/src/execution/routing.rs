@@ -54,7 +54,6 @@ pub(crate) fn resolve(
     plan: &CallablePlan<'_>,
     region: &RegionId,
 ) -> Result<ResolvedEndpoint, SweepError> {
-    // Account-scoped plans run at `Region::Global`, matching `child_region` and `plan_regions`.
     let scope = match plan.scope() {
         PlanScope::Account => Region::Global,
         PlanScope::Region | PlanScope::HomeRegion => Region::Regional(region.clone()),

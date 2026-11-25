@@ -4,7 +4,6 @@ use super::{
 use sqlx::SqlitePool;
 
 pub(super) async fn reconstruct_schema14(pool: &SqlitePool) -> TestResult {
-    // Restore legacy14 before coverage, facets, work context and polymorphic references.
     let mut tx = pool.begin().await?;
     sqlx::query("DROP TABLE tag_observations")
         .execute(&mut *tx)
@@ -31,7 +30,6 @@ pub(super) async fn reconstruct_schema14(pool: &SqlitePool) -> TestResult {
 #[tokio::test]
 async fn tags_upgrade_preserves_legacy_record_hash_timestamps_pairs_and_pending_revision()
 -> TestResult {
-    // Given a valid prior schema with actual typed records/tags written by the public writer.
     let (directory, store, _) = support::fixture().await?;
     state::commit_resources(
         &store,
@@ -61,7 +59,6 @@ async fn tags_upgrade_preserves_legacy_record_hash_timestamps_pairs_and_pending_
     assert_eq!(absent, 0);
     pool.close().await;
 
-    // When BinaryStore performs the 14→17 migration on open.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = state::pool(&directory).await?;
     assert_eq!(
@@ -70,7 +67,6 @@ async fn tags_upgrade_preserves_legacy_record_hash_timestamps_pairs_and_pending_
             .await?,
         17
     );
-    // Then old pairs remain readable, but no freshness or complete-empty evidence is invented.
     assert_eq!(state::resource_image(&pool).await?, image);
     assert_eq!(store.drain_projection(100).await?, pending);
     assert_eq!(coverage(&directory).await?, vec![]);
@@ -121,8 +117,6 @@ async fn tags_upgrade_preserves_legacy_record_hash_timestamps_pairs_and_pending_
 
 #[tokio::test]
 async fn tags_failed_upgrade_leaves_version_schema_and_inventory_unchanged() -> TestResult {
-    // Given schema14 plus a facet namespace collision: tag coverage CREATE succeeds first,
-    // then the next migration DDL fails inside the same transaction.
     let (directory, store, _) = support::fixture().await?;
     state::commit_resources(
         &store,
@@ -143,7 +137,6 @@ async fn tags_failed_upgrade_leaves_version_schema_and_inventory_unchanged() -> 
         .execute(&pool)
         .await?;
     let before = state::database_state(&pool).await?;
-    // When the second CREATE fails, even the already-created tag coverage table must roll back.
     let error = BinaryStore::open(&directory.path().join("inventory.sqlite"))
         .await
         .err()
@@ -153,7 +146,6 @@ async fn tags_failed_upgrade_leaves_version_schema_and_inventory_unchanged() -> 
         if error.message() == "view resource_facets already exists")
     );
     assert_eq!(state::database_state(&pool).await?, before);
-    // Then removing only our fault permits the identical legacy inventory to upgrade and read.
     sqlx::query("DROP VIEW resource_facets")
         .execute(&pool)
         .await?;
@@ -169,7 +161,6 @@ async fn tags_failed_upgrade_leaves_version_schema_and_inventory_unchanged() -> 
 
 #[tokio::test]
 async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it() -> TestResult {
-    // Given actual schema15 coverage, including historical complete evidence and latest failure.
     let (directory, store, _) = support::fixture().await?;
     state::commit_resources(
         &store,
@@ -212,9 +203,7 @@ async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it()
     tx.commit().await?;
     let image = state::resource_image(&pool).await?;
     pool.close().await;
-    // When current migration adds facets, work context, polymorphic reference storage, and ES-10 normalization.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    // Then prior pairs, pending work, and both coverage facts survive.
     assert_eq!(
         coverage(&directory).await?,
         vec![("one".into(), "failed".into(), 200, Some(100))]
@@ -244,7 +233,6 @@ async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it()
 #[tokio::test]
 async fn failed_upgrade_leaves_pre_provenance_schema14_unmutated_and_retry_completes() -> TestResult
 {
-    // Given schema14 without reviewed-reference provenance tables, as created before that DDL existed.
     let (directory, store, _) = support::fixture().await?;
     drop(store);
     let pool = state::pool(&directory).await?;
@@ -257,12 +245,10 @@ async fn failed_upgrade_leaves_pre_provenance_schema14_unmutated_and_retry_compl
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
-    // And a migration fault that fails during the 14→17 transaction's facet DDL.
     sqlx::query("CREATE VIEW resource_facets AS SELECT 'owned migration fault' AS fault")
         .execute(&pool)
         .await?;
     let before = state::database_state(&pool).await?;
-    // When open runs the migration, the failure must roll back every phase, provenance included.
     let error = BinaryStore::open(&directory.path().join("inventory.sqlite"))
         .await
         .err()
@@ -271,7 +257,6 @@ async fn failed_upgrade_leaves_pre_provenance_schema14_unmutated_and_retry_compl
         matches!(&error, StoreError::Sqlite(sqlx::Error::Database(error))
         if error.message() == "view resource_facets already exists")
     );
-    // Then the old version and schema are unchanged.
     let after = state::database_state(&pool).await?;
     assert_eq!(after, before);
     assert_eq!(
@@ -280,7 +265,6 @@ async fn failed_upgrade_leaves_pre_provenance_schema14_unmutated_and_retry_compl
             .await?,
         14
     );
-    // And removing only the fault lets a retry complete the upgrade.
     sqlx::query("DROP VIEW resource_facets")
         .execute(&pool)
         .await?;

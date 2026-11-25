@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/entityresolution/service/2018-05-10/entityresolution-2018-05-10.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "AddPolicyStatement",

@@ -27,8 +27,6 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
         if !falkor_available().await? {
             return Ok(());
         }
-        // Given: exact common, SQL-only, native-only edges and same-id collisions in
-        // account, region AND kind. Expected rows originate in writer observations.
         let fixture = Fixture::new().await?;
         let a = root();
         let b = node(ACCOUNT, "us-west-2", KIND, "shared");
@@ -118,8 +116,6 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             assert_eq!(sql.total_matching, 2);
             assert_eq!(sql.next, None);
 
-            // When: a complete later writer sweep changes every SQL payload/hash and
-            // the database count; the worker keeps no SQL session between requests.
             let mut after = fixture
                 .commit(
                     "after-west",
@@ -163,9 +159,6 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             worker.expand(a.clone())?;
             let retained = graph(&worker).await?;
 
-            // Then: exact topology is native (never SQL-only), every existing node's
-            // metadata is exactly its latest committed table row, and the other-kind
-            // native node with the same id/account/region has no invented SQL metadata.
             assert_edges(&retained, &native_edges)?;
             assert!(!retained.truncated);
             assert_eq!(retained.nodes.len(), 4);
@@ -209,7 +202,6 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             assert_edges(&retained, &direct.edges)?;
             assert_eq!(retained.truncated, direct.truncated);
 
-            // Explicit refresh, unlike selection, is the session boundary.
             worker.refresh(Filter::default())?;
             let (counts, refreshed, total) = snapshot(&worker).await?;
             assert_eq!(counts.resources, 5);
@@ -234,7 +226,6 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
                     refreshed.iter().find(|row| row.key == key)
                 );
             }
-            // Native-only identities remain selectable, without replacing authority.
             worker.expand(c)?;
             let from_native_only = graph(&worker).await?;
             assert_edges(
@@ -258,8 +249,6 @@ fn given_depth_boundary_chain_when_real_worker_expands_then_truncation_warning_p
         if !falkor_available().await? {
             return Ok(());
         }
-        // Given: a deterministic 3-edge chain exceeds the real worker's depth=2;
-        // another disjoint, complete 1-edge component must clear truncation.
         let fixture = Fixture::new().await?;
         fixture
             .commit(
@@ -296,7 +285,6 @@ fn given_depth_boundary_chain_when_real_worker_expands_then_truncation_warning_p
             let (_, rows, total) = snapshot(&worker).await?;
             assert_eq!(rows.len(), 6);
             assert_eq!(total, 6);
-            // When: traversing the long component through the actual producer.
             worker.expand(a)?;
             let truncated = graph(&worker).await?;
             assert_edges(&truncated, edges.get(..2).ok_or("edges missing")?)?;
@@ -308,8 +296,6 @@ fn given_depth_boundary_chain_when_real_worker_expands_then_truncation_warning_p
                 data.graph_status()
                     .contains("neighborhood truncated by query limits")
             );
-            // Then: the complete component delivers exact topology and false, and
-            // the actual Data status formatter removes the prior warning.
             worker.expand(x)?;
             let complete = graph(&worker).await?;
             assert_edges(&complete, edges.get(3..).ok_or("edges missing")?)?;
@@ -334,7 +320,6 @@ fn given_depth_boundary_chain_when_real_worker_expands_then_truncation_warning_p
 fn given_real_query_failure_when_storage_is_repaired_then_worker_clears_error_and_publishes_new_snapshot()
 -> TestResult {
     supervised_async(|| async {
-        // Given: the actual startup/runner with a valid engine-created WAL database.
         let fixture = Fixture::new().await?;
         let before = fixture
             .commit("before", ACCOUNT, REGION, &[("shared", "initial")], &[], 1)
@@ -347,8 +332,6 @@ fn given_real_query_failure_when_storage_is_repaired_then_worker_clears_error_an
             .max_connections(1)
             .connect_with(sqlx::sqlite::SqliteConnectOptions::new().filename(&fixture.path))
             .await?;
-        // The resources/detail hashes disagree: this is a genuine reader failure,
-        // not an injected Snapshot error or a fabricated database response.
         sqlx::query("UPDATE resources SET content_hash=zeroblob(1) WHERE account=? AND region=? AND kind=? AND id=?")
         .bind(ACCOUNT).bind(REGION).bind(KIND).bind("shared").execute(&writer).await?;
         worker.refresh(Filter::default())?;
@@ -366,7 +349,6 @@ fn given_real_query_failure_when_storage_is_repaired_then_worker_clears_error_an
             }
             other => return Err(format!("expected failed real snapshot, got {other:?}").into()),
         }
-        // When: storage is repaired and a real writer commit adds a row.
         sqlx::query("UPDATE resources SET content_hash=(SELECT detail.content_hash FROM thing_records AS detail WHERE detail.account=resources.account AND detail.region=resources.region AND detail.id=resources.id) WHERE kind=?")
         .bind(KIND).execute(&writer).await?;
         let mut expected = fixture
@@ -381,8 +363,6 @@ fn given_real_query_failure_when_storage_is_repaired_then_worker_clears_error_an
             .await?;
         sort_rows(&mut expected);
         worker.refresh(Filter::default())?;
-        // Then: success has error=None at the actual consumer boundary; rows/counts
-        // are fresh rather than the empty error event or previous retained session.
         let (counts, rows, total) = snapshot(&worker).await?;
         assert_eq!(
             counts,
@@ -405,7 +385,6 @@ fn given_real_query_failure_when_storage_is_repaired_then_worker_clears_error_an
 fn given_hostile_text_and_scope_filters_when_actual_worker_refreshes_then_rows_and_counts_match_public_sql_contract()
 -> TestResult {
     supervised_async(|| async {
-        // Given: malicious-looking text is data, alongside a wildcard-looking name.
         let fixture = Fixture::new().await?;
         let expected = fixture
             .commit(
@@ -428,7 +407,6 @@ fn given_hostile_text_and_scope_filters_when_actual_worker_refreshes_then_rows_a
         let database =
             Database::open(fixture.path.to_str().ok_or("non-UTF-8 database path")?).await?;
         for (query, expected_id) in [("' OR 1=1 --", "shared"), ("%_tail", "wildcard")] {
-            // When: passing actual public filter values through the real runner.
             worker.refresh(Filter {
                 query: query.into(),
                 account: Some(ACCOUNT.into()),
@@ -452,7 +430,6 @@ fn given_hostile_text_and_scope_filters_when_actual_worker_refreshes_then_rows_a
                     },
                 )
                 .await?;
-            // Then: independent writer oracle AND public SQL reader agree exactly.
             assert_eq!(total, 1);
             assert_eq!(counts.resources, 3);
             assert_eq!(

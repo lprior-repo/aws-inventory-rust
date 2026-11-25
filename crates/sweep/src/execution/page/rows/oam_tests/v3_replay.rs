@@ -78,17 +78,12 @@ async fn given_fresh_source_x_grant_when_only_its_codec_is_copied_into_changed_p
             "both actual input and full source payload bind the grant"
         );
         let record_y = frozen(&sql, &catalog).await?.1;
-        // Preserve Y's actual SQL row authority and record. Only replay X's old
-        // dependency codec: no fabricated matching source hash or grant is added.
         sqlx::query("UPDATE resource_facets SET relations=?1 WHERE id=?2 AND source_key=?3")
             .bind(&codec_x)
             .bind(LINK)
             .bind(&source_key)
             .execute(&sql)
             .await?;
-        // This independent, compiler-checked native ListLinks metadata branch
-        // owns only Arn, so Y still owns SinkArn and the replayed dependency is
-        // actually selected. It forces re-aggregation without replacing Y.
         store
             .commit_page(
                 page_with_sink(&store, &catalog, "refresh", "reaggregate-y", 3, true, None).await?,
@@ -110,8 +105,6 @@ async fn given_fresh_source_x_grant_when_only_its_codec_is_copied_into_changed_p
             store.projection_edges(None, 100).await?.edges.is_empty(),
             "X's retained grant cannot authorize Y's copied codec"
         );
-        // An actual Y observation can issue Y's own proof and resolve only its
-        // exact foreign target; this also proves the rejection is not a blanket ban.
         store
             .commit_page(
                 page_with_input(

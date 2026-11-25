@@ -1,10 +1,8 @@
 use super::{InventoryError, tag::check_key};
 use thiserror::Error;
 
-/// Upper bound on tag keys listed for one role; bounds the derived view's candidate set.
 pub const MAX_MAPPING_KEYS: usize = 16;
 
-/// The three derived ownership roles. Their names are the persisted `role` values.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TagRole {
     Owner,
@@ -45,10 +43,6 @@ pub enum TagMappingError {
     Key(#[from] InventoryError),
 }
 
-/// Ordered tag keys per derived role. Position is priority: the first key whose
-/// tag carries a nonempty value supplies the role's value.
-///
-/// The mapping is operator input. Sweeps never read or write it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TagMapping {
     owner: Vec<String>,
@@ -57,8 +51,6 @@ pub struct TagMapping {
 }
 
 impl TagMapping {
-    /// Parses `owner`, `team` and `application` arrays of tag keys. Missing roles are
-    /// empty; any other top-level name, non-string item, invalid key or duplicate fails.
     pub fn parse(text: &str) -> Result<Self, TagMappingError> {
         let table: toml::Table = text.parse().map_err(|_| TagMappingError::Syntax)?;
         let mut mapping = Self::default();

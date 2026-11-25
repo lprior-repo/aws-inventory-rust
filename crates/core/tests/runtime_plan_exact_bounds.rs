@@ -49,22 +49,18 @@ fn identity_catalog(output_fields: &[u32], identity: Value) -> TestResult<Vec<u8
 
 #[test]
 fn loader_preserves_all_eight_identity_keys_at_the_exact_tuple_bound() -> TestResult {
-    // Given distinct ordered paths at the accepted bound; nine is already
-    // covered by runtime_plan_adversarial, so this is the missing inclusive side.
     let parts = (1..=8)
         .map(|id| Value::List(vec![Value::Int(id)]))
         .collect();
     let identity = map([(1, Value::Int(2)), (2, Value::List(parts))])?;
     let output_fields: Vec<u32> = (1..=8).collect();
     let bytes = identity_catalog(&output_fields, identity)?;
-    // When the public consumer loads a modeled catalog artifact.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .plans()
         .iter()
         .find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
-    // Then neither an early bound check nor truncation can lose the eighth key.
     let expected = (1..=8)
         .map(|id| Ok(vec![FieldId::new(id)?].into_boxed_slice()))
         .collect::<TestResult<Vec<_>>>()?;
@@ -77,7 +73,6 @@ fn loader_preserves_all_eight_identity_keys_at_the_exact_tuple_bound() -> TestRe
 
 #[test]
 fn loader_preserves_all_sixty_four_template_parts_at_the_exact_bound() -> TestResult {
-    // Given 32 distinguishable literal/field pairs, not repeated identical tags.
     let pairs = (1..=32)
         .map(|id| -> TestResult<[Value; 2]> {
             Ok([
@@ -92,15 +87,12 @@ fn loader_preserves_all_sixty_four_template_parts_at_the_exact_bound() -> TestRe
     ])?;
     let output_fields: Vec<u32> = (1..=32).collect();
     let bytes = identity_catalog(&output_fields, identity)?;
-    // When loading through the public artifact decoder.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .plans()
         .iter()
         .find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
-    // Then all 64 parts retain their kind, contents and order. The existing
-    // adversarial suite supplies the complementary 65-part Bounds rejection.
     let expected = (1..=32)
         .map(|id| -> TestResult<[IdentityPart; 2]> {
             Ok([

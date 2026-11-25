@@ -12,7 +12,6 @@ use thiserror::Error;
 const MAX_FILE_BYTES: u64 = 67_108_864;
 const MAX_ENTRIES: usize = 65_536;
 
-/// Reads one Smithy model, keeping only operations inside its service closure.
 pub(crate) fn read_model<T: serde::de::DeserializeOwned>(file: &Path) -> Result<T, Error> {
     let bytes = read_bytes(file, MAX_FILE_BYTES)?;
     let invalid = |source| Error::InvalidJson {
@@ -26,7 +25,6 @@ pub(crate) fn read_model<T: serde::de::DeserializeOwned>(file: &Path) -> Result<
     let value = bound_value(&bytes, &unbound).map_err(invalid)?;
     serde_json::from_value(value).map_err(invalid)
 }
-/// Reads one Smithy model as JSON, keeping only operations inside its service closure.
 pub(crate) fn read_value(file: &Path) -> Result<serde_json::Value, Error> {
     let bytes = read_bytes(file, MAX_FILE_BYTES)?;
     let invalid = |source| Error::InvalidJson {

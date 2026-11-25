@@ -85,7 +85,6 @@ fn expected(region: &str, key: &str, value: &str) -> TagAffiliation {
 }
 
 async fn check_membership(graph: &GraphConnection, db: &Database) -> TestResult {
-    // When: native tag reads, SQL details, and AWS dependency traversal share a root.
     let complete = graph.tag_affiliations(&root(), 10).await?;
     let bounded = graph.tag_affiliations(&root(), 1).await?;
     let detail = db.detail(&root()).await?.ok_or("SQL root missing")?;
@@ -99,7 +98,6 @@ async fn check_membership(graph: &GraphConnection, db: &Database) -> TestResult 
             },
         )
         .await?;
-    // Then: exact scoped provenance-bearing tags, bounded lookahead, no tag dependencies.
     assert_eq!(
         complete.affiliations,
         vec![
@@ -165,7 +163,6 @@ async fn check_membership(graph: &GraphConnection, db: &Database) -> TestResult 
 #[tokio::test]
 async fn given_real_native_tags_when_reading_then_affiliations_are_scoped_bounded_and_not_aws_dependencies()
 -> TestResult {
-    // Given: real FalkorDB, required explicitly; missing endpoint fails this lane.
     const ENDPOINT_ENV: &str = "CMDB_VIEW_FALKOR_ENDPOINT";
     let endpoint = std::env::var(ENDPOINT_ENV)
         .map_err(|error| format!("native tag graph test requires {ENDPOINT_ENV}: {error}"))?;

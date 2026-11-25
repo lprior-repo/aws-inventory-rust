@@ -9,7 +9,6 @@ use inventory_harness::inventory_seed::{
 };
 use std::collections::BTreeMap;
 
-// DEAD ELBV2_REGION deleted — never used; removed, not allowed.
 pub(crate) const ALB_NAME: &str = "inventory-seed-alb";
 pub(crate) const TARGET_GROUP_NAME: &str = "inventory-seed-targets";
 pub(crate) const CPU_ALARM_NAME: &str = "inventory-seed-cpu";

@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/nova-act/service/2025-08-22/nova-act-2025-08-22.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -45,20 +44,17 @@ const GROUPS: &[Group] = &[
     },
 ];
 
-const RESOURCES: &[Resource] = &[
-    // Lists all workflow definitions in your account with optional filtering and pagination.
-    Resource {
-        operation: "ListWorkflowDefinitions",
-        items: "workflowDefinitionSummaries",
-        id: Id::Arn("workflowDefinitionArn"),
-        scope: Scope::Region,
-        tokens: Some(("nextToken", "nextToken")),
-        query: &["workflowDefinitionArn", "workflowDefinitionName", "status"],
-        tags: None,
-        bindings: &[],
-        fixed: &[],
-    },
-];
+const RESOURCES: &[Resource] = &[Resource {
+    operation: "ListWorkflowDefinitions",
+    items: "workflowDefinitionSummaries",
+    id: Id::Arn("workflowDefinitionArn"),
+    scope: Scope::Region,
+    tokens: Some(("nextToken", "nextToken")),
+    query: &["workflowDefinitionArn", "workflowDefinitionName", "status"],
+    tags: None,
+    bindings: &[],
+    fixed: &[],
+}];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     compile("nova-act", GROUPS, RESOURCES)

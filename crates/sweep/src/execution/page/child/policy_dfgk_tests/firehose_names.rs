@@ -10,7 +10,6 @@ const LAST_NAME: &str = "stream.Middle-09_";
 const MAX_NAME: &str = concat!(
     "zzzzzzzz", "zzzzzzzz", "zzzzzzzz", "zzzzzzzz", "zzzzzzzz", "zzzzzzzz", "zzzzzzzz", "zzzzzzzz"
 );
-// Independent, pinned service-grammar oracles, never derived from observed ResourceKey IDs.
 const FIRST_ARN: &str = "arn:aws:firehose:us-east-1:123456789012:deliverystream/a";
 const LAST_ARN: &str = "arn:aws:firehose:us-east-1:123456789012:deliverystream/stream.Middle-09_";
 const NEW_ARN: &str = "arn:aws:firehose:us-east-1:123456789012:deliverystream/b";

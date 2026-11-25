@@ -1,14 +1,11 @@
-// Pinned operation purposes: .local/aws-models/models/signer/service/2017-08-25/signer-2017-08-25.json
 use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    // Changes service state rather than reading inventory. Pinned purpose: Adds cross-account permissions to a signing profile.
     (
         "AddProfilePermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Changes the state of an ACTIVE signing profile to CANCELED . A canceled profile is still viewable with the ListSigningProfiles operation, but it cannot perform new signing jobs. See Data Retention for more information on scheduled deletion of a canceled signing profile.
     (
         "CancelSigningProfile",
         Decision::Denied(DenyReason::Mutating),
@@ -43,7 +40,6 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors profileName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members revisionId, policySizeBytes, permissions, nextToken. Pinned purpose: Lists the cross-account permissions associated with a signing profile.",
         ),
     ),
-    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists all signing platforms available in AWS Signer that match the request parameters. If additional jobs remain to be listed, Signer returns a nextToken value. Use this value in subsequent calls to ListSigningJobs to fetch the remaining values. You can continue calling ListSigningJobs with your maxResults parameter and with new values that Signer
     (
         "ListSigningPlatforms",
         Decision::Denied(DenyReason::ReferenceData),
@@ -54,16 +50,12 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: resourceArn. Pinned purpose: Returns a list of the tags associated with a signing profile resource.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a signing profile. A signing profile is a code-signing template that can be used to carry out a pre-defined signing job.
     ("PutSigningProfile", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes cross-account permissions from a signing profile.
     (
         "RemoveProfilePermission",
         Decision::Denied(DenyReason::Mutating),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Changes the state of a signing job to REVOKED . This indicates that the signature is no longer valid.
     ("RevokeSignature", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Changes the state of a signing profile to REVOKED . This indicates that signatures generated using the signing profile after an effective start date are no longer valid. A revoked profile is still viewable with the ListSigningProfiles operation, but it cannot perform new signing jobs. See Data Retention for more information on scheduled deletion of a revoked signing profile.
     (
         "RevokeSigningProfile",
         Decision::Denied(DenyReason::Mutating),
@@ -74,10 +66,7 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
             "Required selectors profileName, payload, payloadFormat are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members jobId, jobOwner, metadata, signature. Pinned purpose: Signs a binary payload and returns a signature envelope.",
         ),
     ),
-    // Changes service state rather than reading inventory. Pinned purpose: Initiates a signing job to be performed on the code provided. Signing jobs are viewable by the ListSigningJobs operation. Note the following requirements: You must create an Amazon S3 source bucket. For more information, see Creating a Bucket in the Amazon S3 Getting Started Guide . Your S3 source bucket must be version enabled. You must create an S3 destination bucket. AWS Signer uses your S3 des
     ("StartSigningJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Adds one or more tags to a signing profile. Tags are labels that you can use to identify and organize your AWS resources. Each tag consists of a key and an optional value. To specify the signing profile, use its Amazon Resource Name (ARN). To specify the tag, use a key-value pair.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes one or more tags from a signing profile. To remove the tags, specify a list of tag keys.
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
 ];

@@ -4,11 +4,8 @@ use inventory_core::inventory::KindSchema;
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use std::{collections::BTreeSet, sync::Arc};
 
-/// Each metadata value stays below the bundled SQLite `MAX_LENGTH` (8 MiB), so the reviewed
-/// catalog is stored as a head row plus ordered `reviewed_catalog.NN` continuation rows.
 const CHUNK_BYTES: usize = 4 * 1024 * 1024;
 const MAX_CHUNKS: usize = super::super::MAX_CATALOG_BYTES.div_ceil(CHUNK_BYTES);
-// Continuation keys carry two digits, so the head plus `.01`-`.99` is the hard ceiling.
 const _: () = assert!(MAX_CHUNKS <= 100);
 
 pub(in crate::inventory) async fn persist(
@@ -23,7 +20,6 @@ pub(in crate::inventory) async fn persist(
     let Some(head) = chunks.next() else {
         return Ok(());
     };
-    // The head row is the commit marker: an existing head keeps the stored catalog untouched.
     let inserted = sqlx::query(
         "INSERT INTO metadata(key,value) VALUES('reviewed_catalog',?1) ON CONFLICT(key) DO NOTHING",
     )
@@ -53,7 +49,6 @@ pub(in crate::inventory) async fn load_registry(
     schemas: Vec<Arc<KindSchema>>,
     operations: BTreeSet<(String, String)>,
 ) -> Result<SchemaRegistry, StoreError> {
-    // Binary key order puts the head row first, then continuation rows in chunk order.
     let rows = sqlx::query("SELECT key,value FROM metadata WHERE key='reviewed_catalog' OR key GLOB 'reviewed_catalog.[0-9][0-9]' ORDER BY key LIMIT ?1")
         .bind(i64::try_from(MAX_CHUNKS).map_err(|_| StoreError::Invalid("catalog chunk bound"))?)
         .fetch_all(pool).await?;

@@ -60,10 +60,8 @@ const BOUND_CASES: &[(&str, &str, &str, &str, &str)] = &[
 
 #[test]
 fn required_firewall_page_size_is_a_typed_bounded_integer_not_a_resource_filter() -> TestResult {
-    // Given the pinned required MaxResults input and 1..=100 range.
     let policies = overlay::embedded()?;
     for name in ["ListAppsLists", "ListProtocolsLists"] {
-        // When reading the public plan, then all caller-owned lists remain enumerable across pages.
         let plan = operation(&policies, "fms", name)?;
         assert_eq!(plan.class, Some(OverlayClass::Enumerate));
         assert_eq!(
@@ -90,10 +88,8 @@ fn required_firewall_page_size_is_a_typed_bounded_integer_not_a_resource_filter(
 
 #[test]
 fn descendants_bind_real_selected_parent_identifiers_not_invented_arn_components() -> TestResult {
-    // Given the pinned parent summaries and scalar required labels.
     let policies = overlay::embedded()?;
     for (service, name, input, parent, member) in BOUND_CASES {
-        // When reading each public descendant plan, then it expands every enumerated parent.
         let plan = operation(&policies, service, name)?;
         assert_eq!(plan.class, Some(OverlayClass::Expand), "{service}/{name}");
         assert_eq!(plan.bind.len(), 1);
@@ -124,7 +120,6 @@ fn descendants_bind_real_selected_parent_identifiers_not_invented_arn_components
 #[test]
 fn endpoint_and_selenium_projections_cannot_hide_whole_response_programs_or_credentials()
 -> TestResult {
-    // Given responses containing customer configuration maps, Selenium JSON, or authentication tokens.
     let policies = overlay::embedded()?;
     let cases = [
         ("emr-containers", "ListManagedEndpoints", DenyReason::Secret),
@@ -136,7 +131,6 @@ fn endpoint_and_selenium_projections_cannot_hide_whole_response_programs_or_cred
         ("frauddetector", "GetRules", DenyReason::Content),
     ];
     for (service, name, reason) in cases {
-        // When resolving the public plan, then an ARN-only projection never authorizes the whole call.
         let plan = operation(&policies, service, name)?;
         assert_eq!(plan.class, Some(OverlayClass::Deny(reason)));
         assert_eq!(plan.identity, None);
@@ -147,10 +141,8 @@ fn endpoint_and_selenium_projections_cannot_hide_whole_response_programs_or_cred
 
 #[test]
 fn shared_job_arns_and_unassured_export_urls_remain_explicitly_noncallable() -> TestResult {
-    // Given attempts sharing a job ARN and DMS's shared SchemaConversionRequest output.
     let policies = overlay::embedded()?;
     let attempts = operation(&policies, "emr-serverless", "ListJobRunAttempts")?;
-    // When examining public dispositions, then neither identity aliasing nor projection fakes collection.
     assert_eq!(attempts.class, Some(OverlayClass::Defer));
     assert!(
         attempts

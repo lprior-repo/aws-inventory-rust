@@ -32,7 +32,6 @@ fn given_real_list_and_detail_responses_when_selected_then_three_views_converge_
         ),
     ];
     for (service, date, list, detail, list_body, detail_body, expected) in cases {
-        // Given/When: real wire field names are decoded and selected with compiled item selectors.
         let compiled = compile(service, date, &[list, detail])?;
         let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
         let list_plan = catalog.lookup(service, list).ok_or("list plan missing")?;
@@ -41,7 +40,6 @@ fn given_real_list_and_detail_responses_when_selected_then_three_views_converge_
             .ok_or("detail plan missing")?;
         let list_id = only_id(list_plan, &list_body)?;
         let detail_id = only_id(detail_plan, &detail_body)?;
-        // Then: neither alternate detail ARN nor list display name manufactures a second node.
         assert_eq!(list_id, detail_id, "{service}");
         assert_eq!(list_id.as_str(), expected);
         assert_eq!(list_plan.kind(), detail_plan.kind());

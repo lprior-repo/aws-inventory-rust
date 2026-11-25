@@ -2,29 +2,20 @@ use std::time::Duration;
 
 use super::scheduler::{Action, CadenceError, Millis, RunOutcome, Scheduler};
 
-/// Why a sleep ended.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Wake {
     Elapsed,
     Stop,
 }
 
-/// The effects the loop needs, injected so tests run on a virtual clock.
 pub trait Environment {
     fn now(&self) -> Millis;
-    /// When each of `profiles` profiles last completed, as the store recorded it
-    /// (`None` if never). Read once, when the loop starts.
     fn last_completed(&self, profiles: usize) -> impl Future<Output = Vec<Option<Millis>>>;
-    /// True once the operator asked to stop. Checked before every run.
     fn stop_requested(&self) -> bool;
-    /// Wait until `until` on the injected clock, or until a stop request.
     fn sleep_until(&self, until: Millis) -> impl Future<Output = Wake>;
-    /// Run one profile's sweep to completion, failure or interruption.
     fn run_profile(&self, profile: usize) -> impl Future<Output = RunOutcome>;
 }
 
-/// Counters for a finished loop. Only counters: a loop that serves for months
-/// must not grow a history.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ServeReport {
     pub passes: u64,
@@ -46,7 +37,6 @@ impl ServeReport {
     }
 }
 
-/// Run the loop until a stop request or an interrupted run.
 pub async fn serve<E: Environment>(
     environment: &E,
     interval: Duration,

@@ -86,9 +86,6 @@ impl Fixture {
 
 impl Drop for Fixture {
     fn drop(&mut self) {
-        // Release the actual fixture FIFO even if a broken production finalizer
-        // reaped the leader but left its descendant alive. Never signal a PGID
-        // after reap: it could already identify an unrelated process group.
         if let Err(error) = self.release.write_all(b"release\n") {
             eprintln!("fixture FIFO release failed: {error}");
         }
@@ -104,8 +101,6 @@ impl Drop for Fixture {
                 eprintln!("fixture child reap failed: {error}");
             }
         }
-        // At most five unread handshake bytes precede EOF; each socket read has
-        // the fixture's two-second timeout, and the FIFO write is nonblocking.
         let mut remaining = Vec::new();
         if let Err(error) = (&mut self.handshake).take(6).read_to_end(&mut remaining) {
             eprintln!("fixture descendant drain failed: {error}");
@@ -195,7 +190,6 @@ fn given_reaped_leader_without_group_cleanup_when_fixture_drops_then_descendant_
     drop(fixture);
 
     let observed = handshake.read(&mut [0; 1]);
-    // Independently release the fixture even if its Drop path regresses.
     emergency_release.write_all(b"release\n")?;
     assert_eq!(handshake.read(&mut [0; 1])?, 0);
     assert_eq!(observed?, 0, "fixture Drop left its descendant alive");

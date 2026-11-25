@@ -1,4 +1,3 @@
-// Entire pinned service accounted for; no runtime name-prefix authorization.
 use super::super::{name, path};
 use super::{NameError, ServiceOverlay, construction};
 use crate::overlay::{ExecutionBranch, FixedValue, Identity, IdentityField, Scope};

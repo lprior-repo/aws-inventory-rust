@@ -5,7 +5,6 @@ use crate::{
     overlay::{NameError, ServiceOverlay},
 };
 
-// Reviewed against pinned Smithy documentation, not operation-name read approval.
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     service(
         "waf",

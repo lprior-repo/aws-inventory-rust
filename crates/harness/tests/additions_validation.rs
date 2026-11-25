@@ -1,5 +1,3 @@
-//! Tests for check_additions and write_reconciliation.
-
 use std::fs;
 use std::path::{Path, PathBuf};
 

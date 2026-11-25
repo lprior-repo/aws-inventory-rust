@@ -101,7 +101,6 @@ fn given_mixed_valid_and_invalid_tags_when_normalized_then_valid_tags_are_preser
     let first = obs.tags().first().ok_or("expected one tag")?;
     assert_eq!(first.key(), "env");
     assert_eq!(first.value(), "prod");
-    // One tag was skipped, so coverage should be Partial.
     assert_eq!(obs.coverage(), TagCoverage::Partial);
     Ok(())
 }
@@ -121,12 +120,10 @@ fn given_exactly_100_valid_tags_when_observed_then_complete() -> TestResult {
 #[test]
 fn given_60_invalid_and_90_valid_tags_when_observed_then_partial() -> TestResult {
     let mut tags: Vec<Value> = Vec::new();
-    // 60 invalid tags (129-char keys, exceeding 128 limit)
     for _ in 0..60 {
         let key = "é".repeat(129);
         tags.push(pair(&key, "value")?);
     }
-    // 90 valid tags
     for i in 0..90 {
         tags.push(pair(&format!("valid-{i}"), "value")?);
     }
@@ -201,7 +198,6 @@ fn given_missing_and_explicit_empty_tags_when_normalized_then_coverage_is_not_co
 
 #[test]
 fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage() -> TestResult {
-    // Duplicate keys are skipped, and coverage becomes Partial.
     let duplicates = record(Some(Value::List(vec![
         pair("same", "a")?,
         pair("same", "b")?,
@@ -209,7 +205,6 @@ fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage()
     let dup_obs = tag_observation(&duplicates, &resource()?, &list_plan()?)?;
     assert_eq!(dup_obs.tags().len(), 1);
     assert_eq!(dup_obs.coverage(), TagCoverage::Partial);
-    // A malformed pair is skipped; the valid one survives with Partial coverage.
     let malformed = record(Some(Value::List(vec![
         pair("good", "a")?,
         Value::Text("bad".into()),
@@ -227,7 +222,6 @@ fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage()
     let oversized = (0..101)
         .map(|index| pair(&index.to_string(), "v"))
         .collect::<Result<Vec<_>, _>>()?;
-    // 101 tags are truncated to 100 with Partial coverage, not an error.
     let oversized_obs = tag_observation(
         &record(Some(Value::List(oversized)))?,
         &resource()?,

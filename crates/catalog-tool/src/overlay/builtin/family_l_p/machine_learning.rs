@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/machine-learning/service/2014-12-12/machine-learning-2014-12-12.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -81,7 +80,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a list of MLModel that match the search criteria in the request.
     Resource {
         operation: "DescribeMLModels",
         items: "Results",
@@ -99,7 +97,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of DescribeEvaluations that match the search criteria in the request.
     Resource {
         operation: "DescribeEvaluations",
         items: "Results",
@@ -117,7 +114,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a list of BatchPrediction operations that match the search criteria in the request.
     Resource {
         operation: "DescribeBatchPredictions",
         items: "Results",

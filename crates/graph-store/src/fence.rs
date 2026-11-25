@@ -1,7 +1,6 @@
 use crate::{GraphError, cypher, response};
 use redis::aio::MultiplexedConnection;
 
-// Fixed-width strings preserve generation ordering above Lua's numeric precision.
 const CLAIM: &str = r"
 local current = redis.call('GET', KEYS[1])
 if current and not string.match(current, '^%d+$') then
@@ -98,7 +97,6 @@ pub(crate) async fn clear_pages(
     delete: &str,
 ) -> Result<(), GraphError> {
     let mut remaining = 10_000_usize;
-    // Each successful step consumes one of the fixed cleanup-page budget.
     while remaining > 0 {
         let value = graph.request(exists).await?;
         if !has_row(&value)? {

@@ -127,8 +127,6 @@ async fn serve(
             }
         }
     }
-    // Every admitted connection has its own deadline and is joined before the
-    // upstream owner is drained; dropping the owner aborts its entire JoinSet.
     while let Some(result) = children.join_next().await {
         result.map_err(io::Error::other)??;
     }

@@ -48,8 +48,6 @@ async fn given_slow_discovery_and_target_when_page_commits_then_cursor_advances_
     let elapsed = i64::try_from(start.elapsed().as_millis())?;
     tokio::time::resume();
     calls?;
-    // The old one-call lease was305s at concurrency4. Both real retrying
-    // executor calls must finish before the same durable page is committed.
     assert!(elapsed > 305_000);
     assert!(elapsed < fixture.lease_ms);
     assert_eq!(executor.stats().attempts, 10);

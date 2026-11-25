@@ -1,5 +1,3 @@
-//! One claim pages its scope while each committed page keeps the lease.
-
 use super::support::{Fixture, TestResult};
 use super::*;
 use draining::admission::{MAX_PAGES_PER_CLAIM, Owned};
@@ -7,7 +5,6 @@ use inventory_core::inventory::ScopeOutcome;
 use inventory_engine::inventory::{PageCommit, WorkLease};
 use std::cell::{Cell, RefCell};
 
-/// A scope of `pages` pages committed to the fixture's store; page `n` hands on token `[n]`.
 struct Pager<'a> {
     fixture: &'a Fixture,
     pages: u16,
@@ -98,13 +95,10 @@ async fn reclaim(fixture: &Fixture) -> TestResult<WorkLease> {
 #[tokio::test]
 async fn given_three_pages_when_one_claim_is_settled_then_all_three_are_fetched_and_the_scope_completes()
 -> TestResult {
-    // Given one claimed scope that has three pages.
     let fixture = Fixture::new("page-loop-three").await?;
     let pager = Pager::new(&fixture, 3, None);
     let owned = Owned::default();
-    // When the claim is settled.
     let total = settle(&owned, &pager, true).await??;
-    // Then the one claim fetched every page, and nothing is left owned or queued.
     assert_eq!(pager.calls.get(), 3);
     assert_eq!(total.resource_writes, 3);
     assert!(owned.take().is_empty());
@@ -114,14 +108,10 @@ async fn given_three_pages_when_one_claim_is_settled_then_all_three_are_fetched_
 #[tokio::test]
 async fn given_an_endless_scope_when_one_claim_is_settled_then_it_stops_at_the_page_bound_and_requeues()
 -> TestResult {
-    // Given one claimed scope that always has another page.
     let fixture = Fixture::new("page-loop-bound").await?;
     let pager = Pager::new(&fixture, u16::MAX, None);
     let owned = Owned::default();
-    // When the claim is settled.
     let total = settle(&owned, &pager, true).await??;
-    // Then it fetched the bound, did not keep the lease past the last page, and the
-    // scope is back in the queue at the last committed token.
     assert_eq!(pager.calls.get(), MAX_PAGES_PER_CLAIM);
     assert_eq!(total.resource_writes, u64::from(MAX_PAGES_PER_CLAIM));
     let keeps = pager.keeps.take();
@@ -136,13 +126,10 @@ async fn given_an_endless_scope_when_one_claim_is_settled_then_it_stops_at_the_p
 #[tokio::test]
 async fn given_the_drain_may_not_claim_when_a_page_has_a_successor_then_the_lease_is_not_kept()
 -> TestResult {
-    // Given one claimed scope with three pages and a drain that may claim no more.
     let fixture = Fixture::new("page-loop-refused").await?;
     let pager = Pager::new(&fixture, 3, None);
     let owned = Owned::default();
-    // When the claim is settled.
     settle(&owned, &pager, false).await??;
-    // Then only the first page is fetched and the scope waits in the queue for the next slice.
     assert_eq!(*pager.keeps.borrow(), vec![false]);
     assert!(owned.take().is_empty());
     let resumed = reclaim(&fixture).await?;
@@ -153,14 +140,10 @@ async fn given_the_drain_may_not_claim_when_a_page_has_a_successor_then_the_leas
 #[tokio::test]
 async fn given_a_kept_lease_when_the_next_page_fails_then_the_kept_lease_is_the_one_still_owned()
 -> TestResult {
-    // Given one claimed scope whose second page fails.
     let fixture = Fixture::new("page-loop-fault").await?;
     let pager = Pager::new(&fixture, 3, Some(2));
     let owned = Owned::default();
-    // When the claim is settled.
     let result = settle(&owned, &pager, true).await?;
-    // Then the fault is returned and the owned lease is the kept one, which the store still
-    // accepts, so a cancelled drain can release it.
     assert!(matches!(result, Err(SweepError::Operation("page fault"))));
     let mut left = owned.take();
     assert_eq!(left.len(), 1);

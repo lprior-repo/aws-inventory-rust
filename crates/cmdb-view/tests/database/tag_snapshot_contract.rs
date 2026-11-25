@@ -69,7 +69,6 @@ fn expected(value: &str) -> Vec<ResourceTag> {
 async fn given_real_tag_only_commits_when_retained_reader_queries_then_opening_tags_survive_replacement_and_removal()
 -> TestResult {
     tokio::time::timeout(Duration::from_secs(15), async {
-        // Given: a production writer snapshot and a reader pinned before tag reads.
         let (_directory, store, db) = fixture().await?;
         commit_tags(
             &store,
@@ -80,7 +79,6 @@ async fn given_real_tag_only_commits_when_retained_reader_queries_then_opening_t
         )
         .await?;
         let mut retained = db.snapshot().await?;
-        // When: unchanged resource content gets new tags and then complete-empty tags.
         commit_tags(
             &store,
             "tag-replace",
@@ -102,7 +100,6 @@ async fn given_real_tag_only_commits_when_retained_reader_queries_then_opening_t
             .detail(&node(ACCOUNT, REGION, "root"))
             .await?
             .ok_or("retained root missing")?;
-        // Then: old transaction has old tags/filter result, fresh read sees removal.
         assert_eq!(old.tags, expected("old"));
         assert_eq!(
             old.tag_observation,
@@ -156,7 +153,6 @@ async fn given_real_tag_only_commits_when_retained_reader_queries_then_opening_t
 async fn given_real_known_tags_when_failed_or_partial_snapshots_arrive_then_public_reader_keeps_known_membership()
 -> TestResult {
     tokio::time::timeout(Duration::from_secs(15), async {
-        // Given: a complete production tag observation.
         let (_directory, store, db) = fixture().await?;
         commit_tags(
             &store,
@@ -166,7 +162,6 @@ async fn given_real_known_tags_when_failed_or_partial_snapshots_arrive_then_publ
             100,
         )
         .await?;
-        // When: partial, failed, and unobserved extraction follows.
         commit_tags(
             &store,
             "partial",
@@ -198,7 +193,6 @@ async fn given_real_known_tags_when_failed_or_partial_snapshots_arrive_then_publ
             })
         );
         commit_tags(&store, "unobserved", TagCoverage::Unobserved, vec![], 400).await?;
-        // Then: consumer details/filters expose only the last complete observation.
         let found = db.page(&tagged("known"), page(10)).await?;
         assert_eq!(found.total_matching, 1);
         assert_eq!(

@@ -3,7 +3,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 failed=0
 count=0
-# Reviewed data tables are exempt: one literal row per decision.
 is_table() {
     case "$1" in
         crates/catalog-tool/src/kind_map/builtin_operation.rs) return 0 ;;

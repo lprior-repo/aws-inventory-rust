@@ -19,7 +19,6 @@ async fn versions(
             row: json!({"Id":parent,"Arn":arn,"Name":"definition metadata"}),
         }
     });
-    // VersionInformation.Id intentionally repeats its parent on both populated pages. Only Arn/Version changes.
     exercise(
         Case {
             service: "greengrass",

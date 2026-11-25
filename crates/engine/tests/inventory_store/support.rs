@@ -515,7 +515,6 @@ fn seal_catalog(root: &mut Value) -> TestResult {
         .ok_or("runtime extension missing")?;
     let encoded = Record::encode(extension)?;
     let reviewed = compiled_inputs_sha256(encoded.root())?;
-    // This is an explicitly synthetic Example fixture, not an upstream source receipt.
     let source_hash = sha2::Sha256::digest(include_bytes!("support.rs"));
     let Value::Map(extension) = extension else {
         return Err("runtime extension is not a map".into());

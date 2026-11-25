@@ -1,7 +1,3 @@
-//! Frozen fixture safe member trees, reviewed against the pinned provider shapes.
-//! Independent of compiled runtime plans and production filtering: changing
-//! either cannot silently expand this oracle. Optional provider metadata has
-//! explicit scalar predicates; configured values are checked in safe_fields.
 use super::TestResult;
 use inventory_core::record::{Key, Value};
 

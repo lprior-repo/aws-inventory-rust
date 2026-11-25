@@ -2,7 +2,6 @@ use super::*;
 use serde_json::json;
 
 pub(super) const SIZE_LIMIT: usize = 6144;
-// Default role attachment quota is 20; AWS permits increases to 25 (2026-11-24).
 pub(super) const ROLE_LIMIT: usize = 20;
 
 fn document(actions: &[&str]) -> Result<String, Error> {
@@ -120,7 +119,6 @@ mod tests {
             .collect();
         let policies = split(&actions)?;
         assert_eq!(policies.len(), ROLE_LIMIT);
-        // AWS documents 1 MB for S3-hosted templates; use the conservative decimal bound.
         assert!(template(&policies).len() <= 1_000_000);
         Ok(())
     }

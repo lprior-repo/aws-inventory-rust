@@ -3,7 +3,6 @@ use super::*;
 #[tokio::test]
 async fn given_bound_definition_work_when_a_version_arn_has_wrong_scope_or_is_malformed_then_no_page_prefix_is_persisted()
 -> TestResult {
-    // Given: real pinned immutable-version policies, durable parent fanout and production request encoding.
     let compiled = compile(
         "greengrass",
         "2017-06-07",
@@ -73,7 +72,6 @@ async fn given_bound_definition_work_when_a_version_arn_has_wrong_scope_or_is_ma
             return Err("bound parent is not text".into());
         };
         let invalid_arn = arn.replace("parent-a", parent);
-        // When: a valid row precedes an invalid ARN in the same decoded response page.
         let response = json!({"Versions":[
             {"Arn":format!("arn:aws:greengrass:us-east-1:123456789012:/greengrass/definition/cores/{parent}/versions/good"),"Id":parent,"Version":"good"},
             {"Arn":invalid_arn,"Id":parent,"Version":"bad"}
@@ -90,7 +88,6 @@ async fn given_bound_definition_work_when_a_version_arn_has_wrong_scope_or_is_ma
             Some(crate::SweepError::Operation(message)) if *message == expected),
             "wrong rejection: {error}"
         );
-        // Then: rejection is atomic, including the valid prefix, and no definition body was requested.
         let reader = scenario.reader().await?;
         let nodes: Vec<(String, String)> =
             sqlx::query_as("SELECT kind,id FROM resources ORDER BY id")

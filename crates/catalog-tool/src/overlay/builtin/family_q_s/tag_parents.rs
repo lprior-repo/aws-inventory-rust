@@ -1,4 +1,3 @@
-// Literal reviewed SageMaker ARN-producing inventory parents.
 pub(super) const SAGEMAKER: &[(&str, &str)] = &[
     ("ListEndpoints", "EndpointArn"),
     ("ListEndpointConfigs", "EndpointConfigArn"),

@@ -761,7 +761,6 @@ fn identity_budget_fixture(chain: bool) -> TestResult<Vec<u8>> {
 #[test]
 fn given_branching_and_deep_outputs_when_drafted_then_both_identity_limits_preserve_other_steps()
 -> TestResult {
-    // 64 x 64 reaches the visit limit; 4096 nested lists reach pending + visited.
     for chain in [false, true] {
         let bytes = identity_budget_fixture(chain)?;
         let runtime = RuntimeCatalog::from_bytes(&bytes)?;
@@ -872,8 +871,6 @@ fn exact_input_budget_fixture(overflow: bool) -> TestResult<Vec<u8>> {
 
 #[test]
 fn given_exact_node_budget_when_synthesized_then_4096_tasks_succeed_and_4097_fail() -> TestResult {
-    // Success: 2 + 3*64 + 2*(31*31 + 33*30) = 4096.
-    // Failure: 2 + 2 + 3*63 + 2*(62*31 + 30) = 4097.
     for overflow in [false, true] {
         let bytes = exact_input_budget_fixture(overflow)?;
         let service = Catalog::borrow(&bytes)?

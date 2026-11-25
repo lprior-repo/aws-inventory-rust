@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/elasticsearch-service/service/2015-01-01/elasticsearch-service-2015-01-01.json
 use super::support::{inventory, key, queried, reviewed, token};
 use crate::overlay::{FixedValue, NameError, Paginator, ServiceOverlay};
 
@@ -12,7 +11,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         )?,
         &["DomainName", "EngineType"],
     )?;
-    // The legacy and current APIs enumerate the same physical domains unless filtered.
     domains.1.fixed.insert(
         super::super::path("EngineType")?,
         FixedValue::String("Elasticsearch".to_owned()),
@@ -20,9 +18,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "elasticsearch-service",
         vec![
-            // Returns the name of all Elasticsearch domains owned by the current user's account.
             domains,
-            // Retrieves all Amazon OpenSearch Service-managed VPC endpoints in the current account and Region.
             queried(
                 inventory(
                     "ListVpcEndpoints",
@@ -32,7 +28,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["VpcEndpointId", "Status"],
             )?,
-            // Lists all the inbound cross-cluster search connections for a destination domain.
             queried(
                 inventory(
                     "DescribeInboundCrossClusterSearchConnections",
@@ -42,7 +37,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["CrossClusterSearchConnectionId"],
             )?,
-            // Lists all the outbound cross-cluster search connections for a source domain.
             queried(
                 inventory(
                     "DescribeOutboundCrossClusterSearchConnections",
@@ -52,7 +46,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["CrossClusterSearchConnectionId"],
             )?,
-            // Describes all packages available to Amazon ES.
             queried(
                 inventory(
                     "DescribePackages",
@@ -62,7 +55,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["PackageID", "PackageName", "PackageType", "PackageStatus"],
             )?,
-            // Describes already-owned reservations, never an offering purchase or a search query.
             queried(
                 inventory(
                     "DescribeReservedElasticsearchInstances",

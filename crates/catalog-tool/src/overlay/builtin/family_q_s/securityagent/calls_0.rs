@@ -1,4 +1,3 @@
-// Pinned model: .local/aws-models/models/securityagent/service/2025-09-06/securityagent-2025-09-06.json
 use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 

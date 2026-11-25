@@ -1,5 +1,3 @@
-// Pinned source: .local/aws-models/models/agent-registry/service/2025-12-01/agent-registry-2025-12-01.json
-// Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

@@ -76,7 +76,6 @@ fn typed_relation(
 #[test]
 fn typed_relation_modes_guard_parent_and_compound_survive_decode() -> TestResult {
     use crate::catalog::runtime::{RelationPathMode, RelationTargetMode};
-    // Given explicit root source and canonical target, guarded by a real request field.
     let guard = Value::Map(BTreeMap::from([
         (Key::Field(FieldId::new(1)?), Value::Int(1)),
         (Key::Field(FieldId::new(2)?), Value::Int(0)),
@@ -93,9 +92,7 @@ fn typed_relation_modes_guard_parent_and_compound_survive_decode() -> TestResult
         (12, Value::Int(4)),
         (13, guard),
     ])?;
-    // When decoding the actual numeric extension row.
     let decoded = relation(ValueRef::Map(encoded.root()))?;
-    // Then neither a sentinel field nor a dropped guard can masquerade as the typed rule.
     assert_eq!(decoded.source_path_mode, RelationPathMode::RootText);
     assert_eq!(decoded.target_mode, RelationTargetMode::CanonicalId);
     let guard = decoded.guard.ok_or("typed guard was dropped")?;
@@ -144,7 +141,6 @@ fn typed_relation_modes_guard_parent_and_compound_survive_decode() -> TestResult
 
 #[test]
 fn typed_relation_rejects_mode_path_mismatches_and_parent_field_selection() -> TestResult {
-    // Given modes that disagree with the modeled field paths.
     for fields in [
         vec![(11, Value::Int(1))],
         vec![(12, Value::Int(4))],
@@ -157,7 +153,6 @@ fn typed_relation_rejects_mode_path_mismatches_and_parent_field_selection() -> T
         vec![(12, Value::Int(5))],
     ] {
         let encoded = typed_relation(fields)?;
-        // When decoding, no invalid namespace is downcast to a legacy field selector.
         assert!(matches!(
             relation(ValueRef::Map(encoded.root())),
             Err(RuntimeCatalogError::Capability)
@@ -169,7 +164,6 @@ fn typed_relation_rejects_mode_path_mismatches_and_parent_field_selection() -> T
 #[test]
 fn given_relation_provenance_when_decoded_then_model_and_reviewed_remain_distinct() -> TestResult {
     use crate::inventory::EdgeSource;
-    // Given both defined explicit provenance codes in relation metadata.
     [(0, EdgeSource::Model), (1, EdgeSource::ReviewedRule)]
         .into_iter()
         .try_for_each(|(code, expected)| -> TestResult {
@@ -184,7 +178,6 @@ fn given_relation_provenance_when_decoded_then_model_and_reviewed_remain_distinc
 
 #[test]
 fn given_unknown_or_wrongly_typed_provenance_when_decoded_then_reader_rejects_it() -> TestResult {
-    // Given invalid source codes and noninteger representations.
     [
         Value::Int(-1),
         Value::Int(2),
@@ -195,7 +188,6 @@ fn given_unknown_or_wrongly_typed_provenance_when_decoded_then_reader_rejects_it
     .into_iter()
     .try_for_each(|wire| -> TestResult {
         let encoded = typed_relation([(7, wire)])?;
-        // When read, then no invalid code is relabelled reviewed.
         let error = relation(ValueRef::Map(encoded.root()))
             .err()
             .ok_or("expected invalid relation provenance")?;
@@ -209,14 +201,12 @@ fn given_unknown_or_wrongly_typed_provenance_when_decoded_then_reader_rejects_it
 
 #[test]
 fn given_missing_relation_provenance_when_decoded_then_reader_rejects_it() -> TestResult {
-    // Given an otherwise valid row whose mandatory provenance field was removed.
     let encoded = encoded_relation(None)?;
     let Value::Map(mut fields) = ValueRef::Map(encoded.root()).to_value()? else {
         return Err("relation fixture is not a map".into());
     };
     fields.remove(&Key::Field(FieldId::new(7)?));
     let encoded = Record::encode(&Value::Map(fields))?;
-    // Then omission is rejected with the same exact error as an unknown source code.
     let error = relation(ValueRef::Map(encoded.root()))
         .err()
         .ok_or("expected missing relation provenance")?;

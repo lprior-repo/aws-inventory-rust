@@ -1,4 +1,3 @@
-// Explicit dispositions from .local/aws-models/models/efs/service/2015-02-01/efs-2015-02-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
     (
         "CreateAccessPoint",

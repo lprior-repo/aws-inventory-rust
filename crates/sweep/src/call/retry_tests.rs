@@ -98,7 +98,6 @@ async fn given_retryable_response_when_page_is_retried_then_signed_bodies_are_by
     let second = first
         .checked_add(Duration::from_secs(600))
         .ok_or("clock overflow")?;
-    // Only selects between two fixed timestamps; it does not publish other state.
     let now = || {
         if advanced.swap(true, Ordering::Relaxed) {
             second

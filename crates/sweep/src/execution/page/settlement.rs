@@ -1,7 +1,5 @@
 use super::*;
 
-/// Settles a lease whose page could not be committed, storing a bounded reason beside every
-/// outcome that is not an empty scope. `output_shape` names the response shape for decode errors.
 pub(super) async fn finish_error(
     store: &impl InventoryStore,
     lease: WorkLease,

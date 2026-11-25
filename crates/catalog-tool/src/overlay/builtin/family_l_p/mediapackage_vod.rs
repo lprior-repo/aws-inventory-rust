@@ -1,4 +1,3 @@
-// Pinned Smithy source: .local/aws-models/models/mediapackage-vod/service/2018-11-07/mediapackage-vod-2018-11-07.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -44,7 +43,6 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
-    // Returns a collection of MediaPackage VOD Asset resources.
     Resource {
         operation: "ListAssets",
         items: "Assets",
@@ -56,7 +54,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a collection of MediaPackage VOD PackagingConfiguration resources.
     Resource {
         operation: "ListPackagingConfigurations",
         items: "PackagingConfigurations",
@@ -68,7 +65,6 @@ const RESOURCES: &[Resource] = &[
         bindings: &[],
         fixed: &[],
     },
-    // Returns a collection of MediaPackage VOD PackagingGroup resources.
     Resource {
         operation: "ListPackagingGroups",
         items: "PackagingGroups",

@@ -10,7 +10,6 @@ use pg::TestResult;
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_given_swept_rows_when_worker_refreshes_then_table_counts_and_metadata_are_live()
 -> TestResult {
-    // Given a real PgStore fixture and the production data worker.
     let fixture = pg::Fixture::new().await?;
     let worker = DataWorker::start(
         WorkerConfig {
@@ -21,7 +20,6 @@ async fn postgres_given_swept_rows_when_worker_refreshes_then_table_counts_and_m
     );
     let result: TestResult = async {
         assert_pg_startup(&worker).await?;
-        // When a sweep adds a resource and Refresh applies an account filter.
         fixture
             .commit(
                 "refresh",
@@ -37,7 +35,6 @@ async fn postgres_given_swept_rows_when_worker_refreshes_then_table_counts_and_m
             ..Filter::default()
         })?;
         let (counts, rows, total) = snapshot(&worker).await?;
-        // Then global counts and filtered rows come from the new PostgreSQL snapshot.
         assert_eq!((counts.resources, total), (5, 3));
         assert_eq!(
             rows.iter().map(|row| row.id.as_str()).collect::<Vec<_>>(),
@@ -90,7 +87,6 @@ async fn assert_pg_startup(worker: &DataWorker) -> TestResult {
 #[ignore = "requires INVENTORY_POSTGRES_URL and FalkorDB"]
 async fn postgres_given_native_graph_when_worker_expands_then_details_come_from_postgres()
 -> TestResult {
-    // Given real PostgreSQL metadata and real FalkorDB topology.
     let fixture = pg::Fixture::new().await?;
     let root = pg::root();
     let target = pg::node("111111111111", "us-east-1", 0, "shared");
@@ -107,7 +103,6 @@ async fn postgres_given_native_graph_when_worker_expands_then_details_come_from_
     );
     let result: TestResult = async {
         assert_pg_startup_record(&worker, &fixture).await?;
-        // When the sweep changes a payload before the Expand command.
         fixture
             .commit("expand", "111111111111", "global", 0, &["shared"], 70)
             .await?;
@@ -115,7 +110,6 @@ async fn postgres_given_native_graph_when_worker_expands_then_details_come_from_
             .expand(root)
             .map_err(|error| format!("expand rejected: {error}"))?;
         let expanded = graph(&worker).await?;
-        // Then edges are native and each enriched row matches PostgreSQL's current record/hash.
         assert_edges(&expanded, &edges)?;
         let reader = fixture.reader().await?;
         let actual = expanded

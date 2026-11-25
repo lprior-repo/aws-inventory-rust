@@ -1,4 +1,3 @@
-//! SIGINT/SIGTERM cancellation owns and drains the complete benchmark operation.
 use tokio::signal::unix::{Signal, SignalKind, signal};
 use tokio_util::sync::CancellationToken;
 pub(super) struct Shutdown {

@@ -98,7 +98,6 @@ fn page_rows(plan: &CallablePlan<'_>) -> TestResult<Vec<Record>> {
     Ok(record::item_records(&response, plan.items())?)
 }
 
-// Captured from rows::observation at 0167b2e0 on this exact fixture page.
 const BASELINE: [(&str, &str, &str); 2] = [
     (
         "arn:aws:iottwinmaker:us-east-1:123456789012:workspace/one",
