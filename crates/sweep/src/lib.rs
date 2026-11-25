@@ -41,8 +41,8 @@ pub use credentials::{CredentialFailure, CredentialSource};
 pub use execution::run;
 pub use metrics::SweepMetrics;
 pub use probe::{
-    ChildProbeOutcome, ChildProbeSamples, ProbeAnswer, ProbeChildren, ProbeScope, call_once,
-    probe_children,
+    ChildProbeOutcome, ChildProbeSamples, ProbeAnswer, ProbeChildren, ProbePage, ProbeScope,
+    ProbeSession, call_once, probe_children, probe_pair,
 };
 
 #[derive(Clone, Debug)]

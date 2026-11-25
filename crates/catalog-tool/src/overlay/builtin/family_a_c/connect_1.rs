@@ -223,6 +223,7 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListPhoneNumbersV2",
             OperationOverlay {
                 queryable: vec![path("PhoneNumberArn")?],
+                exclude_response_members: vec![path("ListPhoneNumbersSummaryList.PhoneNumber")?],
                 ..read(
                     "ListPhoneNumbersSummaryList",
                     Identity::Arn(path("PhoneNumberArn")?),

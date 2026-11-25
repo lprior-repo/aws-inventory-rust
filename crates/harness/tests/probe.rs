@@ -2,10 +2,14 @@
 mod children;
 #[path = "probe/cli.rs"]
 mod cli;
+#[path = "probe/comparison.rs"]
+mod comparison;
 #[path = "probe/context.rs"]
 mod context;
 #[path = "../../catalog-tool/tests/support/bindings.rs"]
 mod fixture;
+#[path = "probe/pair.rs"]
+mod pair;
 #[path = "probe/proof.rs"]
 mod proof;
 #[path = "probe/rest.rs"]
@@ -14,6 +18,10 @@ mod rest;
 mod scoped;
 #[path = "probe/server.rs"]
 mod server;
+#[path = "probe/skip_execution.rs"]
+mod skip_execution;
+#[path = "../../catalog-tool/tests/support/skip_runtime.rs"]
+mod skip_runtime;
 
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use server::{Server, TestResult};
@@ -101,5 +109,47 @@ async fn given_no_python_when_probe_cli_runs_then_report_contains_every_enumerat
             .lines()
             .any(|line| line == "bindings ListParents0 awsJson1_1 items 2")
     );
+    Ok(())
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn given_report_symlink_to_future_receipt_when_comparing_then_neither_is_written()
+-> TestResult {
+    let bytes = skip_runtime::catalog(skip_runtime::Case::Ordinary)?;
+    let work = tempfile::tempdir()?;
+    let report = work.path().join("probe.report");
+    let receipt = work.path().join("probe.report.skip.toml");
+    std::os::unix::fs::symlink(&receipt, &report)?;
+    tokio::fs::write(work.path().join("probe.catalog"), bytes).await?;
+    let server = Server::new().await?;
+    let mut command = cli::command(&server, work.path())?;
+    command.args([
+        "--compare-pair",
+        "skipruntime/ListThings/DescribeThing",
+        "--compared-at",
+        "2026-11-24T00:00:00Z",
+    ]);
+    let bodies = [
+        r#"{"Account":"123456789012"}"#,
+        r#"{"Items":[{"Id":"one","Count":7}]}"#,
+        r#"{"Items":[{"Id":"one","Count":7}]}"#,
+    ];
+    let (completed, completion) = tokio::sync::oneshot::channel();
+    let (output, _) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        tokio::try_join!(
+            async {
+                let output = command.output().await?;
+                completed.send(()).map_err(|_| "comparison server closed")?;
+                Ok::<_, Box<dyn std::error::Error>>(output)
+            },
+            server.serve_until(&bodies, completion)
+        )
+    })
+    .await??;
+    assert_eq!(output.status.code(), Some(1));
+    assert!(output.stdout.is_empty());
+    assert!(!receipt.try_exists()?);
+    assert_eq!(std::fs::read_link(&report)?, receipt);
     Ok(())
 }

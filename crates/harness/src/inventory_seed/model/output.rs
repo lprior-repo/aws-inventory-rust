@@ -39,6 +39,25 @@ pub(super) fn text_path(
     Ok(path)
 }
 
+pub(super) fn list_path(
+    service: Service<'_>,
+    target: Target,
+    path: &FieldPath,
+) -> Result<(Vec<Selector>, Target), SeedError> {
+    let (path, target) = resolve_path(service, target, path)?;
+    let missing = SeedError::Invalid("seed response identity path must select a modeled list");
+    let Target::Shape(index) = target else {
+        return Err(missing);
+    };
+    let shape = service.shape(index)?.ok_or(SeedError::Invalid(
+        "seed response identity list shape is missing",
+    ))?;
+    if shape.kind()? != "list" {
+        return Err(missing);
+    }
+    Ok((path, shape.element()?.ok_or(missing)?))
+}
+
 pub(super) fn text_target(service: Service<'_>, target: Target) -> Result<(), SeedError> {
     let kind = match target {
         Target::Prelude(kind) => kind,

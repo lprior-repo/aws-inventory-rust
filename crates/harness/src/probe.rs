@@ -1,4 +1,5 @@
 mod command;
+mod compare;
 mod error;
 mod outcome;
 mod report;
@@ -51,12 +52,11 @@ pub async fn run(
         region,
         endpoint,
         services,
-        child_samples: ChildProbeSamples::default(),
     }
-    .run()
+    .run(ChildProbeSamples::default())
     .await?;
     if let Some(error) = report.child_error {
-        return Err(error.into());
+        return Err(ProbeError::ChildSchedule(error));
     }
     Ok(report.text)
 }
@@ -69,18 +69,14 @@ struct Probe<'a, 'catalog, C> {
     region: &'a RegionId,
     endpoint: &'a str,
     services: &'a [String],
-    child_samples: ChildProbeSamples,
 }
 
 impl<'a, 'catalog, C: CredentialSource> Probe<'a, 'catalog, C> {
-    async fn run(&self) -> Result<ProbeReport, ProbeError> {
+    async fn run(&self, child_samples: ChildProbeSamples) -> Result<ProbeReport, ProbeError> {
         validate_services(self.catalog, self.services)?;
         let started = Instant::now();
         let identity = self.bootstrap().await;
-        let account = identity
-            .as_ref()
-            .and_then(|(_, answer)| answer.as_ref().ok())
-            .and_then(|answer| answer.account.clone());
+        let account = identity_account(identity.as_ref()).cloned();
         let plans = self
             .catalog
             .plans()
@@ -99,7 +95,7 @@ impl<'a, 'catalog, C: CredentialSource> Probe<'a, 'catalog, C> {
             self.client,
             self.executor,
             self.scope(account.as_ref()),
-            ProbeChildren::new(&plans, parents, self.child_samples),
+            ProbeChildren::new(&plans, parents, child_samples),
         )
         .await;
         let child_error = append_children(&mut rows, &plans, children)?;
@@ -180,6 +176,12 @@ impl<'a, 'catalog, C: CredentialSource> Probe<'a, 'catalog, C> {
         )
         .await
     }
+}
+
+fn identity_account<'a>(identity: Option<&'a RootResult<'_, '_>>) -> Option<&'a AccountId> {
+    identity
+        .and_then(|(_, answer)| answer.as_ref().ok())
+        .and_then(|answer| answer.account.as_ref())
 }
 
 fn append_children<'a, 'catalog>(

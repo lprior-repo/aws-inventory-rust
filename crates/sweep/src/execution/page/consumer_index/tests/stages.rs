@@ -111,23 +111,7 @@ fn given_bounded_index_growth_when_capacity_is_exhausted_then_error_preserves_ex
     Ok(())
 }
 
-#[test]
-fn given_exact_source_stages_when_indexed_then_only_that_stage_or_ordinary_dependencies_fan_out()
--> TestResult {
-    let compiled = fixture::compile(
-        "accessanalyzer",
-        "2019-11-01",
-        &["ListAnalyzers", "ListArchiveRules", "GetArchiveRule"],
-    )?;
-    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
-    let mut index = ConsumerIndex {
-        entries: Vec::new(),
-        wildcards: Vec::new(),
-    };
-    let plans = catalog.plans();
-    let first = plans.first().ok_or("first plan missing")?;
-    let second = plans.get(1).ok_or("second plan missing")?;
-    let third = plans.get(2).ok_or("third plan missing")?;
+fn stage_sources() -> [(usize, BindingSource); 4] {
     let stage = |branch: &str| BindingSource::ContextFromBranch {
         service: "staged-service".into(),
         operation: "ListParents".into(),
@@ -135,46 +119,62 @@ fn given_exact_source_stages_when_indexed_then_only_that_stage_or_ordinary_depen
         source: ContextSource::Request,
         path: Box::default(),
     };
-    let detail = stage("DETAIL");
-    index.add_dependency(
-        Consumer {
-            ordinal: 0,
-            plan: first,
-        },
-        dependency(&detail)?,
-    )?;
-    let ordinary = BindingSource::Operation {
-        service: "staged-service".into(),
-        operation: "ListParents".into(),
-        path: Box::default(),
+    [
+        (0, stage("DETAIL")),
+        (
+            0,
+            BindingSource::Operation {
+                service: "staged-service".into(),
+                operation: "ListParents".into(),
+                path: Box::default(),
+            },
+        ),
+        (1, stage("TAGS")),
+        (
+            2,
+            BindingSource::Transformed {
+                source: Box::new(stage("DETAIL")),
+                transform: BindingTransform::StripPrefix("/".into()),
+            },
+        ),
+    ]
+}
+
+fn staged_index<'a, 'catalog>(
+    catalog: &'a RuntimeCatalog<'catalog>,
+    sources: &'a [(usize, BindingSource)],
+) -> Result<ConsumerIndex<'a, 'catalog>, Box<dyn std::error::Error>> {
+    let mut index = ConsumerIndex {
+        skipped_parents: Vec::new(),
+        entries: Vec::new(),
+        wildcards: Vec::new(),
     };
-    index.add_dependency(
-        Consumer {
-            ordinal: 0,
-            plan: first,
-        },
-        dependency(&ordinary)?,
+    for (ordinal, source) in sources {
+        let plan = catalog.plans().get(*ordinal).ok_or("plan missing")?;
+        index.add_dependency(
+            Consumer {
+                ordinal: *ordinal,
+                plan,
+            },
+            dependency(source)?,
+        )?;
+    }
+    Ok(index.freeze())
+}
+
+#[test]
+fn given_detail_source_stage_when_indexed_then_ordinary_and_transformed_consumers_fan_out_once()
+-> TestResult {
+    let compiled = fixture::compile(
+        "accessanalyzer",
+        "2019-11-01",
+        &["ListAnalyzers", "ListArchiveRules", "GetArchiveRule"],
     )?;
-    let tags = stage("TAGS");
-    index.add_dependency(
-        Consumer {
-            ordinal: 1,
-            plan: second,
-        },
-        dependency(&tags)?,
-    )?;
-    let transformed = BindingSource::Transformed {
-        source: Box::new(stage("DETAIL")),
-        transform: BindingTransform::StripPrefix("/".into()),
-    };
-    index.add_dependency(
-        Consumer {
-            ordinal: 2,
-            plan: third,
-        },
-        dependency(&transformed)?,
-    )?;
-    let index = index.freeze();
+    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
+    let sources = stage_sources();
+    let index = staged_index(&catalog, &sources)?;
+    let first = catalog.plans().first().ok_or("first plan missing")?;
+    let third = catalog.plans().get(2).ok_or("third plan missing")?;
     let candidates = |branch| {
         index
             .candidates_for_branch("staged-service", "ListParents", branch)
@@ -185,15 +185,6 @@ fn given_exact_source_stages_when_indexed_then_only_that_stage_or_ordinary_depen
     assert_eq!(
         candidates(Some("DETAIL")),
         vec![first.operation_name(), third.operation_name()]
-    );
-    assert_eq!(
-        candidates(Some("TAGS")),
-        vec![first.operation_name(), second.operation_name()]
-    );
-    assert_eq!(
-        candidates(Some("UNKNOWN")),
-        vec![first.operation_name()],
-        "ordinary dependencies remain eligible for inherited source stages"
     );
     assert_eq!(
         index
@@ -211,6 +202,37 @@ fn given_exact_source_stages_when_indexed_then_only_that_stage_or_ordinary_depen
 }
 
 #[test]
+fn given_tags_or_unknown_source_stage_when_indexed_then_only_matching_or_ordinary_consumers_fan_out()
+-> TestResult {
+    let compiled = fixture::compile(
+        "accessanalyzer",
+        "2019-11-01",
+        &["ListAnalyzers", "ListArchiveRules", "GetArchiveRule"],
+    )?;
+    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
+    let sources = stage_sources();
+    let index = staged_index(&catalog, &sources)?;
+    let first = catalog.plans().first().ok_or("first plan missing")?;
+    let second = catalog.plans().get(1).ok_or("second plan missing")?;
+    let candidates = |branch| {
+        index
+            .candidates_for_branch("staged-service", "ListParents", Some(branch))
+            .map(CallablePlan::operation_name)
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        candidates("TAGS"),
+        vec![first.operation_name(), second.operation_name()]
+    );
+    assert_eq!(
+        candidates("UNKNOWN"),
+        vec![first.operation_name()],
+        "ordinary dependencies remain eligible for inherited source stages"
+    );
+    Ok(())
+}
+
+#[test]
 fn given_overlapping_stage_and_wildcard_keys_when_merged_then_catalog_order_is_deduplicated()
 -> TestResult {
     let compiled = fixture::compile(
@@ -222,6 +244,7 @@ fn given_overlapping_stage_and_wildcard_keys_when_merged_then_catalog_order_is_d
     let plan = catalog.plans().first().ok_or("plan missing")?;
     let consumer = Consumer { ordinal: 0, plan };
     let mut index = ConsumerIndex {
+        skipped_parents: Vec::new(),
         entries: Vec::new(),
         wildcards: Vec::new(),
     };

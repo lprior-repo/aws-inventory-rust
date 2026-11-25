@@ -96,6 +96,13 @@ pub(super) fn compile(service: &str, date: &str, operations: &[&str]) -> TestRes
 }
 
 pub(super) fn compile_many(sources: &[(&str, &str, &[&str])]) -> TestResult<Compiled> {
+    compile_many_with(sources, |_, policy| Ok(policy))
+}
+
+pub(super) fn compile_many_with(
+    sources: &[(&str, &str, &[&str])],
+    mut customize: impl FnMut(&str, overlay::ServiceOverlay) -> TestResult<overlay::ServiceOverlay>,
+) -> TestResult<Compiled> {
     let models = sources
         .iter()
         .map(|(service, date, operations)| {
@@ -133,7 +140,7 @@ pub(super) fn compile_many(sources: &[(&str, &str, &[&str])]) -> TestResult<Comp
             directory.join(format!("{service}-{date}.json")),
             serde_json::to_vec(model)?,
         )?;
-        policies.push(selected_policy(service, operations)?);
+        policies.push(customize(service, selected_policy(service, operations)?)?);
         endpoints.insert((*service).to_owned(), endpoint(service)?);
     }
     let checked = overlay::check_policies(temporary.path(), &policies, &DenyList::builtin())?;

@@ -82,7 +82,7 @@ async fn given_ineligible_first_parent_item_when_probed_then_default_admits_the_
 const UNSUPPORTED: &str = r#"{"__type":"UnsupportedOperation"}"#;
 const UNSUPPORTED_OUTCOME: &str = "unsupported API executor error: provider does not support this type: AWS service failure: NotSupported (UnsupportedOperation)";
 const DENIED: (u16, &str) = (403, "not a JSON error");
-const DENIED_OUTCOME: &str = "failed denied API executor error: access denied: HTTP 403 Forbidden";
+const DENIED_OUTCOME: &str = "failed denied API executor error: access denied: HTTP 403 Forbidden: invalid response: service error JSON is not an object";
 
 #[tokio::test]
 async fn given_child_http_errors_when_probed_then_unsupported_and_denied_are_distinct() -> TestResult

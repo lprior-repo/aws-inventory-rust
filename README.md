@@ -159,6 +159,31 @@ setting when converted to a DynamoDB client. The public AssumeRole helper now
 sets the retry configuration's explicit origin as well as its value. Normal CLI configuration
 loaders already supplied that origin.
 
+## Reviewed describe skips
+
+`inventory-harness probe` accepts repeatable
+`--compare-pair service/Parent/Child` selectors with `--compared-at <review date>`,
+alongside its catalog, loopback HTTPS endpoint, CA, region and report options.
+`--service` cannot be combined with `--compare-pair`.
+It compares every selected list page and bound describe response, retaining
+absent/null/value distinctions. A describe-only modeled member, any value
+difference, or zero seeded resources produces no skip.
+
+The TSV result is written to `--report`. The probe first publishes a TOML
+fragment to `<report>.skip.toml` and prints it. The fragment groups operation
+tables by service and records `skip`, the service and list/describe pair, a
+SHA-256 fingerprint of the comparison inputs, compared selectors, resource
+count and review date. Existing receipts and symlinked output paths are
+refused without overwriting the receipt or writing a report. Review and merge
+the operation tables for each service into its existing reviewed policy,
+preserving all other fields. The probe never edits catalog sources or enables
+skips automatically.
+
+Overlay checking rejects receipts for the wrong pair. Catalog compilation also
+rejects stale fingerprints and skips that would lose child emissions or
+discovery work. An additional parent emission can preserve a child kind if it
+comes from the compared rows and preserves the child's metadata.
+
 ## Build
 
 Install Rust 1.100 stable with rustup (`rustup toolchain install 1.100.0`) and a

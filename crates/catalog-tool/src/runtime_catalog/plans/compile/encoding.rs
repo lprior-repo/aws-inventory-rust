@@ -31,6 +31,18 @@ fn extensions(
     let map_exclusions = map_exclusions(prepared, overlay)?;
     let row_policy = row_policy(callable, context, prepared)?;
     let emissions = emissions(callable, context, prepared)?;
+    let skips = (!overlay.skip.is_empty()).then(|| {
+        (
+            26,
+            Value::List(
+                overlay
+                    .skip
+                    .iter()
+                    .map(|name| Value::Text(name.as_str().to_owned()))
+                    .collect(),
+            ),
+        )
+    });
     let emit = emit_value(callable, review, prepared)?;
     Ok(tags
         .map(|value| (14, value))
@@ -42,7 +54,8 @@ fn extensions(
         .chain(member_exclusions::compile(overlay, context.services)?)
         .chain(row_policy)
         .chain(emissions)
-        .chain(Some((25, emit))))
+        .chain(Some((25, emit)))
+        .chain(skips))
 }
 
 fn emit_value(

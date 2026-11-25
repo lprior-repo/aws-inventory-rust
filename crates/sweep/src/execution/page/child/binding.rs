@@ -47,7 +47,6 @@ fn matches_producer(service: &str, operation: &str, parent: &CallablePlan<'_>) -
     service == parent.service_name() && operation == parent.operation_name()
 }
 
-#[cfg(test)]
 pub(crate) fn resolve_binding(
     context: &Context<'_, '_>,
     request_region: &RegionId,

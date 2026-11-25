@@ -50,6 +50,7 @@ struct Entry<'a, 'catalog> {
 }
 
 pub(crate) struct ConsumerIndex<'a, 'catalog> {
+    skipped_parents: Vec<&'a CallablePlan<'catalog>>,
     entries: Vec<Entry<'a, 'catalog>>,
     wildcards: Vec<Consumer<'a, 'catalog>>,
 }
@@ -64,6 +65,7 @@ impl<'a, 'catalog> ConsumerIndex<'a, 'catalog> {
             return Err(ConsumerIndexError::Bounds);
         }
         let mut index = Self {
+            skipped_parents: Vec::new(),
             entries: Vec::new(),
             wildcards: Vec::new(),
         };
@@ -86,6 +88,8 @@ impl<'a, 'catalog> ConsumerIndex<'a, 'catalog> {
         self.wildcards
             .sort_unstable_by_key(|consumer| consumer.ordinal);
         self.wildcards.dedup_by_key(|consumer| consumer.ordinal);
+        self.skipped_parents
+            .sort_unstable_by_key(|plan| (plan.service_name(), plan.operation_name()));
         self
     }
 
@@ -99,6 +103,32 @@ impl<'a, 'catalog> ConsumerIndex<'a, 'catalog> {
     }
 
     pub(crate) fn candidates_for_branch(
+        &self,
+        service: &str,
+        operation: &str,
+        branch: Option<&str>,
+    ) -> impl Iterator<Item = &'a CallablePlan<'catalog>> + '_ {
+        let parent = self
+            .skipped_parents
+            .binary_search_by_key(&(service, operation), |plan| {
+                (plan.service_name(), plan.operation_name())
+            })
+            .ok()
+            .and_then(|index| self.skipped_parents.get(index))
+            .copied();
+        self.binding_candidates_for_branch(service, operation, branch)
+            .filter(move |child| {
+                !parent.is_some_and(|parent| {
+                    child.service_name() == parent.service_name()
+                        && parent
+                            .skips()
+                            .iter()
+                            .any(|name| name.as_ref() == child.operation_name())
+                })
+            })
+    }
+
+    pub(crate) fn binding_candidates_for_branch(
         &self,
         service: &str,
         operation: &str,
@@ -135,6 +165,9 @@ impl<'a, 'catalog> ConsumerIndex<'a, 'catalog> {
     }
 
     fn add_plan(&mut self, consumer: Consumer<'a, 'catalog>) -> Result<(), ConsumerIndexError> {
+        if !consumer.plan.skips().is_empty() {
+            bounded_push(&mut self.skipped_parents, consumer.plan, MAX_PLANS)?;
+        }
         match consumer.plan.purpose() {
             PlanPurpose::Enumeration => self.add_enumeration(consumer),
             PlanPurpose::TagEndpoint(endpoint) => endpoint.parents.iter().try_for_each(|parent| {

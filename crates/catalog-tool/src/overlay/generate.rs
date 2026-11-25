@@ -16,6 +16,7 @@ mod service;
 pub const GENERATED_RULES_DATE: &str = "2026-11-15";
 
 pub use engine::{Generated, Generator};
+pub use render::render_skip_receipts;
 
 use crate::{ReportMode, classes::DenyList};
 use std::{collections::BTreeSet, path::Path};

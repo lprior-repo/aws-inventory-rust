@@ -170,13 +170,13 @@ impl<'a, 'catalog> Wave<'a, 'catalog, '_> {
     fn prepare_parent(
         &mut self,
         parent: Plan<'a, 'catalog>,
-        page: &ProbePage,
+        page: &RetainedPage,
         tasks: &mut Vec<Bound<'a, 'catalog>>,
     ) -> Result<(), SweepError> {
         let branch = branch_at(parent, page.branch);
         let branch_name = branch.map(|branch| branch.discriminator.as_str());
         let mut pending = Vec::new();
-        for plan in self.index.candidates_for_branch(
+        for plan in self.index.binding_candidates_for_branch(
             parent.service_name(),
             parent.operation_name(),
             branch_name,
@@ -323,7 +323,7 @@ struct Sample<'a> {
     ancestry: DiscoveryContext,
 }
 
-impl ProbePage {
+impl RetainedPage {
     fn key(&self) -> (&str, &str) {
         (self.service.as_str(), self.operation.as_str())
     }

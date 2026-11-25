@@ -1,3 +1,4 @@
+mod pair;
 use crate::{
     CredentialSource, SweepError, call,
     execution::{discovery, routing},
@@ -13,6 +14,7 @@ use inventory_core::{
     record::Record,
 };
 use inventory_engine::limiter::ApiExecutor;
+pub use pair::{ProbePage, ProbeSession, probe_pair};
 use std::borrow::Cow;
 
 mod children;
@@ -27,11 +29,11 @@ pub struct ProbeAnswer {
     pub items: u64,
     pub http_version: http::Version,
     pub account: Option<AccountId>,
-    page: ProbePage,
+    page: RetainedPage,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-struct ProbePage {
+struct RetainedPage {
     service: ServiceId,
     operation: OperationId,
     request: Record,
@@ -134,7 +136,7 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
                 .map_err(|_| SweepError::Operation("probe item count overflow"))?,
             http_version: response.http_version,
             account,
-            page: ProbePage {
+            page: RetainedPage {
                 service: ServiceId::parse(self.plan.service_name())?,
                 operation: OperationId::parse(self.plan.operation_name())?,
                 request,

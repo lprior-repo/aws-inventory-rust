@@ -57,6 +57,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamInternetRegistryAssociations")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamInternetRegistryAssociationId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -65,6 +66,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamPolicies")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamPolicyId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -73,6 +75,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamPoolAllocations")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamPoolAllocationId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -81,6 +84,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamPools")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamPoolId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -89,6 +93,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamPrefixListResolverTargets")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamPrefixListResolverTargetId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -97,6 +102,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamPrefixListResolvers")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamPrefixListResolverId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -105,6 +111,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamResourceDiscoveries")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamResourceDiscoveryId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -113,6 +120,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamResourceDiscoveryAssociations")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamResourceDiscoveryAssociationId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -121,6 +129,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("IpamScopes")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamScopeId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -129,6 +138,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("Ipams")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("IpamId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -137,6 +147,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("Ipv6Pools")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("PoolId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -145,6 +156,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("KeyPairs")?),
+        tags: Some(path("Tags")?),
         fixed: [(path("IncludePublicKey")?, FixedValue::Boolean(false))].into_iter().collect(),
         identity: Some(Identity::Key(vec![path("KeyPairId")?])),
         paginator: Some(Paginator::None),

@@ -76,7 +76,7 @@ fn given_real_unit_create_operation_when_request_identity_prepared_then_output_p
             "arn:{partition}:kms:{region}:{account}:{value}",
         )),
     };
-    let identity = identity::prepare(operation, &source)?;
+    let identity = identity::prepare(catalog, operation, &source)?;
     assert!(
         matches!(identity, PreparedIdentity::Request { input_field, template: Some(_) } if input_field.len() == 1)
     );
@@ -84,7 +84,7 @@ fn given_real_unit_create_operation_when_request_identity_prepared_then_output_p
         input_field: FieldPath::new(&["Missing"])?,
         template: None,
     };
-    assert!(identity::prepare(operation, &invalid).is_err());
+    assert!(identity::prepare(catalog, operation, &invalid).is_err());
     Ok(())
 }
 
@@ -98,6 +98,44 @@ fn given_nontext_modeled_request_identity_when_prepared_then_mutation_is_rejecte
         input_field: FieldPath::new(&["Attributes"])?,
         template: None,
     };
-    assert!(identity::prepare(operation, &source).is_err());
+    assert!(identity::prepare(catalog, operation, &source).is_err());
+    Ok(())
+}
+
+#[test]
+fn given_unpaginated_list_models_when_prepared_then_only_token_free_output_is_accepted()
+-> TestResult {
+    let bytes = bytes()?;
+    let catalog = Catalog::borrow(&bytes)?;
+    let suspected = locate(catalog, "connect", "ListAnalyticsDataAssociations")?;
+    assert!(suspected.operation.paginator()?.is_none());
+    let list = super::super::SeedIdentity::ResponseList {
+        list: FieldPath::new(&["Results"])?,
+        member: FieldPath::new(&["DataSetId"])?,
+        count: 9,
+    };
+    let rejection = identity::prepare(catalog, suspected, &list)
+        .err()
+        .ok_or("unmodeled paginator accepted")?;
+    assert_eq!(
+        rejection.to_string(),
+        "seed response identity list: output member NextToken has no modeled paginator"
+    );
+
+    let token_free = locate(catalog, "s3", "DeleteObjects")?;
+    assert!(token_free.operation.paginator()?.is_none());
+    let list = super::super::SeedIdentity::ResponseList {
+        list: FieldPath::new(&["Deleted"])?,
+        member: FieldPath::new(&["Key"])?,
+        count: 1,
+    };
+    assert!(matches!(
+        identity::prepare(catalog, token_free, &list)?,
+        PreparedIdentity::ResponseList {
+            token: None,
+            count: 1,
+            ..
+        }
+    ));
     Ok(())
 }

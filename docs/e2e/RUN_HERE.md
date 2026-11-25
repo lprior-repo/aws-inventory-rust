@@ -860,6 +860,8 @@ service and operation order within each wave. At the default limit, only the
 first producer that supplies an eligible, bindable item is sampled. With a
 higher limit, later producers may fill unused slots. Both phases use at most
 eight concurrent calls, one attempt per call, and never follow a pagination token.
+The probe still calls a bindable child even when a normal sweep would skip that
+describe because the parent already carries its full record.
 `items N` counts selected items across successful sampled first pages. If any
 sample fails with an error other than an unsupported operation or known absence,
 the child row reads `failed CLASS DETAIL`, even if another sample returned items.

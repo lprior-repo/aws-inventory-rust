@@ -13,8 +13,7 @@ use process::{assert_reaped, await_zombie, capture};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn sleep_child(duration: &str) -> std::io::Result<ChildOwner> {
-    let child = Command::new("/bin/sleep").arg(duration).spawn()?;
-    Ok(ChildOwner { child })
+    ChildOwner::spawn(Command::new("/bin/sleep").arg(duration))
 }
 
 fn emulator(child: ChildOwner) -> Emulator {
@@ -92,9 +91,7 @@ fn given_running_child_when_emulator_stops_then_process_is_killed_and_reaped() -
 
 #[test]
 fn given_unreaped_exited_child_when_emulator_stops_then_stop_succeeds() -> TestResult {
-    let owner = ChildOwner {
-        child: Command::new("/bin/true").spawn()?,
-    };
+    let owner = ChildOwner::spawn(&mut Command::new("/bin/true"))?;
     let identity = capture(&owner)?;
     await_zombie(identity)?;
     emulator(owner).stop()?;

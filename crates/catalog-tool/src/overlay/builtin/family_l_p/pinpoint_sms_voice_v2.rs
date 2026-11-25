@@ -1,3 +1,4 @@
+use super::super::exclude_members;
 use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -355,5 +356,16 @@ const RESOURCES: &[Resource] = &[
 ];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    compile("pinpoint-sms-voice-v2", GROUPS, RESOURCES)
+    let mut service = compile("pinpoint-sms-voice-v2", GROUPS, RESOURCES)?;
+    exclude_members(
+        &mut service,
+        "DescribePhoneNumbers",
+        &["PhoneNumbers.PhoneNumber"],
+    )?;
+    exclude_members(
+        &mut service,
+        "DescribeVerifiedDestinationNumbers",
+        &["VerifiedDestinationNumbers.DestinationPhoneNumber"],
+    )?;
+    Ok(service)
 }

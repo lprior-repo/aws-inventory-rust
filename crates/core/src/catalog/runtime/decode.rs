@@ -37,7 +37,7 @@ pub(crate) fn read<'a>(
         None => return Err(RuntimeCatalogError::MissingExtension),
     };
     let version = metadata::integer(extension, 1)?;
-    if version != 3 {
+    if version != 4 {
         return Err(RuntimeCatalogError::ExtensionVersion(version));
     }
     let services = services::Services::open(catalog)?;

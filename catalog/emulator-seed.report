@@ -87,6 +87,8 @@ config-service	PutRetentionConfiguration	retention	accepted
 connect	CreateContactFlow	flow	accepted
 connect	CreateInstance	instance	accepted
 connect	CreateInstance	instance	accepted
+connect	ListContactFlows	default-flows	accepted
+connect	ListContactFlows	default-flows	accepted
 connectcampaigns	CreateCampaign	campaign	accepted
 connectcampaigns	StartInstanceOnboardingJob	onboard	accepted
 connectcases	CreateDomain	resource	accepted
@@ -232,6 +234,7 @@ kinesis-video	CreateSignalingChannel	resource	accepted
 kinesis-video	CreateStream	stream	accepted
 kms	CreateAlias	alias[1]	accepted
 kms	CreateAlias	alias[2]	accepted
+kms	CreateKey	key	accepted
 kms	CreateKey	key	accepted
 kms	CreateKey	key[1]	accepted
 kms	CreateKey	key[2]	accepted

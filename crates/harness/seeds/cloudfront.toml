@@ -20,13 +20,6 @@ scope = "account"
 [step.input.CloudFrontOriginAccessIdentityConfig]
 CallerReference = "inv-createcloudfrontoriginaccessidentity-{n}"
 Comment = "inv-createcloudfrontoriginaccessidentity-{n}"
-# Disabled: create identifier matches multiple enumeration kinds
-# [[step]]
-# id = "createconnectionfunction"
-# operation = "CreateConnectionFunction"
-# kind = "AWS::CloudFront::CachePolicy"
-# identity = "ConnectionFunctionSummary.Id"
-# scope = "account"
 [[step]]
 id = "createconnectiongroup"
 operation = "CreateConnectionGroup"
@@ -85,13 +78,6 @@ HeaderBehavior = "allExcept"
 
 [step.input.OriginRequestPolicyConfig.QueryStringsConfig]
 QueryStringBehavior = "all"
-# Disabled: create identifier matches multiple enumeration kinds
-# [[step]]
-# id = "createpublickey"
-# operation = "CreatePublicKey"
-# kind = "AWS::CloudFront::CachePolicy"
-# identity = "PublicKey.Id"
-# scope = "account"
 [[step]]
 id = "createresponseheaderspolicy"
 operation = "CreateResponseHeadersPolicy"
@@ -101,24 +87,3 @@ scope = "account"
 
 [step.input.ResponseHeadersPolicyConfig]
 Name = "inv-createresponseheaderspolicy-{n}"
-# Disabled: create identifier matches multiple enumeration kinds
-# [[step]]
-# id = "createstreamingdistributionwithtags"
-# operation = "CreateStreamingDistributionWithTags"
-# kind = "AWS::CloudFront::StreamingDistribution"
-# identity = "StreamingDistribution.ARN"
-# scope = "account"
-# Disabled: cannot synthesize required union shape
-# [[step]]
-# id = "createtruststore"
-# operation = "CreateTrustStore"
-# kind = "AWS::CloudFront::TrustStore"
-# identity = "TrustStore.Arn"
-# scope = "account"
-# Disabled: identifier Arn needs exactly one earlier producer; found 2
-# [[step]]
-# id = "createvpcorigin"
-# operation = "CreateVpcOrigin"
-# kind = "AWS::CloudFront::VpcOrigin"
-# identity = "VpcOrigin.Arn"
-# scope = "account"

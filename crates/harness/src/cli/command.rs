@@ -6,6 +6,8 @@ inventory-harness install-graph <destination> [--jobs N]\n  \
 inventory-harness catalog universal --root <dir> [--check]\n  \
 inventory-harness probe --catalog <file> --endpoint <https-loopback> \
 --ca-bundle <file> --region <name> --report <file> [--child-samples <1..64>] [--service <name>]...\n  \
+inventory-harness probe --catalog <file> --endpoint <https-loopback> \
+--ca-bundle <file> --region <name> --report <file> --compare-pair <service/list/describe>... --compared-at <date>\n  \
 inventory-harness seed validate --seeds <dir> --catalog <file> [--service <name>]...\n  \
 inventory-harness seed draft --service <name> [--catalog <file>] [--output <file>]\n  \
 inventory-harness seed run --seeds <dir> --catalog <file> --endpoint <https-loopback> \
@@ -23,9 +25,11 @@ inventory-harness assert-parents --db <file> --scan-id <id> [--seed-results <fil
 [--root <dir>]\n  \
 inventory-harness assert-regional --db <file> --scan-id <id> [--seed-results <file>] \
 [--root <dir>] [--region <region>]\n  \
+inventory-harness head-to-head --work <dir> --ours <binary> --tool <name>=<definition.toml> ... [--runs 3]\n  \
 inventory-harness postgres up [--runtime docker|podman] | down [--volumes] | url | prune";
 
 pub(super) enum Command {
+    HeadToHead(inventory_harness::head_to_head::Args),
     Freeze {
         evidence: PathBuf,
         output: PathBuf,

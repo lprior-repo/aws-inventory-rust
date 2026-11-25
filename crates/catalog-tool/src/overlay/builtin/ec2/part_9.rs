@@ -35,6 +35,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VpcEncryptionControls")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("VpcEncryptionControlId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -43,6 +44,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VpcEndpointAssociations")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("Id")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -59,6 +61,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VpcEndpointConnections")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("VpcEndpointConnectionId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -67,6 +70,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("ServiceConfigurations")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ServiceId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -75,6 +79,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Expand),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("AllowedPrincipals")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ServiceId")?, path("ServicePermissionId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         bind: [(path("ServiceId")?, Binding::From { operation: name("DescribeVpcEndpointServiceConfigurations")?, path: path("ServiceId")? })].into_iter().collect(),
@@ -88,6 +93,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VpnConcentrators")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("VpnConcentratorId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -100,6 +106,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VpnGateways")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("VpnGatewayId")?])),
         paginator: Some(Paginator::None),
         ..empty()

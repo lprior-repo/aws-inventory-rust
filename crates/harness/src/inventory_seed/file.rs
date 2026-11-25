@@ -21,7 +21,7 @@ pub fn load(content: &str) -> Result<SeedScenario, SeedError> {
     Ok(load_labeled(content)?.0)
 }
 
-pub(super) fn load_labeled(content: &str) -> Result<(SeedScenario, Vec<String>), SeedError> {
+pub(crate) fn load_labeled(content: &str) -> Result<(SeedScenario, Vec<String>), SeedError> {
     if content.len() > MAX_FILE_BYTES {
         return Err(SeedError::Invalid("seed file exceeds size limit"));
     }

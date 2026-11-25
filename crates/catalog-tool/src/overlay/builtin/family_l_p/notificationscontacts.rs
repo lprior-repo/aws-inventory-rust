@@ -1,3 +1,4 @@
+use super::super::exclude_members;
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
@@ -53,5 +54,12 @@ const RESOURCES: &[Resource] = &[
 ];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    compile("notificationscontacts", GROUPS, RESOURCES)
+    let mut service = compile("notificationscontacts", GROUPS, RESOURCES)?;
+    exclude_members(&mut service, "GetEmailContact", &["emailContact.address"])?;
+    exclude_members(
+        &mut service,
+        "ListEmailContacts",
+        &["emailContacts.address"],
+    )?;
+    Ok(service)
 }

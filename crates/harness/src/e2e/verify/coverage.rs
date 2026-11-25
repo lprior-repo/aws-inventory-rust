@@ -1,16 +1,16 @@
+use super::coverage_status::Plans;
+mod report;
 use crate::{
     HarnessError,
-    inventory_seed::{SeedError, command::directory},
+    inventory_seed::{SeedError, command::directory, load_labeled},
 };
 use inventory_core::catalog::runtime::{ReviewDisposition, RuntimeCatalog};
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-};
+use std::{collections::BTreeMap, path::Path};
 
 pub struct Coverage {
-    callable: BTreeSet<String>,
+    callable: Plans,
     deferred: BTreeMap<String, String>,
+    steps: BTreeMap<String, String>,
 }
 
 impl Coverage {
@@ -20,7 +20,7 @@ impl Coverage {
     }
 
     pub(super) fn reason(&self, kind: &str) -> Result<Option<&str>, HarnessError> {
-        if self.callable.contains(kind) {
+        if self.callable.contains_key(kind) {
             return Ok(None);
         }
         self.deferred
@@ -35,47 +35,79 @@ fn load(catalog: &Path, seeds: &Path, services: &[String]) -> Result<Coverage, S
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let callable = callable_kinds(&catalog);
     let files = directory::select(directory::files(seeds)?, services)?;
-    let deferred = files.into_iter().try_fold(BTreeMap::new(), |kinds, path| {
-        recipe_kinds(&catalog, &path, &callable, kinds)
-    })?;
-    Ok(Coverage { callable, deferred })
+    files.into_iter().try_fold(
+        Coverage {
+            callable,
+            deferred: BTreeMap::new(),
+            steps: BTreeMap::new(),
+        },
+        |mut coverage, path| {
+            recipe_kinds(&catalog, &path, &mut coverage)?;
+            Ok(coverage)
+        },
+    )
 }
 
 fn recipe_kinds(
     catalog: &RuntimeCatalog<'_>,
     path: &Path,
-    callable: &BTreeSet<String>,
-    kinds: BTreeMap<String, String>,
-) -> Result<BTreeMap<String, String>, SeedError> {
-    Ok(directory::read_scenario(path)?
+    coverage: &mut Coverage,
+) -> Result<(), SeedError> {
+    let bytes = directory::read_bounded(path, 1_048_576)?;
+    let text =
+        std::str::from_utf8(&bytes).map_err(|_| SeedError::Invalid("seed recipe is not UTF-8"))?;
+    let (scenario, labels) = load_labeled(text)?;
+    scenario
         .steps()
         .iter()
-        .filter(|step| !step.kind.is_empty() && !callable.contains(&step.kind))
-        .fold(kinds, |mut kinds, step| {
-            if !kinds.contains_key(&step.kind) {
-                kinds.insert(step.kind.clone(), deferred_reason(catalog, &step.service));
+        .zip(labels)
+        .try_for_each(|(step, label)| {
+            let key = format!("{}\t{}\t{label}", step.service, step.operation);
+            let kind = coverage
+                .steps
+                .entry(key)
+                .or_insert_with(|| step.kind.clone());
+            if *kind != step.kind {
+                return Err(SeedError::Invalid(
+                    "seed matrix label is ambiguous across recipes",
+                ));
             }
-            kinds
-        }))
+            if !kind.is_empty() && !coverage.callable.contains_key(kind) {
+                coverage
+                    .deferred
+                    .entry(kind.clone())
+                    .or_insert_with(|| deferred_reason(catalog, &step.service));
+            }
+            Ok(())
+        })
 }
 
-fn callable_kinds(catalog: &RuntimeCatalog<'_>) -> BTreeSet<String> {
+fn callable_kinds(catalog: &RuntimeCatalog<'_>) -> Plans {
     catalog
         .plans()
         .iter()
-        .flat_map(|plan| plan.resource_emissions().iter())
-        .flat_map(|emission| {
-            std::iter::once(emission.kind()).chain(
-                emission
-                    .classification()
-                    .into_iter()
-                    .flat_map(|classification| {
-                        classification.variants.iter().map(|(_, kind)| kind)
-                    }),
-            )
+        .fold(Plans::new(), |mut kinds, plan| {
+            let operation = format!("{}:{}", plan.service_name(), plan.operation_name());
+            plan.resource_emissions()
+                .iter()
+                .flat_map(|emission| {
+                    std::iter::once(emission.kind()).chain(
+                        emission
+                            .classification()
+                            .into_iter()
+                            .flat_map(|classification| {
+                                classification.variants.iter().map(|(_, kind)| kind)
+                            }),
+                    )
+                })
+                .for_each(|kind| {
+                    kinds
+                        .entry(kind.as_str().to_owned())
+                        .or_default()
+                        .insert(operation.clone());
+                });
+            kinds
         })
-        .map(|kind| kind.as_str().to_owned())
-        .collect()
 }
 
 fn deferred_reason(catalog: &RuntimeCatalog<'_>, service: &str) -> String {

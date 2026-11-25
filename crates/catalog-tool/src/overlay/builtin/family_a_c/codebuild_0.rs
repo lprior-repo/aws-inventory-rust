@@ -218,7 +218,9 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 queryable: vec![path("$")?],
                 ..read(
                     "projects",
-                    Identity::Key(vec![path("$")?]),
+                    Identity::Template(
+                        "arn:{partition}:codebuild:{region}:{account}:project/{$}".to_owned(),
+                    ),
                     Scope::Region,
                     token("nextToken", "nextToken")?,
                 )?

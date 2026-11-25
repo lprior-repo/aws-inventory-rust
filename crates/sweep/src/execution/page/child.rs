@@ -6,11 +6,9 @@ mod contexts;
 mod eligibility;
 mod enumeration;
 mod work;
-pub(crate) use binding::consumes_current;
-#[cfg(test)]
-pub(crate) use binding::resolve_binding;
 #[cfg(test)]
 use binding::row_value;
+pub(crate) use binding::{consumes_current, resolve_binding};
 pub(crate) use contexts::project_frame;
 pub(super) use contexts::*;
 #[cfg(test)]

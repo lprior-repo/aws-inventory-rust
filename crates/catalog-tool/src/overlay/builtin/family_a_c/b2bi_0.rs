@@ -82,6 +82,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 .into_iter()
                 .collect(),
                 queryable: vec![path("partnershipId")?],
+                exclude_response_members: vec![path("email")?, path("phone")?],
                 ..read(
                     "$",
                     Identity::Key(vec![path("partnershipId")?]),
@@ -104,6 +105,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 .into_iter()
                 .collect(),
                 queryable: vec![path("profileId")?],
+                exclude_response_members: vec![path("email")?, path("phone")?],
                 ..read(
                     "$",
                     Identity::Key(vec![path("profileId")?]),

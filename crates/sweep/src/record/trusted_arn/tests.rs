@@ -118,3 +118,50 @@ fn global_domain_scope_preserves_account_and_regional_resource_boundaries() -> T
     }
     Ok(())
 }
+
+#[test]
+fn partition_resolves_known_regions_and_rejects_unrecognised_prefixes() {
+    for (region, expected) in [
+        ("us-east-1", "aws"),
+        ("ca-west-1", "aws"),
+        ("il-central-1", "aws"),
+        ("us-gov-west-1", "aws-us-gov"),
+        ("cn-north-1", "aws-cn"),
+        ("us-iso-east-1", "aws-iso"),
+        ("us-isob-east-1", "aws-iso-b"),
+        ("us-isof-south-1", "aws-iso-f"),
+        ("eu-isoe-west-1", "aws-iso-e"),
+        ("eusc-de-east-1", "aws-eusc"),
+    ] {
+        assert_eq!(
+            partition(region).map(|(name, _, _)| name),
+            Some(expected),
+            "{region}"
+        );
+    }
+    assert_eq!(partition("unknown-place-1"), None);
+}
+
+#[test]
+fn arn_in_unrecognised_region_fails_scope_validation_even_with_aws_partition() -> TestResult {
+    let account = AccountId::parse("123456789012")?;
+    let known = RegionId::parse("us-east-1")?;
+    let unknown = RegionId::parse("unknown-place-1")?;
+    let known_scope = IdentityContext {
+        account: &account,
+        region: &known,
+    };
+    let unknown_scope = IdentityContext {
+        account: &account,
+        region: &unknown,
+    };
+    validate_scope(
+        &parse("arn:aws:sqs:us-east-1:123456789012:Queue")?,
+        &known_scope,
+        true,
+    )?;
+    let arn = parse("arn:aws:sqs:unknown-place-1:123456789012:Queue")?;
+    assert!(validate_scope(&arn, &unknown_scope, true).is_err());
+    assert!(validate_scope(&arn, &unknown_scope, false).is_err());
+    Ok(())
+}

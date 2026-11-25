@@ -40,7 +40,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
         assert!(matches!(
             Args::parse(&args),
             Err(ProbeError::Invalid(
-                "probe requires five option-value pairs plus optional child samples and service pairs"
+                "probe requires five option-value pairs plus optional service, sample, or comparison pairs"
             ))
         ));
     }
@@ -49,7 +49,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
     assert!(matches!(
         Args::parse(&args),
         Err(ProbeError::Invalid(
-            "probe requires five option-value pairs plus optional child samples and service pairs"
+            "probe requires five option-value pairs plus optional service, sample, or comparison pairs"
         ))
     ));
 }
@@ -142,7 +142,73 @@ fn given_repeated_services_when_parsed_then_each_selector_is_preserved() -> Test
 fn given_too_many_services_when_parsed_then_argument_bound_is_enforced() {
     let mut args = arguments();
     args.extend(std::iter::repeat_n("--service".to_owned(), 514));
-    assert!(Args::parse(&args).is_err());
+    assert!(matches!(
+        Args::parse(&args),
+        Err(ProbeError::Invalid(
+            "probe accepts at most 256 service options"
+        ))
+    ));
+}
+
+#[test]
+fn comparison_pairs_require_dated_evidence() -> TestResult {
+    let mut args = arguments();
+    args.extend(["--compare-pair", "accessanalyzer/ListAnalyzers/GetAnalyzer"].map(str::to_owned));
+    assert!(matches!(
+        Args::parse(&args),
+        Err(ProbeError::Invalid(
+            "compare-pair and compared-at must be supplied together"
+        ))
+    ));
+    args.extend(["--compared-at", "2026-11-24T00:00:00Z"].map(str::to_owned));
+    let parsed = Args::parse(&args)?;
+    assert_eq!(parsed.pairs, ["accessanalyzer/ListAnalyzers/GetAnalyzer"]);
+    assert_eq!(parsed.compared_at.as_deref(), Some("2026-11-24T00:00:00Z"));
+    Ok(())
+}
+
+#[test]
+fn given_service_and_compare_pair_when_parsed_then_conflicting_flags_are_named() {
+    let mut args = arguments();
+    args.extend(
+        [
+            "--service",
+            "bindings",
+            "--compare-pair",
+            "bindings/ListParents0/ListChildren",
+            "--compared-at",
+            "2026-11-24",
+        ]
+        .map(str::to_owned),
+    );
+    assert!(matches!(
+        Args::parse(&args),
+        Err(ProbeError::Invalid(
+            "--service cannot be combined with --compare-pair"
+        ))
+    ));
+}
+
+#[test]
+fn given_child_samples_and_compare_pair_when_parsed_then_conflicting_flags_are_named() {
+    let mut args = arguments();
+    args.extend(
+        [
+            "--child-samples",
+            "2",
+            "--compare-pair",
+            "bindings/ListParents0/ListChildren",
+            "--compared-at",
+            "2026-11-24",
+        ]
+        .map(str::to_owned),
+    );
+    assert!(matches!(
+        Args::parse(&args),
+        Err(ProbeError::Invalid(
+            "--child-samples cannot be combined with --compare-pair"
+        ))
+    ));
 }
 
 #[test]

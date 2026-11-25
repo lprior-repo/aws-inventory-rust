@@ -10,6 +10,8 @@ use std::{collections::BTreeMap, fs, path::Path};
 
 #[path = "tag_runtime/decoder.rs"]
 mod decoder;
+#[path = "tag_runtime/ec2.rs"]
+mod ec2;
 #[path = "tag_runtime/relations.rs"]
 mod relations;
 

@@ -1,6 +1,7 @@
 mod args;
 mod credentials;
 mod load;
+mod receipt;
 
 use super::ProbeError;
 use args::Args;
@@ -27,8 +28,7 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
         tokio::task::spawn_blocking(move || load::load(&args.catalog, &args.ca_bundle)).await??;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let executor = executor()?;
-    let started = Instant::now();
-    let report = super::Probe {
+    let probe = super::Probe {
         catalog: &catalog,
         credentials: &credentials,
         client: &client,
@@ -36,18 +36,21 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
         region: &region,
         endpoint: &args.endpoint,
         services: &args.services,
-        child_samples: args.child_samples,
+    };
+    if let Some(when) = &args.compared_at {
+        let (report, overlays) = probe.compare(&args.pairs, when).await?;
+        return receipt::publish(args.report, report, Some(overlays)).await;
     }
-    .run()
-    .await?;
-    tokio::fs::write(args.report, report.text).await?;
+    let started = Instant::now();
+    let report = probe.run(args.child_samples).await?;
+    receipt::publish(args.report, report.text, None).await?;
     eprintln!(
         "probe wall time: roots {:.3}s, full {:.3}s",
         report.root_wall.as_secs_f64(),
         started.elapsed().as_secs_f64(),
     );
     if let Some(error) = report.child_error {
-        return Err(error.into());
+        return Err(ProbeError::ChildSchedule(error));
     }
     Ok(())
 }

@@ -1,11 +1,14 @@
 use std::io::Write;
+use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 use serde_json::Value;
 
 use crate::HarnessError;
+use rustix::process::{Pid, Signal, WaitId, WaitIdOptions, WaitIdStatus};
 
 #[cfg(test)]
 mod tests;
@@ -32,23 +35,88 @@ const ARGUMENTS: [&str; 9] = [
     "--idle-timeout",
 ];
 
-struct ChildOwner {
+pub(crate) struct ChildOwner {
     child: Child,
+    finished: OnceLock<FinishedChild>,
+}
+
+enum FinishedChild {
+    Lost,
+    Reaped(std::process::ExitStatus),
 }
 
 impl ChildOwner {
-    fn terminate(&mut self) -> Result<(), HarnessError> {
-        match self.child.kill() {
-            Ok(()) => {
-                self.child.wait()?;
-                Ok(())
+    pub(crate) fn spawn(command: &mut Command) -> std::io::Result<Self> {
+        ensure_waitable_children()?;
+        let child = command.process_group(0).spawn()?;
+        Ok(Self {
+            child,
+            finished: OnceLock::new(),
+        })
+    }
+
+    pub(crate) fn pid(&self) -> Pid {
+        Pid::from_child(&self.child)
+    }
+
+    pub(crate) fn exited(&self) -> Result<Option<WaitIdStatus>, HarnessError> {
+        if self.finished.get().is_some() {
+            return Err(std::io::Error::from(rustix::io::Errno::CHILD).into());
+        }
+        let flags = WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT;
+        let result = rustix::process::waitid(WaitId::Pid(self.pid()), flags);
+        if matches!(result, Err(rustix::io::Errno::CHILD)) {
+            self.finished.get_or_init(|| FinishedChild::Lost);
+        }
+        result.map_err(|error| std::io::Error::from(error).into())
+    }
+
+    pub(crate) fn terminate(&mut self) -> Result<std::process::ExitStatus, HarnessError> {
+        if let Some(FinishedChild::Reaped(status)) = self.finished.get() {
+            return Ok(*status);
+        }
+        self.exited()?;
+        match rustix::process::kill_process_group(self.pid(), Signal::KILL) {
+            Ok(()) | Err(rustix::io::Errno::SRCH) => {}
+            Err(error) => return Err(std::io::Error::from(error).into()),
+        }
+        match self.child.wait() {
+            Ok(status) => {
+                self.finished.get_or_init(|| FinishedChild::Reaped(status));
+                Ok(status)
             }
-            Err(error) => match self.child.try_wait()? {
-                Some(_) => Ok(()),
-                None => Err(error.into()),
-            },
+            Err(error) => {
+                if error.raw_os_error() == Some(rustix::io::Errno::CHILD.raw_os_error()) {
+                    self.finished.get_or_init(|| FinishedChild::Lost);
+                }
+                Err(error.into())
+            }
         }
     }
+
+    #[cfg(test)]
+    pub(crate) fn child_mut(&mut self) -> &mut Child {
+        &mut self.child
+    }
+}
+
+fn ensure_waitable_children() -> std::io::Result<()> {
+    static INSTALLED: OnceLock<()> = OnceLock::new();
+    if INSTALLED.get().is_some() {
+        return Ok(());
+    }
+
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .enable_io()
+        .build()?;
+    let installed = {
+        let _entered = runtime.enter();
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::child()).map(drop)
+    };
+    runtime.shutdown_background();
+    installed?;
+    INSTALLED.get_or_init(|| ());
+    Ok(())
 }
 
 impl Drop for ChildOwner {
@@ -62,7 +130,7 @@ impl Drop for ChildOwner {
 fn report(error: &HarnessError) {
     match writeln!(
         std::io::stderr().lock(),
-        "emulator child cleanup failed: {error}"
+        "owned child cleanup failed: {error}"
     ) {
         Ok(()) | Err(_) => {}
     }
@@ -93,14 +161,15 @@ fn spawn(
     idle_timeout_seconds: u64,
 ) -> Result<ChildOwner, HarnessError> {
     let handle = std::fs::File::create(log)?;
-    let child = command(binary)
-        .args(ARGUMENTS)
-        .arg(idle_timeout_seconds.to_string())
-        .env("HOME", home)
-        .stdout(Stdio::from(handle.try_clone()?))
-        .stderr(Stdio::from(handle))
-        .spawn()?;
-    Ok(ChildOwner { child })
+    ChildOwner::spawn(
+        command(binary)
+            .args(ARGUMENTS)
+            .arg(idle_timeout_seconds.to_string())
+            .env("HOME", home)
+            .stdout(Stdio::from(handle.try_clone()?))
+            .stderr(Stdio::from(handle)),
+    )
+    .map_err(HarnessError::from)
 }
 
 fn launched(
@@ -179,11 +248,12 @@ impl Emulator {
     }
 
     pub fn stop(mut self) -> Result<(), HarnessError> {
-        self.child.terminate()
+        self.child.terminate().map(drop)
     }
 }
 
 pub fn verify_binary(binary: &Path) -> Result<(), HarnessError> {
+    ensure_waitable_children()?;
     let output = command(binary).arg("--version").output()?;
     if !output.status.success() {
         return Err(HarnessError::invalid(
@@ -236,9 +306,9 @@ fn poll_and_pause(
 }
 
 fn poll_endpoint(log: &Path, child: &mut ChildOwner) -> Result<Option<String>, HarnessError> {
-    if let Some(status) = child.child.try_wait()? {
+    if let Some(status) = child.exited()? {
         return Err(HarnessError::invalid(format!(
-            "emulator exited before readiness: {status}"
+            "emulator exited before readiness: {status:?}"
         )));
     }
     let bytes = crate::files::read_bytes(log, crate::snapshot::MAX_DOCUMENT_BYTES)?;

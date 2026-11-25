@@ -41,6 +41,9 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 .collect(),
                 tags: Some(path("tags")?),
                 queryable: vec![path("arn")?],
+                exclude_response_members: vec![path(
+                    "campaign.outboundCallConfig.connectSourcePhoneNumber",
+                )?],
                 ..read(
                     "campaign",
                     Identity::Arn(path("arn")?),

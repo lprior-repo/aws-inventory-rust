@@ -101,3 +101,4 @@ gate.
   filters). Where the model cannot say, the operation stays deferred.
 - A4 is the long pole for verified coverage. An operation is
   emulator-verified only when it returned at least one seeded resource.
+  This status proves that the operation returned a seeded identity, not that every seeded identity or per-kind count matched the oracle.

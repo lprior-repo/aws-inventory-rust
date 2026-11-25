@@ -10,13 +10,15 @@ pub(super) struct Args {
     pub report: PathBuf,
     pub services: Vec<String>,
     pub child_samples: ChildProbeSamples,
+    pub pairs: Vec<String>,
+    pub compared_at: Option<String>,
 }
 
 impl Args {
     pub(super) fn parse(arguments: &[String]) -> Result<Self, ProbeError> {
         if arguments.len() < 10 || arguments.len() > 524 || !arguments.len().is_multiple_of(2) {
             return Err(ProbeError::Invalid(
-                "probe requires five option-value pairs plus optional child samples and service pairs",
+                "probe requires five option-value pairs plus optional service, sample, or comparison pairs",
             ));
         }
         let options = arguments.as_chunks::<2>().0.iter().try_fold(
@@ -39,6 +41,8 @@ struct Options<'a> {
     report: Option<&'a str>,
     child_samples: Option<&'a str>,
     services: Vec<&'a str>,
+    pairs: Vec<&'a str>,
+    compared_at: Option<&'a str>,
 }
 
 impl<'a> Options<'a> {
@@ -47,6 +51,11 @@ impl<'a> Options<'a> {
             return Err(ProbeError::Invalid(
                 "probe option value is empty or too long",
             ));
+        }
+        if name == "--compare-pair" {
+            self.pairs.try_reserve(1)?;
+            self.pairs.push(value);
+            return Ok(());
         }
         if name == "--service" {
             if self.services.len() == 256 {
@@ -65,6 +74,7 @@ impl<'a> Options<'a> {
             "--region" => &mut self.region,
             "--report" => &mut self.report,
             "--child-samples" => &mut self.child_samples,
+            "--compared-at" => &mut self.compared_at,
             _ => return Err(ProbeError::Invalid("unknown probe option")),
         };
         if slot.replace(value).is_some() {
@@ -74,6 +84,16 @@ impl<'a> Options<'a> {
     }
 
     fn finish(self) -> Result<Args, ProbeError> {
+        if !self.services.is_empty() && !self.pairs.is_empty() {
+            return Err(ProbeError::Invalid(
+                "--service cannot be combined with --compare-pair",
+            ));
+        }
+        if self.child_samples.is_some() && !self.pairs.is_empty() {
+            return Err(ProbeError::Invalid(
+                "--child-samples cannot be combined with --compare-pair",
+            ));
+        }
         let args = Args {
             catalog: required(self.catalog)?.into(),
             endpoint: required(self.endpoint)?.into(),
@@ -93,8 +113,15 @@ impl<'a> Options<'a> {
                         ))
                 },
             )?,
+            pairs: self.pairs.into_iter().map(str::to_owned).collect(),
+            compared_at: self.compared_at.map(str::to_owned),
         };
         endpoint(&args.endpoint)?;
+        if args.pairs.is_empty() != args.compared_at.is_none() {
+            return Err(ProbeError::Invalid(
+                "compare-pair and compared-at must be supplied together",
+            ));
+        }
         Ok(args)
     }
 }

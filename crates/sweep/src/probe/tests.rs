@@ -137,6 +137,55 @@ fn decode_fixture(
 }
 
 #[tokio::test]
+async fn given_comparison_session_when_reading_root_page_then_no_child_is_sent() -> TestResult {
+    let bytes = fixture::compiled(1, |_| {})?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let root = catalog
+        .lookup("bindings", "ListParents0")
+        .ok_or("root plan missing")?;
+    let server = server::Server::new().await?;
+    let endpoint = server.endpoint()?;
+    let client = Client::new(Config {
+        extra_ca_bundle: Some(server.ca.clone()),
+        ..Config::default()
+    })?;
+    let credentials = TestCredentials::new("us-east-1");
+    let executor = ApiExecutor::new(ExecutorConfig {
+        max_attempts: 1,
+        ..ExecutorConfig::default()
+    })?;
+    let region = RegionId::parse("us-east-1")?;
+    let session = super::ProbeSession::new(
+        &catalog,
+        &credentials,
+        &client,
+        &executor,
+        root,
+        ProbeScope {
+            region: &region,
+            account: None,
+            endpoint_override: Some(&endpoint),
+        },
+    )?;
+    let (completed, completion) = tokio::sync::oneshot::channel();
+    let bodies = [r#"{"Items":[{"Id":"one"},{"Id":"two"}]}"#];
+    let (page, requests) = tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        tokio::try_join!(
+            async {
+                let result = session.root_page().await;
+                completed.send(()).map_err(|_| "comparison server closed")?;
+                Ok::<_, Box<dyn std::error::Error>>(result?)
+            },
+            server.serve_until(&bodies, completion)
+        )
+    })
+    .await??;
+    assert_eq!(page.items.len(), 2);
+    assert_eq!(targets(&requests)?, ["ListParents0"]);
+    Ok(())
+}
+
+#[tokio::test]
 async fn given_regional_or_global_parent_when_probing_regional_child_then_signing_region_follows_scope()
 -> TestResult {
     for (scope, expected) in [(Scope::Region, "us-west-2"), (Scope::Account, "us-east-1")] {

@@ -11,6 +11,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("SecurityGroupRules")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("SecurityGroupRuleId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -27,6 +28,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("ServiceLinkVirtualInterfaces")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("ServiceLinkVirtualInterfaceId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -48,6 +50,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("Snapshots")?),
+        tags: Some(path("Tags")?),
         fixed: [(path("OwnerIds")?, FixedValue::Strings(vec!["self".to_owned()]))].into_iter().collect(),
         identity: Some(Identity::Key(vec![path("SnapshotId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
@@ -109,6 +112,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TrafficMirrorFilterRules")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TrafficMirrorFilterRuleId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -117,6 +121,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TrafficMirrorFilters")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TrafficMirrorFilterId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -125,6 +130,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TrafficMirrorSessions")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TrafficMirrorSessionId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -133,6 +139,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TrafficMirrorTargets")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TrafficMirrorTargetId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -141,6 +148,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("TransitGatewayAttachments")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("TransitGatewayAttachmentId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()

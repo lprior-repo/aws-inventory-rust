@@ -112,8 +112,24 @@ struct SeedContext<'c, 'm> {
 
 struct SeedOutput {
     step: super::scenario::StepId,
-    resource: Option<SeedResourceIdentity>,
+    resources: SeedResources,
     record: Record,
+}
+
+enum SeedResources {
+    None,
+    One(SeedResourceIdentity),
+    List(Vec<SeedResourceIdentity>),
+}
+
+impl SeedResources {
+    fn as_slice(&self) -> &[SeedResourceIdentity] {
+        match self {
+            Self::None => &[],
+            Self::One(resource) => std::slice::from_ref(resource),
+            Self::List(resources) => resources,
+        }
+    }
 }
 
 struct SeedState {
@@ -163,7 +179,7 @@ async fn execute_step(
     context: &SeedContext<'_, '_>,
 ) -> Result<(), SeedError> {
     let output = prepare_output(state, step, context).await?;
-    record_output(state, output.step, output.resource, output.record)
+    record_output(state, output)
 }
 
 async fn prepare_output(
@@ -178,14 +194,13 @@ async fn prepare_output(
         .collect::<Result<Vec<_>, _>>()?;
     let response = call_step(step, context, &inputs).await?;
     validate_response(&response, step, &inputs)?;
-    let resource = step
-        .resource
-        .as_ref()
-        .map(|resource| identity::resource(state, step.id, resource, &response, &inputs))
-        .transpose()?;
+    let resources = match &step.resource {
+        Some(resource) => identity::resources(state, step.id, resource, &response, &inputs)?,
+        None => SeedResources::None,
+    };
     Ok(SeedOutput {
         step: step.id,
-        resource,
+        resources,
         record: response,
     })
 }
@@ -211,35 +226,33 @@ async fn call_step(
     .await
 }
 
-fn record_output(
-    state: &mut SeedState,
-    step: super::StepId,
-    resource: Option<SeedResourceIdentity>,
-    record: Record,
-) -> Result<(), SeedError> {
+fn record_output(state: &mut SeedState, output: SeedOutput) -> Result<(), SeedError> {
     let (slot, prior_outputs) = state
         .outputs
-        .get_mut(..=usize::from(step.0))
+        .get_mut(..=usize::from(output.step.0))
         .and_then(|outputs| outputs.split_last_mut())
         .ok_or(SeedError::Invalid(
             "seed output step exceeds scenario bounds",
         ))?;
-    if resource.as_ref().is_some_and(|resource| {
+    let resources = output.resources.as_slice();
+    let previous = || {
         prior_outputs
             .iter()
             .flatten()
-            .filter_map(|output| output.resource.as_ref())
+            .flat_map(|prior| prior.resources.as_slice())
+    };
+    if resources.iter().enumerate().any(|(index, resource)| {
+        resources
+            .iter()
+            .take(index)
+            .chain(previous())
             .any(|prior| prior.key == resource.key)
     }) {
         return Err(SeedError::Invalid(
             "seed operation returned a duplicate resource identity",
         ));
     }
-    *slot = Some(SeedOutput {
-        step,
-        resource,
-        record,
-    });
+    *slot = Some(output);
     Ok(())
 }
 

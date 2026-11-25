@@ -60,6 +60,13 @@ fn validate_identity(step: &SeedStep) -> Result<(), SeedError> {
             }
             Ok(())
         }
+        Some(SeedIdentity::ResponseList { count, .. })
+            if !(1..=256).contains(count) || step.expected_identity.is_some() =>
+        {
+            Err(SeedError::Invalid(
+                "seed response identity list needs a count from 1 through 256 and no scalar identity",
+            ))
+        }
         _ => Ok(()),
     }
 }
@@ -104,9 +111,12 @@ pub(super) fn validate_relationships(
 }
 
 fn resource(steps: &[SeedStep], id: StepId) -> bool {
-    steps
-        .get(usize::from(id.0))
-        .is_some_and(|step| step.identity.is_some())
+    steps.get(usize::from(id.0)).is_some_and(|step| {
+        matches!(
+            step.identity,
+            Some(SeedIdentity::Response(_) | SeedIdentity::Request { .. })
+        )
+    })
 }
 
 pub(super) fn valid_name(value: &str) -> bool {

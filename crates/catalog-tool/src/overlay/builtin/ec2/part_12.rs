@@ -94,6 +94,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Expand),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("SecurityGroupForVpcs")?),
+        tags: Some(path("Tags")?),
         identity: Some(Identity::Key(vec![path("GroupId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         bind: [(path("VpcId")?, Binding::From { operation: name("DescribeVpcs")?, path: path("VpcId")? })].into_iter().collect(),
