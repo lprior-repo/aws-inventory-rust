@@ -66,6 +66,11 @@ fn values(sample: &Sample) -> Result<Vec<(&'static str, Option<u64>)>, String> {
             Some(get("connections_opened")?),
         ),
         ("P4.cold_requests_reused", Some(get("requests_reused")?)),
+        ("P4.cold_distinct_hosts", Some(get("hosts")?)),
+        (
+            "P4.cold_connect_attempts_incl_permit_wait_and_failures_ppm_of_wall",
+            ratio(get("handshake_ns")?, 1, sample.cold_wall_ms)?,
+        ),
         (
             "P5.cold_resources_per_second",
             ratio(get("rows")?, 1_000, sample.cold_wall_ms)?,
@@ -241,10 +246,12 @@ mod tests {
         let system = times(20)?;
         let rss = times(1000)?;
         let commit_ns = times(100_000_000)?;
+        let handshake_ns = times(24_000_000)?;
+        let hosts = times(2)?;
         let commits = times(4)?;
         let decode_ns = times(10_000_000)?;
         let summary = format!(
-            "resource_writes_scope=invocation resource_writes={rows} rows={rows} scopes=1 complete=1 partial=0 inaccessible=0 unsupported=0 failed=0 unobserved=0 graph_pending=0 work_remaining=0 unattributed_resources=0\nmetrics bootstrap_ms=1 seed_ms=1 drain_ms=1 api_attempts={attempts} api_retries={retries} api_throttles={n} connections_opened={connections} requests_sent={attempts} requests_reused={reused} http2_requests=0 bytes_read=1 handshake_ns=1 hosts=1 pages={commits} decode_ns={decode_ns} store_commit_ns={commit_ns} store_commits={commits} claims=1 progress_dropped=0 child_requests_skipped=0 cpu_user_ms={user} cpu_system_ms={system} peak_rss_kb={rss} process_metrics=available"
+            "resource_writes_scope=invocation resource_writes={rows} rows={rows} scopes=1 complete=1 partial=0 inaccessible=0 unsupported=0 failed=0 unobserved=0 graph_pending=0 work_remaining=0 unattributed_resources=0\nmetrics bootstrap_ms=1 seed_ms=1 drain_ms=1 api_attempts={attempts} api_retries={retries} api_throttles={n} connections_opened={connections} requests_sent={attempts} requests_reused={reused} http2_requests=0 bytes_read=1 handshake_ns={handshake_ns} hosts={hosts} pages={commits} decode_ns={decode_ns} store_commit_ns={commit_ns} store_commits={commits} claims=1 progress_dropped=0 child_requests_skipped=0 cpu_user_ms={user} cpu_system_ms={system} peak_rss_kb={rss} process_metrics=available"
         );
         Ok(Sample {
             cold_wall_ms: times(2000)?,
@@ -269,6 +276,11 @@ mod tests {
             ("P3.cold_api_throttles", 2),
             ("P4.cold_connections_opened", 6),
             ("P4.cold_requests_reused", 18),
+            ("P4.cold_distinct_hosts", 4),
+            (
+                "P4.cold_connect_attempts_incl_permit_wait_and_failures_ppm_of_wall",
+                12_000,
+            ),
             ("P5.cold_resources_per_second", 200),
             ("P6.cold_cpu_ms", 240),
             ("P7.cold_peak_rss_kb", 2000),

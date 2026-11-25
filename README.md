@@ -716,6 +716,15 @@ unrelated writes can contribute. Resource and writer rates are per second,
 rounded down; CPU is milliseconds and decode share is parts per million.
 Zero-denominator rows are `unavailable`, not zero; comparison refuses them.
 
+For the PostgreSQL cold-write comparison, leave `INVENTORY_POSTGRES_COPY_MIN_ROWS`
+unset for the default `UNNEST` path, or export it as `1` to force staging COPY
+for every nonempty changed batch. Other positive values set the minimum changed
+row count; warm unchanged rows do not qualify. Use the same release collector,
+catalog, server settings and three runs per profile (`thin` and `full`) for both
+settings. Compare P1, P8 and P9, check P2 for a warm regression, and watch P11
+for growth from the session-local tables. The separate direct-COPY measurement
+requires its own writer mode; no current setting enables it.
+
 `--profile proxy` selects thin seeds with 50 ms latency and 20 requests per second
 per account/region/service. `--proxy latency_ms=50,rps=20` also works with thin/full
 and overrides those defaults. Every cold and warm collection gets fresh buckets

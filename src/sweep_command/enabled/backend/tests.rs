@@ -4,6 +4,50 @@ use inventory_engine::inventory::{PendingProjection, ProjectionAck};
 use inventory_harness::postgres::{TestDatabase, admin_url};
 use std::time::Instant;
 
+#[test]
+fn given_copy_min_rows_unset_when_configured_then_copy_is_off() -> Result<()> {
+    let config = postgres_config_value(None)?;
+    let default_config = PgWriteConfig::default();
+    assert_eq!(config, default_config);
+    Ok(())
+}
+
+#[test]
+fn given_copy_min_rows_one_when_configured_then_copy_enabled_at_one_row() -> Result<()> {
+    let config = postgres_config_value(Some("1".to_owned()))?;
+    let expected = PgWriteConfig::default().with_copy_min_rows(std::num::NonZeroUsize::MIN);
+    assert_eq!(config, expected);
+    Ok(())
+}
+
+#[test]
+fn given_copy_min_rows_zero_when_configured_then_error() -> Result<()> {
+    let error = postgres_config_value(Some("0".to_owned()))
+        .err()
+        .context("zero should have been rejected")?;
+    assert!(
+        error
+            .to_string()
+            .contains("INVENTORY_POSTGRES_COPY_MIN_ROWS"),
+        "error must name the variable"
+    );
+    Ok(())
+}
+
+#[test]
+fn given_copy_min_rows_non_numeric_when_configured_then_error() -> Result<()> {
+    let error = postgres_config_value(Some("abc".to_owned()))
+        .err()
+        .context("non-numeric should have been rejected")?;
+    assert!(
+        error
+            .to_string()
+            .contains("INVENTORY_POSTGRES_COPY_MIN_ROWS"),
+        "error must name the variable"
+    );
+    Ok(())
+}
+
 #[derive(Parser)]
 struct Options {
     #[command(flatten)]
@@ -28,6 +72,56 @@ fn given_repeated_service_selectors_when_parsed_then_order_and_qualification_are
     ])?;
     assert_eq!(parsed.sweep.services, ["ec2:DescribeVpcs", "sts"]);
     assert!(options("unused")?.services.is_empty());
+    Ok(())
+}
+
+#[test]
+fn given_transport_flags_when_parsed_then_sweep_receives_the_pool_settings() -> Result<()> {
+    let parsed = Options::try_parse_from([
+        "test",
+        "--database",
+        "unused",
+        "--idle-timeout-ms",
+        "10000",
+        "--pool-idle-per-host",
+        "32",
+    ])?;
+    let config = config(&parsed.sweep);
+    assert_eq!(
+        config.idle_timeout,
+        Some(std::time::Duration::from_secs(10))
+    );
+    assert_eq!(config.pool_idle_per_host, Some(32));
+    Ok(())
+}
+
+#[test]
+fn given_child_transport_environment_when_parsed_then_sweep_receives_the_pool_settings()
+-> Result<()> {
+    const TEST_NAME: &str =
+        "given_child_transport_environment_when_parsed_then_sweep_receives_the_pool_settings";
+    const MARKER: &str = "INVENTORY_TEST_TRANSPORT_ENV";
+    if std::env::var_os(MARKER).is_some() {
+        let parsed = options("unused")?;
+        let config = config(&parsed);
+        assert_eq!(
+            config.idle_timeout,
+            Some(std::time::Duration::from_secs(10))
+        );
+        assert_eq!(config.pool_idle_per_host, Some(32));
+        return Ok(());
+    }
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .arg(TEST_NAME)
+        .env(MARKER, "1")
+        .env("INVENTORY_SWEEP_IDLE_TIMEOUT_MS", "10000")
+        .env("INVENTORY_SWEEP_POOL_IDLE_PER_HOST", "32")
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
     Ok(())
 }
 

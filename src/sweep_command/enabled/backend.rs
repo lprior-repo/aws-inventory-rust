@@ -59,13 +59,32 @@ async fn collect<S: InventoryStore>(
 
 async fn open_postgres(options: &SweepArgs, catalog: &RuntimeCatalog<'_>) -> Result<PgStore> {
     let url = DatabaseUrl::parse(&options.database)?;
-    let config = PgWriteConfig::default();
+    let config = postgres_config()?;
     if PgStore::exists(&url, config).await? {
         return open_current(&url, config, catalog.raw_bytes()).await;
     }
     ensure!(!options.resume, "cannot resume a missing inventory schema");
     let registry = SchemaRegistry::new(catalog.raw_bytes(), catalog.schemas().to_vec())?;
     Ok(PgStore::create(&url, registry, config).await?)
+}
+
+fn postgres_config() -> Result<PgWriteConfig> {
+    let value = std::env::var("INVENTORY_POSTGRES_COPY_MIN_ROWS").ok();
+    postgres_config_value(value)
+}
+
+fn postgres_config_value(value: Option<String>) -> Result<PgWriteConfig> {
+    const NAME: &str = "INVENTORY_POSTGRES_COPY_MIN_ROWS";
+    let config = PgWriteConfig::default();
+    match value {
+        Some(value) => {
+            let threshold = value
+                .parse::<std::num::NonZeroUsize>()
+                .with_context(|| format!("{NAME} must be a positive integer"))?;
+            Ok(config.with_copy_min_rows(threshold))
+        }
+        None => Ok(config),
+    }
 }
 
 async fn open_current(url: &DatabaseUrl, config: PgWriteConfig, bytes: &[u8]) -> Result<PgStore> {
@@ -108,6 +127,10 @@ fn config(options: &SweepArgs) -> SweepConfig {
         resume: options.resume,
         endpoint: options.endpoint.clone(),
         ca_bundle: options.ca_bundle.clone(),
+        idle_timeout: options
+            .idle_timeout_ms
+            .map(std::time::Duration::from_millis),
+        pool_idle_per_host: options.pool_idle_per_host,
         slice_timeout_secs: (options.slice_timeout > 0).then_some(options.slice_timeout),
         max_rps: options.max_rps,
         max_page_size: options.max_page_size,

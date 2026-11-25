@@ -20,7 +20,7 @@ mod test_transport;
 #[cfg(test)]
 mod tests;
 
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::CredentialSource;
 use aws_wire::transport::{Client, Config as TransportConfig};
@@ -37,6 +37,10 @@ use inventory_engine::{
 use super::{ScopeOutcomes, SweepConfig, SweepError, SweepSummary, call, input, record};
 
 const LEASE_MARGIN_MS: u64 = 30_000;
+const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(1);
+// Hyper only caps idle connections per authority. Capping total idle sockets
+// at half of max_connections needs a pool-wide admission or eviction hook.
+const DEFAULT_POOL_IDLE_PER_HOST: usize = 8;
 
 pub(super) struct BootstrapContext<'a, 'catalog, C: CredentialSource> {
     pub catalog: &'a RuntimeCatalog<'catalog>,
@@ -91,6 +95,19 @@ where
     run(catalog, store, config, credentials, control)
 }
 
+impl SweepConfig {
+    /// Check the idle-pool overrides without creating a transport.
+    ///
+    /// # Errors
+    ///
+    /// Returns a configuration error if an override exceeds the effective transport bounds.
+    pub fn validate_transport_overrides(&self) -> Result<(), SweepError> {
+        let max_connections =
+            descriptors::connection_bound(self.concurrency, descriptors::soft_open_files());
+        pool_settings(self, max_connections, &TransportConfig::default()).map(|_| ())
+    }
+}
+
 /// Bounds connections by the open-file limit; pages beyond the bound wait for a connection.
 fn transport_config(
     config: &SweepConfig,
@@ -104,13 +121,46 @@ fn transport_config(
             "connection bound is below concurrency; check the open-file limit"
         );
     }
+    let defaults = TransportConfig::default();
+    let (idle_timeout, pool_idle_per_host) = pool_settings(config, max_connections, &defaults)?;
     Ok(TransportConfig {
         max_connections,
-        pool_idle_per_host: max_connections.clamp(1, 8),
+        idle_timeout,
+        pool_idle_per_host,
         extra_ca_bundle: config.ca_bundle.clone(),
         allow_plain_http: false,
-        ..TransportConfig::default()
+        ..defaults
     })
+}
+
+fn pool_settings(
+    config: &SweepConfig,
+    max_connections: usize,
+    defaults: &TransportConfig,
+) -> Result<(Duration, usize), SweepError> {
+    let idle_range = defaults.idle_timeout_range();
+    let idle_timeout = match config.idle_timeout {
+        Some(idle) if !idle_range.contains(&idle) => {
+            return Err(SweepError::InvalidIdleTimeout {
+                millis: idle.as_millis(),
+                min_ms: idle_range.start().as_millis(),
+                max_ms: idle_range.end().as_millis(),
+            });
+        }
+        Some(idle) => idle,
+        None => DEFAULT_IDLE_TIMEOUT,
+    };
+    let pool_idle_per_host = match config.pool_idle_per_host {
+        Some(given) if !(1..=max_connections).contains(&given) => {
+            return Err(SweepError::InvalidPoolIdlePerHost {
+                given,
+                max: max_connections,
+            });
+        }
+        Some(given) => given,
+        None => max_connections.min(DEFAULT_POOL_IDLE_PER_HOST),
+    };
+    Ok((idle_timeout, pool_idle_per_host))
 }
 
 fn executor_config(concurrency: usize) -> Result<ExecutorConfig, SweepError> {

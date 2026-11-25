@@ -2,6 +2,15 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- `sweep` and `serve` accept `--idle-timeout-ms` and `--pool-idle-per-host`
+  (or `INVENTORY_SWEEP_IDLE_TIMEOUT_MS` and `INVENTORY_SWEEP_POOL_IDLE_PER_HOST`).
+  Idle timeout must be 1–10,000 ms; the per-endpoint cap must be between 1 and
+  the effective connection limit (bounded by concurrency and open files).
+  Pool defaults remain one second and up to eight idle sockets per endpoint.
+  Benchmark output includes distinct hosts and summed connect-attempt time
+  (including permit waits and failed attempts) relative to cold sweep wall time.
+- PostgreSQL sweeps can opt into binary COPY through temporary staging tables
+  with `INVENTORY_POSTGRES_COPY_MIN_ROWS`. The default still uses `UNNEST`.
 - When the mutation harness cannot launch its child program, it writes a final
   `supervisor_error` receipt with exit code 124 and the log digest. The receipt
   used to stay at `running`.

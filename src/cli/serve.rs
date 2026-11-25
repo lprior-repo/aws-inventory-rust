@@ -37,4 +37,10 @@ pub struct ServeArgs {
     /// CA bundle for the custom endpoint
     #[arg(long, requires = "endpoint")]
     pub ca_bundle: Option<PathBuf>,
+    /// Idle lifetime for pooled connections in milliseconds (default: 1000).
+    #[arg(long, env = "INVENTORY_SWEEP_IDLE_TIMEOUT_MS")]
+    pub idle_timeout_ms: Option<u64>,
+    /// Idle connections per endpoint (default: the connection limit, up to 8).
+    #[arg(long, env = "INVENTORY_SWEEP_POOL_IDLE_PER_HOST")]
+    pub pool_idle_per_host: Option<usize>,
 }

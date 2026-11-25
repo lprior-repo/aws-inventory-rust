@@ -91,6 +91,8 @@ fn sweep_config(max_rps: Option<u32>) -> SweepConfig {
         resume: false,
         endpoint: None,
         ca_bundle: None,
+        idle_timeout: None,
+        pool_idle_per_host: None,
         slice_timeout_secs: None,
         max_rps,
         max_page_size: None,

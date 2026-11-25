@@ -20,6 +20,8 @@ struct ProfileConfig {
 
 pub(super) async fn run(options: ServeArgs) -> Result<ExitCode> {
     let interval = ServeConfig::parse_interval(&options.interval)?;
+    let sweep_config = sweep_config(&options);
+    sweep_config.validate_transport_overrides()?;
     let catalog_bytes = read_catalog(&options.catalog)?;
     let store = open_store(&options.database, &catalog_bytes).await?;
 
@@ -33,8 +35,6 @@ pub(super) async fn run(options: ServeArgs) -> Result<ExitCode> {
         interval_ms = interval.as_millis(),
         "starting cadence scheduler"
     );
-
-    let sweep_config = sweep_config(&options);
 
     let env = ServeEnv {
         catalog_bytes,
@@ -102,6 +102,10 @@ fn sweep_config(options: &ServeArgs) -> SweepConfig {
         resume: true,
         endpoint: options.endpoint.clone(),
         ca_bundle: options.ca_bundle.clone(),
+        idle_timeout: options
+            .idle_timeout_ms
+            .map(std::time::Duration::from_millis),
+        pool_idle_per_host: options.pool_idle_per_host,
         slice_timeout_secs: None,
         max_rps: options.max_rps,
         max_page_size: None,

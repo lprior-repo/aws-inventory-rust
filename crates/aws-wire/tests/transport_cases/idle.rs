@@ -1,11 +1,11 @@
 use crate::transport_support::{
-    TestError, TestResult,
+    Mode, Server, TestError, TestResult,
     clock::Clock,
-    request,
+    config, count, request,
     watchdog::watch,
     wire::{self, Endpoint, Io, SendResult},
 };
-use aws_wire::transport::Client;
+use aws_wire::transport::{Client, Config, TransportError};
 use std::{pin::Pin, time::Duration};
 
 const GOOD: &[u8] = b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok";
@@ -97,5 +97,116 @@ async fn active<'a>(endpoint: &Endpoint, client: &'a Client) -> Result<Active<'a
 async fn finish(mut active: Active<'_>) -> TestResult {
     wire::write(&mut active.stream, CLOSE).await?;
     assert_eq!(watch(active.send).await??.body.as_ref(), b"ok");
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_idle_can_exceed_connect_timeout_when_configured_then_rejected() -> TestResult {
+    let first = Endpoint::bind(false, b"").await?;
+    let second = Endpoint::bind(false, b"").await?;
+    let connect_timeout = Duration::from_secs(10);
+    let client = match Client::new(Config {
+        connect_timeout,
+        request_deadline: Duration::from_secs(30),
+        idle_timeout: Duration::from_secs(12),
+        ..first.config(2)
+    }) {
+        Err(TransportError::InvalidRequest(reason)) => {
+            assert_eq!(reason, "pool idle timeout is out of range");
+            return Ok(());
+        }
+        result => result?,
+    };
+
+    // If construction succeeds, demonstrate why the configuration is rejected.
+    let clock = Clock::pause();
+    let Active {
+        send: one,
+        stream: mut first_socket,
+    } = active(&first, &client).await?;
+    let Active {
+        send: two,
+        stream: mut second_socket,
+    } = active(&first, &client).await?;
+    tokio::try_join!(
+        wire::write(&mut first_socket, GOOD),
+        wire::write(&mut second_socket, GOOD)
+    )?;
+    assert_eq!(watch(one).await??.body.as_ref(), b"ok");
+    assert_eq!(watch(two).await??.body.as_ref(), b"ok");
+
+    let mut next = Box::pin(client.send(request(&second.url)?));
+    crate::deadlines::poll_pending(&mut next).await?;
+    assert!(matches!(
+        clock.expire(next, connect_timeout).await?,
+        Err(TransportError::Timeout)
+    ));
+    wire::no_accept(&second.listener).await?;
+    assert_eq!(client.statistics().connections_open, 2);
+    Err("client accepted a pool timeout that starved a second endpoint".into())
+}
+
+#[tokio::test]
+async fn paced_bucket_reuses_connection_when_five_seconds_is_within_idle_timeout() -> TestResult {
+    paced_bucket(Duration::from_secs(15), 1).await
+}
+
+#[tokio::test]
+async fn paced_bucket_reconnects_when_five_seconds_exceeds_idle_timeout() -> TestResult {
+    paced_bucket(Duration::from_secs(1), 2).await
+}
+
+async fn paced_bucket(idle_timeout: Duration, expected_accepts: usize) -> TestResult {
+    let server = Server::start(Mode::Good, Default::default()).await?;
+    let client = Client::new(aws_wire::transport::Config {
+        idle_timeout,
+        request_deadline: Duration::from_secs(30),
+        connect_timeout: Duration::from_secs(15),
+        ..config()
+    })?;
+    let _clock = Clock::pause();
+
+    let first = watch(client.send(request(&server.url)?)).await??;
+    assert_eq!(first.body.as_ref(), b"ok");
+    tokio::time::advance(Duration::from_secs(5)).await;
+    let second = watch(client.send(request(&server.url)?)).await??;
+
+    assert_eq!(second.body.as_ref(), b"ok");
+    assert_eq!(count(&server.counts.accepts), expected_accepts);
+    assert_eq!(client.statistics().connections_opened, expected_accepts);
+    server.stop().await
+}
+
+#[tokio::test]
+async fn given_different_authorization_headers_when_sending_then_the_pool_reuses_the_connection()
+-> TestResult {
+    let first = Server::start(Mode::Good, Default::default()).await?;
+    let other = Server::start(Mode::Good, Default::default()).await?;
+    let client = Client::new(aws_wire::transport::Config {
+        idle_timeout: Duration::from_secs(15),
+        request_deadline: Duration::from_secs(30),
+        connect_timeout: Duration::from_secs(15),
+        ..config()
+    })?;
+    let _clock = Clock::pause();
+    let signed = |uri: &str, authorization: &'static str| {
+        http::Request::builder()
+            .uri(uri)
+            .header(http::header::AUTHORIZATION, authorization)
+            .body(bytes::Bytes::new())
+    };
+    for (server, authorization) in [
+        (&first, "AWS4-HMAC-SHA256 Credential=first-account"),
+        (&first, "AWS4-HMAC-SHA256 Credential=second-account"),
+        (&other, "AWS4-HMAC-SHA256 Credential=second-account"),
+    ] {
+        let response = watch(client.send(signed(&server.url, authorization)?)).await??;
+        assert_eq!(response.body.as_ref(), b"ok");
+    }
+
+    assert_eq!(count(&first.counts.accepts), 1);
+    assert_eq!(count(&other.counts.accepts), 1);
+    assert_eq!(client.statistics().hosts, 2);
+    tokio::try_join!(first.stop(), other.stop())?;
     Ok(())
 }

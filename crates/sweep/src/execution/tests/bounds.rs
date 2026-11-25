@@ -11,6 +11,8 @@ fn config(concurrency: usize) -> SweepConfig {
         resume: false,
         endpoint: None,
         ca_bundle: None,
+        idle_timeout: None,
+        pool_idle_per_host: None,
         slice_timeout_secs: None,
         max_rps: None,
         max_page_size: None,
@@ -122,6 +124,7 @@ fn given_a_1024_file_limit_when_concurrency_is_4096_then_connections_stop_at_768
     let transport = transport_config(&config, Some(SoftLimit::Files(1_024)))?;
     // Then 256 descriptors are kept back and the idle pool stays at eight.
     assert_eq!(transport.max_connections, 768);
+    assert_eq!(transport.idle_timeout, Duration::from_secs(1));
     assert_eq!(transport.pool_idle_per_host, 8);
     Ok(())
 }
@@ -137,4 +140,54 @@ fn given_one_page_at_a_time_when_configured_then_the_idle_pool_fits_the_connecti
     assert_eq!(transport.max_connections, 1);
     assert_eq!(transport.pool_idle_per_host, 1);
     Ok(())
+}
+
+#[test]
+fn given_transport_overrides_when_configured_then_the_pool_uses_them() -> TestResult {
+    let config = SweepConfig {
+        idle_timeout: Some(Duration::from_secs(10)),
+        pool_idle_per_host: Some(64),
+        ..config(64)
+    };
+    let transport = transport_config(&config, Some(SoftLimit::Unlimited))?;
+    assert_eq!(transport.idle_timeout, Duration::from_secs(10));
+    assert_eq!(transport.pool_idle_per_host, 64);
+    assert_eq!(Client::new(transport)?.statistics(), Default::default());
+    Ok(())
+}
+
+#[test]
+fn given_invalid_idle_timeout_when_configured_then_the_error_names_the_option_value_and_range() {
+    for milliseconds in [0, 10_001] {
+        let config = SweepConfig {
+            idle_timeout: Some(Duration::from_millis(milliseconds)),
+            ..config(64)
+        };
+        let result = transport_config(&config, Some(SoftLimit::Unlimited));
+        assert_eq!(
+            result.err().map(|error| error.to_string()),
+            Some(format!(
+                "invalid sweep configuration: --idle-timeout-ms (INVENTORY_SWEEP_IDLE_TIMEOUT_MS) \
+                 was {milliseconds}; allowed range is 1..=10000 ms"
+            ))
+        );
+    }
+}
+
+#[test]
+fn given_invalid_pool_size_when_configured_then_the_error_names_the_descriptor_bound() {
+    for given in [0, 17] {
+        let config = SweepConfig {
+            pool_idle_per_host: Some(given),
+            ..config(64)
+        };
+        let result = transport_config(&config, Some(SoftLimit::Files(272)));
+        assert_eq!(
+            result.err().map(|error| error.to_string()),
+            Some(format!(
+                "invalid sweep configuration: --pool-idle-per-host \
+                 (INVENTORY_SWEEP_POOL_IDLE_PER_HOST) was {given}; allowed range is 1..=16"
+            ))
+        );
+    }
 }

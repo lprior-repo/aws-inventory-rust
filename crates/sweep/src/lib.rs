@@ -47,6 +47,10 @@ pub struct SweepConfig {
     pub resume: bool,
     pub endpoint: Option<String>,
     pub ca_bundle: Option<PathBuf>,
+    /// Idle lifetime for pooled connections. `None` uses the sweep default.
+    pub idle_timeout: Option<std::time::Duration>,
+    /// Maximum idle connections per endpoint. `None` uses the sweep default.
+    pub pool_idle_per_host: Option<usize>,
     /// Optional slice timeout in seconds. When set, the sweep runs for at most
     /// this duration per invocation, then stops and leaves remaining work in the
     /// queue for the next slice. A later invocation with resume=true continues
@@ -102,6 +106,20 @@ impl ScopeOutcomes {
 pub enum SweepError {
     #[error("invalid sweep configuration: {0}")]
     InvalidConfig(&'static str),
+    #[error(
+        "invalid sweep configuration: --idle-timeout-ms (INVENTORY_SWEEP_IDLE_TIMEOUT_MS) \
+         was {millis}; allowed range is {min_ms}..={max_ms} ms"
+    )]
+    InvalidIdleTimeout {
+        millis: u128,
+        min_ms: u128,
+        max_ms: u128,
+    },
+    #[error(
+        "invalid sweep configuration: --pool-idle-per-host (INVENTORY_SWEEP_POOL_IDLE_PER_HOST) \
+         was {given}; allowed range is 1..={max}"
+    )]
+    InvalidPoolIdlePerHost { given: usize, max: usize },
     #[error("inventory domain value is invalid: {0}")]
     Inventory(#[from] inventory_core::inventory::InventoryError),
     #[error(transparent)]

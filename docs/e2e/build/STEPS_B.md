@@ -971,10 +971,12 @@ and queue update commit together or not at all, and the kill matrix proves it.
 
 ### B7.2 Keep connections alive across a paced bucket
 
-- **Goal:** The pool's idle timeout is 1 second and it keeps 2 idle
-  connections per host by default (the sweep sets `concurrency.clamp(1, 8)`).
-  A bucket paced slower than one request per second therefore opens a new TLS
-  connection for every request. Tune both from measurements.
+- **Goal:** The pool's idle timeout is 1 second. The transport's own default
+  keeps 2 idle connections per host; the sweep overrides that to
+  `min(max_connections, 8)`. (`concurrency.clamp(1, 8)` in the same file is
+  the per-bucket concurrency, not a pool setting.) A bucket paced slower than
+  one request per second therefore opens a new TLS connection for every
+  request. Tune both from measurements.
 - **Depends on:** B7.1, B3.3.
 - **Files:** `crates/aws-wire/src/transport/config.rs` (`Default`,
   `validate`), `crates/sweep/src/execution.rs` (`transport_config`).
@@ -1006,6 +1008,13 @@ and queue update commit together or not at all, and the kill matrix proves it.
 - **Scale (V76):** key the pool by endpoint and never by account. The host
   for a service in a region is the same for every account, so the number of
   connections must not grow with the number of accounts (S1.4).
+- **Status (2026-11-24):** steps 1 and 2 are settable but not measured:
+  `--idle-timeout-ms` (1 to 10,000) and `--pool-idle-per-host` exist, and the
+  defaults are unchanged (one second; the sweep keeps up to
+  `min(max_connections, 8)` idle sockets per endpoint, the bare transport 2).
+  No table of settings is recorded, so this step is not done. Step 3's total
+  cap on idle sockets is not implemented: `hyper-util` 0.1.21 exposes only
+  `pool_max_idle_per_host`, and its pool admission is private.
 
 ## B8 CPU on the hot path
 

@@ -56,6 +56,8 @@ impl Environment {
             resume,
             endpoint: Some(self.peer.endpoint.clone()),
             ca_bundle: Some(self.peer.ca.clone()),
+            idle_timeout: None,
+            pool_idle_per_host: None,
             slice_timeout_secs: None,
             max_rps: None,
             max_page_size: None,
