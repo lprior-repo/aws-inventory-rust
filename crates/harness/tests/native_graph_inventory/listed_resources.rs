@@ -120,6 +120,133 @@ pub(super) async fn read(native: &NativeRuntime) -> TestResult<Listing> {
     Ok(listed)
 }
 
+const TAGGED: &[(&str, &str)] = &[
+    ("vpc", "AWS::EC2::VPC"),
+    ("subnet", "AWS::EC2::Subnet"),
+    ("route-table", "AWS::EC2::RouteTable"),
+    ("security-group", "AWS::EC2::SecurityGroup"),
+];
+
+pub(super) async fn tags(native: &NativeRuntime) -> TestResult<super::tags::TagSets> {
+    let client = Client::new(Config {
+        extra_ca_bundle: Some(native.emulator().ca_bundle().to_path_buf()),
+        ..Config::default()
+    })?;
+    let account = AccountId::parse(ACCOUNT)?;
+    let region = Region::parse(REGION)?;
+    let action = "DescribeTags";
+    let mut listed = super::tags::TagSets::new();
+    let mut cursor: Option<String> = None;
+    for _ in 0..100 {
+        let mut form = format!("Action={action}&Version=2016-11-15&MaxResults=100");
+        if let Some(cursor) = cursor.as_deref() {
+            form.push_str("&NextToken=");
+            append_form(&mut form, cursor)?;
+        }
+        let body = send_query(native, &client, "ec2", action, form).await?;
+        let next = read_tags(&body, &account, &region, &mut listed)?;
+        if next.is_none() {
+            return Ok(listed);
+        }
+        if next == cursor {
+            return Err("DescribeTags repeated its pagination token".into());
+        }
+        cursor = next;
+    }
+    Err("DescribeTags exceeded the listing page budget".into())
+}
+
+fn read_tags(
+    body: &[u8],
+    account: &AccountId,
+    region: &Region,
+    listed: &mut super::tags::TagSets,
+) -> TestResult<Option<String>> {
+    let mut reader = Reader::from_reader(body);
+    reader.config_mut().expand_empty_elements = true;
+    find_start(&mut reader, "DescribeTagsResponse")?;
+    let mut present = false;
+    let mut next = None;
+    while let Some(start) = next_child(&mut reader)? {
+        let name = start.local_name().into_inner();
+        if name == "tagSet" && !present {
+            present = true;
+            while let Some(start) = next_child(&mut reader)? {
+                if start.local_name().into_inner() != "item" {
+                    return Err("DescribeTags returned an unexpected list entry".into());
+                }
+                let tag = read_tag(&mut reader)?;
+                let Some((_, kind)) = TAGGED.iter().find(|(wire, _)| *wire == tag.resource_type)
+                else {
+                    continue;
+                };
+                let resource = ResourceKey {
+                    account: account.clone(),
+                    region: region.clone(),
+                    kind: Kind::parse(kind)?,
+                    id: ResourceId::parse(&tag.resource)?,
+                };
+                if listed
+                    .entry(resource)
+                    .or_default()
+                    .insert(tag.key, tag.value)
+                    .is_some()
+                {
+                    return Err("DescribeTags listed a duplicate tag key".into());
+                }
+            }
+        } else if name == "nextToken" && next.is_none() {
+            next = Some(text(&mut reader, &start)?);
+        } else if name == "tagSet" || name == "nextToken" {
+            return Err("DescribeTags returned a duplicate listing member".into());
+        } else {
+            reader.read_to_end(start.name())?;
+        }
+    }
+    if !present {
+        return Err("DescribeTags response lacks its tag list".into());
+    }
+    Ok(next.filter(|token| !token.is_empty()))
+}
+
+struct ListedTag {
+    resource: String,
+    resource_type: String,
+    key: String,
+    value: String,
+}
+
+fn read_tag(reader: &mut Reader<&[u8]>) -> TestResult<ListedTag> {
+    let mut resource = None;
+    let mut resource_type = None;
+    let mut key = None;
+    let mut value = None;
+    while let Some(start) = next_child(reader)? {
+        let name = start.local_name().into_inner();
+        let slot = if name == "resourceId" {
+            &mut resource
+        } else if name == "resourceType" {
+            &mut resource_type
+        } else if name == "key" {
+            &mut key
+        } else if name == "value" {
+            &mut value
+        } else {
+            reader.read_to_end(start.name())?;
+            continue;
+        };
+        if slot.replace(text(reader, &start)?).is_some() {
+            return Err("DescribeTags entry repeated a member".into());
+        }
+    }
+    Ok(ListedTag {
+        resource: resource.ok_or("DescribeTags entry lacks resourceId")?,
+        resource_type: resource_type.ok_or("DescribeTags entry lacks resourceType")?,
+        key: key.ok_or("DescribeTags entry lacks key")?,
+        value: value.ok_or("DescribeTags entry lacks value")?,
+    })
+}
+
 pub(super) async fn add_topic_policies(
     native: &NativeRuntime,
     records: &mut super::safe_fields::Expectations,

@@ -1,4 +1,9 @@
-use super::{TestResult, listed_resources, native::NativeGraph, runtime::NativeRuntime};
+use super::{
+    TestResult, listed_resources,
+    native::NativeGraph,
+    runtime::NativeRuntime,
+    tags::{TAG_KEY, TagSets},
+};
 use cmdb_view::{
     Database, EdgePageRequest, GraphConnection, GraphEdge, GraphLimits, GraphNode, PageRequest,
     ResourceFilter,
@@ -15,6 +20,7 @@ pub(super) struct Expected {
     pub(super) safe_records: super::safe_fields::Expectations,
     listed: BTreeSet<ResourceKey>,
     listed_edges: BTreeSet<Vec<String>>,
+    provider_tags: TagSets,
 }
 
 impl Expected {
@@ -54,11 +60,13 @@ impl Expected {
             safe_records,
             listed: BTreeSet::new(),
             listed_edges: BTreeSet::new(),
+            provider_tags: TagSets::new(),
         }
     }
 
     pub(super) async fn refresh_listed(&mut self, native: &NativeRuntime) -> TestResult {
         let listed = listed_resources::read(native).await?;
+        self.provider_tags = listed_resources::tags(native).await?;
         let missing: Vec<_> = self
             .resources
             .difference(&self.listed)
@@ -95,6 +103,24 @@ impl Expected {
             self.safe_records.insert(key, resource.fields);
         }
         Ok(())
+    }
+
+    pub(super) fn with_provider_tags(&self, tags: &TagSets) -> TagSets {
+        let mut merged = tags.clone();
+        for (resource, provided) in &self.provider_tags {
+            if !self.resources.contains(resource) {
+                continue;
+            }
+            let provided: Vec<_> = provided.iter().filter(|(key, _)| *key != TAG_KEY).collect();
+            if provided.is_empty() {
+                continue;
+            }
+            let entry = merged.entry(resource.clone()).or_default();
+            for (key, value) in provided {
+                entry.entry(key.clone()).or_insert_with(|| value.clone());
+            }
+        }
+        merged
     }
 }
 

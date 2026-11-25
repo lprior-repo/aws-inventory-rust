@@ -153,6 +153,7 @@ pub(super) async fn assert_sets(
     expected: &Expected,
     tags: &TagSets,
 ) -> TestResult {
+    let tags = &expected.with_provider_tags(tags);
     let associations: BTreeSet<Vec<String>> = tags
         .iter()
         .flat_map(|(resource, tags)| {
@@ -167,15 +168,16 @@ pub(super) async fn assert_sets(
     let rows = graph
         .rows(inventory_graph::cypher::diagnostics::AFFILIATIONS)
         .await?;
-    assert_eq!(
-        rows.len(),
-        associations.len(),
-        "exact native tag affiliation count"
-    );
+    let count = rows.len();
     assert_eq!(
         rows.into_iter().collect::<BTreeSet<_>>(),
         associations,
         "exact native scoped tag affiliations"
+    );
+    assert_eq!(
+        count,
+        associations.len(),
+        "exact native tag affiliation count"
     );
     let vertices: BTreeSet<Vec<String>> = tags
         .iter()
