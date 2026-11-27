@@ -1,10 +1,7 @@
 use super::super::{name, path};
 use super::policy::{Group, Id, Resource, compile};
-use crate::overlay::{FixedValue, Scope};
-use crate::{
-    classes::DenyReason,
-    overlay::{NameError, OverlayClass, ServiceOverlay},
-};
+use crate::classes::DenyReason;
+use crate::overlay::{ExecutionBranch, FixedValue, NameError, OverlayClass, Scope, ServiceOverlay};
 
 const GROUPS: &[Group] = &[
     Group {
@@ -102,6 +99,29 @@ const RESOURCES: &[Resource] = &[Resource {
     fixed: &[],
 }];
 
+fn filter(key: &str, value: &str) -> Result<FixedValue, NameError> {
+    FixedValue::structure([
+        ("name", FixedValue::String(key.to_owned())),
+        ("values", FixedValue::Strings(vec![value.to_owned()])),
+    ])
+}
+
+fn party_branch(party: &str) -> Result<ExecutionBranch, NameError> {
+    let filters = FixedValue::list([
+        filter("AgreementType", "PurchaseAgreement")?,
+        filter("PartyType", party)?,
+    ]);
+    Ok(ExecutionBranch {
+        discriminator: party.to_ascii_lowercase(),
+        fixed: [(path("filters")?, filters)].into_iter().collect(),
+        bind: Default::default(),
+        emission: None,
+        row_policy: None,
+        scope: Scope::Account,
+        request_region: None,
+    })
+}
+
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let mut overlay = compile("marketplace-agreement", GROUPS, RESOURCES)?;
     let operation = overlay
@@ -110,15 +130,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         .ok_or_else(|| NameError {
             value: "SearchAgreements".to_owned(),
         })?;
-    operation.fixed.insert(
-        path("filters")?,
-        FixedValue::list([FixedValue::structure([
-            ("name", FixedValue::String("AgreementType".to_owned())),
-            (
-                "values",
-                FixedValue::Strings(vec!["PurchaseAgreement".to_owned()]),
-            ),
-        ])?]),
-    );
+    operation.branches = vec![party_branch("Proposer")?, party_branch("Acceptor")?];
     Ok(overlay)
 }

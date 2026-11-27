@@ -2,6 +2,8 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Marketplace agreement discovery searches separately as proposer and
+  acceptor, preserving each party's filter and continuation token.
 - Database discovery collects RDS, DocumentDB, and Neptune instances and
   clusters without storing pending master passwords. RDS skips DocumentDB
   and Neptune rows so those resources are not counted twice.

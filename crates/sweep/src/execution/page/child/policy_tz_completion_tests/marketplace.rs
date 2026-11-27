@@ -12,7 +12,7 @@ async fn given_agreement_search_when_fake_transport_pages_then_required_filter_s
             respond(wire, resumed)
         })
         .await?;
-    assert_eq!(seen.get("SearchAgreements"), Some(&2));
+    assert_eq!(seen.get("SearchAgreements"), Some(&4));
     assert_agreements(&scenario).await?;
     assert_complete(&scenario).await
 }
@@ -30,7 +30,7 @@ async fn given_empty_agreement_search_when_fake_transport_returns_no_matches_the
             Ok(json!({"agreementViewSummaries":[]}))
         })
         .await?;
-    assert_eq!(seen.get("SearchAgreements"), Some(&1));
+    assert_eq!(seen.get("SearchAgreements"), Some(&2));
     scenario
         .assert_ids_at("AWS::ApiOnly::MarketplaceAgreement", "global", vec![])
         .await?;
@@ -38,18 +38,13 @@ async fn given_empty_agreement_search_when_fake_transport_returns_no_matches_the
 }
 
 fn respond(wire: &http::Request<bytes::Bytes>, resumed: bool) -> TestResult<Json> {
-    assert_input(wire, resumed)?;
-    let id = if resumed {
-        "agreement-two"
-    } else {
-        "agreement-one"
-    };
-    Ok(page(
-        "agreementViewSummaries",
-        json!({"agreementId":id}),
-        !resumed,
-        "nextToken",
-    ))
+    let party = assert_input(wire, resumed)?;
+    let id = format!("{party}-{}", if resumed { "two" } else { "one" });
+    let mut response = json!({"agreementViewSummaries":[{"agreementId":id}]});
+    if !resumed {
+        response["nextToken"] = json!(format!("{party}-next"));
+    }
+    Ok(response)
 }
 
 async fn assert_agreements(scenario: &Scenario<'_, '_>) -> TestResult {
@@ -57,7 +52,7 @@ async fn assert_agreements(scenario: &Scenario<'_, '_>) -> TestResult {
         .assert_ids_at(
             "AWS::ApiOnly::MarketplaceAgreement",
             "global",
-            vec!["agreement-one".into(), "agreement-two".into()],
+            ["Acceptor-one", "Acceptor-two", "Proposer-one", "Proposer-two"].map(str::to_owned).into(),
         )
         .await
 }
@@ -75,19 +70,22 @@ async fn seeded<'a, 'catalog>(
     catalog: &'a RuntimeCatalog<'catalog>,
 ) -> TestResult<Scenario<'a, 'catalog>> {
     let scenario = Scenario::new(catalog, "marketplace-required-filter").await?;
-    scenario
-        .seed(catalog, "marketplace-agreement", &["SearchAgreements"])
-        .await?;
+    let plan = catalog.lookup("marketplace-agreement", "SearchAgreements").ok_or("missing SearchAgreements")?;
+    let mut work = Vec::new();
+    crate::execution::draining::append_plan_work(
+        &scenario.account, &scenario.home, &scenario.sweep, plan, &[Region::Global], &mut work,
+    )?;
+    scenario.store.seed_works(&work).await?;
     Ok(scenario)
 }
 
 async fn assert_complete(scenario: &Scenario<'_, '_>) -> TestResult {
     let summary = scenario.store.sweep_summary(&scenario.sweep).await?;
-    assert_eq!((summary.complete_scopes, summary.failed_scopes), (1, 0));
+    assert_eq!((summary.complete_scopes, summary.failed_scopes), (2, 0));
     Ok(())
 }
 
-fn assert_input(wire: &http::Request<bytes::Bytes>, resumed: bool) -> TestResult {
+fn assert_input(wire: &http::Request<bytes::Bytes>, resumed: bool) -> TestResult<&'static str> {
     assert_eq!(wire.method(), http::Method::POST);
     assert_eq!(
         wire.uri().path(),
@@ -97,15 +95,21 @@ fn assert_input(wire: &http::Request<bytes::Bytes>, resumed: bool) -> TestResult
         wire.headers().get("smithy-protocol"),
         Some(&http::HeaderValue::from_static("rpc-v2-cbor"))
     );
-    let mut expected = json!({"maxResults":50,"filters":[{"name":"AgreementType","values":["PurchaseAgreement"]}]});
+    let actual = decode_input(wire.body())?;
+    let party = match actual.pointer("/filters/1/values/0").and_then(Json::as_str) {
+        Some("Acceptor") => "Acceptor",
+        Some("Proposer") => "Proposer",
+        _ => return Err("invalid or missing agreement party filter".into()),
+    };
+    let mut expected = json!({"maxResults":50,"filters":[
+        {"name":"AgreementType","values":["PurchaseAgreement"]},
+        {"name":"PartyType","values":[party]}
+    ]});
     if resumed {
-        expected
-            .as_object_mut()
-            .ok_or("search input expectation is not an object")?
-            .insert("nextToken".to_owned(), json!("page-two"));
+        expected["nextToken"] = json!(format!("{party}-next"));
     }
-    assert_eq!(decode_input(wire.body())?, expected);
-    Ok(())
+    assert_eq!(actual, expected);
+    Ok(party)
 }
 
 fn decode_input(body: &[u8]) -> TestResult<Json> {
@@ -129,6 +133,15 @@ fn decode_input(body: &[u8]) -> TestResult<Json> {
 
 fn decode_filter(decoder: &mut Decoder<'_>) -> TestResult<Json> {
     assert_eq!(decoder.array()?, None);
+    let mut filters = Vec::new();
+    while decoder.datatype()? != Type::Break {
+        filters.push(decode_filter_item(decoder)?);
+    }
+    decoder.skip()?;
+    Ok(Json::Array(filters))
+}
+
+fn decode_filter_item(decoder: &mut Decoder<'_>) -> TestResult<Json> {
     assert_eq!(decoder.map()?, None);
     let mut fields = serde_json::Map::new();
     while decoder.datatype()? != Type::Break {
@@ -147,7 +160,5 @@ fn decode_filter(decoder: &mut Decoder<'_>) -> TestResult<Json> {
         assert_eq!(fields.insert(name, value), None);
     }
     decoder.skip()?;
-    assert_eq!(decoder.datatype()?, Type::Break);
-    decoder.skip()?;
-    Ok(json!([fields]))
+    Ok(Json::Object(fields))
 }
