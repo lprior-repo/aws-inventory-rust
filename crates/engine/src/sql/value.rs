@@ -37,6 +37,7 @@ pub(super) fn decode(row: &PgRow, index: usize, budget: &mut Budget) -> Result<S
             | "NAME"
             | "BYTEA"
             | "TIMESTAMPTZ"
+            | "JSON"
             | "JSONB"
     ) {
         return Err(SqlError::UnsupportedType {
@@ -79,6 +80,7 @@ fn decode_binary(name: &str, bytes: &[u8]) -> Result<SqlValue, SqlError> {
             Ok(SqlValue::Bytes(owned))
         }
         "TIMESTAMPTZ" => timestamp(i64::from_be_bytes(array(bytes)?)),
+        "JSON" => Ok(SqlValue::Json(text(bytes)?)),
         "JSONB" => match bytes.split_first() {
             Some((1, json)) => Ok(SqlValue::Json(text(json)?)),
             _ => Err(SqlError::InvalidValue("jsonb version")),

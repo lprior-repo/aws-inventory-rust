@@ -19,7 +19,7 @@ async fn typed_values(fixture: &Fixture) -> TestResult {
         1.5::float4 AS single, -2.25::float8 AS double, 'hello'::text AS txt,
         'wide'::varchar AS varying, 'named'::name AS named, '\x00ff'::bytea AS bytes,
         '2000-01-01 00:00:00.123456+00'::timestamptz AS at,
-        '{"n": 1}'::jsonb AS document"#,
+        '{"n": 1}'::jsonb AS document, '{ "n":1, "n":2 }'::json AS original"#,
         Bounds::default(),
     )
     .await?;
@@ -27,7 +27,7 @@ async fn typed_values(fixture: &Fixture) -> TestResult {
         result.columns,
         [
             "absent", "flag", "small", "medium", "large", "single", "double", "txt", "varying",
-            "named", "bytes", "at", "document"
+            "named", "bytes", "at", "document", "original"
         ]
     );
     assert_eq!(
@@ -48,7 +48,8 @@ async fn typed_values(fixture: &Fixture) -> TestResult {
                 seconds: 946_684_800,
                 micros: 123_456
             },
-            SqlValue::Json("{\"n\": 1}".into())
+            SqlValue::Json("{\"n\": 1}".into()),
+            SqlValue::Json("{ \"n\":1, \"n\":2 }".into())
         ]]
     );
     timestamp_and_empty(fixture).await
