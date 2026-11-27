@@ -35,3 +35,6 @@ __pycache__/
 /.beads/proxieddb/
 .dolt/
 .beads-credential-key
+
+# Repository snapshots must not be committed
+/*.zip
