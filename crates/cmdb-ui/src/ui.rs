@@ -264,7 +264,7 @@ script_mod! {
                             SolidView{width: Fill height: 1 draw_bg.color: theme.color_u_1}
 
                             detail_body := mod.widgets.DetailFields{}
-                            SectionLabel{text: "TAGS · SQLITE SNAPSHOT"}
+                            SectionLabel{text: "TAGS · POSTGRESQL SNAPSHOT"}
                             detail_tags := Label{
                                 width: Fill height: Fit
                                 max_lines: 12

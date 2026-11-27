@@ -785,16 +785,33 @@ record, returns an explicit error in both backends. Search treats wildcard
 characters literally and folds ASCII case only in both backends. PostgreSQL
 uses the `C` collation for this search, independently of the server locale.
 
-The Makepad viewer accepts either a SQLite path or a PostgreSQL URL:
+The Makepad viewer reads a PostgreSQL inventory database written by
+`aws-inventory sweep`. It accepts only a PostgreSQL URL; a file path is rejected.
+Give it a read-only role and a URL with no password; the password comes from
+`PGPASSFILE` or `~/.pgpass`, which SQLx reads when it parses the URL. The viewer takes
+its URL only as a flag, so that URL is visible to other local users in the process list
+(`ps`). Keep the sweep writer URL in its own variable and never give it to the viewer.
 
 ```bash
-cmdb-ui --database "$INVENTORY_DATABASE_URL"
+cmdb-ui --database "$INVENTORY_VIEWER_URL"
 ```
 
-Add `--graph-url redis://127.0.0.1:6379/ --graph-name inventory` to read native
-FalkorDB topology and enrich it from the inventory database. PostgreSQL URLs
-are redacted in configuration diagnostics. `cmdb-bench` supplies a deterministic
-workload generator and an independent oracle.
+To show the FalkorDB topology, use an operator-owned FalkorDB server on port `16379` (the
+`scripts/local-stack.sh` default, not Redis's `6379`) and pass it with the graph name
+the sweep wrote:
+
+```bash
+cmdb-ui --database "$INVENTORY_VIEWER_URL" \
+  --graph-url redis://127.0.0.1:16379 --graph-name aws_inventory
+```
+
+The graph is optional; without it the viewer reports the graph offline. The bootstrap
+privileges (`CONNECT` and `CREATE` for the first sweep, no pre-created `inventory`
+schema), the runtime paths and the sweep exit codes are in
+[crates/cmdb-ui/README.md](crates/cmdb-ui/README.md). The walkthrough does not start, stop
+or signal the FalkorDB server. PostgreSQL URLs are
+redacted in configuration diagnostics. `cmdb-bench` supplies a deterministic workload
+generator and an independent oracle.
 
 The implementation plan is in [docs/e2e/](docs/e2e/README.md). The obsolete
 HTTP read API (`cmdb-api`) has been removed; the viewer uses in-process readers.

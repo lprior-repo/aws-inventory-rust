@@ -2,10 +2,10 @@ use crate::worker::{WorkerConfig, parse_lod_config};
 use std::sync::OnceLock;
 
 pub const USAGE: &str = "\
-usage: cmdb-ui --database TARGET [--frame-harness SECONDS] [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
+usage: cmdb-ui --database URL [--frame-harness SECONDS] [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
 
 Options:
-  --database TARGET        SQLite path or PostgreSQL inventory URL (required)
+  --database URL           PostgreSQL URL: postgres:// or postgresql:// (required)
   --frame-harness SECONDS  Scripted frame capture (1..600 seconds); reports and exits
   --graph-url URL          FalkorDB endpoint; use with --graph-name
   --graph-name NAME        FalkorDB graph name; use with --graph-url
@@ -14,6 +14,9 @@ Options:
   --stdin-loop             Makepad hosted-child mode (started by a Makepad host)
   -h, --help               Print this usage and exit
 ";
+
+const DATABASE_URL_REQUIRED: &str =
+    "--database requires a PostgreSQL URL (postgres:// or postgresql://)";
 
 #[derive(Debug, PartialEq)]
 pub enum Command {
@@ -60,7 +63,7 @@ pub fn parse(arguments: &[String]) -> Result<Command, String> {
     let mut config = WorkerConfig::default();
     parse_arguments(arguments, &mut config)?;
     if config.frame_harness.is_some() && config.database.is_none() {
-        return Err("--frame-harness requires --database PATH".to_owned());
+        return Err("--frame-harness requires --database URL".to_owned());
     }
     Ok(Command::Run(config))
 }
@@ -99,7 +102,7 @@ fn is_value_flag(flag: &str) -> bool {
 
 fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<(), String> {
     match flag {
-        "--database" => config.database = Some(value.to_owned()),
+        "--database" => config.database = Some(database_url(value)?),
         "--graph-url" => config.graph_url = Some(value.to_owned()),
         "--graph-name" => config.graph_name = Some(value.to_owned()),
         "--frame-harness" => {
@@ -108,6 +111,14 @@ fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<()
         _ => return Err(unknown_argument(flag)),
     }
     Ok(())
+}
+
+fn database_url(value: &str) -> Result<String, String> {
+    if cmdb_view::is_postgres_url(value) {
+        Ok(value.to_owned())
+    } else {
+        Err(DATABASE_URL_REQUIRED.to_owned())
+    }
 }
 
 fn unknown_argument(flag: &str) -> String {
@@ -139,7 +150,7 @@ mod tests {
         assert_eq!(parse(&args(&["--help"])), Ok(Command::Help));
         assert_eq!(parse(&args(&["-h"])), Ok(Command::Help));
         assert_eq!(
-            parse(&args(&["--database", "a.db", "--help"])),
+            parse(&args(&["--database", "postgres://localhost/inventory", "--help"])),
             Ok(Command::Help)
         );
     }
@@ -153,7 +164,7 @@ mod tests {
     fn given_connection_flags_when_parsed_then_config_carries_them() {
         let command = parse(&args(&[
             "--database",
-            "inventory.db",
+            "postgres://localhost/inventory",
             "--graph-url",
             "redis://127.0.0.1:6379",
             "--graph-name",
@@ -164,7 +175,7 @@ mod tests {
         assert_eq!(
             command,
             Ok(Command::Run(WorkerConfig {
-                database: Some("inventory.db".to_owned()),
+                database: Some("postgres://localhost/inventory".to_owned()),
                 graph_url: Some("redis://127.0.0.1:6379".to_owned()),
                 graph_name: Some("cmdb".to_owned()),
                 ..WorkerConfig::default()
@@ -175,9 +186,13 @@ mod tests {
     #[test]
     fn given_linux_backend_equals_value_when_parsed_then_passed_through() {
         assert_eq!(
-            parse(&args(&["--linux-backend=x11", "--database", "a.db"])),
+            parse(&args(&[
+                "--linux-backend=x11",
+                "--database",
+                "postgres://localhost/inventory",
+            ])),
             Ok(Command::Run(WorkerConfig {
-                database: Some("a.db".to_owned()),
+                database: Some("postgres://localhost/inventory".to_owned()),
                 ..WorkerConfig::default()
             }))
         );
@@ -209,6 +224,19 @@ mod tests {
             parse(&args(&["--database"])),
             Err("missing value for --database".to_owned())
         );
+    }
+
+    #[test]
+    fn given_non_postgres_target_when_parsed_then_it_is_rejected_without_echo() {
+        for target in [
+            "/srv/inventory.sqlite",
+            "mysql://reader:secret-password@localhost/inventory",
+        ] {
+            assert_eq!(
+                parse(&args(&["--database", target])).err(),
+                Some(DATABASE_URL_REQUIRED.to_owned())
+            );
+        }
     }
 
     #[test]

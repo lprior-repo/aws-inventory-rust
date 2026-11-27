@@ -1,6 +1,5 @@
 mod graph_failures;
 pub(crate) mod isolation;
-pub(crate) mod no_socket;
 mod postgres;
 pub(crate) mod real;
 mod shutdown;

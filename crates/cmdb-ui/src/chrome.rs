@@ -193,7 +193,7 @@ fn tag_summary(row: &Row) -> String {
     use std::fmt::Write;
 
     if row.record_bytes.is_none() {
-        return "Tags not loaded from SQLite".to_owned();
+        return "Tags not loaded from PostgreSQL".to_owned();
     }
     let mut text = tag_observation_summary(row);
     if row.tags.is_empty() && !row.tags_truncated {
@@ -214,7 +214,7 @@ fn tag_summary(row: &Row) -> String {
         text.push_str(&format!("… {remaining} more tags\n"));
     }
     if row.tags_truncated {
-        text.push_str("Tag list truncated by SQLite read limit\n");
+        text.push_str("Tag list truncated by read limit\n");
     }
     text
 }
