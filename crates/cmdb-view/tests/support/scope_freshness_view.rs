@@ -1,15 +1,25 @@
 use crate::script::{Expected, TestResult};
-use sqlx::Row;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions, SqliteRow};
-use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
+use sqlx::postgres::PgRow;
+use sqlx::{PgPool, Row};
 
-const VIEW_ROWS_SQL: &str = "SELECT account, region, service, operation, has_parent, sweep_id, \
-     outcome, observed_at, last_complete_at, age_ms, complete_age_ms FROM scope_freshness \
-     ORDER BY observed_at, account, region, service, operation";
+const LATEST_SQL: &str = r#"
+WITH latest AS (
+    SELECT DISTINCT ON (scope_key) scope_key, sweep_id, outcome, observed_at
+    FROM inventory.scope_outcomes
+    ORDER BY scope_key, observed_at DESC, sweep_id COLLATE "C" DESC
+), completed AS (
+    SELECT scope_key, max(observed_at) AS last_complete_at
+    FROM inventory.scope_outcomes
+    WHERE outcome = 'complete'
+    GROUP BY scope_key
+)
+SELECT latest.scope_key, latest.sweep_id, latest.outcome, latest.observed_at, completed.last_complete_at
+FROM latest
+LEFT JOIN completed USING (scope_key)
+"#;
 
 #[derive(Debug)]
-pub struct ViewRow {
+pub struct LatestRow {
     pub account: String,
     pub region: String,
     pub service: String,
@@ -19,49 +29,86 @@ pub struct ViewRow {
     pub outcome: String,
     pub observed_at: i64,
     pub last_complete_at: Option<i64>,
-    pub age_ms: i64,
-    pub complete_age_ms: Option<i64>,
 }
 
-pub async fn view_rows(path: &Path) -> TestResult<(Vec<ViewRow>, i64, i64)> {
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(SqliteConnectOptions::new().filename(path).read_only(true))
-        .await?;
-    let before = now_ms()?;
-    let rows = sqlx::query(VIEW_ROWS_SQL).fetch_all(&pool).await?;
-    let after = now_ms()?;
-    let rows = rows
+impl LatestRow {
+    fn order_key(&self) -> (i64, &str, &str, &str, &str) {
+        (
+            self.observed_at,
+            &self.account,
+            &self.region,
+            &self.service,
+            &self.operation,
+        )
+    }
+}
+
+struct Scope {
+    account: String,
+    region: String,
+    service: String,
+    operation: String,
+    has_parent: bool,
+}
+
+pub async fn latest_rows(pool: &PgPool) -> TestResult<Vec<LatestRow>> {
+    let fetched = sqlx::query(LATEST_SQL).fetch_all(pool).await?;
+    let mut rows = fetched
         .iter()
-        .map(view_row)
-        .collect::<Result<Vec<_>, sqlx::Error>>()?;
-    pool.close().await;
-    Ok((rows, before, after))
+        .map(latest_row)
+        .collect::<TestResult<Vec<_>>>()?;
+    rows.sort_by(|a, b| a.order_key().cmp(&b.order_key()));
+    Ok(rows)
 }
 
-fn view_row(row: &SqliteRow) -> Result<ViewRow, sqlx::Error> {
-    Ok(ViewRow {
-        account: row.try_get("account")?,
-        region: row.try_get("region")?,
-        service: row.try_get("service")?,
-        operation: row.try_get("operation")?,
-        has_parent: row.try_get::<i64, _>("has_parent")? == 1,
+fn latest_row(row: &PgRow) -> TestResult<LatestRow> {
+    let key: Vec<u8> = row.try_get("scope_key")?;
+    let scope = decode_scope(&key)?;
+    Ok(LatestRow {
+        account: scope.account,
+        region: scope.region,
+        service: scope.service,
+        operation: scope.operation,
+        has_parent: scope.has_parent,
         sweep_id: row.try_get("sweep_id")?,
         outcome: row.try_get("outcome")?,
         observed_at: row.try_get("observed_at")?,
         last_complete_at: row.try_get("last_complete_at")?,
-        age_ms: row.try_get("age_ms")?,
-        complete_age_ms: row.try_get("complete_age_ms")?,
     })
 }
 
-fn now_ms() -> TestResult<i64> {
-    Ok(i64::try_from(
-        SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
-    )?)
+fn decode_scope(bytes: &[u8]) -> TestResult<Scope> {
+    let mut rest = bytes;
+    let account = take_text(&mut rest)?;
+    let region = take_text(&mut rest)?;
+    let service = take_text(&mut rest)?;
+    let operation = take_text(&mut rest)?;
+    let has_parent = match rest.first().copied().ok_or("missing parent flag")? {
+        0 => false,
+        1 => true,
+        other => return Err(format!("invalid parent flag {other}").into()),
+    };
+    Ok(Scope {
+        account,
+        region,
+        service,
+        operation,
+        has_parent,
+    })
 }
 
-pub fn assert_view_row(row: &ViewRow, want: &Expected) {
+fn take_text(input: &mut &[u8]) -> TestResult<String> {
+    let rest: &[u8] = *input;
+    let (length, tail) = rest
+        .split_at_checked(4)
+        .ok_or("truncated scope text length")?;
+    let length = usize::try_from(u32::from_be_bytes(length.try_into()?))?;
+    let (text, tail) = tail.split_at_checked(length).ok_or("truncated scope text")?;
+    *input = tail;
+    Ok(std::str::from_utf8(text)?.to_owned())
+}
+
+pub fn assert_latest_row(row: &LatestRow, want: &Expected) {
     assert_eq!(row.account, want.account);
     assert_eq!(row.region, want.region);
     assert_eq!(row.service, want.service);
@@ -71,22 +118,4 @@ pub fn assert_view_row(row: &ViewRow, want: &Expected) {
     assert_eq!(row.outcome, want.outcome.as_str());
     assert_eq!(row.observed_at, want.observed_at_ms);
     assert_eq!(row.last_complete_at, want.last_complete_at_ms);
-}
-
-pub fn assert_view_ages(row: &ViewRow, before: i64, after: i64) -> TestResult {
-    let lower = before.saturating_sub(row.observed_at);
-    let upper = after.saturating_sub(row.observed_at);
-    assert!(
-        (lower..=upper).contains(&row.age_ms),
-        "age {} outside [{lower}, {upper}]",
-        row.age_ms,
-    );
-    match (row.last_complete_at, row.complete_age_ms) {
-        (None, None) => {}
-        (Some(at), Some(age)) => {
-            assert!((before.saturating_sub(at)..=after.saturating_sub(at)).contains(&age));
-        }
-        other => return Err(format!("complete age and time disagree: {other:?}").into()),
-    }
-    Ok(())
 }

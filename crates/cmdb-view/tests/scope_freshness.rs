@@ -5,18 +5,22 @@ mod script;
 #[path = "support/scope_freshness_view.rs"]
 mod view;
 
-use cmdb_view::{Database, ScopeFreshness, ScopeOutcome, ScopeOutcomeCounts, ViewError};
+use cmdb_view::{
+    Database, ScopeFreshness, ScopeFreshnessReport, ScopeOutcome, ScopeOutcomeCounts, ViewError,
+};
 use inventory_core::catalog::runtime::RuntimeCatalog;
-use inventory_engine::inventory::{BinaryStore, SchemaRegistry, SweepId, WorkSpec};
+use inventory_engine::inventory::{
+    DatabaseUrl, PgStore, PgWriteConfig, SchemaRegistry, SweepId, WorkSpec,
+};
+use inventory_harness::postgres::{TestDatabase, admin_url};
 use modeled_catalog::{Model, modeled_catalog};
 use script::{
     Attempt, Expected, KIND, TestResult, expected, modeled, ordered_script, raw_scope_key, scope,
 };
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use std::path::Path;
-use view::{ViewRow, assert_view_ages, assert_view_row, view_rows};
+use sqlx::PgPool;
+use view::{LatestRow, assert_latest_row, latest_rows};
 
-async fn seed(path: &Path) -> TestResult<BinaryStore> {
+async fn seed(database: &TestDatabase) -> TestResult<PgStore> {
     let bytes = modeled_catalog(&Model {
         kind: KIND,
         region: "us-east-1",
@@ -25,24 +29,25 @@ async fn seed(path: &Path) -> TestResult<BinaryStore> {
     })?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let registry = SchemaRegistry::new(&bytes, runtime.schemas().to_vec())?;
-    let store = BinaryStore::create(path, registry).await?;
+    let url = DatabaseUrl::parse(database.url())?;
+    let store = PgStore::create(&url, registry, PgWriteConfig::default()).await?;
     let ordered = ordered_script();
     for attempt in ordered.iter().filter(|attempt| modeled(attempt)) {
         seed_modeled(&store, attempt).await?;
     }
-    seed_raw(path, ordered.iter().filter(|attempt| !modeled(attempt))).await?;
+    seed_raw(database.url(), ordered.iter().filter(|attempt| !modeled(attempt))).await?;
     Ok(store)
 }
 
-async fn seed_modeled(store: &BinaryStore, attempt: &Attempt) -> TestResult {
+async fn seed_modeled(store: &PgStore, attempt: &Attempt) -> TestResult {
     let sweep = SweepId::new(attempt.sweep.to_owned())?;
     store
-        .seed_work(WorkSpec::new(
+        .seed_works(&[WorkSpec::new(
             sweep.clone(),
             scope(attempt)?,
             None,
             vec![1],
-        )?)
+        )?])
         .await?;
     let lease = store
         .claim(&sweep, attempt.at, 100)
@@ -54,14 +59,11 @@ async fn seed_modeled(store: &BinaryStore, attempt: &Attempt) -> TestResult {
     Ok(())
 }
 
-async fn seed_raw<'a>(path: &Path, attempts: impl Iterator<Item = &'a Attempt>) -> TestResult {
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(SqliteConnectOptions::new().filename(path))
-        .await?;
+async fn seed_raw<'a>(url: &str, attempts: impl Iterator<Item = &'a Attempt>) -> TestResult {
+    let pool = PgPool::connect(url).await?;
     for attempt in attempts {
         sqlx::query(
-            "INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,?3,?4)",
+            "INSERT INTO inventory.scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES($1,$2,$3,$4)",
         )
         .bind(attempt.sweep)
         .bind(raw_scope_key(attempt)?)
@@ -96,21 +98,6 @@ fn clamped_age(now: i64, at: i64) -> u64 {
     u64::try_from(now.saturating_sub(at)).unwrap_or_default()
 }
 
-#[tokio::test]
-async fn sql_view_matches_the_stored_scope_outcomes() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let path = directory.path().join("inventory.sqlite");
-    let _store = seed(&path).await?;
-    let (rows, before, after) = view_rows(&path).await?;
-    let expected = expected();
-    assert_eq!(rows.len(), expected.len());
-    for (row, want) in rows.iter().zip(&expected) {
-        assert_view_row(row, want);
-        assert_view_ages(row, before, after)?;
-    }
-    Ok(())
-}
-
 fn assert_scope_matches_stored(scope: &ScopeFreshness, want: &Expected, now: i64) {
     assert_eq!(scope.account, want.account);
     assert_eq!(scope.region, want.region);
@@ -128,7 +115,7 @@ fn assert_scope_matches_stored(scope: &ScopeFreshness, want: &Expected, now: i64
     );
 }
 
-fn assert_scope_matches_view(scope: &ScopeFreshness, view: &ViewRow) {
+fn assert_scope_matches_latest(scope: &ScopeFreshness, latest: &LatestRow) {
     assert_eq!(
         (
             scope.account.as_str(),
@@ -142,52 +129,82 @@ fn assert_scope_matches_view(scope: &ScopeFreshness, view: &ViewRow) {
             scope.last_complete_at_ms,
         ),
         (
-            view.account.as_str(),
-            view.region.as_str(),
-            view.service.as_str(),
-            view.operation.as_str(),
-            view.has_parent,
-            view.sweep_id.as_str(),
-            view.outcome.as_str(),
-            view.observed_at,
-            view.last_complete_at,
+            latest.account.as_str(),
+            latest.region.as_str(),
+            latest.service.as_str(),
+            latest.operation.as_str(),
+            latest.has_parent,
+            latest.sweep_id.as_str(),
+            latest.outcome.as_str(),
+            latest.observed_at,
+            latest.last_complete_at,
         )
     );
 }
 
-#[tokio::test]
-async fn ui_read_query_agrees_with_the_sql_view_and_stored_outcomes() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let path = directory.path().join("inventory.sqlite");
-    let _store = seed(&path).await?;
-    let (rows, _, _) = view_rows(&path).await?;
-    let expected = expected();
-    let now = 1_000_000;
-    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
-    let report = database.scope_freshness(now, 1000).await?;
-
+fn assert_report(report: &ScopeFreshnessReport, rows: &[Expected], now: i64) {
     assert_eq!(report.now_ms, now);
-    assert_eq!(report.total_scopes, count(&expected));
-    assert_eq!(report.counts, outcome_counts(&expected));
-    assert_eq!(report.scopes.len(), expected.len());
-    for ((scope, want), view) in report.scopes.iter().zip(&expected).zip(&rows) {
+    assert_eq!(report.total_scopes, count(rows));
+    assert_eq!(report.counts, outcome_counts(rows));
+    assert_eq!(report.scopes.len(), rows.len());
+    for (scope, want) in report.scopes.iter().zip(rows) {
         assert_scope_matches_stored(scope, want, now);
-        assert_scope_matches_view(scope, view);
     }
     assert!(report.scopes.windows(2).all(|pair| {
         pair.first().map(|a| a.observed_at_ms) <= pair.last().map(|b| b.observed_at_ms)
     }));
+}
+
+#[tokio::test]
+async fn postgres_given_scripted_engine_writes_when_reading_latest_rows_then_they_match_the_script()
+-> TestResult {
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let store = seed(&database).await?;
+    let pool = PgPool::connect(database.url()).await?;
+    let rows = latest_rows(&pool).await?;
+    let want_rows = expected();
+    assert_eq!(rows.len(), want_rows.len());
+    for (row, want) in rows.iter().zip(&want_rows) {
+        assert_latest_row(row, want);
+    }
+    pool.close().await;
+    store.close().await;
+    database.finish().await?;
     Ok(())
 }
 
 #[tokio::test]
-async fn read_query_bounds_rows_but_not_totals_and_rejects_bad_limits() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let path = directory.path().join("inventory.sqlite");
-    let _store = seed(&path).await?;
-    let expected = expected();
-    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
-    let report = database.scope_freshness(10_000, 2).await?;
+async fn postgres_given_scripted_engine_writes_when_reading_ui_report_then_it_agrees_with_latest_rows()
+-> TestResult {
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let store = seed(&database).await?;
+    let pool = PgPool::connect(database.url()).await?;
+    let rows = latest_rows(&pool).await?;
+    let want_rows = expected();
+    let now = 1_000_000;
+    let reader = Database::open(database.url()).await?;
+    let report = reader.scope_freshness(now, 1000).await?;
+    assert_report(&report, &want_rows, now);
+    assert_eq!(rows.len(), report.scopes.len());
+    for ((scope, latest), want) in report.scopes.iter().zip(&rows).zip(&want_rows) {
+        assert_scope_matches_latest(scope, latest);
+        assert_latest_row(latest, want);
+    }
+    drop(reader);
+    pool.close().await;
+    store.close().await;
+    database.finish().await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn postgres_given_scripted_engine_writes_when_paging_then_rows_bound_but_totals_do_not()
+-> TestResult {
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let store = seed(&database).await?;
+    let want_rows = expected();
+    let reader = Database::open(database.url()).await?;
+    let report = reader.scope_freshness(10_000, 2).await?;
     let listed: Vec<(&str, &str, i64)> = report
         .scopes
         .iter()
@@ -199,46 +216,50 @@ async fn read_query_bounds_rows_but_not_totals_and_rejects_bad_limits() -> TestR
             )
         })
         .collect();
-    let stalest: Vec<(&str, &str, i64)> = expected
+    let stalest: Vec<(&str, &str, i64)> = want_rows
         .iter()
         .take(2)
         .map(|row| (row.region, row.operation, row.observed_at_ms))
         .collect();
     assert_eq!(listed.len(), 2);
     assert_eq!(listed, stalest);
-    assert_eq!(report.total_scopes, count(&expected));
-    assert_eq!(report.counts, outcome_counts(&expected));
+    assert_eq!(report.total_scopes, count(&want_rows));
+    assert_eq!(report.counts, outcome_counts(&want_rows));
     assert!(matches!(
-        database.scope_freshness(10_000, 0).await,
+        reader.scope_freshness(10_000, 0).await,
         Err(ViewError::PageLimit)
     ));
     assert!(matches!(
-        database.scope_freshness(10_000, 1001).await,
+        reader.scope_freshness(10_000, 1001).await,
         Err(ViewError::PageLimit)
     ));
+    drop(reader);
+    store.close().await;
+    database.finish().await?;
     Ok(())
 }
 
 #[tokio::test]
-async fn reopening_the_writer_restores_a_dropped_view_for_existing_databases() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let path = directory.path().join("inventory.sqlite");
-    drop(seed(&path).await?);
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(SqliteConnectOptions::new().filename(&path))
-        .await?;
-    sqlx::query("DROP VIEW scope_freshness")
-        .execute(&pool)
-        .await?;
-    pool.close().await;
-    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
-    assert!(matches!(
-        database.scope_freshness(1, 1).await,
-        Err(ViewError::Sql(_))
-    ));
-    let _store = BinaryStore::open(&path).await?;
-    let report = database.scope_freshness(1, 1000).await?;
-    assert_eq!(report.total_scopes, count(&expected()));
+async fn postgres_given_reopened_writer_when_reading_then_the_freshness_report_is_identical()
+-> TestResult {
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let store = seed(&database).await?;
+    let want_rows = expected();
+    let now = 1_000_000;
+    let reader = Database::open(database.url()).await?;
+    let before = reader.scope_freshness(now, 1000).await?;
+    assert_report(&before, &want_rows, now);
+    drop(reader);
+    store.close().await;
+    let url = DatabaseUrl::parse(database.url())?;
+    let writer = PgStore::open(&url, PgWriteConfig::default()).await?;
+    let reader = Database::open(database.url()).await?;
+    let after = reader.scope_freshness(now, 1000).await?;
+    assert_report(&after, &want_rows, now);
+    assert_eq!(before.total_scopes, after.total_scopes);
+    assert_eq!(before.counts, after.counts);
+    drop(reader);
+    writer.close().await;
+    database.finish().await?;
     Ok(())
 }

@@ -9,9 +9,13 @@ use inventory_core::{
     },
     record::{Exclusions, FieldId, Key, Record, Value},
 };
-use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkSpec};
+use inventory_engine::inventory::{
+    DatabaseUrl, PageCommit, PgStore, PgWriteConfig, SchemaRegistry, SweepId, WorkSpec,
+};
+use inventory_harness::postgres::{TestDatabase, admin_url};
 use modeled_catalog::{Model, modeled_catalog};
-use std::{collections::BTreeMap, error::Error, path::PathBuf, sync::Arc};
+use sqlx::PgPool;
+use std::{collections::BTreeMap, error::Error, future::Future, sync::Arc, time::Duration};
 
 pub type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 pub const ACCOUNT: &str = "111111111111";
@@ -20,23 +24,56 @@ pub const REGION: &str = "us-east-1";
 pub const KIND: &str = "AWS::Example::Thing";
 
 pub struct Fixture {
-    pub directory: tempfile::TempDir,
-    pub path: PathBuf,
-    pub store: BinaryStore,
+    database: TestDatabase,
+    pub store: PgStore,
+    pub pool: PgPool,
+}
+
+impl Fixture {
+    pub fn url(&self) -> &str {
+        self.database.url()
+    }
+
+    pub async fn reopen(self) -> TestResult<Self> {
+        let url = DatabaseUrl::parse(self.database.url())?;
+        self.store.close().await;
+        let store = PgStore::open(&url, PgWriteConfig::default()).await?;
+        Ok(Self { store, ..self })
+    }
+
+    pub async fn set_schema_version(&self, value: &[u8]) -> TestResult {
+        sqlx::query("UPDATE inventory.metadata SET value=$1 WHERE key='schema_version'")
+            .bind(value)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
+
+    pub async fn finish(self) -> TestResult {
+        self.store.close().await;
+        self.pool.close().await;
+        self.database.finish().await?;
+        Ok(())
+    }
 }
 
 pub async fn fixture() -> TestResult<Fixture> {
-    let directory = tempfile::tempdir()?;
-    let path = directory.path().join("inventory.sqlite");
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let url = DatabaseUrl::parse(database.url())?;
     let bytes = catalog()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let registry = SchemaRegistry::new(&bytes, runtime.schemas().to_vec())?;
-    let store = BinaryStore::create(&path, registry).await?;
+    let store = PgStore::create(&url, registry, PgWriteConfig::default()).await?;
+    let pool = PgPool::connect(database.url()).await?;
     Ok(Fixture {
-        directory,
-        path,
+        database,
         store,
+        pool,
     })
+}
+
+pub async fn bounded(test: impl Future<Output = TestResult>) -> TestResult {
+    tokio::time::timeout(Duration::from_secs(120), test).await?
 }
 
 pub fn key(account: &str, region: &str, id: &str) -> TestResult<ResourceKey> {
@@ -102,7 +139,7 @@ pub fn tags(
 }
 
 pub async fn commit(
-    store: &BinaryStore,
+    store: &PgStore,
     sweep: &str,
     account: &str,
     region: &str,
@@ -119,10 +156,10 @@ pub async fn commit(
     )?;
     let sweep = SweepId::new(sweep.into())?;
     store
-        .seed_work(WorkSpec::new(sweep.clone(), scope, None, vec![1])?)
+        .seed_works(&[WorkSpec::new(sweep.clone(), scope, None, vec![1])?])
         .await?;
     let lease = store
-        .claim(&sweep, at, 100)
+        .claim(&sweep, at, 10_000)
         .await?
         .ok_or("missing consumer fixture lease")?;
     store
