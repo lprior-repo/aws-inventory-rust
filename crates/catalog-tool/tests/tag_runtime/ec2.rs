@@ -164,6 +164,6 @@ fn given_pinned_ec2_model_when_items_carry_tag_lists_then_overlay_and_catalog_ag
     }
     assert!(mismatches.is_empty(), "{mismatches:#?}");
     assert_eq!(excluded, NOT_RESOURCE_TAGS.len());
-    assert_eq!(tagged_operations, 109);
+    assert_eq!(tagged_operations, 110);
     Ok(())
 }

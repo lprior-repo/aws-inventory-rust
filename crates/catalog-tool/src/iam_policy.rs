@@ -1,7 +1,9 @@
 mod documents;
 mod gaps;
 mod reference;
+mod scope;
 pub use reference::refresh;
+pub use scope::{AccountId, Partition};
 
 use crate::{ReportError, ReportMode};
 use inventory_core::catalog::runtime::RuntimeCatalog;
@@ -18,13 +20,24 @@ pub const MAPPINGS_PATH: &str = "catalog/overlay/iam-actions.toml";
 pub const EXCEPTIONS_PATH: &str = "catalog/overlay/iam-reference-exceptions.tsv";
 const GAPS_PATH: &str = "deploy/read-only-policy-gaps.txt";
 const POLICY_PATH: &str = "catalog/iam-read-only-policy.json";
+const SENSITIVE_POLICY_PATH: &str = "catalog/iam-sensitive-read-policy.json";
 const ROLE_PATH: &str = "deploy/read-only-role.yaml";
+const SENSITIVE_ACTIONS: [&str; 6] = [
+    "ec2:DescribeVpnConnections",
+    "eks:DescribeCluster",
+    "elasticloadbalancing:DescribeListeners",
+    "elasticloadbalancing:DescribeRules",
+    "iam:ListVirtualMFADevices",
+    "lambda:ListVersionsByFunction",
+];
 
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
     #[error(transparent)]
     Report(#[from] ReportError),
+    #[error(transparent)]
+    Scope(#[from] scope::ScopeError),
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
@@ -80,6 +93,8 @@ pub enum Error {
     ForeignReferenceUrl { url: String },
     #[error("reference service mismatch: expected {expected}, received {actual}")]
     ReferenceServiceMismatch { expected: String, actual: String },
+    #[error("{action}: no reviewed IAM resource scope")]
+    EmptyResourceScope { action: String },
     #[error("action exceeds managed-policy size {limit}: {action}")]
     ActionTooLarge { action: String, limit: usize },
     #[error("{count} managed policies exceed role maximum {limit}")]
@@ -130,6 +145,7 @@ impl<'a> Operation<'a> {
 #[non_exhaustive]
 pub struct Rendered {
     pub text: String,
+    pub sensitive_text: String,
     pub template: String,
     pub actions: BTreeSet<String>,
     pub policies: Vec<String>,
@@ -163,11 +179,25 @@ pub fn operations<'a>(catalog: &'a RuntimeCatalog<'_>) -> Result<Vec<Operation<'
         .collect()
 }
 
-pub fn render(
+
+pub fn render_scoped(
     operations: &[Operation<'_>],
     mappings: &str,
     reference: &str,
     exceptions: &str,
+    partition: Partition,
+    account: &AccountId,
+) -> Result<Rendered, Error> {
+    render_with_sensitive(operations, mappings, reference, exceptions, partition, account)
+}
+
+fn render_with_sensitive(
+    operations: &[Operation<'_>],
+    mappings: &str,
+    reference: &str,
+    exceptions: &str,
+    partition: Partition,
+    account: &AccountId,
 ) -> Result<Rendered, Error> {
     let mappings: Mappings = toml::from_str(mappings)?;
     let known = reference::parse(reference)?;
@@ -176,19 +206,60 @@ pub fn render(
         .iter()
         .map(|op| resolve_action(op, &mappings, &known, &unconfirmed))
         .collect::<Result<_, _>>()?;
-    let actions: BTreeSet<_> = operation_actions.values().cloned().collect();
-    if actions.is_empty() {
+    let sensitive_actions: BTreeSet<String> = operation_actions
+        .values()
+        .filter(|action| SENSITIVE_ACTIONS.contains(&action.as_str()))
+        .cloned()
+        .collect();
+    validate_sensitive_actions(&sensitive_actions, &known)?;
+    let actions: BTreeSet<String> = operation_actions
+        .values()
+        .filter(|action| !sensitive_actions.contains(*action))
+        .cloned()
+        .collect();
+    if actions.is_empty() && sensitive_actions.is_empty() {
         return Err(Error::NoCallableActions);
     }
-    let policies = documents::split(&actions)?;
+    let policies = documents::split(&actions, !sensitive_actions.is_empty())?;
+    let sensitive_text =
+        documents::sensitive_policy(&sensitive_actions, partition.as_str(), account.as_str())?;
+    let sensitive_template = if sensitive_actions.is_empty() {
+        None
+    } else {
+        Some(documents::sensitive_template_policy(&sensitive_actions)?)
+    };
+    let policy_text = if policies.is_empty() {
+        "[]\n".to_owned()
+    } else {
+        format!("[\n{}\n]\n", policies.join(",\n"))
+    };
+    let template = documents::template(&policies, sensitive_template.as_deref());
     Ok(Rendered {
-        text: format!("[\n{}\n]\n", policies.join(",\n")),
-        template: documents::template(&policies),
+        text: policy_text,
+        sensitive_text,
+        template,
         actions,
         policies,
         gap_report: gaps::report(&unconfirmed),
         unconfirmed,
         operation_actions,
+    })
+}
+
+fn validate_sensitive_actions(
+    actions: &BTreeSet<String>,
+    known: &BTreeMap<String, &str>,
+) -> Result<(), Error> {
+    actions.iter().try_for_each(|action| match known.get(action) {
+        Some(&"read") => Ok(()),
+        Some(_) => Err(Error::NotReadOnly {
+            operation: "sensitive collector opt-in".into(),
+            action: action.clone(),
+        }),
+        None => Err(Error::Unmapped {
+            operation: "sensitive collector opt-in".into(),
+            action: action.clone(),
+        }),
     })
 }
 
@@ -235,15 +306,23 @@ fn resolve_action(
     Ok((id, action))
 }
 
-pub fn run(root: &Path, mode: ReportMode) -> Result<(), Error> {
+
+pub fn run_scoped(
+    root: &Path,
+    mode: ReportMode,
+    partition: Partition,
+    account: &AccountId,
+) -> Result<(), Error> {
     let bytes = std::fs::read(root.join("catalog/aws-api.catalog"))?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let mappings = crate::report::read_text(&root.join(MAPPINGS_PATH))?;
-    let mut output = render(
+    let mut output = render_scoped(
         &operations(&catalog)?,
         &mappings,
         &crate::report::read_text(&root.join(REFERENCE_PATH))?,
         &crate::report::read_text(&root.join(EXCEPTIONS_PATH))?,
+        partition,
+        account,
     )?;
     if mode == ReportMode::Print {
         return Ok(crate::report::write_stdout(&output.text)?);
@@ -255,6 +334,7 @@ pub fn run(root: &Path, mode: ReportMode) -> Result<(), Error> {
     )?);
     let artifacts = [
         (POLICY_PATH, output.text),
+        (SENSITIVE_POLICY_PATH, output.sensitive_text),
         (ROLE_PATH, output.template),
         (GAPS_PATH, output.gap_report),
     ];
@@ -398,6 +478,7 @@ mod refusal_tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let operations = [Operation::new("s3", "ListBuckets", "s3")];
         let reference = "# Retrieved: 2026-11-24\nec2\tDeleteVpc\twrite\n";
+        let account: AccountId = "123456789012".parse()?;
         let cases = [
             ("", ""),
             ("[operation]\n\"s3/ListBuckets\" = \"ec2:DeleteVpc\"", ""),
@@ -405,7 +486,14 @@ mod refusal_tests {
             ("", "bad row"),
         ];
         for (index, (mapping, exceptions)) in cases.into_iter().enumerate() {
-            let error = render(&operations, mapping, reference, exceptions)
+            let error = render_scoped(
+                &operations,
+                mapping,
+                reference,
+                exceptions,
+                Partition::Aws,
+                &account,
+            )
                 .err()
                 .ok_or("invalid input was accepted")?;
             let kind = match error {
@@ -433,6 +521,45 @@ mod refusal_tests {
             .err()
             .ok_or("directory accepted")?;
         assert!(matches!(error, Error::OutputNotFile { path } if path == directory.path()));
+        Ok(())
+    }
+    #[test]
+    fn given_catalog_sensitive_action_intersection_when_rendered_then_only_callable_actions_are_granted()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let account: AccountId = "123456789012".parse()?;
+        let ordinary = [Operation::new("s3", "ListBuckets", "s3")];
+        let ordinary_output = render_scoped(
+            &ordinary,
+            "",
+            "# Retrieved: 2026-11-24\ns3\tListBuckets\tread\n",
+            "",
+            Partition::Aws,
+            &account,
+        )?;
+        assert_eq!(
+            ordinary_output.actions,
+            BTreeSet::from(["s3:ListBuckets".to_owned()])
+        );
+        assert!(!ordinary_output.template.contains("InventorySensitiveReadPolicy"));
+        assert!(!ordinary_output.template.contains("AttachSensitiveReadPolicy"));
+        assert_eq!(
+            serde_json::from_str::<serde_json::Value>(&ordinary_output.sensitive_text)?,
+            serde_json::json!({"Version":"2012-10-17", "Statement":[]})
+        );
+
+        let sensitive = [Operation::new("iam", "ListVirtualMFADevices", "iam")];
+        let sensitive_output = render_scoped(
+            &sensitive,
+            "",
+            "# Retrieved: 2026-11-24\niam\tListVirtualMFADevices\tread\n",
+            "",
+            Partition::Aws,
+            &account,
+        )?;
+        assert!(sensitive_output.actions.is_empty());
+        assert!(sensitive_output.policies.is_empty());
+        assert_eq!(sensitive_output.text, "[]\n");
+        assert!(sensitive_output.template.contains("InventorySensitiveReadPolicy"));
         Ok(())
     }
 
@@ -526,11 +653,14 @@ mod catalog_tests {
         let bytes = compile_real_catalog()?;
         let catalog = RuntimeCatalog::from_bytes(&bytes)?;
         let mappings = std::fs::read_to_string(root().join(MAPPINGS_PATH))?;
-        let output = render(
+        let account: AccountId = "123456789012".parse()?;
+        let output = render_scoped(
             &operations(&catalog)?,
             &mappings,
             &std::fs::read_to_string(root().join(REFERENCE_PATH))?,
             &std::fs::read_to_string(root().join(EXCEPTIONS_PATH))?,
+            Partition::Aws,
+            &account,
         )?;
         assert_review_decisions(&catalog, &output, &toml::from_str::<Mappings>(&mappings)?)?;
         println!(
@@ -605,7 +735,10 @@ mod catalog_tests {
                 }
             }
         }
-        assert_eq!(policy, required);
+        let sensitive: BTreeSet<String> =
+            SENSITIVE_ACTIONS.iter().map(|action| (*action).to_owned()).collect();
+        let default_required: BTreeSet<_> = required.difference(&sensitive).cloned().collect();
+        assert_eq!(policy, default_required);
         assert_eq!(policy, output.actions);
         for action in excluded.difference(&required) {
             assert!(

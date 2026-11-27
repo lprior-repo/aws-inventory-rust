@@ -29,7 +29,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("GetFunctionScalingConfig", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires correlated unqualified FunctionName plus required published Qualifier. ListVersionsByFunction exposes Environment.Variables; capacity-provider member FunctionArn is qualified and cannot be split by the current binding schema. Output root FunctionArn is usable after safe version discovery and typed ARN/qualifier extraction.".to_owned()),
+        defer_reason: Some("Requires correlated unqualified FunctionName plus required published Qualifier. ListVersionsByFunction now safely discovers qualified function versions, but capacity-provider member FunctionArn is qualified and cannot be split by the current binding schema; output FunctionArn is usable after typed ARN/qualifier extraction.".to_owned()),
         ..empty()
     }),
 ("GetFunctionUrlConfig", OperationOverlay {

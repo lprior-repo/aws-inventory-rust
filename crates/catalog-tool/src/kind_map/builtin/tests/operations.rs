@@ -422,3 +422,39 @@ fn iam_and_kms_metadata_children_preserve_exact_kinds_and_reference_origins() ->
     }
     Ok(())
 }
+#[test]
+fn secret_safe_discovery_operations_have_canonical_resource_kinds() -> TestResult {
+    let map = embedded(include_bytes!(
+        "../../../../../../catalog/cloudcontrol-universal.json"
+    ))?;
+    for (service, operation, kind) in [
+        ("eks", "DescribeCluster", "AWS::EKS::Cluster"),
+        (
+            "elastic-load-balancing-v2",
+            "DescribeListeners",
+            "AWS::ElasticLoadBalancingV2::Listener",
+        ),
+        (
+            "elastic-load-balancing-v2",
+            "DescribeRules",
+            "AWS::ElasticLoadBalancingV2::ListenerRule",
+        ),
+        ("ec2", "DescribeVpnConnections", "AWS::EC2::VPNConnection"),
+        ("lambda", "ListVersionsByFunction", "AWS::Lambda::Version"),
+        ("iam", "ListVirtualMFADevices", "AWS::IAM::VirtualMFADevice"),
+    ] {
+        assert_eq!(
+            map.operations()
+                .iter()
+                .find(|row| row.service == service && row.operation == operation)
+                .map(|row| row.kind.as_str()),
+            Some(kind),
+            "{service}.{operation}"
+        );
+        assert!(
+            matches!(map.lookup(kind).map(|entry| &entry.target), Some(KindTarget::Mapped { kind: mapped, .. }) if mapped == kind),
+            "{kind}"
+        );
+    }
+    Ok(())
+}

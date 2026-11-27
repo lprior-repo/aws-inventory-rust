@@ -339,7 +339,7 @@ cargo run --locked -p catalog-tool -j3 -- overlay --source .local/aws-models --r
 cargo run --locked -p catalog-tool -j3 -- kinds generate --check
 cargo run --locked -p catalog-tool -j3 -- coverage --check
 cargo run --locked -p catalog-tool -j3 -- models compile --check
-cargo run --locked -p catalog-tool -j3 -- iam-policy --check
+cargo run --locked -p catalog-tool -j3 -- iam-policy --partition aws --account 123456789012 --check
 ```
 
 The scoped negative-audit evidence is retained in

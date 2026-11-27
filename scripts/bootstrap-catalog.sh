@@ -36,7 +36,7 @@ catalog overlay --source .local/aws-models --root . --write
 catalog kinds generate --write
 catalog coverage --write
 catalog models compile --write
-catalog iam-policy --write
+catalog iam-policy --partition aws --account 123456789012 --write
 catalog manifest --write
 
 if [[ -f scripts/bootstrap-protocol-tests.sh ]]; then

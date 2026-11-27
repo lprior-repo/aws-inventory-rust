@@ -267,13 +267,13 @@ account is assumed to exist, however the organization grants it.
   (it is pulled into version 1), this step adds only the template.
 - **Files:** `deploy/read-only-role.yaml` (new),
   `crates/catalog-tool/src/iam_policy.rs` (new).
-- **Change:** `catalog-tool iam-policy` prints the IAM actions of every
+- **Change:** `catalog-tool iam-policy --partition <partition> --account <12-digit-id>` prints the IAM actions of every
   callable operation (from each service's `arnNamespace` and operation name),
   grouped to fit policy size limits; the template embeds the output and is
   checked by the gate.
 - **Tests:** every callable operation maps to exactly one action; regenerating
   is byte-identical.
-- **Prove it:** `catalog-tool iam-policy --check`.
+- **Prove it:** `catalog-tool iam-policy --partition aws --account 123456789012 --check`.
 - **Done when:** the template matches the catalog.
 - **Size:** about 220 added.
 - **Watch out:** IAM action names do not always equal operation names; the
@@ -737,7 +737,7 @@ them. None of this is started, and nothing in it has been run.
 - **Tests:** an operation added to the catalog appears in the policy; an
   operation in the deny list never does; the attempted set never exceeds
   the policy.
-- **Prove it:** `catalog-tool iam-policy --check`; on the real-account run
+- **Prove it:** `catalog-tool iam-policy --partition aws --account 123456789012 --check`; on the real-account run
   (L6.1), a sweep under exactly that policy with zero access-denied
   outcomes that the policy should have allowed.
 - **Done when:** R2's evidence exists.

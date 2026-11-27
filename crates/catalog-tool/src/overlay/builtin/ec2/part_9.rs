@@ -99,7 +99,16 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("DescribeVpnConnections", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("VpnConnections")?),
+        tags: Some(path("Tags")?),
+        identity: Some(Identity::Key(vec![path("VpnConnectionId")?])),
+        exclude_response_members: vec![
+            path("VpnConnections.CustomerGatewayConfiguration")?,
+            path("VpnConnections.Options.TunnelOptions.PreSharedKey")?,
+        ],
+        paginator: Some(Paginator::None),
         ..empty()
     }),
 ("DescribeVpnGateways", OperationOverlay {
@@ -113,7 +122,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("GetActiveVpnTunnelStatus", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires VpnConnectionId and VpnTunnelOutsideIpAddress; the only complete tunnel discovery parent DescribeVpnConnections exposes PSKs and remains denied, so a safe tunnel-ID projection is required.".to_owned()),
+        defer_reason: Some("Requires VpnConnectionId and VpnTunnelOutsideIpAddress; DescribeVpnConnections can safely discover connection IDs, but TunnelOptions lacks stable tunnel outside-IP identity needed for correlated status lookup.".to_owned()),
         ..empty()
     }),
 ("GetAllowedImagesSettings", OperationOverlay {

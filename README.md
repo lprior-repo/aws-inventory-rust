@@ -307,10 +307,21 @@ not need regional discovery. Explicit source names/ARNs take precedence over
 automatic source discovery. All infrastructure and cross-account roles must
 already exist.
 
-`catalog-tool iam-policy --write` generates the callable-plan action bundle
-(`catalog/iam-read-only-policy.json`, an array of managed-policy documents),
-`deploy/read-only-role.yaml`, and `deploy/read-only-policy-gaps.txt`; `--check`
-compares all three byte for byte without writing. Each document has at most
+`catalog-tool iam-policy --partition aws --account 123456789012 --write`
+regenerates the repository's example policy bundle and deployment template.
+Use the destination partition and account when generating standalone policies
+for deployment. `--check` compares the generated artifacts without writing.
+
+The default role does not attach the sensitive-read policy. Set
+`AttachSensitiveReadPolicy=true` to enable the catalog's optional reads:
+EC2 `DescribeVpnConnections`, ELB `DescribeListeners` and `DescribeRules`, and
+IAM `ListVirtualMFADevices` require `Resource: "*"`. EKS `DescribeCluster`
+and Lambda `ListVersionsByFunction` are scoped to cluster and function ARNs
+in the destination account. The template resolves the partition and account
+at deployment. If none of these actions is callable, the standalone document
+has an empty `Statement` array for inspection only; do not upload it to IAM.
+
+Each managed policy has at most
 6,144 non-whitespace characters. Generation caps attachments at the default
 quota of 20 per role; AWS's adjustable maximum is 25 (verified 2026-11-24).
 The generated template states its actual attachment count. With no mode flag,

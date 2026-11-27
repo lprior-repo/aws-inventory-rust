@@ -51,7 +51,13 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("DescribeCluster", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("cluster")?),
+        identity: Some(Identity::Arn(path("arn")?)),
+        exclude_response_members: vec![path("cluster.connectorConfig.activationCode")?],
+        bind: [(path("name")?, Binding::From { operation: name("ListClusters")?, path: path("$")? })].into_iter().collect(),
+        paginator: Some(Paginator::None),
         ..empty()
     }),
 ("DescribeClusterVersions", OperationOverlay {

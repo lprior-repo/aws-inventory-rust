@@ -70,7 +70,16 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("ListVirtualMFADevices", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Account),
+        items: Some(ItemSelector::parse("VirtualMFADevices")?),
+        identity: Some(Identity::Key(vec![path("SerialNumber")?])),
+        exclude_response_members: vec![
+            path("VirtualMFADevices.Base32StringSeed")?,
+            path("VirtualMFADevices.QRCodePNG")?,
+        ],
+        page_size: Some(1000),
+        paginator: Some(Paginator::Tokens { pairs: vec![TokenPair { input: path("Marker")?, output: path("Marker")?, optional: false }], truncated: Some(path("IsTruncated")?) }),
         ..empty()
     }),
 ("PutAccountProperties", OperationOverlay {

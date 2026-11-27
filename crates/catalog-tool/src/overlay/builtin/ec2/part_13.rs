@@ -84,7 +84,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("GetVpnTunnelReplacementStatus", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires VpnConnectionId and VpnTunnelOutsideIpAddress; complete tunnel discovery currently traverses denied DescribeVpnConnections output containing PSKs, so needs a safe discovery projection first.".to_owned()),
+        defer_reason: Some("Requires VpnConnectionId and VpnTunnelOutsideIpAddress; safe DescribeVpnConnections output now discovers the connection, but TunnelOptions lacks stable tunnel outside-IP identity needed for correlated status lookup.".to_owned()),
         ..empty()
     }),
 ("ListImagesInRecycleBin", OperationOverlay {

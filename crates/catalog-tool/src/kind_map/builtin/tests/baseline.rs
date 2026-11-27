@@ -1,8 +1,8 @@
 use super::*;
 #[test]
-fn embedded_baseline_preserves_all_333_exact_operation_mappings() -> TestResult {
+fn embedded_baseline_preserves_all_339_exact_operation_mappings() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.operations().len(), 333);
+    assert_eq!(map.operations().len(), 339);
     let actual = digest(
         map.operations()
             .iter()
@@ -17,15 +17,15 @@ fn embedded_baseline_preserves_all_333_exact_operation_mappings() -> TestResult 
     );
     assert_eq!(
         actual,
-        "57bff7790dbbf197c41bd3225369ae32aa605116f9d656e602347f44614d967f"
+        "4bf986df01d2401237d973dfc88ac99dc2efce3516c66132d46bcb313f91d5ee"
     );
     Ok(())
 }
 
 #[test]
-fn embedded_baseline_preserves_182_canonical_cfn_kinds() -> TestResult {
+fn embedded_baseline_preserves_186_canonical_cfn_kinds() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.entries().len(), 182);
+    assert_eq!(map.entries().len(), 186);
     assert!(map.entries().iter().all(
         |entry| matches!(&entry.target, KindTarget::Mapped { kind, .. } if kind == &entry.cfn_type)
     ));
@@ -42,7 +42,7 @@ fn embedded_baseline_preserves_182_canonical_cfn_kinds() -> TestResult {
     );
     assert_eq!(
         actual,
-        "c6fe97c29d1b9fa212d24dae314c9d3c909c3170958ebb80d8fa0c9c8bd0bb6d"
+        "a38196786cdda746e250310a830a11040b8d81f48c75c1c8cfb41bba62eb2545"
     );
     Ok(())
 }
@@ -65,9 +65,9 @@ fn embedded_baseline_preserves_all_120_api_only_reasons() -> TestResult {
 }
 
 #[test]
-fn embedded_baseline_preserves_all_42_exact_scalar_relationships() -> TestResult {
+fn embedded_baseline_preserves_all_57_exact_scalar_relationships() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.relations().len(), 50);
+    assert_eq!(map.relations().len(), 57);
     let actual = digest(
         map.relations()
             .iter()
@@ -85,7 +85,7 @@ fn embedded_baseline_preserves_all_42_exact_scalar_relationships() -> TestResult
     );
     assert_eq!(
         actual,
-        "4fdae8425ac3fd43b1c542574bbcd25b0048ca0684e0abdc30b7931e49802082"
+        "29b39b7fefbb57a328967340feda721ec7835036d09260199db7c3f7d3652545"
     );
     Ok(())
 }

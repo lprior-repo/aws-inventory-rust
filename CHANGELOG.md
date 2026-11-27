@@ -2,6 +2,11 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- IAM policy generation and its reproducibility check now name the destination
+  partition and account explicitly. The documented `aws` / `123456789012`
+  output is an example destination, not the operator account; optional
+  sensitive-read grants are documented separately, including wildcard versus
+  EKS/Lambda resource-scoped actions and the informational empty standalone file.
 - The `sql` command requires PostgreSQL 18 or newer. It rejects older or
   unidentified servers before checking privileges or executing a query.
 - The PostgreSQL sweep store also checks the server version before schema

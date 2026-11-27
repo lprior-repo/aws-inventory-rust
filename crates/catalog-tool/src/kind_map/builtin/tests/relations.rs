@@ -1,4 +1,13 @@
 use super::*;
+const DISCOVERY_RELATIONS: &[(&str, &str, &str, &str, &str, &str, bool)] = &[
+    ("AWS::EKS::Cluster", "roleArn", "AWS::IAM::Role", "Arn", "ASSUMES_ROLE", "account", false),
+    ("AWS::EKS::Cluster", "resourcesVpcConfig.subnetIds", "AWS::EC2::Subnet", "SubnetId", "IN_SUBNET", "account_region", false),
+    ("AWS::EKS::Cluster", "resourcesVpcConfig.securityGroupIds", "AWS::EC2::SecurityGroup", "GroupId", "USES_SECURITY_GROUP", "account_region", false),
+    ("AWS::ElasticLoadBalancingV2::Listener", "LoadBalancerArn", "AWS::ElasticLoadBalancingV2::LoadBalancer", "LoadBalancerArn", "IN_LOAD_BALANCER", "account_region", false),
+    ("AWS::ElasticLoadBalancingV2::ListenerRule", "ListenerArn", "AWS::ElasticLoadBalancingV2::Listener", "ListenerArn", "IN_LISTENER", "account_region", true),
+    ("AWS::EC2::VPNConnection", "VpnGatewayId", "AWS::EC2::VPNGateway", "VpnGatewayId", "USES_VPN_GATEWAY", "account_region", false),
+    ("AWS::EC2::VPNConnection", "CustomerGatewayId", "AWS::EC2::CustomerGateway", "CustomerGatewayId", "USES_CUSTOMER_GATEWAY", "account_region", false),
+];
 #[test]
 fn native_scalar_relationships_preserve_exact_join_paths_and_scope() -> TestResult {
     let map = embedded(include_bytes!(
@@ -297,6 +306,27 @@ fn route53_dnssec_emits_distinct_dnssec_and_key_resources_with_exact_leased_pare
             !map.relations()
                 .iter()
                 .any(|row| row.source_kind == kind && row.relation == "FOR_HOSTED_ZONE")
+        );
+    }
+    Ok(())
+}
+#[test]
+fn discovered_resources_retain_their_parent_relationships() -> TestResult {
+    let map = embedded(include_bytes!(
+        "../../../../../../catalog/cloudcontrol-universal.json"
+    ))?;
+    for &(source, path, target, target_path, label, scope, request) in DISCOVERY_RELATIONS {
+        assert!(
+            map.relations().iter().any(|row| {
+                row.source_kind == source
+                    && source_fields(row) == Some(path)
+                    && row.target_kinds.primary() == target
+                    && target_fields(row) == Some(target_path)
+                    && row.relation == label
+                    && row.scope == scope
+                    && matches!(row.source, ReviewedRelationSource::Request(_)) == request
+            }),
+            "{source}.{path}"
         );
     }
     Ok(())

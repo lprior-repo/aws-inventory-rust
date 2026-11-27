@@ -1,8 +1,8 @@
-use super::super::{empty, path};
+use super::super::{empty, name, path};
 use crate::classes::DenyReason;
 use crate::overlay::{
-    FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass, Paginator,
-    Scope, TokenPair,
+    Binding, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
+    Paginator, Scope, TokenPair,
 };
 
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -50,16 +50,22 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("DescribeListenerAttributes", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Attributes contains only Key and Value and no ListenerArn; requires parent-input identity or parent-resource enrichment and a safe listener discovery source because DescribeListeners reaches OIDC ClientSecret.".to_owned()),
+        defer_reason: Some("Attributes contains only Key and Value and no ListenerArn; requires parent-input identity or listener-resource enrichment to avoid collisions across listeners.".to_owned()),
         ..empty()
     }),
 ("DescribeListenerCertificates", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires HTTPS/TLS listener selection and a safe listener discovery source; Certificates lacks ListenerArn, and the same CertificateArn can occur twice with different IsDefault values or on multiple listeners, requiring parent-scoped association identity.".to_owned()),
+        defer_reason: Some("Requires HTTPS/TLS listener selection; Certificates lacks ListenerArn, and the same CertificateArn can occur twice with different IsDefault values or on multiple listeners, requiring parent-scoped association identity.".to_owned()),
         ..empty()
     }),
 ("DescribeListeners", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("Listeners")?),
+        identity: Some(Identity::Arn(path("ListenerArn")?)),
+        exclude_response_members: vec![path("Listeners.DefaultActions.AuthenticateOidcConfig.ClientSecret")?],
+        bind: [(path("LoadBalancerArn")?, Binding::From { operation: name("DescribeLoadBalancers")?, path: path("LoadBalancerArn")? })].into_iter().collect(),
+        paginator: Some(Paginator::Token(TokenPair { input: path("Marker")?, output: path("NextMarker")?, optional: false })),
         ..empty()
     }),
 ("DescribeLoadBalancerAttributes", OperationOverlay {
@@ -68,7 +74,13 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("DescribeRules", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("Rules")?),
+        identity: Some(Identity::Arn(path("RuleArn")?)),
+        exclude_response_members: vec![path("Rules.Actions.AuthenticateOidcConfig.ClientSecret")?],
+        bind: [(path("ListenerArn")?, Binding::From { operation: name("DescribeListeners")?, path: path("ListenerArn")? })].into_iter().collect(),
+        paginator: Some(Paginator::Token(TokenPair { input: path("Marker")?, output: path("NextMarker")?, optional: false })),
         ..empty()
     }),
 ("DescribeSSLPolicies", OperationOverlay {
@@ -77,7 +89,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("DescribeTags", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("ResourceArns must cover load balancers, target groups, listeners, and rules; one from/path binding cannot union these sources or enrich their tags. Safe listener/rule discovery is also blocked by reachable OIDC ClientSecret; enabling only one ARN source would silently omit the others.".to_owned()),
+        defer_reason: Some("ResourceArns must cover load balancers, target groups, listeners, and rules; one from/path binding cannot union these sources or enrich their tags. Enabling only one ARN source would silently omit the others.".to_owned()),
         ..empty()
     }),
 ("DescribeTargetGroupAttributes", OperationOverlay {

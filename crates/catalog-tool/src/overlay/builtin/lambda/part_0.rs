@@ -123,7 +123,19 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("ListVersionsByFunction", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("Versions")?),
+        identity: Some(Identity::Arn(path("FunctionArn")?)),
+        exclude_response_members: vec![
+            path("Versions.Environment.Variables")?,
+            path("Versions.Environment.Error")?,
+            path("Versions.ImageConfigResponse.Error")?,
+            path("Versions.RuntimeVersionConfig.Error")?,
+        ],
+        bind: [(path("FunctionName")?, Binding::From { operation: name("ListFunctions")?, path: path("FunctionName")? })].into_iter().collect(),
+        page_size: Some(50),
+        paginator: Some(Paginator::Token(TokenPair { input: path("Marker")?, output: path("NextMarker")?, optional: false })),
         ..empty()
     }),
 ("GetDurableExecution", OperationOverlay {

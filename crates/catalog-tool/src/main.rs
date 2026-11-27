@@ -9,7 +9,7 @@ use catalog_tool::{
     ReportMode, classes, coverage, endpoints, iam_policy, manifest, package, plans, smithy,
 };
 
-const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool manifest [--root <dir>] [--check | --write]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlays generate [--service <name>]... [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool kinds generate [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool relations remap [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool iam-policy [--root <dir>] [--check | --write]\n  catalog-tool iam-reference --date YYYY-MM-DD [--root <dir>]\n  catalog-tool coverage [--root <dir>] [--check | --write]";
+const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool manifest [--root <dir>] [--check | --write]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlays generate [--service <name>]... [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool kinds generate [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool relations remap [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool iam-policy --partition <aws-partition> --account <12-digit-account> [--root <dir>] [--check | --write]\n  catalog-tool iam-reference --date YYYY-MM-DD [--root <dir>]\n  catalog-tool coverage [--root <dir>] [--check | --write]";
 
 fn main() -> ExitCode {
     match run(std::env::args().skip(1).collect()) {
@@ -46,15 +46,25 @@ fn iam_policy_arguments(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut root = default_root();
     let mut mode = ReportMode::Print;
+    let mut partition = None;
+    let mut account = None;
     while let Some(flag) = arguments.next() {
         match flag.as_str() {
             "--root" => root = PathBuf::from(next_value(arguments, "--root")?),
+            "--partition" => {
+                partition = Some(next_value(arguments, "--partition")?.parse::<iam_policy::Partition>()?)
+            }
+            "--account" => {
+                account = Some(next_value(arguments, "--account")?.parse::<iam_policy::AccountId>()?)
+            }
             "--write" => mode = ReportMode::Write,
             "--check" => mode = ReportMode::Check,
             other => return Err(format!("unexpected {other}; {USAGE}").into()),
         }
     }
-    iam_policy::run(&root, mode)?;
+    let partition = partition.ok_or("--partition is required")?;
+    let account = account.ok_or("--account is required")?;
+    iam_policy::run_scoped(&root, mode, partition, &account)?;
     Ok(())
 }
 

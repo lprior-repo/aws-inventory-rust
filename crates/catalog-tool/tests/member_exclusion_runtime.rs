@@ -241,6 +241,47 @@ fn given_honestly_resealed_bad_exclusion_when_loading_then_consumer_rejects_it()
 
 const CASES: &[(&str, &str, &[&str])] = &[
     (
+        "eks",
+        "DescribeCluster",
+        &["cluster.connectorConfig.activationCode"],
+    ),
+    (
+        "elastic-load-balancing-v2",
+        "DescribeListeners",
+        &["Listeners.DefaultActions.AuthenticateOidcConfig.ClientSecret"],
+    ),
+    (
+        "elastic-load-balancing-v2",
+        "DescribeRules",
+        &["Rules.Actions.AuthenticateOidcConfig.ClientSecret"],
+    ),
+    (
+        "ec2",
+        "DescribeVpnConnections",
+        &[
+            "VpnConnections.CustomerGatewayConfiguration",
+            "VpnConnections.Options.TunnelOptions.PreSharedKey",
+        ],
+    ),
+    (
+        "lambda",
+        "ListVersionsByFunction",
+        &[
+            "Versions.Environment.Variables",
+            "Versions.Environment.Error",
+            "Versions.ImageConfigResponse.Error",
+            "Versions.RuntimeVersionConfig.Error",
+        ],
+    ),
+    (
+        "iam",
+        "ListVirtualMFADevices",
+        &[
+            "VirtualMFADevices.Base32StringSeed",
+            "VirtualMFADevices.QRCodePNG",
+        ],
+    ),
+    (
         "iam",
         "ListInstanceProfiles",
         &["InstanceProfiles.Roles.AssumeRolePolicyDocument"],

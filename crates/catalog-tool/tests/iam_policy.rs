@@ -1,4 +1,7 @@
-use catalog_tool::iam_policy::{self, Operation, render};
+#[path = "iam_policy/contract.rs"]
+mod contract;
+
+use catalog_tool::iam_policy::{self, AccountId, Operation, Partition, render_scoped};
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use std::{
     error::Error,
@@ -15,22 +18,54 @@ const CLI_GAPS: &str = "ec2\tDescribeVpcs\tec2\tunconfirmed: absent from the ser
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
+fn fixture_account() -> Result<AccountId, iam_policy::Error> {
+    Ok("123456789012".parse()?)
+}
+
+fn run_fixture(
+    root: &Path,
+    mode: catalog_tool::ReportMode,
+) -> Result<(), iam_policy::Error> {
+    let account = fixture_account()?;
+    iam_policy::run_scoped(root, mode, Partition::Aws, &account)
+}
+fn render(
+    operations: &[Operation<'_>],
+    mappings: &str,
+    reference: &str,
+    exceptions: &str,
+) -> Result<iam_policy::Rendered, iam_policy::Error> {
+    let account = fixture_account()?;
+    render_scoped(
+        operations,
+        mappings,
+        reference,
+        exceptions,
+        Partition::Aws,
+        &account,
+    )
+}
 
 #[test]
 fn given_new_callable_operation_when_generated_then_action_appears() -> TestResult {
+    let account = fixture_account()?;
     let first = callable_catalog(false)?;
-    let old = render(
+    let old = render_scoped(
         &iam_policy::operations(&RuntimeCatalog::from_bytes(&first)?)?,
         "",
         REFERENCE,
         "",
+        Partition::Aws,
+        &account,
     )?;
     let added = callable_catalog(true)?;
-    let new = render(
+    let new = render_scoped(
         &iam_policy::operations(&RuntimeCatalog::from_bytes(&added)?)?,
         "",
         REFERENCE,
         "",
+        Partition::Aws,
+        &account,
     )?;
     assert!(old.actions.contains("ec2:DescribeVpcs"));
     assert!(!old.actions.contains("ec2:DescribeSubnets"));
@@ -94,6 +129,7 @@ fn given_generated_files_when_checking_then_byte_drift_in_either_file_fails() ->
     assert!(command(directory.path(), "--check")?.status.success());
     [
         "catalog/iam-read-only-policy.json",
+        "catalog/iam-sensitive-read-policy.json",
         "deploy/read-only-role.yaml",
         "deploy/read-only-policy-gaps.txt",
     ]
@@ -128,7 +164,14 @@ fn given_generated_files_when_checking_then_byte_drift_in_either_file_fails() ->
 fn command(root: &Path, mode: &str) -> Result<std::process::Output, Box<dyn Error>> {
     Ok(
         std::process::Command::new(env!("CARGO_BIN_EXE_catalog-tool"))
-            .args(["iam-policy", "--root"])
+            .args([
+                "iam-policy",
+                "--partition",
+                "aws",
+                "--account",
+                "123456789012",
+                "--root",
+            ])
             .arg(root)
             .args((!mode.is_empty()).then_some(mode))
             .output()?,
@@ -353,11 +396,11 @@ fn policy_actions(
 
 fn assert_documents(bundle: &str, template: &str) -> TestResult {
     let bundle: Vec<serde_json::Value> = serde_json::from_str(bundle)?;
-    let role = template
-        .lines()
-        .filter_map(|line| line.strip_prefix("      PolicyDocument: "))
-        .map(serde_json::from_str)
-        .collect::<Result<Vec<serde_json::Value>, _>>()?;
+    let role: Vec<_> = contract::template_documents(template)?
+        .into_iter()
+        .filter(|(resource, _)| resource.starts_with("InventoryReadOnlyPolicy"))
+        .map(|(_, document)| document)
+        .collect();
     assert!(!bundle.is_empty());
     assert_eq!(bundle, role);
     assert_eq!(policy_actions(&bundle)?, policy_actions(&role)?);
@@ -369,12 +412,20 @@ fn given_fresh_catalog_when_written_then_bundle_and_role_match_the_callable_cata
 {
     let directory = fixture_root()?;
     let expected = fixture_policy()?;
-    iam_policy::run(directory.path(), catalog_tool::ReportMode::Write)?;
-    iam_policy::run(directory.path(), catalog_tool::ReportMode::Check)?;
+    run_fixture(directory.path(), catalog_tool::ReportMode::Write)?;
+    run_fixture(directory.path(), catalog_tool::ReportMode::Check)?;
     let bundle = fs::read_to_string(directory.path().join("catalog/iam-read-only-policy.json"))?;
+    let sensitive =
+        fs::read_to_string(directory.path().join("catalog/iam-sensitive-read-policy.json"))?;
     let role = fs::read_to_string(directory.path().join("deploy/read-only-role.yaml"))?;
     assert_eq!(bundle, expected.text);
     assert_eq!(role, expected.template);
+    assert_eq!(
+        serde_json::from_str::<serde_json::Value>(&sensitive)?,
+        serde_json::json!({"Version":"2012-10-17","Statement":[]})
+    );
+    assert!(!role.contains("AttachSensitiveReadPolicy"));
+    assert!(!role.contains("InventorySensitiveReadPolicy"));
     assert_documents(&bundle, &role)?;
     Ok(())
 }
@@ -470,13 +521,21 @@ fn removal_token(path: &str, text: &str) -> Result<String, Box<dyn Error>> {
             .ok_or("unconfirmed entry absent")?
             .to_owned());
     }
+    if path.ends_with("iam-sensitive-read-policy.json") {
+        return Ok("2012-10-17".to_owned());
+    }
     let documents: Vec<serde_json::Value> = if path.ends_with(".json") {
-        serde_json::from_str(text)?
+        match serde_json::from_str(text)? {
+            serde_json::Value::Array(documents) => documents,
+            document @ serde_json::Value::Object(_) => vec![document],
+            _ => return Err("policy JSON must be an object or array".into()),
+        }
     } else {
-        text.lines()
-            .filter_map(|line| line.strip_prefix("      PolicyDocument: "))
-            .map(serde_json::from_str)
-            .collect::<Result<_, _>>()?
+        contract::template_documents(text)?
+            .into_iter()
+            .filter(|(resource, _)| resource.starts_with("InventoryReadOnlyPolicy"))
+            .map(|(_, document)| document)
+            .collect()
     };
     let actions = policy_actions(&documents)?;
     let middle = actions.len().div_euclid(2);
@@ -491,9 +550,9 @@ fn given_print_mode_when_invoked_then_stdout_is_only_the_json_bundle() -> TestRe
     let directory = fixture_root()?;
     let output = command(directory.path(), "")?;
     assert!(output.status.success());
-    assert!(output.stderr.is_empty());
     let printed: Vec<serde_json::Value> = serde_json::from_slice(&output.stdout)?;
     let bundle: Vec<serde_json::Value> = serde_json::from_str(&fixture_policy()?.text)?;
+    assert_eq!(printed.len(), 1, "single-action fixture should yield one policy");
     assert_eq!(printed, bundle);
     Ok(())
 }
@@ -585,7 +644,7 @@ fn given_shared_actions_when_written_then_denied_findings_precede_deferred_rows(
         "[operation]\n\"ec2/DescribeSecrets\" = \"ec2:DescribeVpcs\"\n\
          \"ec2/DescribeDeferred\" = \"ec2:DescribeVpcs\"\n",
     )?;
-    iam_policy::run(root.path(), catalog_tool::ReportMode::Write)?;
+    run_fixture(root.path(), catalog_tool::ReportMode::Write)?;
     let report = fs::read_to_string(root.path().join("deploy/read-only-policy-gaps.txt"))?;
     assert!(
         report.ends_with(
@@ -607,7 +666,7 @@ fn given_shared_actions_when_written_then_denied_findings_precede_deferred_rows(
         fs::read_to_string(root.path().join("catalog/iam-read-only-policy.json"))?,
         fixture_policy()?.text
     );
-    iam_policy::run(root.path(), catalog_tool::ReportMode::Check)?;
+    run_fixture(root.path(), catalog_tool::ReportMode::Check)?;
     Ok(())
 }
 
@@ -627,7 +686,7 @@ fn given_two_callable_owners_when_shared_then_rows_are_sorted_and_operations_cou
          \"ec2/DescribeSubnets\" = \"ec2:DescribeVpcs\"\n\
          \"ec2/DescribeDeferred\" = \"ec2:DescribeVpcs\"\n",
     )?;
-    iam_policy::run(root.path(), catalog_tool::ReportMode::Write)?;
+    run_fixture(root.path(), catalog_tool::ReportMode::Write)?;
     let report = fs::read_to_string(root.path().join("deploy/read-only-policy-gaps.txt"))?;
     assert!(
         report.contains("\nbroad\n"),

@@ -301,11 +301,14 @@ async fn given_sweep_when_requests_are_sent_then_attempted_actions_are_in_genera
     let mappings =
         "[operation]\n\"controlinventory/ListItems\" = \"controlinventory:ListResources\"\n";
     let gaps = "controlinventory\tDescribeRegions\tcontrolinventory\tunconfirmed: absent from the service authorization reference at 2026-11-24\n";
-    let policy = catalog_tool::iam_policy::render(
+    let account: catalog_tool::iam_policy::AccountId = "123456789012".parse()?;
+    let policy = catalog_tool::iam_policy::render_scoped(
         &catalog_tool::iam_policy::operations(&catalog)?,
         mappings,
         reference,
         gaps,
+        catalog_tool::iam_policy::Partition::Aws,
+        &account,
     )?;
     let store = environment.store("attempts.sqlite").await?;
     let summary = environment
@@ -403,11 +406,14 @@ async fn given_rejected_and_retried_calls_when_responses_are_blocked_then_attemp
     let environment = Environment::new(peer::Mode::Reject(failures.clone())).await?;
     let catalog = RuntimeCatalog::from_bytes(&environment.catalog)?;
     let attempts = std::sync::Arc::new(crate::AttemptedOperations::new(&catalog));
-    let policy = catalog_tool::iam_policy::render(
+    let account: catalog_tool::iam_policy::AccountId = "123456789012".parse()?;
+    let policy = catalog_tool::iam_policy::render_scoped(
         &catalog_tool::iam_policy::operations(&catalog)?,
         "[operation]\n\"controlinventory/ListItems\" = \"controlinventory:ListResources\"\n",
         "# Retrieved: 2026-11-24\ncontrolinventory\tGetCallerIdentity\tread\ncontrolinventory\tListResources\tread\n",
         "controlinventory\tDescribeRegions\tcontrolinventory\tunconfirmed: absent from the service authorization reference at 2026-11-24\n",
+        catalog_tool::iam_policy::Partition::Aws,
+        &account,
     )?;
     let receipt = attempts.clone();
     let worker = tokio::spawn(async move {

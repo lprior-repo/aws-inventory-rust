@@ -88,6 +88,14 @@ tasks:
       cache: false
       mutex: cargo-workspace
       runInCI: always
+  iam-policy:
+    command: cargo run -q -p catalog-tool --locked -- iam-policy --partition aws --account 123456789012 --check
+    deps:
+      - binary-catalog
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
   sql-views:
     command: cargo run -p inventory-engine --example resource_views --locked -- --check
     deps:

@@ -778,6 +778,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "ec2",
+        operation: "DescribeVpnConnections",
+        kind: "AWS::EC2::VPNConnection",
+    },
+    OperationMapping {
+        service: "ec2",
         operation: "DescribeVpnGateways",
         kind: "AWS::EC2::VPNGateway",
     },
@@ -905,6 +910,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         service: "iam",
         operation: "ListOpenIDConnectProviders",
         kind: "AWS::IAM::OIDCProvider",
+    },
+    OperationMapping {
+        service: "iam",
+        operation: "ListVirtualMFADevices",
+        kind: "AWS::IAM::VirtualMFADevice",
     },
     OperationMapping {
         service: "iam",
@@ -1262,6 +1272,16 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         kind: "AWS::ApiOnly::LambdaLayer",
     },
     OperationMapping {
+        service: "lambda",
+        operation: "ListVersionsByFunction",
+        kind: "AWS::Lambda::Version",
+    },
+    OperationMapping {
+        service: "eks",
+        operation: "DescribeCluster",
+        kind: "AWS::EKS::Cluster",
+    },
+    OperationMapping {
         service: "eks",
         operation: "ListClusters",
         kind: "AWS::EKS::Cluster",
@@ -1490,6 +1510,16 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         service: "sfn",
         operation: "ListStateMachineVersions",
         kind: "AWS::StepFunctions::StateMachineVersion",
+    },
+    OperationMapping {
+        service: "elastic-load-balancing-v2",
+        operation: "DescribeListeners",
+        kind: "AWS::ElasticLoadBalancingV2::Listener",
+    },
+    OperationMapping {
+        service: "elastic-load-balancing-v2",
+        operation: "DescribeRules",
+        kind: "AWS::ElasticLoadBalancingV2::ListenerRule",
     },
     OperationMapping {
         service: "elastic-load-balancing-v2",
