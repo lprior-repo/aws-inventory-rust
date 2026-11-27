@@ -4,6 +4,8 @@
 
 - The `sql` command requires PostgreSQL 18 or newer. It rejects older or
   unidentified servers before checking privileges or executing a query.
+- The PostgreSQL sweep store also checks the server version before schema
+  creation or inspection; an unsupported server is not treated as an empty inventory.
 - Comprehend dataset collection now passes each ARN returned by `ListFlywheels`
   to `ListDatasets` instead of issuing an unscoped request.
 - Projection delivery checks the destination identity before sending any delta,

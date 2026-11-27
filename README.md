@@ -779,8 +779,8 @@ regression and 2 for a refused comparison. Collector failures exit nonzero.
 
 ## CMDB product direction
 
-The inventory CLI stores swept resources in SQLite or PostgreSQL and projects
-their topology into FalkorDB. The bounded `cmdb-view` read model supplies
+The inventory CLI stores swept resources in SQLite or PostgreSQL 18 or newer
+and projects their topology into FalkorDB. The bounded `cmdb-view` read model supplies
 tables, details, counts, tags, freshness and edge pages directly from either
 inventory database. PostgreSQL reads use pinned repeatable-read, read-only
 snapshots, so pagination and details stay consistent while a sweep writes.

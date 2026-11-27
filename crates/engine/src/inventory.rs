@@ -71,6 +71,8 @@ pub enum StoreError {
     OwnershipIo(#[from] std::io::Error),
     #[error("schema or stored data is invalid: {0}")]
     Invalid(&'static str),
+    #[error("the PostgreSQL inventory store requires PostgreSQL 18 or newer")]
+    UnsupportedPostgresVersion,
     #[error("compiled catalog is invalid: {0}")]
     Catalog(#[from] inventory_core::catalog::CatalogError),
     #[error("runtime catalog capability metadata is invalid: {0}")]

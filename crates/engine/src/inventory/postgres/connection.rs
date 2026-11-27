@@ -7,7 +7,7 @@ pub(super) async fn connect(
     url: &DatabaseUrl,
     config: PgWriteConfig,
 ) -> Result<PgPool, StoreError> {
-    PgPoolOptions::new()
+    let pool = PgPoolOptions::new()
         .max_connections(config.max_connections())
         .acquire_timeout(Duration::from_secs(5))
         .after_connect(|connection, _| {
@@ -23,7 +23,13 @@ pub(super) async fn connect(
         })
         .connect_with(url.options()?)
         .await
-        .map_err(|_| StoreError::Invalid("PostgreSQL connection failed"))
+        .map_err(|_| StoreError::Invalid("PostgreSQL connection failed"))?;
+    let version = pool.acquire().await?.server_version_num();
+    if !crate::postgres_version::supported(version) {
+        pool.close().await;
+        return Err(StoreError::UnsupportedPostgresVersion);
+    }
+    Ok(pool)
 }
 
 pub(super) async fn check_version(pool: &PgPool) -> Result<(), StoreError> {
