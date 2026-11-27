@@ -9,9 +9,9 @@ checks recorded below to this worker. No frame-time, throughput or headroom
 result is claimed. D7.1's measured-baseline gate remains unsatisfied until the
 coordinator records the release runs below.
 
-The painter is unchanged. The harness reads the current SQLite reader database
-through `cmdb-view`; PostgreSQL URL support belongs to the later reader cutover.
-The generator currently writes schema 15 and the reader accepts schemas 15–17.
+The original debug checks below used SQLite fixtures. The measurement commands
+now generate and read PostgreSQL fixtures; the original checks are not evidence
+of a PostgreSQL frame-time run.
 `docs/VISION.md`, requested by the kickoff prompt, is absent from this checkout.
 
 ## Captured quantities and limitations
@@ -43,7 +43,7 @@ currently exposed data. That requires backend instrumentation, not an estimate.
 
 ## Workload and bounds
 
-`--database PATH --frame-harness SECONDS` accepts a finite duration from 1 to
+`--database POSTGRES_URL --frame-harness SECONDS` accepts a finite duration from 1 to
 600 seconds. After the loaded DAG's first complete draw, elapsed wall time drives
 whole-view → one-node zoom → whole-view, then a zoomed pan from the first to the
 last layout node. Three scripted clicks use the real hit-test/selection path at
@@ -103,7 +103,7 @@ databases. Record actual display metadata at run time.
 ```sh
 export HOME=/home/lewis
 export CARGO_TARGET_DIR="$HOME/.cache/cargo-target-d71"
-cargo build --release -j2 -p cmdb-ui
+cargo build --locked --release -j2 -p cmdb-ui -p cmdb-bench || exit 1
 mkdir -p "$CARGO_TARGET_DIR/frame-baselines"
 export CMDB_UI_FRAME_REFRESH_HZ=59.96
 export CMDB_UI_FRAME_RESOLUTION=1920x1080
@@ -115,7 +115,7 @@ for count in 500 2000 2001; do
     2000) url=${FRAME_PG_URL_2000:?} ;;
     2001) url=${FRAME_PG_URL_2001:?} ;;
   esac
-  cmdb-bench generate "$url" catalog/aws-api.catalog 1 "$count" || exit 1
+  "$CARGO_TARGET_DIR/release/cmdb-bench" generate "$url" catalog/aws-api.catalog 1 "$count" || exit 1
   "$CARGO_TARGET_DIR/release/cmdb-ui" \
     --database "$url" \
     --frame-harness 20 \
