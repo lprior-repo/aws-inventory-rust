@@ -1,5 +1,7 @@
 #[path = "references/concurrent.rs"]
 mod concurrent;
+#[path = "references/multi_kind.rs"]
+mod multi_kind;
 
 use super::{TestResult, claim, collect, run, support, work};
 use inventory_core::inventory::{Edge, Observation};

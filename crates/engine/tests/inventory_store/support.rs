@@ -357,6 +357,70 @@ pub(super) fn typed_relationship_catalog(relations: Vec<Value>, dual: bool) -> T
     Ok(Record::encode(&root)?.into_bytes())
 }
 
+pub(super) fn multi_kind_catalog_bytes() -> TestResult<Vec<u8>> {
+    let record = Record::from_bytes(modeled_catalog(None, false)?)?;
+    let mut root = inventory_core::record::ValueRef::Map(record.root()).to_value()?;
+    let Value::Map(fields) = &mut root else {
+        return Err("catalog root is not a map".into());
+    };
+    let Some(Value::Map(extension)) = fields.get_mut(&Key::Field(FieldId::new(60_000)?)) else {
+        return Err("runtime extension missing".into());
+    };
+    let thing = Value::Text("AWS::Example::Thing".into());
+    let other = Value::Text("AWS::Example::Other".into());
+    let rule = wire_map([
+        (1, thing.clone()),
+        (2, Value::List(vec![Value::Int(2)])),
+        (3, thing.clone()),
+        (4, Value::List(vec![Value::Int(1)])),
+        (5, Value::Text("references".into())),
+        (6, Value::Int(0)),
+        (7, Value::Int(1)),
+        (9, Value::List(vec![thing, other.clone()])),
+        (10, Value::Int(1)),
+    ])?;
+    let column = wire_map([(1, Value::List(vec![Value::Int(1)])), (2, Value::Int(3))])?;
+    let schema = wire_map([
+        (1, other.clone()),
+        (2, Value::Text("other_table".into())),
+        (3, Value::List(vec![column])),
+        (4, Value::Null),
+    ])?;
+    let coverage = wire_map([
+        (1, Value::Null),
+        (2, other),
+        (3, Value::Bool(true)),
+        (4, Value::Null),
+        (5, Value::Bool(true)),
+    ])?;
+    for (field, entry) in [(3, schema), (5, coverage)] {
+        let Some(Value::List(items)) = extension.get_mut(&Key::Field(FieldId::new(field)?)) else {
+            return Err("runtime extension list missing".into());
+        };
+        items.push(entry);
+    }
+    let Some(Value::List(plans)) = extension.get_mut(&Key::Field(FieldId::new(2)?)) else {
+        return Err("callable plans missing".into());
+    };
+    let Some(Value::Map(plan)) = plans.first_mut() else {
+        return Err("callable plan missing".into());
+    };
+    let other_emission = wire_map([
+        (1, Value::Text("other".into())),
+        (3, Value::Text("AWS::Example::Other".into())),
+        (5, wire_map([(1, Value::Int(0))])?),
+        (6, wire_map([(1, Value::Int(0)), (2, Value::List(vec![Value::Int(1)]))])?),
+        (9, Value::List(vec![])),
+    ])?;
+    plan.insert(
+        Key::Field(FieldId::new(23)?),
+        Value::List(vec![other_emission]),
+    );
+    extension.insert(Key::Field(FieldId::new(4)?), Value::List(vec![rule]));
+    seal_catalog(&mut root)?;
+    Ok(Record::encode(&root)?.into_bytes())
+}
+
 pub(super) fn model_relation_catalog(bytes: Vec<u8>) -> TestResult<Vec<u8>> {
     let record = Record::from_bytes(bytes)?;
     let mut root = inventory_core::record::ValueRef::Map(record.root()).to_value()?;

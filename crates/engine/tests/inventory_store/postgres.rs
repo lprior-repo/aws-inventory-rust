@@ -30,10 +30,17 @@ use support::TestResult;
 pub(super) async fn run(
     check: impl AsyncFn(&PgStore, &PgPool, &DatabaseUrl) -> TestResult,
 ) -> TestResult {
+    run_with(registry()?, check).await
+}
+
+pub(super) async fn run_with(
+    registry: SchemaRegistry,
+    check: impl AsyncFn(&PgStore, &PgPool, &DatabaseUrl) -> TestResult,
+) -> TestResult {
     let database = TestDatabase::create(&admin_url()?).await?;
     let url = DatabaseUrl::parse(database.url())?;
     let pool = PgPool::connect(database.url()).await?;
-    let store = PgStore::create(&url, registry()?, PgWriteConfig::default()).await?;
+    let store = PgStore::create(&url, registry, PgWriteConfig::default()).await?;
     let result = check(&store, &pool, &url).await;
     store.close().await;
     pool.close().await;
@@ -41,15 +48,28 @@ pub(super) async fn run(
     result
 }
 
-pub(super) fn registry() -> TestResult<SchemaRegistry> {
-    let kind = KindSchema::new(
-        Kind::parse("AWS::Example::Thing")?,
-        SqlName::parse("thing_table")?,
+fn text_kind(kind: &str, table: &str) -> TestResult<KindSchema> {
+    Ok(KindSchema::new(
+        Kind::parse(kind)?,
+        SqlName::parse(table)?,
         vec![Column::new(vec![FieldId::new(1)?], ScalarType::Text)?],
-    )?;
+    )?)
+}
+
+pub(super) fn registry() -> TestResult<SchemaRegistry> {
     Ok(SchemaRegistry::new(
         &support::catalog_bytes()?,
-        vec![Arc::new(kind)],
+        vec![Arc::new(text_kind("AWS::Example::Thing", "thing_table")?)],
+    )?)
+}
+
+pub(super) fn multi_kind_registry() -> TestResult<SchemaRegistry> {
+    Ok(SchemaRegistry::new(
+        &support::multi_kind_catalog_bytes()?,
+        vec![
+            Arc::new(text_kind("AWS::Example::Thing", "thing_table")?),
+            Arc::new(text_kind("AWS::Example::Other", "other_table")?),
+        ],
     )?)
 }
 
