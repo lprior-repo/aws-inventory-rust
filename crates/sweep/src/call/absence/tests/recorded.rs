@@ -23,7 +23,7 @@ fn wire(status: u16, content_type: &'static str, body: &'static [u8]) -> TestRes
 }
 
 fn assert_absence(plan: &CallablePlan<'_>, response: Response, reason: &str) -> TestResult {
-    let answer = validate_status(plan, response)?.decode(plan);
+    let answer = validate_status(plan, response)?.decode(plan, false);
     match answer {
         Err(SweepError::Absent(actual)) => assert_eq!(actual, reason),
         _ => return Err("provider absence was not recognized".into()),
@@ -194,7 +194,7 @@ fn given_numeric_get_index_dates_when_decoded_then_modeled_date_time_remains_str
     let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
     let plan = catalog.lookup(service, "GetIndex").ok_or("plan absent")?;
     let response = wire(200, "application/json", INDEX)?;
-    let result = validate_status(plan, response)?.decode(plan);
+    let result = validate_status(plan, response)?.decode(plan, false);
     assert!(matches!(
         result,
         Err(SweepError::Decode(

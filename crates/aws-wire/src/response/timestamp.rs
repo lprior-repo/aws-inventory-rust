@@ -13,6 +13,15 @@ pub(super) fn parse(value: &str, format: Option<TimestampFormat>) -> Result<Time
     }
 }
 
+pub(super) fn parse_emulator_numeric(
+    value: &str,
+    format: Option<TimestampFormat>,
+) -> Result<Time, DecodeError> {
+    match format {
+        Some(TimestampFormat::DateTime | TimestampFormat::HttpDate) => epoch::parse(value),
+        None | Some(TimestampFormat::EpochSeconds) => parse(value, format),
+    }
+}
 fn datetime(value: &str) -> Result<Time, DecodeError> {
     let (date, time_zone) = value.split_once('T').ok_or_else(invalid)?;
     let (year, month, day) = date_parts(date)?;

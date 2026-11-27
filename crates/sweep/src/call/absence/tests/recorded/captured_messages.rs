@@ -183,7 +183,7 @@ fn given_scoped_provider_messages_when_request_account_or_region_differs_then_de
                 plan, response, account, region,
             ))
         };
-        let matching = classify(account, region)?.map(|response| response.decode(plan));
+        let matching = classify(account, region)?.map(|response| response.decode(plan, false));
         assert!(matches!(matching, Ok(Err(SweepError::Absent(actual))) if actual == reason));
         let mismatches = [(ACCOUNT, region), (account, REGION)];
         for (account, region) in mismatches

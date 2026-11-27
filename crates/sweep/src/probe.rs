@@ -217,6 +217,7 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
             plan,
             endpoint,
             url: self.scope.endpoint_override.map_or(url, |url| url),
+            emulator_endpoint_override: self.scope.endpoint_override.is_some(),
             base,
             fields,
             metrics: &metrics,

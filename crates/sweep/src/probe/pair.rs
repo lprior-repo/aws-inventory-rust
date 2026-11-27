@@ -238,6 +238,7 @@ impl<'a, 'catalog, C: CredentialSource> ProbeSession<'a, 'catalog, C> {
                 .scope
                 .endpoint_override
                 .map_or(endpoint.url.as_str(), |url| url),
+            emulator_endpoint_override: probe.scope.endpoint_override.is_some(),
             base,
             fields: &fields,
             metrics: &metrics,

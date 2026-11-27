@@ -9,9 +9,15 @@ pub(super) enum ValidatedResponse {
 }
 
 impl ValidatedResponse {
-    pub(super) fn decode(self, plan: &CallablePlan<'_>) -> Result<DecodedResponse, SweepError> {
+    pub(super) fn decode(
+        self,
+        plan: &CallablePlan<'_>,
+        emulator_numeric_timestamps: bool,
+    ) -> Result<DecodedResponse, SweepError> {
         match self {
-            Self::Page(response) => super::decode_response(plan, response),
+            Self::Page(response) => {
+                super::decode_response(plan, response, emulator_numeric_timestamps)
+            }
             Self::Absent(reason) => Err(SweepError::Absent(reason)),
         }
     }

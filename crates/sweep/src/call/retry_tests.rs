@@ -65,6 +65,7 @@ impl RetryFixture {
             plan,
             endpoint: &endpoint,
             url,
+            emulator_endpoint_override: false,
             base: &base,
             fields: &fields,
             metrics: &self.metrics,
@@ -77,6 +78,67 @@ impl RetryFixture {
         })
         .await
     }
+}
+
+#[tokio::test]
+async fn given_catalog_s3_list_buckets_with_endpoint_override_when_sent_then_empty_hash_is_signed()
+-> TestResult {
+    let compiled = fixture::compile("s3", "2006-03-01", &["ListBuckets"])?;
+    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
+    let plan = catalog
+        .lookup("s3", "ListBuckets")
+        .ok_or("S3 ListBuckets plan absent")?;
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let endpoint_override = format!("http://{}", listener.local_addr()?);
+    let fixture = RetryFixture::new()?;
+    let region = RegionId::parse("us-east-1")?;
+    let scope_region = inventory_core::inventory::Region::Regional(region.clone());
+    let endpoint = plan.endpoint(&region, &scope_region)?;
+    assert_eq!(
+        endpoint.path_mode,
+        inventory_core::catalog::runtime::EndpointPathMode::Standard
+    );
+    let base = Record::encode(&Value::Map(BTreeMap::new()))?;
+    let fields = [];
+    let request = request::encode(plan, &endpoint_override, &base, &fields)?;
+    let call = Call {
+        client: &fixture.client,
+        executor: &fixture.executor,
+        credentials: &fixture.credentials,
+        plan,
+        endpoint: &endpoint,
+        url: &endpoint_override,
+        emulator_endpoint_override: true,
+        base: &base,
+        fields: &fields,
+        metrics: &fixture.metrics,
+        account: "123456789012",
+        scope: &scope_region,
+    };
+    let signing_time = SystemTime::UNIX_EPOCH
+        .checked_add(Duration::from_secs(1_704_067_200))
+        .ok_or("signing time overflow")?;
+    let clock = || signing_time;
+    let (response, captured) = tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::join!(
+            call.send_attempt(request, &clock),
+            serve_list_buckets(listener)
+        )
+    })
+    .await?;
+    response?;
+    let request = captured?;
+    assert_eq!(request.request_line, "GET /?x-id=ListBuckets HTTP/1.1");
+    assert!(request.host.starts_with("127.0.0.1:"));
+    assert_eq!(
+        request.content_sha256.as_deref(),
+        Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+    );
+    assert_eq!(
+        request.signed_headers,
+        "host;x-amz-content-sha256;x-amz-date"
+    );
+    Ok(())
 }
 
 #[tokio::test]
@@ -135,6 +197,13 @@ fn assert_retry_requests(requests: &[SignedRequest]) -> TestResult {
             .collect::<Vec<_>>(),
         vec!["20240101T000000Z", "20240101T001000Z"]
     );
+    assert!(requests.iter().all(|request| {
+        request.content_sha256.is_none()
+            && !request
+                .signed_headers
+                .split(';')
+                .any(|name| name == "x-amz-content-sha256")
+    }));
     assert_ne!(
         requests
             .first()
@@ -197,6 +266,10 @@ struct SignedRequest {
     body: Vec<u8>,
     date: String,
     authorization: String,
+    signed_headers: String,
+    content_sha256: Option<String>,
+    request_line: String,
+    host: String,
 }
 
 impl SignedRequest {
@@ -210,16 +283,26 @@ impl SignedRequest {
                 .ok_or("signing header absent")
         };
         let authorization = header("authorization")?;
-        let signed = authorization
+        let signed_headers = authorization
             .split("SignedHeaders=")
             .nth(1)
             .and_then(|value| value.split(',').next())
-            .ok_or("signed headers absent")?;
-        assert!(signed.split(';').any(|name| name == "x-amz-date"));
+            .ok_or("signed headers absent")?
+            .to_owned();
+        assert!(signed_headers.split(';').any(|name| name == "x-amz-date"));
+        let content_sha256 = headers
+            .lines()
+            .filter_map(|line| line.split_once(':'))
+            .find(|(key, _)| key.eq_ignore_ascii_case("x-amz-content-sha256"))
+            .map(|(_, value)| value.trim().to_owned());
         Ok(Self {
             body,
             date: header("x-amz-date")?,
             authorization,
+            signed_headers,
+            content_sha256,
+            request_line: headers.lines().next().ok_or("request line absent")?.to_owned(),
+            host: header("host")?,
         })
     }
 }
@@ -253,6 +336,16 @@ async fn serve(listener: TcpListener) -> TestResult<Vec<SignedRequest>> {
     Ok(bodies)
 }
 
+async fn serve_list_buckets(listener: TcpListener) -> TestResult<SignedRequest> {
+    let (mut socket, _) = listener.accept().await?;
+    let (headers, body) = read_request(&mut socket).await?;
+    let captured = SignedRequest::parse(&headers, body)?;
+    let response = b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n";
+    socket.write_all(response).await?;
+    socket.shutdown().await?;
+    Ok(captured)
+}
+
 async fn read_request(socket: &mut TcpStream) -> TestResult<(String, Vec<u8>)> {
     let mut bytes = Vec::new();
     let mut buffer = [0; 2048];
@@ -277,7 +370,8 @@ async fn read_request(socket: &mut TcpStream) -> TestResult<(String, Vec<u8>)> {
                     .filter(|(name, _)| name.eq_ignore_ascii_case("content-length"))
                     .map(|(_, value)| value.trim().parse::<usize>())
             })
-            .ok_or("content length absent")??;
+            .transpose()?
+            .unwrap_or(0);
         if body.len() == length {
             return Ok((headers.to_owned(), body.to_vec()));
         }

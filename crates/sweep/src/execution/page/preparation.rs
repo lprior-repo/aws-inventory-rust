@@ -94,6 +94,11 @@ impl Prepared {
             plan,
             endpoint: &self.endpoint.modeled,
             url: super::super::endpoint_url(context.bootstrap.config, self.endpoint.url())?,
+            emulator_endpoint_override: context
+                .bootstrap
+                .config
+                .endpoint_override()?
+                .is_some(),
             base: &self.base,
             fields: &self.fields,
             metrics: context.bootstrap.metrics,

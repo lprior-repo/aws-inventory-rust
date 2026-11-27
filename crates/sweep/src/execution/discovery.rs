@@ -170,6 +170,7 @@ async fn discovery_call(
         plan,
         endpoint,
         url,
+        emulator_endpoint_override: bootstrap.config.endpoint_override()?.is_some(),
         base: &base,
         fields: &[],
         metrics: bootstrap.metrics,

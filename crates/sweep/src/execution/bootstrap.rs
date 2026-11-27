@@ -90,6 +90,7 @@ async fn execute(
         plan,
         endpoint: &endpoint,
         url,
+        emulator_endpoint_override: context.config.endpoint_override()?.is_some(),
         base: &base,
         fields: &[],
         metrics: context.metrics,

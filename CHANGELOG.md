@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Catalog-driven S3 `ListBuckets` requests now include the signed
+  `x-amz-content-sha256` header even when endpoint rules use standard path
+  handling. Other standard-path operations retain generic signing behavior.
+
 - IAM policy generation and its reproducibility check now name the destination
   partition and account explicitly. The documented `aws` / `123456789012`
   output is an example destination, not the operator account; optional

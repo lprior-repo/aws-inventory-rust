@@ -23,6 +23,7 @@ pub struct DecodeLimits {
     depth: usize,
     preserve_fields: bool,
     raw_values: bool,
+    emulator_numeric_timestamps: bool,
     excluded_members: inventory_core::record::MemberExclusions,
 }
 
@@ -43,6 +44,7 @@ impl DecodeLimits {
             depth,
             preserve_fields: false,
             raw_values: false,
+            emulator_numeric_timestamps: false,
             excluded_members: inventory_core::record::MemberExclusions::default(),
         })
     }
@@ -69,6 +71,14 @@ impl DecodeLimits {
         self.raw_values = true;
         self
     }
+    pub fn allow_emulator_numeric_timestamps(mut self) -> Self {
+        self.emulator_numeric_timestamps = true;
+        self
+    }
+
+    pub(crate) fn emulator_numeric_timestamps(self) -> bool {
+        self.emulator_numeric_timestamps
+    }
 
     pub fn excluding_members(mut self, members: inventory_core::record::MemberExclusions) -> Self {
         self.excluded_members = members;
@@ -84,6 +94,7 @@ impl Default for DecodeLimits {
             depth: MAX_DEPTH,
             preserve_fields: false,
             raw_values: false,
+            emulator_numeric_timestamps: false,
             excluded_members: inventory_core::record::MemberExclusions::default(),
         }
     }

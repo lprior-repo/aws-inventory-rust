@@ -66,7 +66,7 @@ impl Writer<'_, '_> {
         match self.kind {
             "blob" => write_blob(text, self.key, self.builder),
             "timestamp" => {
-                let time = self.time(text)?;
+                let time = self.time(text, false)?;
                 scalar(self.builder, self.key, ValueRef::Time(time))
             }
             "float" | "double" => write_nonfinite(text, self.key, self.builder),
@@ -84,19 +84,23 @@ impl Writer<'_, '_> {
             }
             "float" | "double" => ValueRef::Float(Float::new(text.parse().map_err(|_| invalid())?)),
             "bigDecimal" => ValueRef::Text(text),
-            "timestamp" => ValueRef::Time(self.time(text)?),
+            "timestamp" => ValueRef::Time(self.time(text, true)?),
             "document" => document_number(text)?,
             _ => return Err(invalid()),
         };
         scalar(self.builder, self.key, value)
     }
 
-    fn time(&self, text: &str) -> Result<Time, DecodeError> {
+    fn time(&self, text: &str, numeric: bool) -> Result<Time, DecodeError> {
         let format = self
             .key
             .timestamp_format()
             .or(timestamp_format(self.context, self.target)?);
-        timestamp::parse(text, format)
+        if numeric && self.context.limits.emulator_numeric_timestamps() {
+            timestamp::parse_emulator_numeric(text, format)
+        } else {
+            timestamp::parse(text, format)
+        }
     }
 }
 

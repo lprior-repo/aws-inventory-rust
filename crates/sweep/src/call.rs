@@ -25,6 +25,7 @@ pub(super) struct Call<'a, 'catalog, C: CredentialSource> {
     pub plan: &'a CallablePlan<'catalog>,
     pub endpoint: &'a ResolvedEndpoint,
     pub url: &'a str,
+    pub emulator_endpoint_override: bool,
     pub base: &'a Record,
     pub fields: &'a [InputField],
     pub metrics: &'a crate::metrics::Accumulators,
@@ -62,7 +63,7 @@ impl<C: CredentialSource> Call<'_, '_, C> {
             })
             .await?;
         let started = std::time::Instant::now();
-        let response = response.decode(self.plan);
+        let response = response.decode(self.plan, self.emulator_endpoint_override);
         self.metrics.decoded(started);
         response
     }
@@ -87,6 +88,13 @@ impl<C: CredentialSource> Call<'_, '_, C> {
                 "comparison wire response exceeds one MiB",
             ));
         }
+        let limits = if self.emulator_endpoint_override {
+            aws_wire::response::DecodeLimits::default()
+                .preserve_raw_values()
+                .allow_emulator_numeric_timestamps()
+        } else {
+            aws_wire::response::DecodeLimits::default().preserve_raw_values()
+        };
         let context = aws_wire::response::ResponseContext {
             service: self.plan.service(),
             operation: self.plan.operation(),
@@ -94,7 +102,7 @@ impl<C: CredentialSource> Call<'_, '_, C> {
             body: &response.body,
             headers: &response.headers,
             status: response.status,
-            limits: aws_wire::response::DecodeLimits::default().preserve_raw_values(),
+            limits,
         };
         Ok(DecodedResponse {
             record: aws_wire::response::decode(context)?,
@@ -172,28 +180,47 @@ fn signature(
             uri: &parts.uri.to_string(),
             headers: &parts.headers,
             body: Body::Bytes(body),
-            payload_header: payload_header(call.endpoint.path_mode),
+            payload_header: payload_header(
+                call.endpoint.path_mode,
+                call.plan.service_name(),
+                call.plan.operation_name(),
+            ),
         },
         path_mode(call.endpoint.path_mode),
     )
     .map_err(permanent)
 }
 
-fn payload_header(mode: inventory_core::catalog::runtime::EndpointPathMode) -> PayloadHeader {
-    match mode {
-        inventory_core::catalog::runtime::EndpointPathMode::S3 => PayloadHeader::Include,
-        inventory_core::catalog::runtime::EndpointPathMode::Standard => PayloadHeader::Omit,
+fn payload_header(
+    mode: inventory_core::catalog::runtime::EndpointPathMode,
+    service_name: &str,
+    operation_name: &str,
+) -> PayloadHeader {
+    match (
+        mode,
+        service_name == "s3" && operation_name == "ListBuckets",
+    ) {
+        (inventory_core::catalog::runtime::EndpointPathMode::S3, _) | (_, true) => {
+            PayloadHeader::Include
+        }
+        (inventory_core::catalog::runtime::EndpointPathMode::Standard, false) => PayloadHeader::Omit,
     }
 }
 
 fn decode_response(
     plan: &CallablePlan<'_>,
     response: Response,
+    emulator_numeric_timestamps: bool,
 ) -> Result<DecodedResponse, SweepError> {
     let tag_endpoint = matches!(plan.purpose(), PlanPurpose::TagEndpoint(_));
-    let record = decode_record(plan, &response, tag_endpoint)?;
+    let record = decode_record(plan, &response, tag_endpoint, emulator_numeric_timestamps)?;
     if !tag_endpoint {
-        confirm_truncation_presence(plan, &response, &record)?;
+        confirm_truncation_presence(
+            plan,
+            &response,
+            &record,
+            emulator_numeric_timestamps,
+        )?;
     }
     Ok(DecodedResponse {
         record,
@@ -206,9 +233,15 @@ fn decode_record(
     plan: &CallablePlan<'_>,
     response: &Response,
     preserve_presence: bool,
+    emulator_numeric_timestamps: bool,
 ) -> Result<Record, SweepError> {
     let limits =
         aws_wire::response::DecodeLimits::default().excluding_members(plan.excluded_members());
+    let limits = if emulator_numeric_timestamps {
+        limits.allow_emulator_numeric_timestamps()
+    } else {
+        limits
+    };
     let limits = if preserve_presence {
         limits.preserve_field_presence()
     } else {
@@ -230,12 +263,18 @@ fn confirm_truncation_presence(
     plan: &CallablePlan<'_>,
     response: &Response,
     record: &Record,
+    emulator_numeric_timestamps: bool,
 ) -> Result<(), SweepError> {
     let pagination = plan.pagination();
     if cursor::truncation_flag(pagination, record)? != Some(false) {
         return Ok(());
     }
-    let evidence = decode_record(plan, response, true)?;
+    let evidence = decode_record(
+        plan,
+        response,
+        true,
+        emulator_numeric_timestamps,
+    )?;
     cursor::truncation_flag(pagination, &evidence).map(|_| ())
 }
 
