@@ -83,6 +83,18 @@ pub async fn initialize(pool: &PgPool, registry: &SchemaRegistry) -> Result<(), 
     if plan(state, stored.as_deref(), registry.digest())? == Plan::Fresh {
         initialize_shared(pool, registry).await?;
     }
+    populate(pool, registry).await
+}
+
+pub async fn create_fresh(pool: &PgPool, registry: &SchemaRegistry) -> Result<(), StoreError> {
+    if state(pool).await? != SchemaState::Absent {
+        return Err(StoreError::Invalid("inventory schema already exists"));
+    }
+    initialize_shared(pool, registry).await?;
+    populate(pool, registry).await
+}
+
+async fn populate(pool: &PgPool, registry: &SchemaRegistry) -> Result<(), StoreError> {
     stream::iter(registry.schemas().chunks(200).map(Ok))
         .try_for_each(|batch| kinds::create_batch(pool, batch))
         .await?;

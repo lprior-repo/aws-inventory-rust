@@ -1,22 +1,36 @@
 use super::{
     Command, parse_command,
-    pipeline::{self, BenchResult, Workload},
+    pipeline::{self, BenchDatabase, BenchResult, Workload},
     pipeline_fixture, pipeline_oracle,
 };
-use inventory_engine::inventory::{BinaryStore, SweepId};
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+use inventory_engine::inventory::{DatabaseUrl, InventoryStore, PgStore, PgWriteConfig, SweepId};
+use inventory_harness::postgres::{TestDatabase, admin_url};
+use sqlx::{AssertSqlSafe, PgPool};
 
-fn workload(directory: &std::path::Path, rows: usize) -> BenchResult<Workload> {
+fn workload(directory: &std::path::Path, url: &str, rows: usize) -> BenchResult<Workload> {
     let catalog = directory.join("runtime.catalog");
     std::fs::write(&catalog, super::pipeline_test_catalog::bytes()?)?;
     Ok(Workload {
-        path: directory.join("inventory.sqlite"),
+        database: BenchDatabase::parse(url)?,
         catalog,
         pages: 2,
         rows,
         concurrency: 2,
         graph: None,
     })
+}
+
+async fn open_store(url: &str) -> BenchResult<PgStore> {
+    Ok(PgStore::open(&DatabaseUrl::parse(url)?, PgWriteConfig::default()).await?)
+}
+
+async fn resource_count(url: &str) -> BenchResult<i64> {
+    let pool = PgPool::connect(url).await?;
+    let count = sqlx::query_scalar("SELECT COUNT(*) FROM inventory.resources")
+        .fetch_one(&pool)
+        .await?;
+    pool.close().await;
+    Ok(count)
 }
 
 #[test]
@@ -38,19 +52,11 @@ fn given_nonzero_elapsed_clock_when_rating_then_fixed_three_decimal_rate() -> Be
 async fn given_real_wire_model_when_committing_tags_and_replay_then_exact_durable_state()
 -> BenchResult {
     let directory = tempfile::tempdir()?;
-    let workload = workload(directory.path(), 3)?;
-    pipeline::run(workload.clone()).await?;
-    let database =
-        cmdb_view::Database::open(workload.path.to_str().ok_or("non-UTF-8 database path")?).await?;
-    assert_eq!(database.counts().await?.resources, 12);
-    let store = BinaryStore::open(&workload.path).await?;
-    let summary = store
-        .sweep_summary(&SweepId::new("cmdb-bench-duplicate_replay".into())?)
-        .await?;
-    assert_eq!(summary.resources_observed, 12);
-    assert_eq!(summary.complete_scopes, 2);
-    assert_eq!(summary.work_pending, 0);
-    assert!(!store.projection_state().await?.rebuild_required);
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let outcome = wire_model_state(directory.path(), database.url()).await;
+    let cleanup = database.finish().await;
+    outcome?;
+    cleanup?;
     Ok(())
 }
 
@@ -58,15 +64,11 @@ async fn given_real_wire_model_when_committing_tags_and_replay_then_exact_durabl
 async fn given_empty_pages_when_committed_then_checkpoints_complete_without_fake_resources()
 -> BenchResult {
     let directory = tempfile::tempdir()?;
-    let workload = workload(directory.path(), 0)?;
-    pipeline::run(workload.clone()).await?;
-    let store = BinaryStore::open(&workload.path).await?;
-    let summary = store
-        .sweep_summary(&SweepId::new("cmdb-bench-duplicate_replay".into())?)
-        .await?;
-    assert_eq!(summary.complete_scopes, 2);
-    assert_eq!(summary.resources_observed, 0);
-    assert_eq!(store.projection_state().await?.pending, 0);
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let outcome = empty_page_state(directory.path(), database.url()).await;
+    let cleanup = database.finish().await;
+    outcome?;
+    cleanup?;
     Ok(())
 }
 
@@ -74,16 +76,60 @@ async fn given_empty_pages_when_committed_then_checkpoints_complete_without_fake
 async fn given_corrupted_record_when_oracle_runs_then_counts_alone_cannot_claim_success()
 -> BenchResult {
     let directory = tempfile::tempdir()?;
-    let workload = workload(directory.path(), 3)?;
-    pipeline::run(workload.clone()).await?;
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(SqliteConnectOptions::new().filename(&workload.path))
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let outcome = corrupted_record_state(directory.path(), database.url()).await;
+    let cleanup = database.finish().await;
+    outcome?;
+    cleanup?;
+    Ok(())
+}
+
+async fn wire_model_state(directory: &std::path::Path, url: &str) -> BenchResult {
+    pipeline::run(workload(directory, url, 3)?).await?;
+    assert_eq!(resource_count(url).await?, 12);
+    let store = open_store(url).await?;
+    let summary = store
+        .sweep_summary(&SweepId::new("cmdb-bench-duplicate_replay".into())?)
         .await?;
-    sqlx::query("UPDATE benchmark_tables SET record=X'00' WHERE id=(SELECT id FROM benchmark_tables LIMIT 1)").execute(&pool).await?;
+    assert_eq!(summary.resources_observed, 12);
+    assert_eq!(summary.complete_scopes, 2);
+    assert_eq!(summary.work_pending, 0);
+    assert!(!store.projection_state().await?.rebuild_required);
+    store.close().await;
+    Ok(())
+}
+
+async fn empty_page_state(directory: &std::path::Path, url: &str) -> BenchResult {
+    pipeline::run(workload(directory, url, 0)?).await?;
+    let store = open_store(url).await?;
+    let summary = store
+        .sweep_summary(&SweepId::new("cmdb-bench-duplicate_replay".into())?)
+        .await?;
+    assert_eq!(summary.complete_scopes, 2);
+    assert_eq!(summary.resources_observed, 0);
+    assert_eq!(store.projection_state().await?.pending, 0);
+    store.close().await;
+    Ok(())
+}
+
+async fn corrupted_record_state(directory: &std::path::Path, url: &str) -> BenchResult {
+    let workload = workload(directory, url, 3)?;
+    pipeline::run(workload.clone()).await?;
+    let pool = PgPool::connect(url).await?;
+    let table: String = sqlx::query_scalar(
+        "SELECT table_name FROM inventory.kinds WHERE kind='AWS::DynamoDB::Table'",
+    )
+    .fetch_one(&pool)
+    .await?;
+    let corrupt = format!(
+        "UPDATE inventory.\"{table}\" SET record=decode('00','hex') WHERE ctid=(SELECT ctid FROM inventory.\"{table}\" LIMIT 1)"
+    );
+    sqlx::query(AssertSqlSafe(corrupt.as_str()))
+        .execute(&pool)
+        .await?;
     pool.close().await;
-    let store = BinaryStore::open(&workload.path).await?;
-    let revision = pipeline_oracle::revision(&workload.path).await?;
+    let store = open_store(url).await?;
+    let revision = pipeline_oracle::revision(url).await?;
     let error = pipeline_oracle::check(
         &workload,
         &store,
@@ -94,6 +140,7 @@ async fn given_corrupted_record_when_oracle_runs_then_counts_alone_cannot_claim_
     .await
     .err()
     .ok_or("corrupted record escaped the exact-state oracle")?;
+    store.close().await;
     assert_eq!(
         error.to_string(),
         "typed record bytes/hash disagree with independently generated fixture"
@@ -107,7 +154,7 @@ fn given_pipeline_arguments_when_parsed_then_bounds_and_empty_page_intent_are_pr
     let command = parse_command(
         [
             "pipeline",
-            "fresh.sqlite",
+            "postgres://postgres@127.0.0.1:5432/awsinv_benchrip",
             "runtime.catalog",
             "100",
             "0",
@@ -130,7 +177,7 @@ fn given_pipeline_arguments_when_parsed_then_bounds_and_empty_page_intent_are_pr
         (
             [
                 "pipeline",
-                "fresh.sqlite",
+                "postgres://postgres@127.0.0.1:5432/awsinv_benchrip",
                 "runtime.catalog",
                 "100",
                 "1001",
@@ -141,7 +188,7 @@ fn given_pipeline_arguments_when_parsed_then_bounds_and_empty_page_intent_are_pr
         (
             [
                 "pipeline",
-                "fresh.sqlite",
+                "postgres://postgres@127.0.0.1:5432/awsinv_benchrip",
                 "runtime.catalog",
                 "100",
                 "1",
@@ -152,7 +199,7 @@ fn given_pipeline_arguments_when_parsed_then_bounds_and_empty_page_intent_are_pr
         (
             [
                 "pipeline",
-                "fresh.sqlite",
+                "postgres://postgres@127.0.0.1:5432/awsinv_benchrip",
                 "runtime.catalog",
                 "100000",
                 "1000",
@@ -201,5 +248,57 @@ fn given_tag_workload_sizes_then_vertex_and_link_oracles_cover_empty_and_short_p
         pipeline_fixture::expected_tag_vertices(3, pipeline::Phase::TagUpdate),
         3
     );
+    Ok(())
+}
+
+#[test]
+fn given_database_url_with_password_when_debugged_then_dsn_is_redacted() -> BenchResult {
+    let database =
+        BenchDatabase::parse("postgres://postgres:secret@127.0.0.1:5432/awsinv_benchrip")?;
+    assert_eq!(format!("{database:?}"), "BenchDatabase(redacted)");
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_occupied_target_when_rerun_then_rejected_without_changing_state() -> BenchResult {
+    let directory = tempfile::tempdir()?;
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let outcome = occupied_rerun_state(directory.path(), database.url()).await;
+    let cleanup = database.finish().await;
+    outcome?;
+    cleanup?;
+    Ok(())
+}
+
+async fn occupied_rerun_state(directory: &std::path::Path, url: &str) -> BenchResult {
+    pipeline::run(workload(directory, url, 3)?).await?;
+    assert_eq!(resource_count(url).await?, 12);
+    pipeline::run(workload(directory, url, 3)?)
+        .await
+        .err()
+        .ok_or("occupied target accepted a second fresh pipeline")?;
+    assert_eq!(resource_count(url).await?, 12);
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_concurrent_fresh_initialization_when_both_join_then_exactly_one_admitted()
+-> BenchResult {
+    let directory = tempfile::tempdir()?;
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let outcome = concurrent_join_state(directory.path(), database.url()).await;
+    let cleanup = database.finish().await;
+    outcome?;
+    cleanup?;
+    Ok(())
+}
+
+async fn concurrent_join_state(directory: &std::path::Path, url: &str) -> BenchResult {
+    let (first, second) = tokio::join!(
+        pipeline::run(workload(directory, url, 3)?),
+        pipeline::run(workload(directory, url, 3)?),
+    );
+    assert_eq!(usize::from(first.is_ok()) + usize::from(second.is_ok()), 1);
+    assert_eq!(resource_count(url).await?, 12);
     Ok(())
 }

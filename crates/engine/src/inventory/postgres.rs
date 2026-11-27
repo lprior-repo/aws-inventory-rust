@@ -62,6 +62,25 @@ impl PgStore {
         }
     }
 
+    pub async fn create_fresh(
+        url: &DatabaseUrl,
+        registry: SchemaRegistry,
+        config: PgWriteConfig,
+    ) -> Result<Self, StoreError> {
+        let pool = connection::connect(url, config).await?;
+        match schema::create_fresh(&pool, &registry).await {
+            Ok(()) => Ok(Self {
+                pool,
+                registry,
+                config,
+            }),
+            Err(error) => {
+                pool.close().await;
+                Err(error)
+            }
+        }
+    }
+
     pub async fn open(url: &DatabaseUrl, config: PgWriteConfig) -> Result<Self, StoreError> {
         let pool = connection::connect(url, config).await?;
         let registry = match reopen(&pool).await {

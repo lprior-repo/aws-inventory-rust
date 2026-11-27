@@ -763,6 +763,11 @@ throttle-share window or the quota threshold.
 Collector logs and seed reports are read with a 16 MiB bound; each seed recipe
 has a 1 MiB bound. SIGINT/SIGTERM cancel the collector and drain owned resources.
 
+`cmdb-bench pipeline "$BENCH_POSTGRES_URL" <compiled-catalog> 2 3 2` runs
+initial collection, a tag update, and duplicate replay, checking stored rows after
+each phase. Use a disposable PostgreSQL database with no `inventory` schema.
+The pipeline refuses an existing inventory rather than resuming or replacing it.
+
 `cmdb-bench open --catalog <file>` measures catalog decode, fresh schema creation,
 reopening, and insert preparation (P11). `cmdb-bench compare <before> <after>`
 checks every median against the larger of 5% and twice the baseline spread.

@@ -2,7 +2,9 @@
 mod pipeline_test_catalog;
 #[cfg(test)]
 mod pipeline_tests;
-use generate::{ensure_fresh, generate};
+#[cfg(test)]
+use generate::ensure_fresh;
+use generate::generate;
 use measure::measure;
 use std::error::Error;
 use std::path::PathBuf;
@@ -21,7 +23,7 @@ mod pipeline_oracle;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <fresh-db> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--concurrency <n>] [--idle-timeout-ms <1..90000>] [--pool-idle-per-host <n>] [--max-rps <n|decimal>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | layout <target-nodes:1..4000000> | open --catalog <file> | compare <before> <after>";
+const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <postgres-url> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--concurrency <n>] [--idle-timeout-ms <1..90000>] [--pool-idle-per-host <n>] [--max-rps <n|decimal>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | layout <target-nodes:1..4000000> | open --catalog <file> | compare <before> <after>";
 const MAX_RESOURCES: usize = 10_000_000;
 
 #[derive(Debug)]
@@ -96,7 +98,7 @@ fn parse_measure(args: &mut impl Iterator<Item = String>) -> Result<Command, Box
 }
 
 fn parse_pipeline(args: &mut impl Iterator<Item = String>) -> Result<Command, Box<dyn Error>> {
-    let path = PathBuf::from(required(args)?);
+    let database = pipeline::BenchDatabase::parse(&required(args)?).map_err(|e| e.to_string())?;
     let catalog = PathBuf::from(required(args)?);
     let pages = parse_count(&required(args)?)?;
     let rows = required(args)?.parse::<usize>()?;
@@ -114,7 +116,7 @@ fn parse_pipeline(args: &mut impl Iterator<Item = String>) -> Result<Command, Bo
         return Err(USAGE.into());
     }
     let workload = pipeline::Workload {
-        path,
+        database,
         catalog,
         pages,
         rows,

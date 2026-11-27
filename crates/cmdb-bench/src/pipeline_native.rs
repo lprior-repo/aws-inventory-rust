@@ -3,7 +3,7 @@ use super::{
     pipeline_fixture,
 };
 use futures_util::{TryStreamExt, stream};
-use inventory_engine::inventory::{BinaryStore, run_projection};
+use inventory_engine::inventory::{InventoryStore, PgStore, run_projection};
 use inventory_graph::falkor::{FalkorDb, inspect};
 use redis::aio::MultiplexedConnection;
 use std::time::{Duration, Instant};
@@ -66,7 +66,7 @@ pub(super) async fn require_fresh(target: &Target) -> BenchResult {
 
 pub(super) async fn consume_and_check(
     workload: &Workload,
-    store: &BinaryStore,
+    store: &PgStore,
     target: &Target,
     phase: Phase,
 ) -> BenchResult {

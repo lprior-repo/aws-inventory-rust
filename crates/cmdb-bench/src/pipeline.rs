@@ -1,14 +1,15 @@
-use super::{
-    ensure_fresh, pipeline_fixture as fixture, pipeline_native as native, pipeline_oracle as oracle,
-};
+use super::{pipeline_fixture as fixture, pipeline_native as native, pipeline_oracle as oracle};
 use futures_util::{StreamExt, TryStreamExt, stream};
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{
-    BinaryStore, ChangeStats, PageCommit, SchemaRegistry, SweepId, WorkLease, WorkSpec,
+    ChangeStats, DatabaseUrl, PageCommit, PgStore, PgWriteConfig, SchemaRegistry, SweepId,
+    WorkLease, WorkSpec,
 };
 use sha2::{Digest, Sha256};
+use sqlx::postgres::PgPoolOptions;
 use std::{
     error::Error,
+    fmt,
     io::Read,
     path::PathBuf,
     time::{Duration, Instant},
@@ -20,10 +21,54 @@ mod drain_tests;
 pub(super) type BenchResult<T = ()> = Result<T, Box<dyn Error + Send + Sync>>;
 const MAX_PAGES: usize = 100_000;
 const MAX_ROWS: usize = 10_000_000;
+const CREATE_LOCK_SQL: &str =
+    "SELECT pg_advisory_lock(hashtextextended('cmdb-bench.pipeline.create',0))";
+const CREATE_UNLOCK_SQL: &str =
+    "SELECT pg_advisory_unlock(hashtextextended('cmdb-bench.pipeline.create',0))";
+
+#[derive(Clone)]
+pub(super) struct BenchDatabase {
+    dsn: String,
+}
+
+impl BenchDatabase {
+    pub fn parse(value: &str) -> BenchResult<Self> {
+        DatabaseUrl::parse(value)?;
+        Ok(Self {
+            dsn: value.to_owned(),
+        })
+    }
+
+    pub fn dsn(&self) -> &str {
+        &self.dsn
+    }
+
+    async fn create_store(&self, registry: SchemaRegistry) -> BenchResult<PgStore> {
+        let url = DatabaseUrl::parse(&self.dsn)?;
+        let lock_pool = PgPoolOptions::new()
+            .max_connections(1)
+            .connect(&self.dsn)
+            .await?;
+        let mut lock = lock_pool.acquire().await?;
+        sqlx::query(CREATE_LOCK_SQL).execute(&mut *lock).await?;
+        let created = PgStore::create_fresh(&url, registry, PgWriteConfig::default()).await;
+        let unlocked = sqlx::query(CREATE_UNLOCK_SQL).execute(&mut *lock).await;
+        drop(lock);
+        lock_pool.close().await;
+        unlocked?;
+        Ok(created?)
+    }
+}
+
+impl fmt::Debug for BenchDatabase {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("BenchDatabase(redacted)")
+    }
+}
 
 #[derive(Clone, Debug)]
 pub(super) struct Workload {
-    pub path: PathBuf,
+    pub database: BenchDatabase,
     pub catalog: PathBuf,
     pub pages: usize,
     pub rows: usize,
@@ -137,7 +182,6 @@ fn read_catalog(path: &std::path::Path) -> BenchResult<Vec<u8>> {
 
 pub(super) async fn run(workload: Workload) -> BenchResult {
     workload.validate()?;
-    ensure_fresh(&workload.path).map_err(|error| error.to_string())?;
     let bytes = read_catalog(&workload.catalog)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     if catalog.lookup("dynamodb", "ListTables").is_none() {
@@ -148,9 +192,9 @@ pub(super) async fn run(workload: Workload) -> BenchResult {
     }
     let registry = SchemaRegistry::new(&bytes, catalog.schemas().to_vec())?;
     let started = Instant::now();
-    let store = BinaryStore::create(&workload.path, registry).await?;
+    let store = workload.database.create_store(registry).await?;
     println!(
-        "pipeline_setup_us={} resources={} pages_per_scope={} rows_per_page={} concurrency={} max_inflight_rows={} root_drain_work_measured=false allocation_profile=not_collected inflight_error_policy=drain_all durability=production_defaults database={}",
+        "pipeline_setup_us={} resources={} pages_per_scope={} rows_per_page={} concurrency={} max_inflight_rows={} root_drain_work_measured=false allocation_profile=not_collected inflight_error_policy=drain_all durability=production_defaults database=redacted",
         started.elapsed().as_micros(),
         workload.resources()?,
         workload.pages,
@@ -160,18 +204,19 @@ pub(super) async fn run(workload: Workload) -> BenchResult {
             .rows
             .checked_mul(workload.concurrency)
             .ok_or("inflight bound overflow")?,
-        workload.path.display()
     );
-    stream::iter([Phase::Initial, Phase::TagUpdate, Phase::Replay])
+    let result = stream::iter([Phase::Initial, Phase::TagUpdate, Phase::Replay])
         .then(|phase| run_phase(&workload, &catalog, &store, phase))
         .try_fold((), |(), ()| async { Ok(()) })
-        .await
+        .await;
+    store.close().await;
+    result
 }
 
 async fn prepare_phase_works(
     workload: &Workload,
     phase: Phase,
-    store: &BinaryStore,
+    store: &PgStore,
 ) -> BenchResult<SweepId> {
     let sweep = SweepId::new(format!("cmdb-bench-{}", phase.name()))?;
     let works = (0..workload.concurrency)
@@ -215,11 +260,11 @@ fn validate_phase_totals(
 async fn run_phase(
     workload: &Workload,
     catalog: &RuntimeCatalog<'_>,
-    store: &BinaryStore,
+    store: &PgStore,
     phase: Phase,
 ) -> BenchResult {
     let sweep = prepare_phase_works(workload, phase, store).await?;
-    let revision_before = oracle::revision(&workload.path).await?;
+    let revision_before = oracle::revision(workload.database.dsn()).await?;
     let started = Instant::now();
     let totals = stream::iter(0..workload.pages)
         .then(|page| run_round(workload, catalog, store, &sweep, phase, page))
@@ -278,7 +323,7 @@ type PageResult = (ChangeStats, Duration, Duration);
 async fn run_round(
     workload: &Workload,
     catalog: &RuntimeCatalog<'_>,
-    store: &BinaryStore,
+    store: &PgStore,
     sweep: &SweepId,
     phase: Phase,
     page: usize,
@@ -304,7 +349,7 @@ async fn run_round(
 async fn commit(
     workload: &Workload,
     catalog: &RuntimeCatalog<'_>,
-    store: &BinaryStore,
+    store: &PgStore,
     lease: WorkLease,
     phase: Phase,
     page: usize,
