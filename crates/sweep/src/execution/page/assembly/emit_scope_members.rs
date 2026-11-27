@@ -86,39 +86,50 @@ async fn verify_scope_member_lifecycle<S: InventoryStore>(
     let (baseline, key) = run_work_only_listing(store, &context, list, &account, &home).await?;
     describe_role(store, &context, describe, &baseline, &home).await?;
     assert!(store.projection_resource(&key).await?.is_some());
+    verify_expiration_after_complete_misses(store, &context, list, &account, &home, &key).await
+}
+
+async fn verify_expiration_after_complete_misses<S: InventoryStore>(
+    store: &S,
+    context: &Context<'_, '_>,
+    list: &CallablePlan<'_>,
+    account: &AccountId,
+    home: &RegionId,
+    key: &ResourceKey,
+) -> TestResult {
     complete_empty_listing(
         store,
-        &context,
+        context,
         list,
-        &account,
-        &home,
+        account,
+        home,
         "work-only-miss-one",
         ScopeOutcome::Complete,
     )
     .await?;
-    assert!(store.projection_resource(&key).await?.is_some());
+    assert!(store.projection_resource(key).await?.is_some());
     complete_empty_listing(
         store,
-        &context,
+        context,
         list,
-        &account,
-        &home,
+        account,
+        home,
         "work-only-incomplete",
         ScopeOutcome::Partial,
     )
     .await?;
-    assert!(store.projection_resource(&key).await?.is_some());
+    assert!(store.projection_resource(key).await?.is_some());
     complete_empty_listing(
         store,
-        &context,
+        context,
         list,
-        &account,
-        &home,
+        account,
+        home,
         "work-only-miss-two",
         ScopeOutcome::Complete,
     )
     .await?;
-    assert!(store.projection_resource(&key).await?.is_none());
+    assert!(store.projection_resource(key).await?.is_none());
     Ok(())
 }
 

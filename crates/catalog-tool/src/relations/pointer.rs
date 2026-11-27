@@ -82,20 +82,7 @@ pub(super) fn resolve(
             Ok((target, path, traversal.merge(crossed)))
         },
     )?;
-    let (target, traversal) = match target {
-        Target::Shape(index) => {
-            let terminal = service.shape(index)?.ok_or(CatalogError::Reference)?;
-            if terminal.kind()? == "list" {
-                (
-                    terminal.element()?.ok_or(CatalogError::Reference)?,
-                    Traversal::List,
-                )
-            } else {
-                (target, traversal)
-            }
-        }
-        _ => (target, traversal),
-    };
+    let (target, traversal) = terminal_target(service, target, traversal)?;
     let terminal = match target {
         Target::Shape(index) => service
             .shape(index)?
@@ -111,6 +98,27 @@ pub(super) fn resolve(
         return Err(Error::Terminal);
     }
     Ok(ResolvedPointer { path, traversal })
+}
+
+fn terminal_target(
+    service: Service<'_>,
+    target: Target,
+    traversal: Traversal,
+) -> Result<(Target, Traversal), Error> {
+    Ok(match target {
+        Target::Shape(index) => {
+            let terminal = service.shape(index)?.ok_or(CatalogError::Reference)?;
+            if terminal.kind()? == "list" {
+                (
+                    terminal.element()?.ok_or(CatalogError::Reference)?,
+                    Traversal::List,
+                )
+            } else {
+                (target, traversal)
+            }
+        }
+        _ => (target, traversal),
+    })
 }
 
 fn decode(segment: &str) -> Result<Cow<'_, str>, Error> {

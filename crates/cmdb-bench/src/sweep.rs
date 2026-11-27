@@ -324,24 +324,28 @@ impl Session<'_> {
             ),
         ]);
         if self.args.proxy.is_some() {
-            headers.push(("proxy_seed".into(), proxy::seed_header()));
-            headers.push((
-                "proxy_measurement_phase".into(),
-                "cold; warm proxy extras discarded".into(),
-            ));
-            headers.push((
-                "proxy_throughput_scope".into(),
-                "admitted responses excluding throttles; per second, rounded down".into(),
-            ));
-            headers.push((
-                "proxy_ramp_scope".into(),
-                "aggregate admitted responses against one per-scope quota; not proof of scope saturation".into(),
-            ));
+            append_proxy_headers(&mut headers);
         }
         headers.extend(args::environment_headers(|name| std::env::var(name).ok()));
         headers.extend(settings);
         Ok(headers)
     }
+}
+fn append_proxy_headers(headers: &mut Vec<(String, String)>) {
+    headers.push(("proxy_seed".into(), proxy::seed_header()));
+    headers.push((
+        "proxy_measurement_phase".into(),
+        "cold; warm proxy extras discarded".into(),
+    ));
+    headers.push((
+        "proxy_throughput_scope".into(),
+        "admitted responses excluding throttles; per second, rounded down".into(),
+    ));
+    headers.push((
+        "proxy_ramp_scope".into(),
+        "aggregate admitted responses against one per-scope quota; not proof of scope saturation"
+            .into(),
+    ));
 }
 fn unavailable_headers(runs: &[Run]) -> Vec<(String, String)> {
     runs.first().into_iter().flat_map(|run| &run.extras).filter_map(|(name, _)| {

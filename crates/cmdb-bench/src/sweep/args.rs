@@ -462,14 +462,18 @@ mod tests {
     }
 
     #[test]
-    fn omitted_transport_options_leave_collector_defaults_and_invalid_values_fail()
-    -> Result<(), String> {
+    fn omitted_transport_options_leave_collector_defaults() -> Result<(), String> {
         let parsed = parse(
             &mut ["--collector", "c", "--profile", "thin"]
                 .map(str::to_owned)
                 .into_iter(),
         )?;
         assert_eq!(collector_options(&parsed), [""; 0]);
+        Ok(())
+    }
+
+    #[test]
+    fn pool_override_clears_inherited_transport_settings() -> Result<(), String> {
         let pool_only = parse(
             &mut [
                 "--collector",
@@ -498,6 +502,11 @@ mod tests {
                 "INVENTORY_SWEEP_POOL_IDLE_PER_HOST"
             ]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn environment_headers_report_set_and_unset_values() {
         assert_eq!(
             environment_headers(|name| {
                 (name == "INVENTORY_POSTGRES_COPY_MIN_ROWS").then(|| "64".to_owned())
@@ -507,6 +516,10 @@ mod tests {
                 ("postgres_copy_direct".to_owned(), "unset".to_owned()),
             ]
         );
+    }
+
+    #[test]
+    fn invalid_transport_options_fail() {
         [
             ["--concurrency", "0", "--runs", "1"],
             ["--idle-timeout-ms", "90001", "--runs", "1"],
@@ -526,6 +539,5 @@ mod tests {
                 .is_err()
             )
         });
-        Ok(())
     }
 }
