@@ -3,7 +3,7 @@ use crate::inventory::work::transitions::{decode_scope, encode_scope};
 use crate::inventory::{StoreError, SweepId, WorkLease};
 use sqlx::{Postgres, Row, Transaction, postgres::PgRow};
 
-const CLAIM: &str = "WITH candidate AS (SELECT scope_key,generation FROM work_queue WHERE sweep_id=$1 AND (state=0 OR (state=1 AND lease_until<=$2)) ORDER BY last_complete,scope_key LIMIT $4 FOR UPDATE SKIP LOCKED) UPDATE work_queue w SET state=1,generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,authority_generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,lease_until=$3,authority_complete=CASE WHEN w.token IS NULL OR w.authority_complete=1 THEN 1 ELSE 0 END FROM candidate c WHERE w.sweep_id=$1 AND w.scope_key=c.scope_key RETURNING w.scope_key,w.generation,w.token,w.bindings,w.context,w.lease_until,c.generation AS previous_generation";
+pub(super) const CLAIM: &str = "WITH candidate AS (SELECT scope_key,generation FROM work_queue WHERE sweep_id=$1 AND (state=0 OR (state=1 AND lease_until<=$2)) ORDER BY last_complete,scope_key LIMIT $4 FOR UPDATE SKIP LOCKED) UPDATE work_queue w SET state=1,generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,authority_generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,lease_until=$3,authority_complete=CASE WHEN w.token IS NULL OR w.authority_complete=1 THEN 1 ELSE 0 END FROM candidate c WHERE w.sweep_id=$1 AND w.scope_key=c.scope_key RETURNING w.scope_key,w.generation,w.token,w.bindings,w.context,w.lease_until,c.generation AS previous_generation";
 
 impl PgStore {
     pub async fn claim(

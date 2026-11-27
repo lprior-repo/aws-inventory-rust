@@ -1,4 +1,6 @@
 mod candidates;
+#[cfg(test)]
+mod claim_plans;
 mod kinds;
 mod provenance;
 mod shared;
