@@ -167,3 +167,39 @@ async fn cli_advisory_columns(fixture: &Fixture) -> TestResult {
     }
     Ok(())
 }
+
+#[tokio::test]
+async fn given_non_postgres_path_when_invoking_sql_then_no_database_file_is_created() -> TestResult {
+    let path = std::env::temp_dir().join(format!(
+        "aws-inventory-sql-cli-{}.sqlite",
+        std::process::id()
+    ));
+    assert!(!path.exists());
+    let database = format!("sqlite://{}", path.display());
+    let output = command(&database, "SELECT 1", "1").await?;
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(String::from_utf8(output.stdout)?, "");
+    assert_eq!(
+        String::from_utf8(output.stderr)?,
+        "aws-inventory: invalid PostgreSQL reader URL\n"
+    );
+    assert!(!path.exists());
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_postgres_connection_failure_when_invoking_sql_then_credentials_are_redacted()
+-> TestResult {
+    let output = command(
+        "postgres://sql_user:credential-marker@127.0.0.1:1/inventory",
+        "SELECT 1",
+        "1",
+    )
+    .await?;
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8(output.stderr)?,
+        "aws-inventory: PostgreSQL operation failed\n"
+    );
+    Ok(())
+}

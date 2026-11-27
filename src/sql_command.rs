@@ -2,7 +2,7 @@ mod table;
 
 use crate::command_output::CommandOutput;
 use futures_util::future::BoxFuture;
-use inventory_engine::sql::{Bounds, ReaderUrl, validate};
+use inventory_engine::sql::{Bounds, ReaderUrl, SqlError, validate};
 
 pub(super) fn run_sql(
     options: crate::cli::SqlArgs,
@@ -26,7 +26,17 @@ pub(super) async fn execute(
     };
     validate(&statement)?;
     bounds.validate()?;
-    let reader = ReaderUrl::establish(&database).await?;
-    let result = inventory_engine::sql::run(&reader, &statement, bounds).await?;
+    let reader = ReaderUrl::establish(&database)
+        .await
+        .map_err(redact_database_error)?;
+    let result = inventory_engine::sql::run(&reader, &statement, bounds)
+        .await
+        .map_err(redact_database_error)?;
     table::render(&result, bounds.bytes)
+}
+fn redact_database_error(error: SqlError) -> anyhow::Error {
+    match error {
+        SqlError::Database(_) => anyhow::anyhow!("PostgreSQL operation failed"),
+        other => other.into(),
+    }
 }
