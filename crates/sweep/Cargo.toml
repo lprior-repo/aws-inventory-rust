@@ -25,6 +25,7 @@ proptest.workspace = true
 minicbor.workspace = true
 tempfile = "3.27.0"
 catalog-tool = { path = "../catalog-tool" }
+inventory-harness = { path = "../harness" }
 sqlx.workspace = true
 rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["aws_lc_rs", "tls12"] }

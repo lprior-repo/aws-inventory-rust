@@ -25,6 +25,7 @@ use inventory_engine::{
     },
     limiter::{ApiExecutor, ExecutorConfig},
 };
+use inventory_harness::postgres::{TestDatabase, admin_url};
 use std::{collections::BTreeMap, path::Path};
 
 const ACCOUNT: &str = "123456789012";
@@ -44,19 +45,29 @@ async fn given_role_when_two_complete_misses_then_sqlite_expires() -> TestResult
 }
 
 #[tokio::test]
-#[ignore = "requires INVENTORY_POSTGRES_URL pointing at an empty test database"]
+#[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn given_role_when_two_complete_misses_then_postgres_expires() -> TestResult {
-    let url = std::env::var("INVENTORY_POSTGRES_URL")?;
     let (_models, bytes) = fixture_catalog()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let registry = SchemaRegistry::new(&bytes, catalog.schemas().to_vec())?;
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let result = verify_on_postgres(&database, registry, &catalog).await;
+    database.finish().await?;
+    result
+}
+
+async fn verify_on_postgres(
+    database: &TestDatabase,
+    registry: SchemaRegistry,
+    catalog: &RuntimeCatalog<'_>,
+) -> TestResult {
     let store = PgStore::create(
-        &DatabaseUrl::parse(&url)?,
+        &DatabaseUrl::parse(database.url())?,
         registry,
         PgWriteConfig::default(),
     )
     .await?;
-    let result = verify_scope_member_lifecycle(&store, &catalog).await;
+    let result = verify_scope_member_lifecycle(&store, catalog).await;
     store.close().await;
     result
 }
