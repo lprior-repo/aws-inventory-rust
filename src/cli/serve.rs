@@ -1,11 +1,16 @@
 use clap::Args;
 use std::path::PathBuf;
 
-#[derive(Args, Debug)]
+#[derive(Args)]
 #[command(about = "Repeatedly collect AWS inventory into a shared store on a schedule")]
 pub struct ServeArgs {
-    #[arg(long, help = "Inventory database path")]
-    pub database: PathBuf,
+    #[arg(
+        long,
+        env = "INVENTORY_SWEEP_DATABASE",
+        hide_env_values = true,
+        help = "PostgreSQL inventory database URL: postgres:// or postgresql://"
+    )]
+    pub database: String,
     #[arg(
         long,
         default_value = "catalog/aws-api.catalog",
@@ -62,4 +67,24 @@ pub struct ServeArgs {
         help = "Idle connections per endpoint (default: the connection limit, up to 8)"
     )]
     pub pool_idle_per_host: Option<usize>,
+}
+
+impl std::fmt::Debug for ServeArgs {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("ServeArgs")
+            .field("database", &"<redacted>")
+            .field("catalog", &self.catalog)
+            .field("profile", &self.profile)
+            .field("region", &self.region)
+            .field("interval", &self.interval)
+            .field("max_pages", &self.max_pages)
+            .field("concurrency", &self.concurrency)
+            .field("max_rps_milli", &self.max_rps_milli)
+            .field("endpoint", &self.endpoint)
+            .field("ca_bundle", &self.ca_bundle)
+            .field("idle_timeout_ms", &self.idle_timeout_ms)
+            .field("pool_idle_per_host", &self.pool_idle_per_host)
+            .finish()
+    }
 }

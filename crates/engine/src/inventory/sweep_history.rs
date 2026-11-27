@@ -1,7 +1,6 @@
 use super::work::SweepId;
-use super::{BinaryStore, StoreError};
+use super::{PgStore, StoreError};
 use inventory_core::inventory::AccountId;
-use sqlx::Row;
 
 /// How a scheduled collection for one account must begin, given persisted state.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -24,7 +23,7 @@ pub fn decide_start(active: Option<(SweepId, Option<&str>)>, account: &AccountId
 }
 
 /// Resolve resume-versus-new against the database's real state.
-pub async fn plan_run(store: &BinaryStore, account: &AccountId) -> Result<RunStart, StoreError> {
+pub async fn plan_run(store: &PgStore, account: &AccountId) -> Result<RunStart, StoreError> {
     let Some(sweep) = store.discover_active_sweep().await? else {
         return Ok(RunStart::Fresh);
     };
@@ -37,25 +36,21 @@ pub struct LastSweep {
     pub ended_at_ms: i64,
 }
 
+/// The account's latest successful sweep. Only drained sweeps with every scope complete
+/// are marked `completed`, so failed or partial sweeps never qualify. Ties on `ended_at`
+/// resolve to the greatest sweep id so the answer is deterministic.
 pub async fn last_completed_sweep(
-    store: &BinaryStore,
+    store: &PgStore,
     account: &str,
 ) -> Result<Option<LastSweep>, StoreError> {
-    let _turn = store.read_turn().await;
-    let row = sqlx::query(
-        "SELECT sweep_id,ended_at FROM sweeps WHERE account=?1 AND completed=1 ORDER BY ended_at DESC LIMIT 1",
+    let row: Option<(String, i64)> = sqlx::query_as(
+        "SELECT sweep_id,ended_at FROM inventory.sweeps WHERE account=$1 AND completed=1 ORDER BY ended_at DESC,sweep_id DESC LIMIT 1",
     )
     .bind(account)
-    .fetch_optional(&store.reader)
+    .fetch_optional(&store.pool)
     .await?;
-
-    row.map(|row| {
-        let sweep_id: String = row.try_get("sweep_id").map_err(StoreError::Sqlite)?;
-        let ended_at: i64 = row.try_get("ended_at").map_err(StoreError::Sqlite)?;
-        Ok(LastSweep {
-            sweep_id,
-            ended_at_ms: ended_at,
-        })
-    })
-    .transpose()
+    Ok(row.map(|(sweep_id, ended_at_ms)| LastSweep {
+        sweep_id,
+        ended_at_ms,
+    }))
 }

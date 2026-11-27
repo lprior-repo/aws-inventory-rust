@@ -17,6 +17,8 @@ mod graph_rebuild;
 mod jobs;
 mod models_catalog;
 mod plan;
+#[cfg(feature = "sweep")]
+mod postgres_store_config;
 mod report;
 #[cfg(feature = "aws")]
 mod scan;

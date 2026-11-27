@@ -2,7 +2,7 @@ use anyhow::Result;
 use inventory_aws::model_credentials::ProfileCredentials;
 use inventory_core::inventory::AccountId;
 use inventory_engine::cadence::{Environment, Millis, RunOutcome, Shutdown, Wake, serve};
-use inventory_engine::inventory::{BinaryStore, RunStart, last_completed_sweep, plan_run};
+use inventory_engine::inventory::{PgStore, RunStart, last_completed_sweep, plan_run};
 use inventory_sweep::{SweepConfig, SweepControl, SweepError, SweepSummary};
 use std::process::ExitCode;
 use tracing::{error, info};
@@ -26,8 +26,19 @@ pub(super) async fn run(options: ServeArgs) -> Result<ExitCode> {
     sweep_config.validate_transport_overrides()?;
     let catalog_bytes = read_catalog(&options.catalog)?;
     let store = open_store(&options.database, &catalog_bytes).await?;
+    let result = serve_store(&options, interval, sweep_config, catalog_bytes, &store).await;
+    store.close().await;
+    result
+}
 
-    let profiles = load_profiles(&options).await?;
+async fn serve_store(
+    options: &ServeArgs,
+    interval: std::time::Duration,
+    sweep_config: SweepConfig,
+    catalog_bytes: Vec<u8>,
+    store: &PgStore,
+) -> Result<ExitCode> {
+    let profiles = load_profiles(options).await?;
     if profiles.is_empty() {
         anyhow::bail!("at least one AWS profile is required; pass --profile NAME");
     }
@@ -139,15 +150,15 @@ fn sweep_config(options: &ServeArgs) -> SweepConfig {
     }
 }
 
-struct ServeEnv {
+struct ServeEnv<'a> {
     catalog_bytes: Vec<u8>,
-    store: BinaryStore,
+    store: &'a PgStore,
     profiles: Vec<ProfileConfig>,
     sweep_config: SweepConfig,
     shutdown: Shutdown,
 }
 
-impl ServeEnv {
+impl ServeEnv<'_> {
     fn catalog(&self) -> inventory_core::catalog::runtime::RuntimeCatalog<'_> {
         inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&self.catalog_bytes)
             .unwrap_or_else(|_| {
@@ -185,7 +196,7 @@ impl ServeEnv {
                 return None;
             }
         };
-        match last_completed_sweep(&self.store, account.as_str()).await {
+        match last_completed_sweep(self.store, account.as_str()).await {
             Ok(Some(sweep)) => Some(Millis::new(u64::try_from(sweep.ended_at_ms).unwrap_or(0))),
             Ok(None) => None,
             Err(e) => {
@@ -235,7 +246,7 @@ fn classify(result: &Result<SweepSummary, SweepError>, profile: &str) -> RunOutc
     }
 }
 
-impl Environment for ServeEnv {
+impl Environment for ServeEnv<'_> {
     fn now(&self) -> Millis {
         use std::time::{SystemTime, UNIX_EPOCH};
         let elapsed = SystemTime::now()
@@ -287,7 +298,7 @@ impl Environment for ServeEnv {
                 return RunOutcome::Failed;
             }
         };
-        let resume = match plan_run(&self.store, &account).await {
+        let resume = match plan_run(self.store, &account).await {
             Ok(RunStart::Resume(sweep)) => {
                 info!(
                     profile = profile.name,
@@ -321,8 +332,7 @@ impl Environment for ServeEnv {
             ..SweepControl::default()
         };
         let result =
-            inventory_sweep::run(&catalog, &self.store, config, &profile.credentials, control)
-                .await;
+            inventory_sweep::run(&catalog, self.store, config, &profile.credentials, control).await;
         classify(&result, &profile.name)
     }
 }
