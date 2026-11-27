@@ -32,7 +32,7 @@ pub(super) struct BenchDatabase {
 }
 
 impl BenchDatabase {
-    pub fn parse(value: &str) -> BenchResult<Self> {
+    pub fn parse(value: &str) -> Result<Self, inventory_engine::inventory::StoreError> {
         DatabaseUrl::parse(value)?;
         Ok(Self {
             dsn: value.to_owned(),

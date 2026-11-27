@@ -2,9 +2,8 @@
 mod pipeline_test_catalog;
 #[cfg(test)]
 mod pipeline_tests;
-#[cfg(test)]
-use generate::ensure_fresh;
 use generate::generate;
+use pipeline::BenchDatabase;
 use measure::measure;
 use std::error::Error;
 use std::path::PathBuf;
@@ -23,8 +22,9 @@ mod pipeline_oracle;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <postgres-url> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--concurrency <n>] [--idle-timeout-ms <1..90000>] [--pool-idle-per-host <n>] [--max-rps <n|decimal>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | layout <target-nodes:1..4000000> | open --catalog <file> | compare <before> <after>";
+const USAGE: &str = "usage: cmdb-bench generate <postgres-url> <catalog> <accounts> <resources-per-account> | measure <postgres-url> | pipeline <postgres-url> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--concurrency <n>] [--idle-timeout-ms <1..90000>] [--pool-idle-per-host <n>] [--max-rps <n|decimal>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | layout <target-nodes:1..4000000> | open --catalog <file> | compare <before> <after>";
 const MAX_RESOURCES: usize = 10_000_000;
+
 
 #[derive(Debug)]
 enum Command {
@@ -33,12 +33,13 @@ enum Command {
     Open(open::OpenArgs),
     Compare(compare::CompareArgs),
     Generate {
-        path: PathBuf,
+        target: BenchDatabase,
+        catalog: PathBuf,
         accounts: usize,
         per_account: usize,
     },
     Measure {
-        path: PathBuf,
+        target: BenchDatabase,
     },
     Layout(layout::LayoutArgs),
 }
@@ -69,7 +70,8 @@ fn parse_command(mut args: impl Iterator<Item = String>) -> Result<Command, Box<
 }
 
 fn parse_generate(args: &mut impl Iterator<Item = String>) -> Result<Command, Box<dyn Error>> {
-    let path = PathBuf::from(required(args)?);
+    let target = BenchDatabase::parse(&required(args)?)?;
+    let catalog = PathBuf::from(required(args)?);
     let accounts = parse_count(&required(args)?)?;
     let per_account = parse_count(&required(args)?)?;
     if accounts
@@ -83,22 +85,23 @@ fn parse_generate(args: &mut impl Iterator<Item = String>) -> Result<Command, Bo
         return Err(USAGE.into());
     }
     Ok(Command::Generate {
-        path,
+        target,
+        catalog,
         accounts,
         per_account,
     })
 }
 
 fn parse_measure(args: &mut impl Iterator<Item = String>) -> Result<Command, Box<dyn Error>> {
-    let path = PathBuf::from(required(args)?);
+    let target = BenchDatabase::parse(&required(args)?)?;
     if args.next().is_some() {
         return Err(USAGE.into());
     }
-    Ok(Command::Measure { path })
+    Ok(Command::Measure { target })
 }
 
 fn parse_pipeline(args: &mut impl Iterator<Item = String>) -> Result<Command, Box<dyn Error>> {
-    let database = pipeline::BenchDatabase::parse(&required(args)?).map_err(|e| e.to_string())?;
+    let database = BenchDatabase::parse(&required(args)?)?;
     let catalog = PathBuf::from(required(args)?);
     let pages = parse_count(&required(args)?)?;
     let rows = required(args)?.parse::<usize>()?;
@@ -156,11 +159,12 @@ async fn main() -> Result<std::process::ExitCode, Box<dyn Error>> {
             .await
             .map_err(|error| -> Box<dyn Error> { error }),
         Command::Generate {
-            path,
+            target,
+            catalog,
             accounts,
             per_account,
-        } => generate(path, accounts, per_account).await,
-        Command::Measure { path } => measure(path).await,
+        } => generate(target, catalog, accounts, per_account).await,
+        Command::Measure { target } => measure(target).await,
         Command::Layout(args) => layout::run(&args).map_err(Into::into),
     };
     result.map(|()| std::process::ExitCode::SUCCESS)

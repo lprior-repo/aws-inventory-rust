@@ -1,48 +1,42 @@
-use crate::USAGE;
-use futures_util::{StreamExt, TryStreamExt, stream};
+use crate::{BenchDatabase, USAGE};
+use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_core::record::{Exclusions, KeyRef, RecordBuilder, ValueRef};
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use sqlx::{SqlitePool, query};
+use inventory_engine::inventory::{DatabaseUrl, PgStore, PgWriteConfig, SchemaRegistry};
+use sqlx::{Connection, PgConnection, Postgres, QueryBuilder};
+use std::collections::BTreeMap;
 use std::error::Error;
-use std::path::{Path, PathBuf};
-async fn connect_writer(path: &std::path::Path) -> Result<SqlitePool, sqlx::Error> {
-    let options = SqliteConnectOptions::new()
-        .filename(path)
-        .create_if_missing(true);
-    SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(options)
-        .await
-}
+use std::path::PathBuf;
 
-pub(crate) fn ensure_fresh(path: &Path) -> Result<(), Box<dyn Error>> {
-    match std::fs::metadata(path) {
-        Ok(metadata) if metadata.is_file() && metadata.len() == 0 => Ok(()),
-        Ok(_) => Err(USAGE.into()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(error) => Err(error.into()),
+const BENCH_KINDS: [&str; 2] = ["AWS::IAM::Role", "AWS::EC2::Instance"];
+
+fn benchmark_tables(
+    registry: &SchemaRegistry,
+) -> Result<BTreeMap<String, String>, Box<dyn Error>> {
+    let tables: BTreeMap<String, String> = registry
+        .schemas()
+        .iter()
+        .map(|schema| {
+            (
+                schema.kind().as_str().to_owned(),
+                schema.table().as_str().to_owned(),
+            )
+        })
+        .collect();
+    if BENCH_KINDS.iter().any(|kind| !tables.contains_key(*kind)) {
+        return Err("catalog does not define a benchmark kind".into());
     }
+    Ok(tables)
 }
 
-async fn execute_schema(pool: &SqlitePool) -> Result<(), sqlx::Error> {
-    query("PRAGMA foreign_keys=ON").execute(pool).await?;
-    query("PRAGMA journal_mode=WAL").execute(pool).await?;
-    query("PRAGMA user_version=15").execute(pool).await?;
-    query("CREATE TABLE metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL) WITHOUT ROWID")
-        .execute(pool)
-        .await?;
-    query(
-        "CREATE TABLE kinds(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL UNIQUE) WITHOUT ROWID",
+async fn ensure_fresh_database(connection: &mut PgConnection) -> Result<(), Box<dyn Error>> {
+    let occupied: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r','p','v','m','f','S') AND n.nspname NOT IN ('pg_catalog','information_schema') AND n.nspname NOT LIKE 'pg_toast%') OR EXISTS(SELECT 1 FROM pg_namespace WHERE nspname = 'inventory')",
     )
-    .execute(pool)
+    .fetch_one(&mut *connection)
     .await?;
-    query("CREATE TABLE resources(account TEXT,region TEXT,kind TEXT,id TEXT,name TEXT NULL,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,PRIMARY KEY(account,region,kind,id)) WITHOUT ROWID").execute(pool).await?;
-    query("CREATE TABLE tags(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,tag_key TEXT NOT NULL,tag_value TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,tag_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(pool).await?;
-    query("CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL CHECK(coverage IN('complete','partial','failed','unobserved')),observed_at INTEGER NOT NULL CHECK(observed_at>=0),last_complete_at INTEGER CHECK(last_complete_at>=0),PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(pool).await?;
-    query("CREATE TABLE ec2_instances(account TEXT,region TEXT,id TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,record BLOB NOT NULL,PRIMARY KEY(account,region,id)) WITHOUT ROWID").execute(pool).await?;
-    query("CREATE TABLE iam_roles(account TEXT,region TEXT,id TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,record BLOB NOT NULL,PRIMARY KEY(account,region,id)) WITHOUT ROWID").execute(pool).await?;
-    query("CREATE TABLE edges(from_account TEXT,from_region TEXT,from_kind TEXT,from_id TEXT,to_account TEXT,to_region TEXT,to_kind TEXT,to_id TEXT,relation TEXT,source TEXT,PRIMARY KEY(from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(to_account,to_region,to_kind,to_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(pool).await?;
-    query("INSERT INTO kinds VALUES ('AWS::EC2::Instance','ec2_instances'),('AWS::IAM::Role','iam_roles')").execute(pool).await?;
+    if occupied {
+        return Err("target PostgreSQL database is not fresh; refusing to modify it".into());
+    }
     Ok(())
 }
 
@@ -79,11 +73,15 @@ struct BenchRow<'a> {
 }
 
 async fn insert_resource(
-    pool: &SqlitePool,
+    connection: &mut PgConnection,
+    tables: &BTreeMap<String, String>,
     account: &str,
     index: usize,
 ) -> Result<(), Box<dyn Error>> {
-    let (region, kind, table, id) = bench_shape(index);
+    let (region, kind, id) = bench_shape(index);
+    let table = tables
+        .get(kind)
+        .ok_or("catalog does not define a benchmark kind")?;
     let name = format!("resource-{index}");
     let (record, hash) = encode_record(index, &name)?;
     let time = i64::try_from(index)?;
@@ -97,40 +95,35 @@ async fn insert_resource(
         record,
         time,
     };
-    insert_detail(pool, table, &row).await?;
-    insert_summary(pool, &row).await
+    insert_detail(connection, table, &row).await?;
+    insert_summary(connection, &row).await
 }
 
-fn bench_shape(index: usize) -> (&'static str, &'static str, &'static str, String) {
+fn bench_shape(index: usize) -> (&'static str, &'static str, String) {
     match index % 3 {
-        0 => (
-            "global",
-            "AWS::IAM::Role",
-            "iam_roles",
-            format!("role-{index}"),
-        ),
+        0 => ("global", "AWS::IAM::Role", format!("role-{index}")),
         1 => (
             "eu-west-1",
             "AWS::EC2::Instance",
-            "ec2_instances",
             format!("i-{index:012x}"),
         ),
         _ => (
             "us-east-1",
             "AWS::EC2::Instance",
-            "ec2_instances",
             format!("i-{index:012x}"),
         ),
     }
 }
 
 async fn insert_detail(
-    pool: &SqlitePool,
+    connection: &mut PgConnection,
     table: &str,
     row: &BenchRow<'_>,
 ) -> Result<(), Box<dyn Error>> {
-    let mut detail = sqlx::QueryBuilder::<sqlx::Sqlite>::new("INSERT INTO \"");
-    detail.push(table).push("\" VALUES (");
+    let mut detail = QueryBuilder::<Postgres>::new("INSERT INTO inventory.\"");
+    detail
+        .push(table)
+        .push("\"(account,region,id,content_hash,first_seen,last_changed,record) VALUES (");
     let mut values = detail.separated(",");
     values
         .push_bind(row.account)
@@ -142,49 +135,55 @@ async fn insert_detail(
         .push_bind(row.time);
     values.push_bind(&row.record);
     detail.push(")");
-    detail.build().execute(pool).await?;
+    detail.build().execute(connection).await?;
     Ok(())
 }
 
-async fn insert_summary(pool: &SqlitePool, row: &BenchRow<'_>) -> Result<(), Box<dyn Error>> {
-    query("INSERT INTO resources VALUES (?,?,?,?,?,?,?,?)")
-        .bind(row.account)
-        .bind(row.region)
-        .bind(row.kind)
-        .bind(&row.id)
-        .bind(&row.name)
-        .bind(row.hash.as_slice())
-        .bind(row.time)
-        .bind(row.time)
-        .execute(pool)
-        .await?;
+async fn insert_summary(
+    connection: &mut PgConnection,
+    row: &BenchRow<'_>,
+) -> Result<(), Box<dyn Error>> {
+    sqlx::query(
+        "INSERT INTO inventory.resources (account,region,kind,id,name,content_hash,first_seen,last_changed) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)",
+    )
+    .bind(row.account)
+    .bind(row.region)
+    .bind(row.kind)
+    .bind(&row.id)
+    .bind(&row.name)
+    .bind(row.hash.as_slice())
+    .bind(row.time)
+    .bind(row.time)
+    .execute(connection)
+    .await?;
     Ok(())
 }
 
 pub(crate) async fn generate(
-    path: PathBuf,
+    target: BenchDatabase,
+    catalog: PathBuf,
     accounts: usize,
     per_account: usize,
 ) -> Result<(), Box<dyn Error>> {
-    ensure_fresh(&path)?;
-    let pool = connect_writer(&path).await?;
-    execute_schema(&pool).await?;
-    let pool_ref = &pool;
-    stream::iter(0..accounts)
-        .map(Ok)
-        .try_for_each(|account| async move {
-            let account = account_id(account.checked_add(1).ok_or(USAGE)?)?;
-            stream::iter(0..per_account)
-                .map(Ok)
-                .try_for_each(|index| insert_resource(pool_ref, &account, index))
-                .await
-        })
-        .await?;
-    pool.close().await;
     let total = accounts.checked_mul(per_account).ok_or(USAGE)?;
-    println!(
-        "created_synthetic_reader_fixture schema_version=15 resources={total} database={}",
-        path.display()
-    );
+    let bytes = tokio::fs::read(&catalog).await?;
+    let runtime = RuntimeCatalog::from_bytes(&bytes)?;
+    let registry = SchemaRegistry::new(&bytes, runtime.schemas().to_vec())?;
+    let tables = benchmark_tables(&registry)?;
+    let mut connection = PgConnection::connect(target.dsn()).await?;
+    ensure_fresh_database(&mut connection).await?;
+    let url = DatabaseUrl::parse(target.dsn())?;
+    let store = PgStore::create_fresh(&url, registry, PgWriteConfig::default()).await?;
+    store.close().await;
+    let mut transaction = connection.begin().await?;
+    for account in 1..=accounts {
+        let account = account_id(account)?;
+        for index in 0..per_account {
+            insert_resource(&mut transaction, &tables, &account, index).await?;
+        }
+    }
+    transaction.commit().await?;
+    connection.close().await?;
+    println!("created_synthetic_reader_fixture resources={total} database={url}");
     Ok(())
 }

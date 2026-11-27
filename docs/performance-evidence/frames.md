@@ -96,25 +96,28 @@ xrandr --current
 
 ## Coordinator measurement commands
 
-Run from the D7.1 worktree. Use the already-built `cmdb-bench` generator executable.
-Release builds and measurements remain coordinator-owned. Record actual metadata
-at run time.
+Use `cmdb-bench` and `cmdb-ui` from the same revision. Set `FRAME_PG_URL_500`,
+`FRAME_PG_URL_2000`, and `FRAME_PG_URL_2001` to three distinct empty PostgreSQL
+databases. Record actual display metadata at run time.
 
 ```sh
 export HOME=/home/lewis
 export CARGO_TARGET_DIR="$HOME/.cache/cargo-target-d71"
 cargo build --release -j2 -p cmdb-ui
 mkdir -p "$CARGO_TARGET_DIR/frame-baselines"
-for count in 500 2000 2001; do
-  cmdb-bench generate "$CARGO_TARGET_DIR/frame-baselines/$count.sqlite" 1 "$count"
-done
 export CMDB_UI_FRAME_REFRESH_HZ=59.96
 export CMDB_UI_FRAME_RESOLUTION=1920x1080
 export CMDB_UI_FRAME_DRIVER=615.78.08
 export CMDB_UI_FRAME_MACHINE=omarchy
 for count in 500 2000 2001; do
+  case $count in
+    500) url=${FRAME_PG_URL_500:?} ;;
+    2000) url=${FRAME_PG_URL_2000:?} ;;
+    2001) url=${FRAME_PG_URL_2001:?} ;;
+  esac
+  cmdb-bench generate "$url" catalog/aws-api.catalog 1 "$count" || exit 1
   "$CARGO_TARGET_DIR/release/cmdb-ui" \
-    --database "$CARGO_TARGET_DIR/frame-baselines/$count.sqlite" \
+    --database "$url" \
     --frame-harness 20 \
     > "$CARGO_TARGET_DIR/frame-baselines/$count.log" 2>&1
 done
