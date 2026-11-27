@@ -7,5 +7,6 @@ pub mod graph;
 pub mod inventory;
 pub mod jobs;
 pub mod limiter;
+mod postgres_version;
 pub mod sql;
 pub mod store;

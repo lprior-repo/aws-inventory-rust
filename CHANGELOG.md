@@ -2,6 +2,8 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The `sql` command requires PostgreSQL 18 or newer. It rejects older or
+  unidentified servers before checking privileges or executing a query.
 - Comprehend dataset collection now passes each ARN returned by `ListFlywheels`
   to `ListDatasets` instead of issuing an unscoped request.
 - Projection delivery checks the destination identity before sending any delta,

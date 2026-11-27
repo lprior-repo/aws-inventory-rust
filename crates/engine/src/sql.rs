@@ -33,6 +33,8 @@ pub enum SqlError {
     },
     #[error("invalid PostgreSQL reader URL")]
     InvalidUrl,
+    #[error("the SQL reader requires PostgreSQL 18 or newer")]
+    UnsupportedServerVersion,
     #[error("SQL bounds must be positive and no greater than the defaults")]
     InvalidBounds,
     #[error("SQL connection or transaction step exceeded time bound")]

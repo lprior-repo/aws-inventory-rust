@@ -238,7 +238,7 @@ reports remain backend-local. They do not expand the portable store contract.
   runs in a virtual machine and is slower on disk, more so with a bind mount:
   the volume is named, and published numbers come from Linux (BUILD_PLAN
   section 3). `CREATE DATABASE` needs the `CREATEDB` privilege; say so in the
-  error. `DROP DATABASE ... WITH (FORCE)` needs PostgreSQL 13 or later. The
+  error. The PostgreSQL 18 test fixture uses `DROP DATABASE ... WITH (FORCE)`. The
   password in the compose file is a local default bound to loopback; never
   reuse it.
 

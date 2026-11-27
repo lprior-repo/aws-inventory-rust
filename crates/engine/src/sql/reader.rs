@@ -63,6 +63,12 @@ impl ReaderUrl {
 
     async fn connect_checked(&self) -> Result<(PgConnection, i32), SqlError> {
         let mut connection = PgConnection::connect_with(&self.options).await?;
+        if !crate::postgres_version::supported(connection.server_version_num()) {
+            return Err(SqlError::UnsupportedServerVersion);
+        }
+        sqlx::query("SET search_path = pg_catalog")
+            .execute(&mut connection)
+            .await?;
         let (reader, pid) = sqlx::query_as::<_, (bool, i32)>(READER_CHECK)
             .fetch_one(&mut connection)
             .await?;
@@ -86,6 +92,9 @@ impl ReaderUrl {
     pub(super) async fn terminate(&self, pid: i32) -> Result<(), SqlError> {
         tokio::time::timeout(Duration::from_secs(5), async {
             let mut connection = PgConnection::connect_with(&self.options).await?;
+            sqlx::query("SET search_path = pg_catalog")
+                .execute(&mut connection)
+                .await?;
             let result = sqlx::query_scalar::<_, bool>(
                 "SELECT CASE WHEN pg_terminate_backend($1, 1000) THEN true ELSE NOT EXISTS(SELECT 1 FROM pg_stat_activity WHERE pid=$1) END",
             )

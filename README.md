@@ -583,7 +583,7 @@ connection with statement, result, and native execution bounds. SQLite syntax
 and JSON functions apply; PostgreSQL-specific Steampipe SQL is not automatically
 compatible. Absent columns are not silently fabricated.
 
-For schema 14 PostgreSQL inventories, use the separate `sql` command:
+For schema 14 inventories on PostgreSQL 18 or newer, use the separate `sql` command:
 
 ```bash
 aws-inventory sql --database "$INVENTORY_READER_URL" --limit 100 \
