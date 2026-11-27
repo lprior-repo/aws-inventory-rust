@@ -2,6 +2,8 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Comprehend dataset collection now passes each ARN returned by `ListFlywheels`
+  to `ListDatasets` instead of issuing an unscoped request.
 - Projection delivery checks the destination identity before sending any delta,
   even when only part of the pending work is queued. A new destination is
   forced through a full rebuild first, so it can no longer receive deltas for

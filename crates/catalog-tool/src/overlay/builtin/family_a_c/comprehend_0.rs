@@ -268,6 +268,14 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         (
             "ListDatasets",
             OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: std::collections::BTreeMap::from([(
+                    path("FlywheelArn")?,
+                    Binding::From {
+                        operation: name("ListFlywheels")?,
+                        path: path("FlywheelArn")?,
+                    },
+                )]),
                 queryable: vec![path("DatasetArn")?],
                 ..read(
                     "DatasetPropertiesList",
