@@ -1,7 +1,10 @@
-use super::close;
+use super::{close, ReaderUrl};
+use crate::sql::{Bounds, SqlError, run};
 use inventory_harness::postgres::{TestDatabase, admin_url};
-use sqlx::{Connection, PgConnection, PgPool};
-use std::time::Duration;
+use sqlx::{
+    ConnectOptions, Connection, PgConnection, PgPool, postgres::PgConnectOptions,
+};
+use std::{str::FromStr, time::Duration};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -97,4 +100,78 @@ async fn close_stalled(
         }
     }
     Ok(close(connection).await)
+}
+#[tokio::test]
+#[ignore = "requires INVENTORY_POSTGRES_URL"]
+async fn given_native_only_reader_when_querying_then_namespace_and_write_gate_apply() -> TestResult {
+    let database = TestDatabase::create(&admin_url()?).await?;
+    let pool = PgPool::connect(database.url()).await?;
+    let role = format!("{}_native_reader", database.name());
+    let result = native_reader_case(&pool, database.url(), &role).await;
+    pool.close().await;
+    let deleted = database.finish().await;
+    let dropped = drop_native_reader_role(&role).await;
+    deleted?;
+    dropped?;
+    result
+}
+
+async fn native_reader_case(pool: &PgPool, owner_url: &str, role: &str) -> TestResult {
+    sqlx::query("CREATE SCHEMA native_scan").execute(pool).await?;
+    sqlx::query("CREATE TABLE native_scan.items (id integer PRIMARY KEY)")
+        .execute(pool)
+        .await?;
+    sqlx::query("INSERT INTO native_scan.items VALUES (7)")
+        .execute(pool)
+        .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "CREATE ROLE \"{role}\" LOGIN PASSWORD 'native-reader' NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS"
+    )))
+    .execute(pool)
+    .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "GRANT USAGE ON SCHEMA native_scan TO \"{role}\""
+    )))
+    .execute(pool)
+    .await?;
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "GRANT SELECT ON native_scan.items TO \"{role}\""
+    )))
+    .execute(pool)
+    .await?;
+    let url = PgConnectOptions::from_str(owner_url)?
+        .username(role)
+        .password("native-reader")
+        .to_url_lossy()
+        .to_string();
+    let reader = ReaderUrl::establish_native(&url).await?;
+    let result = run(&reader, "SELECT id FROM items", Bounds::default()).await?;
+    if result.columns.len() != 1
+        || result.columns.first().map(String::as_str) != Some("id")
+        || result.rows.len() != 1
+    {
+        return Err(format!("unexpected native reader result: {result:?}").into());
+    }
+    sqlx::query(sqlx::AssertSqlSafe(format!(
+        "GRANT INSERT ON native_scan.items TO \"{role}\""
+    )))
+    .execute(pool)
+    .await?;
+    if !matches!(ReaderUrl::establish_native(&url).await, Err(SqlError::ReaderRequired)) {
+        return Err("native reader accepted an inventory write grant".into());
+    }
+    Ok(())
+}
+
+async fn drop_native_reader_role(role: &str) -> TestResult {
+    let mut admin = PgConnection::connect(&admin_url()?).await?;
+    let result = sqlx::query(sqlx::AssertSqlSafe(format!(
+        "DROP ROLE IF EXISTS \"{role}\""
+    )))
+    .execute(&mut admin)
+    .await;
+    let closed = admin.close().await;
+    result?;
+    closed?;
+    Ok(())
 }

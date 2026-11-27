@@ -125,7 +125,7 @@ impl Command {
     fn parse(bytes: &[u8]) -> io::Result<Self> {
         match bytes.split(|byte| *byte == 0).nth(1) {
             Some(b"SELECT set_config('statement_timeout', $1, true)") => Ok(Self::Timeout),
-            Some(b"SET LOCAL search_path = inventory") => Ok(Self::SearchPath),
+            Some(b"SELECT set_config('search_path', $1, true)") => Ok(Self::SearchPath),
             Some(b"SELECT 1 AS n") => Ok(Self::Result),
             _ => Err(invalid("unexpected prepared statement")),
         }
@@ -154,14 +154,13 @@ async fn respond(
 
 async fn describe(stream: &mut TcpStream, command: Command) -> io::Result<()> {
     let parameters = match command {
-        Command::Timeout => vec![0, 1, 0, 0, 0, 25],
-        Command::SearchPath | Command::Result => vec![0, 0],
+        Command::Timeout | Command::SearchPath => vec![0, 1, 0, 0, 0, 25],
+        Command::Result => vec![0, 0],
     };
     message(stream, b't', &parameters).await?;
     let (name, oid, size) = match command {
-        Command::Timeout => ("set_config", 25u32, -1i16),
+        Command::Timeout | Command::SearchPath => ("set_config", 25u32, -1i16),
         Command::Result => ("n", 23u32, 4i16),
-        Command::SearchPath => return message(stream, b'n', b"").await,
     };
     let mut column = Vec::from(1u16.to_be_bytes());
     column.extend_from_slice(name.as_bytes());
@@ -178,8 +177,8 @@ async fn describe(stream: &mut TcpStream, command: Command) -> io::Result<()> {
 async fn execute(stream: &mut TcpStream, command: Command) -> io::Result<()> {
     let value = match command {
         Command::Timeout => b"5000ms".to_vec(),
+        Command::SearchPath => b"inventory".to_vec(),
         Command::Result => 1i32.to_be_bytes().to_vec(),
-        Command::SearchPath => return message(stream, b'C', b"SET\0").await,
     };
     let mut row = Vec::from(1u16.to_be_bytes());
     row.extend_from_slice(

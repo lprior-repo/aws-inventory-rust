@@ -1,4 +1,4 @@
-use super::{Bounds, Budget, ReaderUrl, SqlError, SqlValue, validate, value};
+use super::{Bounds, Budget, ReaderUrl, SqlError, SqlValue, reader::Backend, validate, value};
 use futures_util::{StreamExt, TryStreamExt};
 use sqlx::{
     Column, Connection, Executor, PgConnection, Postgres, Row, SqlSafeStr, Statement, Transaction,
@@ -16,18 +16,55 @@ pub struct SqlResult {
 pub async fn run(reader: &ReaderUrl, sql: &str, bounds: Bounds) -> Result<SqlResult, SqlError> {
     validate(sql)?;
     bounds.validate()?;
-    let (mut connection, pid) = reader.connect().await?;
+    let (mut connection, backend) = reader.connect().await?;
+    let mut guard = TerminateOnDrop {
+        reader,
+        runtime: tokio::runtime::Handle::current(),
+        backend,
+        armed: true,
+    };
     let server_millis = bounds.millis;
     #[cfg(test)]
     let server_millis = reader.server_millis.unwrap_or(server_millis);
-    let result = execute(&mut connection, sql, bounds, server_millis).await;
+    let result = execute(
+        &mut connection,
+        sql,
+        bounds,
+        server_millis,
+        reader.namespace.schema(),
+    )
+    .await;
     if matches!(result, Err(SqlError::Timeout)) {
-        reader.terminate(pid).await?;
+        reader.terminate(&backend).await?;
+        guard.armed = false;
         return result;
     }
+    guard.armed = false;
     let result = result?;
     super::reader::close(connection).await?;
     Ok(result)
+}
+
+struct TerminateOnDrop<'a> {
+    reader: &'a ReaderUrl,
+    runtime: tokio::runtime::Handle,
+    backend: Backend,
+    armed: bool,
+}
+
+impl Drop for TerminateOnDrop<'_> {
+    fn drop(&mut self) {
+        if !self.armed {
+            return;
+        }
+        let reader = self.reader.clone();
+        let backend = self.backend;
+        self.runtime.spawn(async move {
+            if let Err(error) = reader.terminate(&backend).await {
+                tracing::warn!(pid = backend.pid, %error, "failed to terminate abandoned reader backend");
+            }
+        });
+    }
 }
 
 #[tracing::instrument(skip_all)]
@@ -36,6 +73,7 @@ async fn execute(
     sql: &str,
     bounds: Bounds,
     server_millis: u64,
+    schema: &str,
 ) -> Result<SqlResult, SqlError> {
     let mut tx = tokio::time::timeout(
         Duration::from_secs(1),
@@ -45,7 +83,7 @@ async fn execute(
     .map_err(|_| SqlError::Timeout)??;
     let result = tokio::time::timeout(
         Duration::from_millis(bounds.millis.saturating_add(1_000)),
-        query_transaction(&mut tx, sql, bounds, server_millis),
+        query_transaction(&mut tx, sql, bounds, server_millis, schema),
     )
     .await
     .map_err(|_| SqlError::Timeout)??;
@@ -61,12 +99,14 @@ async fn query_transaction(
     sql: &str,
     bounds: Bounds,
     server_millis: u64,
+    schema: &str,
 ) -> Result<SqlResult, SqlError> {
     sqlx::query("SELECT set_config('statement_timeout', $1, true)")
         .bind(format!("{server_millis}ms"))
         .execute(&mut **tx)
         .await?;
-    sqlx::query("SET LOCAL search_path = inventory")
+    sqlx::query("SELECT set_config('search_path', $1, true)")
+        .bind(schema)
         .execute(&mut **tx)
         .await?;
     fetch(tx, sql, bounds).await
@@ -158,6 +198,7 @@ mod tests {
                 "SELECT 1 AS n",
                 Bounds::default(),
                 Bounds::default().millis,
+                "inventory",
             )
             .await;
             (&mut peer.stalled).await?;
