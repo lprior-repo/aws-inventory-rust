@@ -1,23 +1,15 @@
+use super::postgres_support as pg;
 use super::*;
 use cmdb_view::{GraphConnection, GraphEdge, GraphLimits, GraphNode};
 use inventory_core::inventory::{AccountId, Kind, Region, Relation, ResourceId, ResourceKey};
 use inventory_graph::{EdgeRow, NodeRow, Provenance};
 
-fn node(account: &str, region: &str, kind: &str) -> GraphNode {
-    GraphNode {
-        account: account.to_owned(),
-        region: region.to_owned(),
-        kind: kind.to_owned(),
-        id: "shared".to_owned(),
-    }
-}
-
 fn nodes() -> [GraphNode; 4] {
     [
-        node("111111111111", "global", "AWS::S3::Bucket"),
-        node("111111111111", "us-east-1", "AWS::S3::Bucket"),
-        node("222222222222", "eu-west-1", "AWS::S3::Bucket"),
-        node("222222222222", "us-west-2", "AWS::EC2::Instance"),
+        pg::node("111111111111", "global", 0, "shared"),
+        pg::node("111111111111", "us-east-1", 0, "shared"),
+        pg::node("222222222222", "eu-west-1", 0, "shared"),
+        pg::node("222222222222", "us-west-2", 1, "shared"),
     ]
 }
 
@@ -214,10 +206,10 @@ async fn given_seeded_native_graph_when_reading_then_neighbors_paths_blast_and_s
         .get_multiplexed_async_connection()
         .await?;
     let graph = GraphConnection::connect(&endpoint, &name)?;
+    let fixture = pg::Fixture::new().await?;
     let result = async {
+        let db = fixture.reader().await?;
         seed_graph(&mut connection, &name).await?;
-        let dir = tempdir()?;
-        let db = populated(&dir.path().join("inventory.sqlite")).await?;
         check_neighbors(&graph).await?;
         check_path_and_blast(&graph).await?;
         compare_sql(&db, &graph).await
@@ -227,7 +219,8 @@ async fn given_seeded_native_graph_when_reading_then_neighbors_paths_blast_and_s
         .arg(&name)
         .query_async::<redis::Value>(&mut connection)
         .await;
-    finish_test(result, cleanup)
+    let finished = fixture.finish().await;
+    finish_test(result.and(finished), cleanup)
 }
 
 fn finish_test(result: TestResult, cleanup: Result<redis::Value, redis::RedisError>) -> TestResult {
