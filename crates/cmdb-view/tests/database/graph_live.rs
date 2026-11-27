@@ -194,7 +194,7 @@ async fn compare_sql(db: &Database, graph: &GraphConnection) -> TestResult {
 }
 
 #[tokio::test]
-#[ignore = "requires native FalkorDB at CMDB_VIEW_FALKOR_ENDPOINT"]
+#[ignore = "requires CMDB_VIEW_FALKOR_ENDPOINT and INVENTORY_POSTGRES_URL with CREATEDB"]
 async fn given_seeded_native_graph_when_reading_then_neighbors_paths_blast_and_sql_agree()
 -> TestResult {
     let endpoint = std::env::var("CMDB_VIEW_FALKOR_ENDPOINT")?;

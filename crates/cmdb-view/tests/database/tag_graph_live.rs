@@ -1,9 +1,12 @@
+use super::postgres_support as pg;
 use super::*;
 use cmdb_view::{GraphConnection, GraphLimits, GraphNode, ResourceTag, ScopedTag, TagAffiliation};
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
 use std::fmt::Write;
 
 const ACCOUNT: &str = "111111111111";
+const BUCKET: &str = "AWS::Example::Kind0";
+const INSTANCE: &str = "AWS::Example::Kind1";
 const HOSTILE: &str = inventory_graph::cypher::diagnostics::HOSTILE_TAG_VALUE;
 
 fn node(region: &str, kind: &str, id: &str) -> GraphNode {
@@ -16,7 +19,7 @@ fn node(region: &str, kind: &str, id: &str) -> GraphNode {
 }
 
 fn root() -> GraphNode {
-    node("global", "AWS::S3::Bucket", "shared")
+    node("global", BUCKET, "shared")
 }
 
 fn digest(node: &GraphNode) -> TestResult<String> {
@@ -40,17 +43,17 @@ fn literal(value: &str) -> String {
 
 fn seed_query() -> TestResult<String> {
     let root_key = digest(&root())?;
-    let east_key = digest(&node("us-east-1", "AWS::S3::Bucket", "shared"))?;
-    let other_key = digest(&node("global", "AWS::EC2::Instance", "shared"))?;
-    let hostile_key = digest(&node("global", "AWS::S3::Bucket", HOSTILE))?;
+    let east_key = digest(&node("us-east-1", BUCKET, "shared"))?;
+    let other_key = digest(&node("global", INSTANCE, "shared"))?;
+    let hostile_key = digest(&node("global", BUCKET, HOSTILE))?;
     Ok(format!(
         "CYPHER root='{root_key}' east='{east_key}' other='{other_key}' hostile_key='{hostile_key}' hostile={} CREATE \
-        (a:Resource {{key:$root,account:'{ACCOUNT}',region:'global',kind:'AWS::S3::Bucket',id:'shared'}}),\
-        (b:Resource {{key:$east,account:'{ACCOUNT}',region:'us-east-1',kind:'AWS::S3::Bucket',id:'shared'}}),\
-        (c:Resource {{key:$other,account:'{ACCOUNT}',region:'global',kind:'AWS::EC2::Instance',id:'shared'}}),\
-        (h:Resource {{key:$hostile_key,account:'{ACCOUNT}',region:'global',kind:'AWS::S3::Bucket',id:$hostile}}),\
-        (bad:Resource {{key:$root,account:'{ACCOUNT}',region:'global',kind:'AWS::S3::Bucket',id:'wrong-identity'}}),\
-        (wrong_key:Resource {{key:'wrong-digest',account:'{ACCOUNT}',region:'global',kind:'AWS::S3::Bucket',id:'shared'}}),\
+        (a:Resource {{key:$root,account:'{ACCOUNT}',region:'global',kind:'{BUCKET}',id:'shared'}}),\
+        (b:Resource {{key:$east,account:'{ACCOUNT}',region:'us-east-1',kind:'{BUCKET}',id:'shared'}}),\
+        (c:Resource {{key:$other,account:'{ACCOUNT}',region:'global',kind:'{INSTANCE}',id:'shared'}}),\
+        (h:Resource {{key:$hostile_key,account:'{ACCOUNT}',region:'global',kind:'{BUCKET}',id:$hostile}}),\
+        (bad:Resource {{key:$root,account:'{ACCOUNT}',region:'global',kind:'{BUCKET}',id:'wrong-identity'}}),\
+        (wrong_key:Resource {{key:'wrong-digest',account:'{ACCOUNT}',region:'global',kind:'{BUCKET}',id:'shared'}}),\
         (owner:Tag {{account:'{ACCOUNT}',region:'global',tag_key:'owner',tag_value:'core'}}),\
         (hostile:Tag {{account:'{ACCOUNT}',region:'global',tag_key:'z',tag_value:$hostile}}),\
         (east:Tag {{account:'{ACCOUNT}',region:'us-east-1',tag_key:'owner',tag_value:'east'}}),\
@@ -133,27 +136,27 @@ async fn check_membership(graph: &GraphConnection, db: &Database) -> TestResult 
     assert!(!dependencies.truncated);
     assert_eq!(
         graph
-            .tag_affiliations(&node("us-east-1", "AWS::S3::Bucket", "shared"), 10)
+            .tag_affiliations(&node("us-east-1", BUCKET, "shared"), 10)
             .await?
             .affiliations,
         vec![expected("us-east-1", "owner", "east")]
     );
     assert_eq!(
         graph
-            .tag_affiliations(&node("global", "AWS::EC2::Instance", "shared"), 10)
+            .tag_affiliations(&node("global", INSTANCE, "shared"), 10)
             .await?
             .affiliations,
         vec![expected("global", "owner", "other-kind")]
     );
     assert_eq!(
         graph
-            .tag_affiliations(&node("global", "AWS::S3::Bucket", HOSTILE), 10)
+            .tag_affiliations(&node("global", BUCKET, HOSTILE), 10)
             .await?
             .affiliations,
         vec![expected("global", "z", HOSTILE)]
     );
     let absent = graph
-        .tag_affiliations(&node("global", "AWS::S3::Bucket", "absent"), 10)
+        .tag_affiliations(&node("global", BUCKET, "absent"), 10)
         .await?;
     assert!(absent.affiliations.is_empty());
     assert!(!absent.truncated);
@@ -174,22 +177,34 @@ async fn given_real_native_tags_when_reading_then_affiliations_are_scoped_bounde
         .get_multiplexed_async_connection()
         .await?;
     let graph = GraphConnection::connect(&endpoint, &name)?;
+    let fixture = pg::Fixture::new().await?;
     let result = async {
-        redis::cmd(inventory_graph::cypher::COMMAND).arg(&name).arg(seed_query()?).query_async::<redis::Value>(&mut connection).await?;
-        let dir = tempdir()?;
-        let path = dir.path().join("inventory.sqlite");
-        let db = populated(&path).await?;
-        let pool = writer(&path).await?;
-        query("INSERT INTO tags VALUES ('111111111111','global','AWS::S3::Bucket','shared','owner','core'),('111111111111','global','AWS::S3::Bucket','shared','z',?)")
-            .bind(HOSTILE).execute(&pool).await?;
-        pool.close().await;
+        redis::cmd(inventory_graph::cypher::COMMAND)
+            .arg(&name)
+            .arg(seed_query()?)
+            .query_async::<redis::Value>(&mut connection)
+            .await?;
+        sqlx::query(
+            "INSERT INTO inventory.tags (account,region,kind,id,tag_key,tag_value) VALUES \
+             ($1,$2,$3,$4,'owner','core'),($1,$2,$3,$4,'z',$5)",
+        )
+        .bind(ACCOUNT)
+        .bind("global")
+        .bind(BUCKET)
+        .bind("shared")
+        .bind(HOSTILE)
+        .execute(&fixture.pool)
+        .await?;
+        let db = fixture.reader().await?;
         check_membership(&graph, &db).await
-    }.await;
+    }
+    .await;
     let cleanup = redis::cmd("GRAPH.DELETE")
         .arg(&name)
         .query_async::<redis::Value>(&mut connection)
         .await;
-    match (result, cleanup) {
+    let finished = fixture.finish().await;
+    match (result.and(finished), cleanup) {
         (Ok(()), Ok(_)) => Ok(()),
         (Err(error), Ok(_)) => Err(error),
         (Ok(()), Err(error)) => Err(error.into()),
