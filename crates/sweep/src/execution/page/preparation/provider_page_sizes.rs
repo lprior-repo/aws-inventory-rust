@@ -6,8 +6,14 @@ use serde_json::{Value, json};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn first_request(plan: &CallablePlan<'_>) -> TestResult<http::Request<bytes::Bytes>> {
+    request_with_cursor(plan, &cursor::Cursor::default())
+}
+fn request_with_cursor(
+    plan: &CallablePlan<'_>,
+    cursor: &cursor::Cursor,
+) -> TestResult<http::Request<bytes::Bytes>> {
     let base = input::root_bindings(plan, None, None)?;
-    let fields = request_fields(&cursor::Cursor::default(), plan, None)?;
+    let fields = request_fields(cursor, plan, None)?;
     Ok(request::encode(
         plan,
         "https://example.test",
@@ -91,5 +97,74 @@ fn given_mediapackage_origin_endpoints_when_requested_then_query_uses_50_items_a
             .map(http::uri::PathAndQuery::as_str),
         Some("/origin_endpoints?maxResults=50")
     );
+    Ok(())
+}
+
+fn assert_ec2_cap_and_token(plan: &CallablePlan<'_>, cap: u32) -> TestResult {
+    let first = request_with_cursor(plan, &cursor::Cursor::default())?;
+    let first_body = String::from_utf8_lossy(first.body());
+    assert!(first_body.contains(&format!("MaxResults={cap}")));
+    let token = plan
+        .pagination()
+        .tokens
+        .first()
+        .ok_or("EC2 page token binding missing")?;
+    let token_field = token
+        .response_path
+        .first()
+        .copied()
+        .ok_or("EC2 page token response path missing")?;
+    let response = inventory_core::record::Record::encode(
+        &inventory_core::record::Value::Map(std::collections::BTreeMap::from([(
+            inventory_core::record::Key::Field(token_field),
+            inventory_core::record::Value::Text("next-cursor".to_owned()),
+        )])),
+    )?;
+    let next = cursor::Cursor::default()
+        .next(
+            plan.pagination(),
+            &response,
+            &http::HeaderMap::new(),
+            10,
+        )?
+        .ok_or("expected EC2 continuation")?;
+    let resumed = cursor::Cursor::decode(Some(next.cursor.as_bytes()))?;
+    let continuation = request_with_cursor(plan, &resumed)?;
+    let continuation_body = String::from_utf8_lossy(continuation.body());
+    assert!(continuation_body.contains(&format!("MaxResults={cap}")));
+    assert!(continuation_body.contains("NextToken=next-cursor"));
+    Ok(())
+}
+
+#[test]
+fn given_ec2_page_caps_when_requests_are_prepared_then_caps_and_next_tokens_reach_wire()
+-> TestResult {
+    let cases = [
+        ("DescribeAddressTransfers", 10),
+        ("DescribeCoipPools", 255),
+        ("DescribeIpamPools", 100),
+        ("DescribeIpamPrefixListResolverTargets", 100),
+        ("DescribeIpamPrefixListResolvers", 100),
+        ("DescribeIpamResourceDiscoveries", 100),
+        ("DescribeIpamResourceDiscoveryAssociations", 100),
+        ("DescribeIpamScopes", 100),
+        ("DescribeIpams", 100),
+        ("DescribeIpv6Pools", 10),
+        ("DescribeVerifiedAccessEndpoints", 200),
+        ("DescribeVerifiedAccessGroups", 200),
+    ];
+    let operations = cases.each_ref().map(|(operation, _)| *operation);
+    let compiled = crate::execution::test_catalog::compile(
+        "ec2",
+        "2016-11-15",
+        &operations,
+        None,
+        |_, _| Ok(()),
+    )?;
+    let catalog = RuntimeCatalog::from_bytes(&compiled)?;
+    for (operation, cap) in cases {
+        let plan = catalog.lookup("ec2", operation).ok_or(operation)?;
+        assert_ec2_cap_and_token(plan, cap)?;
+    }
     Ok(())
 }

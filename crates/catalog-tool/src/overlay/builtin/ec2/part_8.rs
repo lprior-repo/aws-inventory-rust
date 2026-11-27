@@ -110,6 +110,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VerifiedAccessEndpoints")?),
         tags: Some(path("Tags")?),
+        page_size: Some(200),
         identity: Some(Identity::Key(vec![path("VerifiedAccessEndpointId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
@@ -119,6 +120,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("VerifiedAccessGroups")?),
         tags: Some(path("Tags")?),
+        page_size: Some(200),
         identity: Some(Identity::Key(vec![path("VerifiedAccessGroupId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()

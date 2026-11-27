@@ -48,6 +48,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         scope: Some(Scope::Region),
         items: Some(ItemSelector::parse("CoipPools")?),
         tags: Some(path("Tags")?),
+        page_size: Some(255),
         identity: Some(Identity::Key(vec![path("PoolId")?])),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
