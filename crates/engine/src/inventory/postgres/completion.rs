@@ -1,6 +1,7 @@
 mod authorities;
 mod deletion;
 mod facets;
+mod success;
 mod unobserved;
 
 use super::PgStore;
@@ -17,6 +18,7 @@ pub(super) async fn drain(
         return Ok(ChangeStats::default());
     }
     unobserved::record(tx, sweep).await?;
+    success::record(tx, sweep, at).await?;
     authorities::stage(tx, sweep).await?;
     authorities::misses(tx, sweep, at).await?;
     authorities::member_misses(tx, sweep).await?;

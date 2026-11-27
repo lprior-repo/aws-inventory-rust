@@ -1,4 +1,6 @@
 mod postgres_support;
+#[path = "postgres_work/success.rs"]
+mod success;
 
 use inventory_core::inventory::{
     AccountId, OperationId, Region, ScopeKey, ScopeOutcome, ServiceId,
