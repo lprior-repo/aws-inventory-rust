@@ -126,6 +126,7 @@ pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
     CfnMapping::canonical("AWS::ECS::Gateway"),
     CfnMapping::canonical("AWS::ECS::GatewayClusterAssociations"),
     CfnMapping::canonical("AWS::ECS::Service"),
+    CfnMapping::canonical("AWS::ECS::TaskDefinition"),
     CfnMapping::canonical("AWS::EKS::Capability"),
     CfnMapping::canonical("AWS::EKS::Cluster"),
     CfnMapping::canonical("AWS::EKS::PodIdentityAssociation"),

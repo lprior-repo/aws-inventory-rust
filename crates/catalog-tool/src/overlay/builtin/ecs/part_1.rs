@@ -1,8 +1,8 @@
 use super::super::{empty, name, path};
 use crate::classes::DenyReason;
 use crate::overlay::{
-    Binding, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
-    Paginator, Scope, TokenPair,
+    Binding, ExecutionBranch, FixedValue, Identity, ItemSelector, MemberPath, NameError,
+    OperationOverlay, OverlayClass, Paginator, Scope, TokenPair,
 };
 
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -81,8 +81,14 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("ListTaskDefinitions", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("Scalar taskDefinitionArns is now representable, but complete enumeration needs ACTIVE/INACTIVE/DELETE_IN_PROGRESS status fanout instead of default ACTIVE only. Current fixed inputs cannot express a status-product plan. DescribeTaskDefinition remains content-denied because it returns plaintext environment and container command content.".to_owned()),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("taskDefinitionArns")?),
+        page_size: Some(100),
+        fixed: [(path("sort")?, FixedValue::String("ASC".to_owned()))].into_iter().collect(),
+        identity: Some(Identity::Arn(path("$")?)),
+        paginator: Some(Paginator::Token(TokenPair { input: path("nextToken")?, output: path("nextToken")?, optional: false })),
+        branches: task_definition_status_branches()?,
         ..empty()
     }),
 ("ListTasks", OperationOverlay {
@@ -127,4 +133,25 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     })
     ])
+}
+fn task_definition_status_branches() -> Result<Vec<ExecutionBranch>, NameError> {
+    ["ACTIVE", "INACTIVE", "DELETE_IN_PROGRESS"]
+        .into_iter()
+        .map(|status| {
+            Ok(ExecutionBranch {
+                discriminator: status.to_owned(),
+                fixed: [(
+                    MemberPath::new("status")?,
+                    FixedValue::String(status.to_owned()),
+                )]
+                .into_iter()
+                .collect(),
+                bind: Default::default(),
+                emission: None,
+                row_policy: None,
+                scope: Scope::Region,
+                request_region: None,
+            })
+        })
+        .collect()
 }

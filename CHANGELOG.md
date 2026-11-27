@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The catalog sweep lists ECS task definitions across `ACTIVE`, `INACTIVE`,
+  and `DELETE_IN_PROGRESS`, following each status's pagination token separately.
+  It stores task-definition ARNs without calling `DescribeTaskDefinition`.
+
 - Catalog-driven S3 `ListBuckets` requests now include the signed
   `x-amz-content-sha256` header even when endpoint rules use standard path
   handling. Other standard-path operations retain generic signing behavior.

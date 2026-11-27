@@ -1318,6 +1318,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "ecs",
+        operation: "ListTaskDefinitions",
+        kind: "AWS::ECS::TaskDefinition",
+    },
+    OperationMapping {
+        service: "ecs",
         operation: "ListDaemons",
         kind: "AWS::ECS::Daemon",
     },

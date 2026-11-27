@@ -172,6 +172,9 @@ impl Captured {
         }
         Ok(())
     }
+    pub(super) fn body(&self) -> &str {
+        &self.body
+    }
 }
 
 fn header<'a>(headers: &'a str, name: &str) -> TestResult<&'a str> {
@@ -198,6 +201,71 @@ pub(super) async fn serve(listener: TcpListener, body: &str) -> TestResult<Captu
         headers,
         body: request_body,
     })
+}
+pub(super) async fn serve_task_definition_pages(
+    listener: TcpListener,
+    request_count: usize,
+) -> TestResult<Vec<Captured>> {
+    let mut captures = Vec::with_capacity(request_count);
+    for _ in 0..request_count {
+        let (mut socket, _) = listener.accept().await?;
+        let (headers, request_body) = read_request(&mut socket).await?;
+        let response_body = task_definition_response(&request_body)?;
+        let response = format!(
+            "HTTP/1.1 200 OK\r\nContent-Type: application/x-amz-json-1.1\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response_body}",
+            response_body.len()
+        );
+        socket.write_all(response.as_bytes()).await?;
+        socket.shutdown().await?;
+        captures.push(Captured {
+            headers,
+            body: request_body,
+        });
+    }
+    Ok(captures)
+}
+
+fn task_definition_response(request_body: &str) -> TestResult<String> {
+    let request: serde_json::Value = serde_json::from_str(request_body)?;
+    let status = request
+        .get("status")
+        .and_then(serde_json::Value::as_str)
+        .ok_or("task-definition status absent")?;
+    let token = request
+        .get("nextToken")
+        .and_then(serde_json::Value::as_str);
+    let (arn, next_token) = match (status, token) {
+        ("ACTIVE", None) => (
+            "arn:aws:ecs:us-east-1:123456789012:task-definition/web:7",
+            Some("active-page-2"),
+        ),
+        ("ACTIVE", Some("active-page-2")) => (
+            "arn:aws:ecs:us-east-1:123456789012:task-definition/web:8",
+            None,
+        ),
+        ("INACTIVE", None) => (
+            "arn:aws:ecs:us-east-1:123456789012:task-definition/legacy:2",
+            Some("inactive-page-2"),
+        ),
+        ("INACTIVE", Some("inactive-page-2")) => (
+            "arn:aws:ecs:us-east-1:123456789012:task-definition/legacy:1",
+            None,
+        ),
+        ("DELETE_IN_PROGRESS", None) => (
+            "arn:aws:ecs:us-east-1:123456789012:task-definition/pending-removal:3",
+            Some("deleting-page-2"),
+        ),
+        ("DELETE_IN_PROGRESS", Some("deleting-page-2")) => (
+            "arn:aws:ecs:us-east-1:123456789012:task-definition/pending-removal:2",
+            None,
+        ),
+        _ => return Err(format!("unexpected task-definition request: {request_body}").into()),
+    };
+    let response = match next_token {
+        Some(token) => serde_json::json!({"taskDefinitionArns":[arn], "nextToken":token}),
+        None => serde_json::json!({"taskDefinitionArns":[arn]}),
+    };
+    Ok(response.to_string())
 }
 
 async fn read_request(socket: &mut TcpStream) -> TestResult<(String, String)> {

@@ -333,3 +333,5 @@ fn report_commit(
         })
     }
 }
+#[cfg(test)]
+mod ecs_status_product_tests;
