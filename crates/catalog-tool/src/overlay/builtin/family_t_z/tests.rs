@@ -3,8 +3,8 @@ use crate::overlay::builtin::family_g_k::tests::contracts as gz_contracts;
 use crate::{
     classes::DenyReason,
     overlay::{
-        self, Binding, Identity, MemberPath, OperationName, OperationOverlay, OverlayClass,
-        Paginator, Scope, ServiceOverlay, TokenPair,
+        self, Binding, ContextSource, Identity, MemberPath, OperationName, OperationOverlay,
+        OverlayClass, Paginator, RowOperand, RowPredicate, RowValueType, Scope, ServiceOverlay, TokenPair,
     },
 };
 use std::collections::BTreeSet;
@@ -118,6 +118,59 @@ fn secret_or_content_bearing_calls_remain_denied_before_any_projection() -> Test
     }
     Ok(())
 }
+#[test]
+fn completion_preserves_wisdom_denials_and_quick_response_type_filter() -> TestResult {
+    let services = overlay::embedded()?;
+    let quick_responses = policy(&services, "wisdom", "ListQuickResponses")?;
+
+    assert_eq!(
+        quick_responses.class,
+        Some(OverlayClass::Deny(DenyReason::Content))
+    );
+    assert_eq!(quick_responses.items, None);
+    assert_eq!(quick_responses.identity, None);
+    assert!(quick_responses.queryable.is_empty());
+
+    assert!(!quick_responses
+        .queryable
+        .contains(&MemberPath::selected("channels")?));
+
+    let contents = policy(&services, "wisdom", "ListContents")?;
+    assert_eq!(contents.class, Some(OverlayClass::Deny(DenyReason::Content)));
+    assert_eq!(contents.items, None);
+    assert_eq!(contents.identity, None);
+
+    let knowledge_bases = policy(&services, "wisdom", "ListKnowledgeBases")?;
+    assert_eq!(knowledge_bases.row_policy.child, None);
+
+    let import_jobs = policy(&services, "wisdom", "ListImportJobs")?;
+    assert_eq!(
+        import_jobs.row_policy.child,
+        Some(overlay::ChildEligibility {
+            operation: OperationName::new("ListKnowledgeBases")?,
+            predicate: RowPredicate::StringIn {
+                operand: RowOperand {
+                    source: ContextSource::SelectedItem,
+                    path: MemberPath::selected("knowledgeBaseType")?,
+                    value_type: RowValueType::String,
+                },
+                values: vec!["QUICK_RESPONSES".to_owned()],
+            },
+        })
+    );
+    let get_knowledge_base = policy(&services, "wisdom", "GetKnowledgeBase")?;
+    assert_eq!(get_knowledge_base.row_policy.child, None);
+
+    let qconnect_responses = policy(&services, "qconnect", "ListQuickResponses")?;
+    assert_eq!(qconnect_responses.class, Some(OverlayClass::Defer));
+    assert_eq!(qconnect_responses.items, None);
+    assert_eq!(qconnect_responses.identity, None);
+    assert!(!qconnect_responses
+        .queryable
+        .contains(&MemberPath::selected("channels")?));
+    Ok(())
+}
+
 
 #[test]
 fn classic_waf_uses_documented_markers_and_distinguishes_global_from_regional() -> TestResult {

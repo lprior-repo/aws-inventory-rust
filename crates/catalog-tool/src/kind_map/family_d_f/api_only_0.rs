@@ -74,6 +74,10 @@ pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
         reason: "Pinned API resource has no equivalent CFN resource or is an unspecialized polymorphic summary; do not invent a CFN kind.",
     },
     ApiOnlyMapping {
+        kind: "AWS::ApiOnly::DocDBDBInstance",
+        reason: "DocDB DB instances are exposed by DescribeDBInstances but are absent from the pinned CloudControl resource set; keep them as API-only inventory records.",
+    },
+    ApiOnlyMapping {
         kind: "AWS::ApiOnly::DocDBElasticClusterSnapshot",
         reason: "Pinned API resource has no equivalent CFN resource or is an unspecialized polymorphic summary; do not invent a CFN kind.",
     },

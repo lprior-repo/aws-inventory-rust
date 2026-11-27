@@ -83,6 +83,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "docdb",
+        operation: "DescribeDBInstances",
+        kind: "AWS::ApiOnly::DocDBDBInstance",
+    },
+    OperationMapping {
+        service: "docdb",
         operation: "DescribeDBSubnetGroups",
         kind: "AWS::DocDB::DBSubnetGroup",
     },

@@ -1,63 +1,68 @@
 use super::*;
 #[tokio::test]
-async fn given_two_knowledge_bases_when_summary_collections_execute_then_content_quickresponses_and_imports_have_distinct_durable_owners()
+async fn given_mixed_knowledge_bases_when_completion_runs_then_only_quick_response_imports_are_collected()
 -> TestResult {
     let catalog = RuntimeCatalog::from_bytes(catalog::bytes()?)?;
     let scenario = Scenario::new(&catalog, "tz-wisdom-completion").await?;
-    scenario
-        .seed(&catalog, "wisdom", &["ListKnowledgeBases"])
-        .await?;
+    scenario.seed(&catalog, "wisdom", &["ListKnowledgeBases"]).await?;
     let (scenario, seen) = scenario.drain(&catalog, "wisdom", |plan, request, wire, resumed| {
         assert_token(wire, "nextToken", resumed)?;
-        let p = if resumed { "2" } else { "1" };
         if plan.operation_name() == "ListKnowledgeBases" {
-            return Ok(json!({"knowledgeBaseSummaries":[{"knowledgeBaseId":"kb-one","knowledgeBaseArn":"arn:aws:wisdom:us-east-1:123456789012:knowledge-base/kb-one","name":"one","status":"ACTIVE","knowledgeBaseType":"CUSTOM","tags":{}},{"knowledgeBaseId":"kb-two","knowledgeBaseArn":"arn:aws:wisdom:us-east-1:123456789012:knowledge-base/kb-two","name":"two","status":"ACTIVE","knowledgeBaseType":"CUSTOM","tags":{}}]}));
+            return Ok(json!({"knowledgeBaseSummaries":[{"knowledgeBaseId":"kb-one","knowledgeBaseArn":"arn:aws:wisdom:us-east-1:123456789012:knowledge-base/kb-one","name":"quick responses","status":"ACTIVE","knowledgeBaseType":"QUICK_RESPONSES","tags":{}},{"knowledgeBaseId":"kb-two","knowledgeBaseArn":"arn:aws:wisdom:us-east-1:123456789012:knowledge-base/kb-two","name":"custom","status":"ACTIVE","knowledgeBaseType":"CUSTOM","tags":{}}]}));
         }
         let kb = text(request, "knowledgeBaseId")?;
-        assert!(matches!(kb, "kb-one" | "kb-two"));
-        let (items, row, suffix) = match plan.operation_name() {
-            "ListContents" => ("contentSummaries", json!({"knowledgeBaseId":kb,"knowledgeBaseArn":format!("arn:aws:wisdom:us-east-1:123456789012:knowledge-base/{kb}"),"contentId":format!("content-{p}"),"contentArn":format!("arn:aws:wisdom:us-east-1:123456789012:content/{kb}/content-{p}"),"name":"metadata-only","contentType":"text/plain","status":"ACTIVE","tags":{"owner":"inventory"}}), "contents"),
-            "ListQuickResponses" => ("quickResponseSummaries", json!({"quickResponseId":format!("response-{p}"),"quickResponseArn":format!("arn:aws:wisdom:us-east-1:123456789012:quick-response/{kb}/response-{p}"),"knowledgeBaseId":kb,"name":"summary-only","contentType":"text/plain","status":"PUBLISHED","tags":{"owner":"inventory"}}), "quickResponses"),
-            "ListImportJobs" => ("importJobSummaries", json!({"importJobId":format!("import-{p}"),"knowledgeBaseId":kb,"knowledgeBaseArn":format!("arn:aws:wisdom:us-east-1:123456789012:knowledge-base/{kb}"),"importJobType":"QUICK_RESPONSES","status":"COMPLETE"}), "importJobs"),
-            other => return Err(format!("unexpected Wisdom operation {other}").into()),
-        };
-        assert_eq!(wire.uri().path(), format!("/knowledgeBases/{kb}/{suffix}"));
-        Ok(page(items, row, !resumed, "nextToken"))
+        assert_eq!(kb, "kb-one");
+        let p = if resumed { "2" } else { "1" };
+        assert_eq!(plan.operation_name(), "ListImportJobs");
+        assert_eq!(wire.uri().path(), format!("/knowledgeBases/{kb}/importJobs"));
+        Ok(page(
+            "importJobSummaries",
+            json!({"importJobId":format!("import-{p}"),"knowledgeBaseId":kb,"knowledgeBaseArn":format!("arn:aws:wisdom:us-east-1:123456789012:knowledge-base/{kb}"),"importJobType":"QUICK_RESPONSES","status":"COMPLETE"}),
+            !resumed,
+            "nextToken",
+        ))
     }).await?;
-    assert_eq!(seen.len(), 4);
-    for (kind, resource, prefix) in [
-        ("AWS::Wisdom::Content", "content", "content"),
-        ("AWS::Wisdom::QuickResponse", "quick-response", "response"),
-    ] {
-        let expected = ["kb-one", "kb-two"]
-            .into_iter()
-            .flat_map(|kb| {
-                ["1", "2"].map(move |p| {
-                    format!("arn:aws:wisdom:us-east-1:123456789012:{resource}/{kb}/{prefix}-{p}")
-                })
-            })
-            .collect();
-        scenario.assert_ids(kind, expected).await?;
-    }
-    let expected = ["kb-one", "kb-two"]
+    assert_eq!(seen.len(), 2);
+    scenario
+        .assert_ids(
+            "AWS::Wisdom::KnowledgeBase",
+            [
+                "arn:aws:wisdom:us-east-1:123456789012:knowledge-base/kb-one",
+                "arn:aws:wisdom:us-east-1:123456789012:knowledge-base/kb-two",
+            ]
+            .map(str::to_owned)
+            .into(),
+        )
+        .await?;
+    assert_eq!(seen.get("ListImportJobs"), Some(&2));
+    assert!(!seen.contains_key("ListContents"));
+    assert!(!seen.contains_key("ListQuickResponses"));
+    scenario.assert_ids("AWS::Wisdom::Content", Vec::new()).await?;
+    scenario.assert_ids("AWS::Wisdom::QuickResponse", Vec::new()).await?;
+    let expected = ["1", "2"]
+        .map(|p| correlated(&["kb-one", &format!("import-{p}")]))
         .into_iter()
-        .flat_map(|kb| ["1", "2"].map(move |p| correlated(&[kb, &format!("import-{p}")])))
         .collect();
     scenario
         .assert_ids("AWS::ApiOnly::WisdomImportJob", expected)
         .await?;
-    for (kind, resource, prefix) in [
-        ("AWS::Wisdom::Content", "content", "content"),
-        ("AWS::Wisdom::QuickResponse", "quick-response", "response"),
-        ("AWS::ApiOnly::WisdomImportJob", "", "import"),
-    ] {
-        scenario.assert_edges(kind,"IN_KNOWLEDGE_BASE",
-            ["kb-one","kb-two"].into_iter().flat_map(|kb| ["1","2"].map(move |p| {
-                let from = if resource.is_empty() { correlated(&[kb,&format!("{prefix}-{p}")]) }
-                    else { format!("arn:aws:wisdom:us-east-1:123456789012:{resource}/{kb}/{prefix}-{p}") };
-                (from,"AWS::Wisdom::KnowledgeBase".to_owned(),format!("arn:aws:wisdom:us-east-1:123456789012:knowledge-base/{kb}"))
-            })).collect()).await?;
-    }
+    scenario
+        .assert_edges(
+            "AWS::ApiOnly::WisdomImportJob",
+            "IN_KNOWLEDGE_BASE",
+            ["1", "2"]
+                .map(|p| {
+                    (
+                        correlated(&["kb-one", &format!("import-{p}")]),
+                        "AWS::Wisdom::KnowledgeBase".to_owned(),
+                        "arn:aws:wisdom:us-east-1:123456789012:knowledge-base/kb-one"
+                            .to_owned(),
+                    )
+                })
+                .into_iter()
+                .collect(),
+        )
+        .await?;
     Ok(())
 }
 
@@ -109,69 +114,34 @@ async fn given_two_wickr_networks_when_bot_summary_pages_execute_then_challenge_
 }
 
 #[tokio::test]
-async fn given_two_voiceid_domains_when_summary_jobs_and_directory_pages_execute_then_all_five_account_owned_populations_persist_without_cross_domain_collapse()
+async fn given_voice_id_domains_when_swept_then_denied_directory_operations_are_never_called()
 -> TestResult {
     let catalog = RuntimeCatalog::from_bytes(catalog::bytes()?)?;
     let scenario = Scenario::new(&catalog, "tz-voiceid-completion").await?;
     scenario
         .seed(&catalog, "voice-id", &["ListDomains"])
         .await?;
-    let (scenario, seen) = scenario.drain(&catalog, "voice-id", |plan, request, wire, resumed| {
-        let native: Json = serde_json::from_slice(wire.body())?;
-        assert_token(wire, "NextToken", resumed)?;
-        if plan.operation_name() == "ListDomains" {
-            return Ok(json!({"DomainSummaries":[{"DomainId":"domain-one","Arn":"arn:aws:voiceid:us-east-1:123456789012:domain/domain-one","Name":"one"},{"DomainId":"domain-two","Arn":"arn:aws:voiceid:us-east-1:123456789012:domain/domain-two","Name":"two"}]}));
-        }
-        let domain = text(request, "DomainId")?;
-        assert!(matches!(domain, "domain-one" | "domain-two"));
-        assert_eq!(native.get("DomainId").and_then(Json::as_str), Some(domain));
-        for filter in ["JobStatus", "WatchlistId"] { assert_eq!(native.get(filter), None, "{filter} must not narrow domain inventory"); }
-        let p = if resumed { "2" } else { "1" };
-        let (items, row) = match plan.operation_name() {
-            "ListWatchlists" => ("WatchlistSummaries", json!({"DomainId":domain,"WatchlistId":format!("watchlist-{p}"),"Name":"watchlist"})),
-            "ListSpeakers" => ("SpeakerSummaries", json!({"DomainId":domain,"GeneratedSpeakerId":format!("speaker-{p}"),"Status":"ENROLLED"})),
-            "ListFraudsters" => ("FraudsterSummaries", json!({"DomainId":domain,"GeneratedFraudsterId":format!("fraudster-{p}")})),
-            "ListFraudsterRegistrationJobs" => ("JobSummaries", json!({"DomainId":domain,"JobId":format!("job-{p}"),"JobStatus":"COMPLETED"})),
-            "ListSpeakerEnrollmentJobs" => ("JobSummaries", json!({"DomainId":domain,"JobId":format!("job-{p}"),"JobStatus":"COMPLETED"})),
-            other => return Err(format!("unexpected VoiceID operation {other}").into()),
-        };
-        Ok(page(items, row, !resumed, "NextToken"))
+    let (scenario, seen) = scenario.drain(&catalog, "voice-id", |plan, _, _, _| {
+        assert_eq!(plan.operation_name(), "ListDomains");
+        Ok(json!({"DomainSummaries":[
+            {"DomainId":"domain-one","Arn":"arn:aws:voiceid:us-east-1:123456789012:domain/domain-one","Name":"one"},
+            {"DomainId":"domain-two","Arn":"arn:aws:voiceid:us-east-1:123456789012:domain/domain-two","Name":"two"}
+        ]}))
     }).await?;
-    assert_eq!(seen.len(), 6);
-    for (kind, prefix) in [
-        ("VoiceIDWatchlist", "watchlist"),
-        ("VoiceIDSpeaker", "speaker"),
-        ("VoiceIDFraudster", "fraudster"),
-        ("VoiceIDFraudsterRegistrationJob", "job"),
-        ("VoiceIDSpeakerEnrollmentJob", "job"),
+    assert_eq!(seen.get("ListDomains"), Some(&1));
+    scenario.assert_ids(
+        "AWS::VoiceID::Domain",
+        ["domain-one", "domain-two"].map(|id| format!("arn:aws:voiceid:us-east-1:123456789012:domain/{id}")).into(),
+    ).await?;
+    for (operation, kind) in [
+        ("ListWatchlists", "VoiceIDWatchlist"),
+        ("ListSpeakers", "VoiceIDSpeaker"),
+        ("ListFraudsters", "VoiceIDFraudster"),
+        ("ListFraudsterRegistrationJobs", "VoiceIDFraudsterRegistrationJob"),
+        ("ListSpeakerEnrollmentJobs", "VoiceIDSpeakerEnrollmentJob"),
     ] {
-        let expected = ["domain-one", "domain-two"]
-            .into_iter()
-            .flat_map(|domain| {
-                ["1", "2"].map(move |p| correlated(&[domain, &format!("{prefix}-{p}")]))
-            })
-            .collect();
-        scenario
-            .assert_ids(&format!("AWS::ApiOnly::{kind}"), expected)
-            .await?;
-        scenario
-            .assert_edges(
-                &format!("AWS::ApiOnly::{kind}"),
-                "IN_DOMAIN",
-                ["domain-one", "domain-two"]
-                    .into_iter()
-                    .flat_map(|domain| {
-                        ["1", "2"].map(move |p| {
-                            (
-                                correlated(&[domain, &format!("{prefix}-{p}")]),
-                                "AWS::VoiceID::Domain".to_owned(),
-                                format!("arn:aws:voiceid:us-east-1:123456789012:domain/{domain}"),
-                            )
-                        })
-                    })
-                    .collect(),
-            )
-            .await?;
+        assert!(catalog.lookup("voice-id", operation).is_none(), "{operation} is denied");
+        scenario.assert_ids(&format!("AWS::ApiOnly::{kind}"), Vec::new()).await?;
     }
     Ok(())
 }

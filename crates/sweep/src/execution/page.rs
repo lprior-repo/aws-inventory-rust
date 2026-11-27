@@ -335,3 +335,5 @@ fn report_commit(
 }
 #[cfg(test)]
 mod ecs_status_product_tests;
+#[cfg(test)]
+mod database_catalog_tests;

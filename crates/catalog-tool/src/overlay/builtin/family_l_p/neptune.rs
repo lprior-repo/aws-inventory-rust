@@ -1,5 +1,5 @@
 use super::policy::{Group, Id, Input, Resource, compile};
-use crate::overlay::Scope;
+use crate::overlay::{MemberPath, OperationName, Scope};
 use crate::{
     classes::DenyReason,
     overlay::{NameError, OverlayClass, ServiceOverlay},
@@ -78,7 +78,6 @@ const GROUPS: &[Group] = &[
     Group {
         operations: &[
             "DescribeDBEngineVersions",
-            "DescribeDBInstances",
             "DescribeEventCategories",
             "DescribeEvents",
             "DescribePendingMaintenanceActions",
@@ -149,6 +148,37 @@ const RESOURCES: &[Resource] = &[
             "CloneGroupId",
             "StorageType",
             "NetworkType",
+        ],
+        tags: None,
+        bindings: &[],
+        fixed: &[Input::Filter("Filters", "engine", &["neptune"])],
+    },
+    Resource {
+        operation: "DescribeDBInstances",
+        items: "DBInstances",
+        id: Id::Key(&["DbiResourceId"]),
+        scope: Scope::Region,
+        tokens: Some(("Marker", "Marker")),
+        query: &[
+            "DBInstanceArn",
+            "DBInstanceIdentifier",
+            "DBInstanceClass",
+            "DBInstanceStatus",
+            "DBSubnetGroup",
+            "DbiResourceId",
+            "Endpoint",
+            "Engine",
+            "EngineVersion",
+            "KmsKeyId",
+            "MasterUsername",
+            "NetworkType",
+            "PerformanceInsightsEnabled",
+            "PerformanceInsightsKMSKeyId",
+            "PromotionTier",
+            "StorageEncrypted",
+            "StorageType",
+            "TdeCredentialArn",
+            "VpcSecurityGroups",
         ],
         tags: None,
         bindings: &[],
@@ -270,5 +300,24 @@ const RESOURCES: &[Resource] = &[
 ];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    compile("neptune", GROUPS, RESOURCES)
+    let mut service = compile("neptune", GROUPS, RESOURCES)?;
+    exclude_password(
+        &mut service,
+        "DescribeDBInstances",
+        "DBInstances.PendingModifiedValues.MasterUserPassword",
+    )?;
+    Ok(service)
+}
+
+fn exclude_password(
+    service: &mut ServiceOverlay,
+    operation: &str,
+    path: &str,
+) -> Result<(), NameError> {
+    let name = OperationName::new(operation)?;
+    let plan = service.operations.get_mut(&name).ok_or_else(|| NameError {
+        value: format!("neptune/{operation}: operation absent"),
+    })?;
+    plan.exclude_response_members = vec![MemberPath::selected(path)?];
+    Ok(())
 }

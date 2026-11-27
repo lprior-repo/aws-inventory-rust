@@ -1,7 +1,7 @@
 use super::{bind, inventory, name, path, paths, token};
 use crate::overlay::{
-    Binding, ContextSource, Identity, IdentityField, NameError, OperationOverlay, Paginator, Scope,
-    ServiceOverlay,
+    Binding, ChildEligibility, ContextSource, Identity, IdentityField, NameError, OperationOverlay,
+    Paginator, RowOperand, RowPredicate, RowValueType, Scope, ServiceOverlay,
 };
 
 mod lattice;
@@ -34,7 +34,20 @@ fn insert(
     operation: &str,
     plan: OperationOverlay,
 ) -> Result<(), NameError> {
-    service.operations.insert(name(operation)?, plan);
+    let operation = name(operation)?;
+    if service
+        .operations
+        .get(&operation)
+        .is_some_and(|existing| {
+            matches!(
+                existing.class.as_ref(),
+                Some(crate::overlay::OverlayClass::Deny(_))
+            )
+        })
+    {
+        return Ok(());
+    }
+    service.operations.insert(operation, plan);
     Ok(())
 }
 

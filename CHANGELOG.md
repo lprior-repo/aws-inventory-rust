@@ -2,6 +2,17 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Database discovery collects RDS, DocumentDB, and Neptune instances and
+  clusters without storing pending master passwords. RDS skips DocumentDB
+  and Neptune rows so those resources are not counted twice.
+- Wisdom lists import jobs only for `QUICK_RESPONSES` knowledge bases.
+  Metadata collection excludes sensitive channel data. Completion also
+  preserves explicit denials for Wisdom content and the five Voice ID
+  directory and enrollment operations; they are no longer called.
+
+- Generated runtime catalogs use extension v5 for string membership
+  predicates. The new runtime also reads v4; older runtimes require v4.
+
 - The catalog sweep lists ECS task definitions across `ACTIVE`, `INACTIVE`,
   and `DELETE_IN_PROGRESS`, following each status's pagination token separately.
   It stores task-definition ARNs without calling `DescribeTaskDefinition`.

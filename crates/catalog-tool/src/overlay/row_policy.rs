@@ -27,6 +27,14 @@ pub enum RowPredicate {
         operand: RowOperand,
         value: bool,
     },
+    StringNotIn {
+        operand: RowOperand,
+        values: Vec<String>,
+    },
+    StringIn {
+        operand: RowOperand,
+        values: Vec<String>,
+    },
     SelectedRequestEquals {
         selected: MemberPath,
         request: MemberPath,

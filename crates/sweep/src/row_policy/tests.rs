@@ -231,3 +231,38 @@ fn given_whole_variant_absence_when_an_empty_opposite_variant_is_present_then_it
     }
     Ok(())
 }
+
+#[test]
+fn given_string_membership_predicates_when_value_is_missing_or_present_then_only_exact_matches_are_selected()
+-> TestResult {
+    let engine = field(1)?;
+    let operand = RowOperandPlan {
+        source: ContextSource::SelectedItem,
+        path: Box::new([engine]),
+        value_type: RowValueType::String,
+    };
+    let values = vec!["docdb".to_owned().into_boxed_str(), "neptune".to_owned().into_boxed_str()]
+        .into_boxed_slice();
+    let excluded = RowPredicatePlan::StringNotIn {
+        operand: operand.clone(),
+        values: values.clone(),
+    };
+    let included = RowPredicatePlan::StringIn { operand, values };
+    let request = record(&[])?;
+    let missing = record(&[])?;
+    let rds = record(&[(engine, Value::Text("mysql".to_owned()))])?;
+    let docdb = record(&[(engine, Value::Text("docdb".to_owned()))])?;
+    assert!(!evaluate_from(&excluded, &missing, &request)?);
+    assert!(!evaluate_from(&included, &missing, &request)?);
+    assert!(evaluate_from(&excluded, &rds, &request)?);
+    assert!(!evaluate_from(&included, &rds, &request)?);
+    assert!(!evaluate_from(&excluded, &docdb, &request)?);
+    assert!(evaluate_from(&included, &docdb, &request)?);
+    let neptune = record(&[(engine, Value::Text("neptune".to_owned()))])?;
+    assert!(!evaluate_from(&excluded, &neptune, &request)?);
+    assert!(evaluate_from(&included, &neptune, &request)?);
+    let invalid = record(&[(engine, Value::Bool(false))])?;
+    assert!(evaluate_from(&excluded, &invalid, &request).is_err());
+    assert!(evaluate_from(&included, &invalid, &request).is_err());
+    Ok(())
+}

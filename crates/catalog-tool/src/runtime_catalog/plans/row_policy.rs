@@ -192,6 +192,36 @@ fn predicate_value(
                 (3, Value::Bool(*value)),
             ])
         }
+        RowPredicate::StringNotIn { operand, values } => {
+            if operand.value_type != RowValueType::String {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: operand.path.as_str().to_owned(),
+                });
+            }
+            encode::map([
+                (1, Value::Int(3)),
+                (
+                    2,
+                    operand_value(service, operation, selected, operand, services)?,
+                ),
+                (3, Value::List(values.iter().cloned().map(Value::Text).collect())),
+            ])
+        }
+        RowPredicate::StringIn { operand, values } => {
+            if operand.value_type != RowValueType::String {
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: operand.path.as_str().to_owned(),
+                });
+            }
+            encode::map([
+                (1, Value::Int(4)),
+                (
+                    2,
+                    operand_value(service, operation, selected, operand, services)?,
+                ),
+                (3, Value::List(values.iter().cloned().map(Value::Text).collect())),
+            ])
+        }
         RowPredicate::SelectedRequestEquals {
             selected: path,
             request,

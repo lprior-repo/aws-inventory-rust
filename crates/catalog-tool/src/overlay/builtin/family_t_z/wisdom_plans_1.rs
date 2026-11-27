@@ -1,5 +1,7 @@
 use super::{bind, inventory, path, paths, token};
-use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
+use crate::overlay::{
+    Identity, NameError, OperationOverlay, Paginator, Scope,
+};
 
 pub(super) fn get_assistant() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(

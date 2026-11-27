@@ -1563,6 +1563,16 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "rds",
+        operation: "DescribeDBClusters",
+        kind: "AWS::RDS::DBCluster",
+    },
+    OperationMapping {
+        service: "rds",
+        operation: "DescribeDBInstances",
+        kind: "AWS::RDS::DBInstance",
+    },
+    OperationMapping {
+        service: "rds",
         operation: "DescribeDBParameterGroups",
         kind: "AWS::RDS::DBParameterGroup",
     },

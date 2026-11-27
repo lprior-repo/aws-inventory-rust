@@ -109,6 +109,28 @@ fn valid_predicate(
             operand.value_type == RowValueType::Boolean
                 && valid_operand(model, operation, selected, operand)
         }
+        RowPredicate::StringNotIn { operand, values } => {
+            operand.value_type == RowValueType::String
+                && !values.is_empty()
+                && values.len() <= 8
+                && values.iter().all(|value| {
+                    !value.is_empty()
+                        && value.len() <= 256
+                        && value.bytes().all(|byte| byte.is_ascii_graphic())
+                })
+                && valid_operand(model, operation, selected, operand)
+        }
+        RowPredicate::StringIn { operand, values } => {
+            operand.value_type == RowValueType::String
+                && !values.is_empty()
+                && values.len() <= 8
+                && values.iter().all(|value| {
+                    !value.is_empty()
+                        && value.len() <= 256
+                        && value.bytes().all(|byte| byte.is_ascii_graphic())
+                })
+                && valid_operand(model, operation, selected, operand)
+        }
         RowPredicate::SelectedRequestEquals {
             selected: path,
             request,

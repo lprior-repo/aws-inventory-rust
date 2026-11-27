@@ -85,6 +85,57 @@ fn predicate(value: ValueRef<'_>) -> Result<RowPredicatePlan, RuntimeCatalogErro
                 },
             })
         }
+        3 => {
+            metadata::only_fields(fields, &[1, 2, 3])?;
+            let operand = operand(metadata::field(fields, 2)?)?;
+            if operand.value_type != RowValueType::String {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            let values = metadata::bounded(
+                metadata::list(fields, 3)?,
+                string_predicate_value,
+                8,
+            )?;
+            if values.is_empty() {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            Ok(RowPredicatePlan::StringNotIn {
+                operand,
+                values: values.into_boxed_slice(),
+            })
+        }
+        4 => {
+            metadata::only_fields(fields, &[1, 2, 3])?;
+            let operand = operand(metadata::field(fields, 2)?)?;
+            if operand.value_type != RowValueType::String {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            let values = metadata::bounded(
+                metadata::list(fields, 3)?,
+                string_predicate_value,
+                8,
+            )?;
+            if values.is_empty() {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            Ok(RowPredicatePlan::StringIn {
+                operand,
+                values: values.into_boxed_slice(),
+            })
+        }
+        _ => Err(RuntimeCatalogError::Capability),
+    }
+}
+
+fn string_predicate_value(value: ValueRef<'_>) -> Result<Box<str>, RuntimeCatalogError> {
+    match value {
+        ValueRef::Text(value)
+            if !value.is_empty()
+                && value.len() <= 256
+                && value.bytes().all(|byte| byte.is_ascii_graphic()) =>
+        {
+            Ok(value.into())
+        }
         _ => Err(RuntimeCatalogError::Capability),
     }
 }
@@ -148,6 +199,18 @@ fn validate_predicate(
                 ContextSource::Response => operation.output()?,
             };
             validate_type(service, target, &operand.path, operand.value_type)
+        }
+        RowPredicatePlan::StringNotIn { operand, .. }
+        | RowPredicatePlan::StringIn { operand, .. } => {
+            if operand.value_type != RowValueType::String {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            let target = match operand.source {
+                ContextSource::SelectedItem => selected,
+                ContextSource::Request => operation.input()?,
+                ContextSource::Response => operation.output()?,
+            };
+            validate_type(service, target, &operand.path, RowValueType::String)
         }
         RowPredicatePlan::SelectedRequestEquals {
             selected: path,
@@ -239,7 +302,10 @@ fn projected(
     predicate: &RowPredicatePlan,
 ) -> Result<(), RuntimeCatalogError> {
     match predicate {
-        RowPredicatePlan::Absent(operand) | RowPredicatePlan::BooleanEquals { operand, .. } => {
+        RowPredicatePlan::Absent(operand)
+        | RowPredicatePlan::BooleanEquals { operand, .. }
+        | RowPredicatePlan::StringNotIn { operand, .. }
+        | RowPredicatePlan::StringIn { operand, .. } => {
             projected_path(source, operand.source, &operand.path)
         }
         RowPredicatePlan::SelectedRequestEquals { request, .. } => {

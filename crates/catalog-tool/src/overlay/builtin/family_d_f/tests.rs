@@ -31,7 +31,6 @@ fn whole_response_credentials_content_and_paid_workloads_never_become_callable()
             "DescribeDirectories",
             DenyReason::Secret,
         ),
-        ("docdb", "DescribeDBInstances", DenyReason::Secret),
         (
             "database-migration-service",
             "DescribeCertificates",

@@ -6,7 +6,6 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
         "wellarchitected" => lenses(service),
         "wisdom" => wisdom(service),
         "wickr" => bots(service),
-        "voice-id" => voice(service),
         _ => Ok(()),
     }
 }
@@ -82,6 +81,20 @@ fn wisdom(service: &mut ServiceOverlay) -> Result<(), NameError> {
             "ListKnowledgeBases",
             "knowledgeBaseId",
         )?;
+        if operation == "ListImportJobs" {
+            plan.row_policy.child = Some(ChildEligibility {
+                operation: name("ListKnowledgeBases")?,
+                predicate: RowPredicate::StringIn {
+                    operand: RowOperand {
+                        source: ContextSource::SelectedItem,
+                        path: path("knowledgeBaseType")?,
+                        value_type: RowValueType::String,
+                    },
+                    values: vec!["QUICK_RESPONSES".to_owned()],
+                },
+            });
+        }
+
         if operation != "ListImportJobs" {
             plan.tags = Some(path("tags")?);
         }
@@ -110,30 +123,4 @@ fn bots(service: &mut ServiceOverlay) -> Result<(), NameError> {
         "lastLogin",
     ])?;
     insert(service, "ListBots", plan)
-}
-
-fn voice(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    [
-        ("ListWatchlists", "WatchlistSummaries", "WatchlistId"),
-        ("ListSpeakers", "SpeakerSummaries", "GeneratedSpeakerId"),
-        (
-            "ListFraudsters",
-            "FraudsterSummaries",
-            "GeneratedFraudsterId",
-        ),
-        ("ListFraudsterRegistrationJobs", "JobSummaries", "JobId"),
-        ("ListSpeakerEnrollmentJobs", "JobSummaries", "JobId"),
-    ]
-    .into_iter()
-    .try_for_each(|(operation, items, id)| {
-        let plan = child(
-            items,
-            correlated(&["DomainId"], &[id])?,
-            "ListDomains",
-            "DomainId",
-            "DomainId",
-            true,
-        )?;
-        insert(service, operation, plan)
-    })
 }

@@ -16,11 +16,9 @@ iotthingsgraph/SearchSystemTemplates
 
 shared
 Actions use explicit operation overrides or model signing-name:operation; non-callable operations whose IAM action is not derivable by that lookup are not listed.
-count: 23 non-callable operations
-DENIED (must-deny): 1
-rds/DescribeDBClusters rds:DescribeDBClusters callable-by docdb/DescribeDBClusters
-rds/DescribeDBClusters rds:DescribeDBClusters callable-by neptune/DescribeDBClusters
-deferred: 22
+count: 20 non-callable operations
+DENIED (must-deny): 0
+deferred: 20
 chime/ListPhoneNumbers chime:ListPhoneNumbers callable-by chime-sdk-voice/ListPhoneNumbers
 cloudwatch-events/DescribeEventSource events:DescribeEventSource callable-by eventbridge/DescribeEventSource
 cloudwatch-events/DescribeEventSource events:DescribeEventSource callable-by eventbridgev2/DescribeEventSource
@@ -40,15 +38,13 @@ pinpoint-email/ListTagsForResource ses:ListTagsForResource callable-by sesv2/Lis
 qconnect/GetAssistant wisdom:GetAssistant callable-by wisdom/GetAssistant
 qconnect/GetAssistantAssociation wisdom:GetAssistantAssociation callable-by wisdom/GetAssistantAssociation
 qconnect/GetKnowledgeBase wisdom:GetKnowledgeBase callable-by wisdom/GetKnowledgeBase
-qconnect/ListContents wisdom:ListContents callable-by wisdom/ListContents
 qconnect/ListImportJobs wisdom:ListImportJobs callable-by wisdom/ListImportJobs
-qconnect/ListQuickResponses wisdom:ListQuickResponses callable-by wisdom/ListQuickResponses
 sesv2/GetConfigurationSet ses:GetConfigurationSet callable-by pinpoint-email/GetConfigurationSet
 unclassified: 0
 
 broad
 Existing aliases or callable mappings associate these granted actions with multiple operation IDs, so they can permit other requests.
-count: 36 actions
+count: 37 actions
 apigateway:GET callable-by api-gateway/GetAccount
 apigateway:GET callable-by api-gateway/GetApiKeys
 apigateway:GET callable-by api-gateway/GetAuthorizers
@@ -119,6 +115,10 @@ rds:DescribeDBClusterSnapshots callable-by neptune/DescribeDBClusterSnapshots
 rds:DescribeDBClusterSnapshots callable-by rds/DescribeDBClusterSnapshots
 rds:DescribeDBClusters callable-by docdb/DescribeDBClusters
 rds:DescribeDBClusters callable-by neptune/DescribeDBClusters
+rds:DescribeDBClusters callable-by rds/DescribeDBClusters
+rds:DescribeDBInstances callable-by docdb/DescribeDBInstances
+rds:DescribeDBInstances callable-by neptune/DescribeDBInstances
+rds:DescribeDBInstances callable-by rds/DescribeDBInstances
 rds:DescribeDBParameterGroups callable-by neptune/DescribeDBParameterGroups
 rds:DescribeDBParameterGroups callable-by rds/DescribeDBParameterGroups
 rds:DescribeDBSubnetGroups callable-by docdb/DescribeDBSubnetGroups

@@ -1,10 +1,23 @@
 use super::super::{empty, path};
 use crate::classes::DenyReason;
 use crate::overlay::{
-    FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass, Paginator,
-    Scope, TokenPair,
+    ContextSource, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
+    Paginator, RowOperand, RowPolicy, RowPredicate, RowValueType, Scope, TokenPair,
 };
 
+fn owned_rds_engine() -> Result<RowPolicy, NameError> {
+    Ok(RowPolicy {
+        owned: Some(RowPredicate::StringNotIn {
+            operand: RowOperand {
+                source: ContextSource::SelectedItem,
+                path: path("Engine")?,
+                value_type: RowValueType::String,
+            },
+            values: vec!["docdb".to_owned(), "neptune".to_owned()],
+        }),
+        ..RowPolicy::default()
+    })
+}
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
 ("DescribeDBCapacityReservations", OperationOverlay {
@@ -29,7 +42,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
     }),
 ("DescribeDBClusterBacktracks", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("DBClusterIdentifier requires DescribeDBClusters, whose native output is secret-bearing. Also needs an Aurora-MySQL-capable parent predicate; the API applies only to Aurora MySQL clusters. Backtrack identity must include DBClusterIdentifier and BacktrackIdentifier.".to_owned()),
+        defer_reason: Some("Requires an Aurora-MySQL-capable parent predicate; the API applies only to Aurora MySQL clusters. Backtrack identity must include DBClusterIdentifier and BacktrackIdentifier.".to_owned()),
         ..empty()
     }),
 ("DescribeDBClusterEndpoints", OperationOverlay {
@@ -71,7 +84,15 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("DescribeDBClusters", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("DBClusters")?),
+        page_size: Some(100),
+        tags: Some(path("TagList")?),
+        paginator: Some(Paginator::Token(TokenPair { input: path("Marker")?, output: path("Marker")?, optional: false })),
+        row_policy: owned_rds_engine()?,
+        identity: Some(Identity::Key(vec![path("DbClusterResourceId")?])),
+        exclude_response_members: vec![path("DBClusters.PendingModifiedValues.MasterUserPassword")?],
         ..empty()
     }),
 ("DescribeDBEngineVersions", OperationOverlay {
@@ -89,12 +110,20 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("DescribeDBInstances", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("DBInstances")?),
+        page_size: Some(100),
+        tags: Some(path("TagList")?),
+        paginator: Some(Paginator::Token(TokenPair { input: path("Marker")?, output: path("Marker")?, optional: false })),
+        row_policy: owned_rds_engine()?,
+        identity: Some(Identity::Key(vec![path("DbiResourceId")?])),
+        exclude_response_members: vec![path("DBInstances.PendingModifiedValues.MasterUserPassword")?],
         ..empty()
     }),
 ("DescribeDBLogFiles", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("The response contains log metadata (LogFileName, LastWritten, Size), not log bytes. Requires a safe DB-instance parent source, currently blocked by modeled passwords, and parent-qualified (DBInstanceIdentifier, LogFileName) identity; output lacks DBInstanceIdentifier.".to_owned()),
+        defer_reason: Some("The response contains log metadata (LogFileName, LastWritten, Size), not log bytes. Parent-qualified (DBInstanceIdentifier, LogFileName) identity is required; output lacks DBInstanceIdentifier.".to_owned()),
         ..empty()
     }),
 ("DescribeDBMajorEngineVersions", OperationOverlay {

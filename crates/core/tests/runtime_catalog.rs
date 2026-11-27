@@ -118,11 +118,18 @@ fn relationship_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 
 #[test]
 fn unknown_runtime_extension_version_is_rejected() -> Result<(), Box<dyn std::error::Error>> {
-    let bytes = runtime_bytes(5)?;
+    let bytes = runtime_bytes(6)?;
     assert!(matches!(
         RuntimeCatalog::from_bytes(&bytes),
-        Err(RuntimeCatalogError::ExtensionVersion(5))
+        Err(RuntimeCatalogError::ExtensionVersion(6))
     ));
+    Ok(())
+}
+
+#[test]
+fn current_runtime_extension_version_is_accepted() -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = runtime_bytes(5)?;
+    assert!(RuntimeCatalog::from_bytes(&bytes)?.plans().is_empty());
     Ok(())
 }
 

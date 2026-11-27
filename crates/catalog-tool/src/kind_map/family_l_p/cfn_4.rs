@@ -5,6 +5,7 @@ pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
     CfnMapping::canonical("AWS::MemoryDB::User"),
     CfnMapping::canonical("AWS::Neptune::DBCluster"),
     CfnMapping::canonical("AWS::Neptune::DBClusterParameterGroup"),
+    CfnMapping::canonical("AWS::Neptune::DBInstance"),
     CfnMapping::canonical("AWS::Neptune::DBParameterGroup"),
     CfnMapping::canonical("AWS::Neptune::DBSubnetGroup"),
     CfnMapping::canonical("AWS::Neptune::EventSubscription"),

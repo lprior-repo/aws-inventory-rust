@@ -72,7 +72,10 @@ fn eligibility_paths(
         .filter(|child| child.operation.as_str() == operation)
     {
         match &eligibility.predicate {
-            RowPredicate::Absent(operand) | RowPredicate::BooleanEquals { operand, .. } => {
+            RowPredicate::Absent(operand)
+            | RowPredicate::BooleanEquals { operand, .. }
+            | RowPredicate::StringNotIn { operand, .. }
+            | RowPredicate::StringIn { operand, .. } => {
                 insert(paths, operand.source, operand.path.as_str())
             }
             RowPredicate::SelectedRequestEquals {

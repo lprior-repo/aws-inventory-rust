@@ -53,6 +53,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "neptune",
+        operation: "DescribeDBInstances",
+        kind: "AWS::Neptune::DBInstance",
+    },
+    OperationMapping {
+        service: "neptune",
         operation: "DescribeEventSubscriptions",
         kind: "AWS::Neptune::EventSubscription",
     },

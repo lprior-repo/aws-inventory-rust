@@ -1,5 +1,12 @@
-relations live=536 pending=36 declared=122 reviewed=414
+relations live=527 pending=41 declared=120 reviewed=407
 declared thin=0
+AWS::ApiOnly::VoiceIDFraudster -> AWS::VoiceID::Domain (inactive source kind, parent)	source kind AWS::ApiOnly::VoiceIDFraudster is inactive
+AWS::ApiOnly::VoiceIDFraudsterRegistrationJob -> AWS::VoiceID::Domain (inactive source kind, parent)	source kind AWS::ApiOnly::VoiceIDFraudsterRegistrationJob is inactive
+AWS::ApiOnly::VoiceIDSpeaker -> AWS::VoiceID::Domain (inactive source kind, parent)	source kind AWS::ApiOnly::VoiceIDSpeaker is inactive
+AWS::ApiOnly::VoiceIDSpeakerEnrollmentJob -> AWS::VoiceID::Domain (inactive source kind, parent)	source kind AWS::ApiOnly::VoiceIDSpeakerEnrollmentJob is inactive
+AWS::ApiOnly::VoiceIDWatchlist -> AWS::VoiceID::Domain (inactive source kind, parent)	source kind AWS::ApiOnly::VoiceIDWatchlist is inactive
+AWS::Wisdom::Content -> AWS::Wisdom::KnowledgeBase (inactive source kind, parent)	source kind AWS::Wisdom::Content is inactive
+AWS::Wisdom::QuickResponse -> AWS::Wisdom::KnowledgeBase (inactive source kind, parent)	source kind AWS::Wisdom::QuickResponse is inactive
 pending AWS::APS::AnomalyDetector arn AnomalyDetector - REFERENCES (target kind not callable)	target kind not callable
 pending AWS::APS::RuleGroupsNamespace arn RuleGroupsNamespace - REFERENCES (target kind not callable)	target kind not callable
 pending AWS::APS::Scraper arn Scraper - REFERENCES (target kind not callable)	target kind not callable
@@ -34,5 +41,3 @@ pending AWS::SES::MailManagerAddressList AddressListArn com.amazon.pancetta.addr
 pending AWS::Wisdom::AIPrompt aiPromptId AWS::Wisdom::AIPrompt - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
 pending AWS::Wisdom::AIPromptVersion aiPromptSummary.aiPromptId AWS::Wisdom::AIPrompt - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
 pending AWS::Wisdom::AssistantAssociation assistantAssociationId AWS::Wisdom::AssistantAssociation - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
-pending AWS::Wisdom::Content contentId AWS::Wisdom::Content - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound
-pending AWS::Wisdom::QuickResponse knowledgeBaseId AWS::Wisdom::QuickResponse - REFERENCES (target identity members cannot be bound)	target identity members cannot be bound

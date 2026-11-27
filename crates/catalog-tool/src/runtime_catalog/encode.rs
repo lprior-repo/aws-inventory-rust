@@ -39,7 +39,7 @@ pub(super) fn extension(
     kinds: &KindMap,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let mut extension = map([
-        (1, Value::Int(4)),
+(1, Value::Int(5)),
         (2, Value::List(plans)),
         (3, Value::List(schemas)),
         (4, Value::List(relations)),

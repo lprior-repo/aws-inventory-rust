@@ -28,6 +28,14 @@ pub enum RowPredicatePlan {
         operand: RowOperandPlan,
         value: bool,
     },
+    StringNotIn {
+        operand: RowOperandPlan,
+        values: Box<[Box<str>]>,
+    },
+    StringIn {
+        operand: RowOperandPlan,
+        values: Box<[Box<str>]>,
+    },
     SelectedRequestEquals {
         selected: Box<[FieldId]>,
         request: Box<[FieldId]>,

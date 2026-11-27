@@ -121,12 +121,48 @@ fn evaluate<'a>(
             }
         },
         RowPredicatePlan::BooleanEquals { operand, value } => boolean(operand, *value, read),
+        RowPredicatePlan::StringNotIn { operand, values } => {
+            string_not_in(operand, values, read)
+        }
+        RowPredicatePlan::StringIn { operand, values } => {
+            string_in(operand, values, read)
+        }
         RowPredicatePlan::SelectedRequestEquals {
             selected,
             request,
             value_type,
             missing,
         } => selected_equals(selected, request, *value_type, *missing, read),
+    }
+}
+
+fn string_not_in<'a>(
+    operand: &inventory_core::catalog::runtime::RowOperandPlan,
+    values: &[Box<str>],
+    read: &impl Fn(ContextSource, &[FieldId]) -> Result<Option<ValueRef<'a>>, SweepError>,
+) -> Result<bool, SweepError> {
+    let Some(actual) = read(operand.source, &operand.path)? else {
+        return Ok(false);
+    };
+    typed(actual, RowValueType::String)?;
+    match actual {
+        ValueRef::Text(actual) => Ok(!values.iter().any(|value| value.as_ref() == actual)),
+        _ => Err(SweepError::Operation("row policy string has invalid type")),
+    }
+}
+
+fn string_in<'a>(
+    operand: &inventory_core::catalog::runtime::RowOperandPlan,
+    values: &[Box<str>],
+    read: &impl Fn(ContextSource, &[FieldId]) -> Result<Option<ValueRef<'a>>, SweepError>,
+) -> Result<bool, SweepError> {
+    let Some(actual) = read(operand.source, &operand.path)? else {
+        return Ok(false);
+    };
+    typed(actual, RowValueType::String)?;
+    match actual {
+        ValueRef::Text(actual) => Ok(values.iter().any(|value| value.as_ref() == actual)),
+        _ => Err(SweepError::Operation("row policy string has invalid type")),
     }
 }
 
