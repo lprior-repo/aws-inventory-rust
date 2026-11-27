@@ -131,7 +131,38 @@ pub(super) fn options(url: &str) -> Result<PgConnectOptions, HarnessError> {
 }
 
 pub(super) fn database_url(url: &str, name: &str) -> Result<String, HarnessError> {
-    Ok(options(url)?.database(name).to_url_lossy().into())
+    if names::created_at(name).is_none() {
+        return Err(HarnessError::invalid(
+            "refusing to address a database not named by the harness",
+        ));
+    }
+    options(url)?;
+    let retargeted = retarget(url, name)?;
+    if options(&retargeted)?.get_database() != Some(name) {
+        return Err(HarnessError::invalid(
+            "INVENTORY_POSTGRES_URL cannot be retargeted to the fixture database",
+        ));
+    }
+    Ok(retargeted)
+}
+
+fn retarget(admin: &str, name: &str) -> Result<String, HarnessError> {
+    let mut parsed = url::Url::parse(admin)
+        .map_err(|_| HarnessError::invalid("invalid INVENTORY_POSTGRES_URL"))?;
+    parsed.set_path(name);
+    if parsed.query_pairs().any(|(key, _)| key == "dbname") {
+        let kept: Vec<(String, String)> = parsed
+            .query_pairs()
+            .filter(|(key, _)| key != "dbname")
+            .map(|(key, value)| (key.into_owned(), value.into_owned()))
+            .collect();
+        if kept.is_empty() {
+            parsed.set_query(None);
+        } else {
+            parsed.query_pairs_mut().clear().extend_pairs(kept);
+        }
+    }
+    Ok(parsed.into())
 }
 
 pub(super) async fn connect(url: &str) -> Result<PgConnection, HarnessError> {

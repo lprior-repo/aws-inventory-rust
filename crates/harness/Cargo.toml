@@ -61,6 +61,7 @@ tokio-rustls = "0.26.6"
 rustls-pki-types = { version = "1.16.0", features = ["std"] }
 tokio-util.workspace = true
 minicbor.workspace = true
+url = "2.5.8"
 
 tempfile = "3.27.0"
 libc = "0.2.191"

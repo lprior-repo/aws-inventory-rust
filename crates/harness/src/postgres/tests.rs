@@ -1,5 +1,6 @@
 use super::{TestDatabase, admin_url, database, names, prune};
 use crate::HarnessError;
+use sqlx::postgres::PgSslMode;
 use sqlx::Connection;
 
 async fn exists(admin: &str, name: &str) -> Result<bool, HarnessError> {
@@ -27,19 +28,62 @@ fn postgres_names_are_bounded_identifiers() -> Result<(), HarnessError> {
     Ok(())
 }
 
+const FIXTURE: &str = "inv_t_00000000_1_deadbeef";
+
 #[test]
-fn postgres_url_preserves_socket_and_credentials() -> Result<(), HarnessError> {
-    let url = database::database_url(
-        "postgres://inv:p%40ss@localhost/postgres?host=%2Ftmp%2Fsocket&sslmode=disable",
-        "inv_t_00000000_1_deadbeef",
-    )?;
-    let options: sqlx::postgres::PgConnectOptions = url.parse()?;
-    assert_eq!(options.get_database(), Some("inv_t_00000000_1_deadbeef"));
+fn postgres_url_retarget_keeps_credentials_tls_session() -> Result<(), HarnessError> {
+    let admin = "postgres://inv:p%40ss@localhost:6543/postgres?host=%2Ftmp%2Fsocket&sslmode=verify-full&sslrootcert=%2Fetc%2Fca.pem&application_name=inv-test&options=-c%20search_path%3Dinv";
+    let url = database::database_url(admin, FIXTURE)?;
+    assert_eq!(
+        url,
+        "postgres://inv:p%40ss@localhost:6543/inv_t_00000000_1_deadbeef?host=%2Ftmp%2Fsocket&sslmode=verify-full&sslrootcert=%2Fetc%2Fca.pem&application_name=inv-test&options=-c%20search_path%3Dinv"
+    );
+    let options = database::options(&url)?;
+    assert_eq!(options.get_database(), Some(FIXTURE));
+    assert_eq!(options.get_username(), "inv");
+    assert_eq!(options.get_port(), 6543);
     assert_eq!(
         options.get_socket().map(std::path::PathBuf::as_path),
         Some(std::path::Path::new("/tmp/socket"))
     );
-    assert_eq!(options.get_username(), "inv");
+    assert!(matches!(options.get_ssl_mode(), PgSslMode::VerifyFull));
+    assert_eq!(options.get_application_name(), Some("inv-test"));
+    assert_eq!(options.get_options(), Some("-c search_path=inv"));
+    Ok(())
+}
+
+#[test]
+fn postgres_url_retarget_drops_dbname_overrides() -> Result<(), HarnessError> {
+    let with_path = "postgres://inv:p%40ss@localhost/postgres?dbname=postgres&db%6Eame=postgres&sslmode=disable";
+    let url = database::database_url(with_path, FIXTURE)?;
+    assert_eq!(
+        url,
+        "postgres://inv:p%40ss@localhost/inv_t_00000000_1_deadbeef?sslmode=disable"
+    );
+    assert_eq!(database::options(&url)?.get_database(), Some(FIXTURE));
+
+    let without_path = "postgres://inv:p%40ss@localhost?dbname=postgres";
+    let url = database::database_url(without_path, FIXTURE)?;
+    assert_eq!(url, "postgres://inv:p%40ss@localhost/inv_t_00000000_1_deadbeef");
+    assert_eq!(database::options(&url)?.get_database(), Some(FIXTURE));
+    Ok(())
+}
+
+#[test]
+fn postgres_url_retarget_refuses_names_that_are_not_fixtures() -> Result<(), HarnessError> {
+    let admin = "postgres://inv:p%40ss@localhost/postgres?sslmode=disable";
+    assert!(database::database_url(admin, "postgres").is_err());
+    assert!(database::database_url(admin, "inv_t_00000000_1_deadbeef?dbname=postgres").is_err());
+    Ok(())
+}
+
+#[test]
+fn postgres_url_errors_do_not_echo_credentials() -> Result<(), HarnessError> {
+    let admin = "postgres://inv:s3cret-pass@localhost/postgres?sslmode=bogus";
+    let Err(error) = database::database_url(admin, FIXTURE) else {
+        return Err(HarnessError::invalid("invalid sslmode unexpectedly accepted"));
+    };
+    assert!(!error.to_string().contains("s3cret-pass"));
     Ok(())
 }
 
