@@ -1,18 +1,16 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use inventory_harness::audit::{check_additions, write_reconciliation};
 use sha2::{Digest, Sha256};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-fn test_root(name: &str) -> Result<PathBuf, Box<dyn std::error::Error>> {
-    let root = PathBuf::from(format!("/tmp/additions_test_{name}"));
-    if root.exists() {
-        fs::remove_dir_all(&root)?;
-    }
-    fs::create_dir_all(&root)?;
-    Ok(root)
+fn test_root(name: &str) -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
+    tempfile::Builder::new()
+        .prefix(&format!("additions_test_{name}_"))
+        .tempdir()
+        .map_err(|e| e.into())
 }
 
 fn write_json(root: &Path, name: &str, value: &serde_json::Value) -> TestResult {
@@ -61,10 +59,11 @@ fn matrix_sha(root: &Path) -> Result<String, Box<dyn std::error::Error>> {
 #[test]
 fn test_absent_overlay_is_a_noop_for_the_validator() -> TestResult {
     let root = test_root("absent_overlay")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
-    let value = check_additions(&root)?;
+    let value = check_additions(root_path)?;
     assert_eq!(
         value.get("status").and_then(|v| v.as_str()),
         Some("absent"),
@@ -76,10 +75,11 @@ fn test_absent_overlay_is_a_noop_for_the_validator() -> TestResult {
 #[test]
 fn test_absent_overlay_leaves_reconciliation_output_untouched() -> TestResult {
     let root = test_root("reconciliation_untouched")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
-    let result = check_additions(&root)?;
+    let result = check_additions(root_path)?;
     assert!(
         result
             .get("additions")
@@ -92,10 +92,11 @@ fn test_absent_overlay_leaves_reconciliation_output_untouched() -> TestResult {
 #[test]
 fn test_additions_schema_version_must_be_1() -> TestResult {
     let root = test_root("schema_version")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
-    let matrix_sha = matrix_sha(&root)?;
+    let matrix_sha = matrix_sha(root_path)?;
 
     let bad_additions = serde_json::json!({
         "schema_version": 2,
@@ -105,12 +106,12 @@ fn test_additions_schema_version_must_be_1() -> TestResult {
         "additions": []
     });
     write_json(
-        &root,
+        root_path,
         "catalog/aws-operation-additions.json",
         &bad_additions,
     )?;
 
-    let result = check_additions(&root);
+    let result = check_additions(root_path);
     let Err(e) = result else {
         return Err("expected check_additions to fail with wrong schema_version".into());
     };
@@ -125,8 +126,9 @@ fn test_additions_schema_version_must_be_1() -> TestResult {
 #[test]
 fn test_additions_must_bind_correct_matrix() -> TestResult {
     let root = test_root("matrix_binding")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
     let bad_sha = "deadbeef".repeat(8);
     let bad_additions = serde_json::json!({
@@ -137,12 +139,12 @@ fn test_additions_must_bind_correct_matrix() -> TestResult {
         "additions": []
     });
     write_json(
-        &root,
+        root_path,
         "catalog/aws-operation-additions.json",
         &bad_additions,
     )?;
 
-    let result = check_additions(&root);
+    let result = check_additions(root_path);
     let Err(e) = result else {
         return Err("expected check_additions to fail with wrong matrix binding".into());
     };
@@ -157,10 +159,11 @@ fn test_additions_must_bind_correct_matrix() -> TestResult {
 #[test]
 fn test_duplicate_operation_identity_fails() -> TestResult {
     let root = test_root("duplicate_identity")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
-    let matrix_sha = matrix_sha(&root)?;
+    let matrix_sha = matrix_sha(root_path)?;
 
     let bad_additions = serde_json::json!({
         "schema_version": 1,
@@ -178,12 +181,12 @@ fn test_duplicate_operation_identity_fails() -> TestResult {
         }]
     });
     write_json(
-        &root,
+        root_path,
         "catalog/aws-operation-additions.json",
         &bad_additions,
     )?;
 
-    let result = check_additions(&root);
+    let result = check_additions(root_path);
     let Err(e) = result else {
         return Err("expected check_additions to fail with duplicate identity".into());
     };
@@ -198,10 +201,11 @@ fn test_duplicate_operation_identity_fails() -> TestResult {
 #[test]
 fn test_valid_additions_pass() -> TestResult {
     let root = test_root("valid_additions")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
-    let matrix_sha = matrix_sha(&root)?;
+    let matrix_sha = matrix_sha(root_path)?;
 
     let valid_additions = serde_json::json!({
         "schema_version": 1,
@@ -219,12 +223,12 @@ fn test_valid_additions_pass() -> TestResult {
         }]
     });
     write_json(
-        &root,
+        root_path,
         "catalog/aws-operation-additions.json",
         &valid_additions,
     )?;
 
-    let value = check_additions(&root)?;
+    let value = check_additions(root_path)?;
     assert_eq!(
         value.get("status").and_then(|v| v.as_str()),
         Some("applied")
@@ -242,15 +246,17 @@ fn test_valid_additions_pass() -> TestResult {
 #[test]
 fn test_output_path_must_be_within_root() -> TestResult {
     let root = test_root("outside_root")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
     let report = serde_json::json!({"status": "ok"});
-    let outside = PathBuf::from("/tmp/outside_additions_test.json");
+    let outside_dir = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let outside = outside_dir.path().join("outside_additions_test.json");
     fs::write(&outside, "test")?;
-    let outside = outside.canonicalize()?;
+    let outside = outside.canonicalize().map_err(|e| e.to_string())?;
 
-    let result = write_reconciliation(&root, &report, &outside);
+    let result = write_reconciliation(root_path, &report, &outside);
     let Err(e) = result else {
         return Err("expected write_reconciliation to fail for output outside root".into());
     };
@@ -265,8 +271,9 @@ fn test_output_path_must_be_within_root() -> TestResult {
 #[test]
 fn test_historical_paths_cannot_be_replaced() -> TestResult {
     let root = test_root("historical_paths")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
+    write_matrix(root_path, &matrix)?;
 
     let report = serde_json::json!({"status": "ok"});
 
@@ -277,15 +284,15 @@ fn test_historical_paths_cannot_be_replaced() -> TestResult {
         "artifacts/aws-operation-source-reconciliation-v05.json",
     ];
     for path in &protected_paths {
-        let target = root.join(path);
+        let target = root_path.join(path);
         if !target.exists() {
-            write_json(&root, path, &serde_json::json!({"test": true}))?;
+            write_json(root_path, path, &serde_json::json!({"test": true}))?;
         }
     }
 
     for path in &protected_paths {
-        let target = root.join(path);
-        let result = write_reconciliation(&root, &report, &target);
+        let target = root_path.join(path);
+        let result = write_reconciliation(root_path, &report, &target);
         let Err(e) = result else {
             return Err(format!("expected write to {path} to fail").into());
         };
@@ -301,15 +308,16 @@ fn test_historical_paths_cannot_be_replaced() -> TestResult {
 #[test]
 fn test_atomic_write_leaves_no_partial_on_failure() -> TestResult {
     let root = test_root("atomic_write")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
-    fs::create_dir_all(root.join("artifacts"))?;
+    write_matrix(root_path, &matrix)?;
+    fs::create_dir_all(root_path.join("artifacts"))?;
 
     let report = serde_json::json!({"status": "ok"});
-    let output = root.join("artifacts/test-reconciliation.json");
+    let output = root_path.join("artifacts/test-reconciliation.json");
     fs::write(&output, "")?;
 
-    write_reconciliation(&root, &report, &output)?;
+    write_reconciliation(root_path, &report, &output)?;
     assert!(output.exists(), "output file should exist");
 
     let partial = output.with_extension("partial");
@@ -323,17 +331,18 @@ fn test_atomic_write_leaves_no_partial_on_failure() -> TestResult {
 #[test]
 fn test_atomic_write_replaces_existing_file() -> TestResult {
     let root = test_root("replace_existing")?;
+    let root_path = root.path();
     let matrix = make_matrix();
-    write_matrix(&root, &matrix)?;
-    fs::create_dir_all(root.join("artifacts"))?;
+    write_matrix(root_path, &matrix)?;
+    fs::create_dir_all(root_path.join("artifacts"))?;
 
     let report1 = serde_json::json!({"status": "first"});
-    let output = root.join("artifacts/replace-test.json");
+    let output = root_path.join("artifacts/replace-test.json");
     fs::write(&output, "")?;
-    write_reconciliation(&root, &report1, &output)?;
+    write_reconciliation(root_path, &report1, &output)?;
 
     let report2 = serde_json::json!({"status": "second"});
-    write_reconciliation(&root, &report2, &output)?;
+    write_reconciliation(root_path, &report2, &output)?;
 
     let content = fs::read_to_string(&output)?;
     let parsed: serde_json::Value = serde_json::from_str(&content)?;
