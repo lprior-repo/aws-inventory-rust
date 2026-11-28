@@ -68,6 +68,34 @@ fn throttle_codes_survive_service_unavailable_but_message_text_does_not_classify
         failure(http::StatusCode::SERVICE_UNAVAILABLE, message_only),
         Err(ApiError::Transient(_))
     ));
+    let conflicting = Response {
+        status: http::StatusCode::SERVICE_UNAVAILABLE,
+        headers: http::HeaderMap::from_iter([(
+            http::HeaderName::from_static("x-amzn-errortype"),
+            http::HeaderValue::from_static("SlowDown"),
+        )]),
+        body: bytes::Bytes::from_static(b"<Error><Code>ServiceUnavailable</Code></Error>"),
+        version: http::Version::HTTP_11,
+    };
+    assert!(matches!(
+        validate_status(plan, conflicting, "123456789012", "us-east-1"),
+        Err(ApiError::Transient(reason)) if reason.contains("ServiceUnavailable")
+    ));
+    let truncated = Response {
+        status: http::StatusCode::BAD_REQUEST,
+        headers: http::HeaderMap::from_iter([
+            (http::HeaderName::from_static("x-amzn-errortype"),
+             http::HeaderValue::from_static("ThrottlingException")),
+            (http::header::RETRY_AFTER, http::HeaderValue::from_static("4")),
+        ]),
+        body: bytes::Bytes::from_static(b"<Error><Code>"),
+        version: http::Version::HTTP_11,
+    };
+    assert!(matches!(
+        validate_status(plan, truncated, "123456789012", "us-east-1"),
+        Err(ApiError::RetryAfter { kind: RetryKind::Throttled, retry_after: inventory_engine::limiter::RetryAfter::Delay(delay), .. })
+            if delay == std::time::Duration::from_secs(4)
+    ));
     Ok(())
 }
 

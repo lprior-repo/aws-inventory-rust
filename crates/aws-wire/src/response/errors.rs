@@ -49,9 +49,20 @@ pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super
     if context.body.len() > context.limits.body_bytes() {
         return Err(super::DecodeError::Limit("response body"));
     }
-    let code = match error_header(context.headers)? {
-        Some(code) => Some(own_text(code)?),
-        None => body_field(context, Field::Code)?,
+    let code = if context.protocol == Protocol::RestXml && !context.body.is_empty() {
+        match body_field(context, Field::Code) {
+            Ok(Some(code)) => Some(code),
+            Ok(None) => error_header(context.headers)?.map(own_text).transpose()?,
+            Err(body_error) => match error_header(context.headers)? {
+                Some(code) => Some(own_text(code)?),
+                None => return Err(body_error),
+            },
+        }
+    } else {
+        match error_header(context.headers)? {
+            Some(code) => Some(own_text(code)?),
+            None => body_field(context, Field::Code)?,
+        }
     };
     let class = match modeled_class(context, code.as_deref())? {
         Some(class) => class,
