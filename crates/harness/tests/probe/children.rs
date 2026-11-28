@@ -200,7 +200,7 @@ async fn given_one_failed_sibling_when_probed_then_successful_sibling_still_feed
     assert_row(&report, "bindings ListParents2 awsJson1_1 items 1");
     assert_row(
         &report,
-        "protocol awsJson1_1 items 3 empty 0 unsupported 0 failed 1 skipped-child 0",
+        "protocol awsJson1_1 items 3 empty 0 not-applicable 0 unsupported 0 failed 1 skipped-child 0",
     );
     assert_row(&report, "total failed 1");
     Ok(())

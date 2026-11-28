@@ -37,12 +37,7 @@ pub async fn open_store(database: &str, catalog_bytes: &[u8]) -> Result<PgStore>
 }
 
 async fn open_current(url: &DatabaseUrl, config: PgWriteConfig, catalog: &[u8]) -> Result<PgStore> {
-    let store = PgStore::open(url, config).await?;
-    if let Err(error) = store.validate_catalog(catalog).await {
-        store.close().await;
-        return Err(error.into());
-    }
-    Ok(store)
+    Ok(PgStore::open_with_catalog(url, config, catalog).await?)
 }
 
 #[cfg(test)]

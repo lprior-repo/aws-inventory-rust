@@ -76,7 +76,7 @@ async fn postgres_given_incompatible_schema_when_opening_reader_then_version_fai
         .ok_or("expected version error")?;
     assert_eq!(
         error.to_string(),
-        "unsupported PostgreSQL inventory schema; expected 14"
+        "unsupported PostgreSQL inventory schema; expected 14 or 15"
     );
     sqlx::query("DELETE FROM inventory.metadata WHERE key='schema_version'")
         .execute(&writer)
@@ -87,7 +87,7 @@ async fn postgres_given_incompatible_schema_when_opening_reader_then_version_fai
         .ok_or("expected absent version error")?;
     assert_eq!(
         error.to_string(),
-        "unsupported PostgreSQL inventory schema; expected 14"
+        "unsupported PostgreSQL inventory schema; expected 14 or 15"
     );
     writer.close().await;
     database.finish().await?;

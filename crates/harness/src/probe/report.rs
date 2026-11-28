@@ -10,6 +10,7 @@ pub(super) enum Outcome {
     Items(u64),
     Empty,
     EmptyReason(String),
+    NotApplicable(String),
     Unsupported(String),
     Failed {
         class: &'static str,
@@ -52,6 +53,7 @@ pub(super) fn render(mut rows: Vec<Row<'_>>) -> Result<String, ProbeError> {
 fn write_totals(report: &mut Report, total: &Totals) -> fmt::Result {
     writeln!(report, "total items {}", total.items)?;
     writeln!(report, "total empty {}", total.empty)?;
+    writeln!(report, "total not-applicable {}", total.not_applicable)?;
     writeln!(report, "total unsupported {}", total.unsupported)?;
     writeln!(report, "total failed {}", total.failed)?;
     writeln!(report, "total skipped-child {}", total.skipped)
@@ -70,6 +72,7 @@ impl Row<'_> {
             Outcome::Items(count) => writeln!(report, "items {count}"),
             Outcome::Empty => writeln!(report, "empty"),
             Outcome::EmptyReason(reason) => writeln!(report, "empty {reason}"),
+            Outcome::NotApplicable(detail) => writeln!(report, "not-applicable {detail}"),
             Outcome::Unsupported(detail) => writeln!(report, "unsupported {detail}"),
             Outcome::Failed { class, detail } => writeln!(report, "failed {class} {detail}"),
             Outcome::FailedPlan(detail) => writeln!(report, "failed plan {detail}"),
@@ -88,6 +91,7 @@ impl Row<'_> {
 struct Totals {
     items: u64,
     empty: u64,
+    not_applicable: u64,
     unsupported: u64,
     failed: u64,
     skipped: u64,
@@ -98,6 +102,7 @@ impl Totals {
         let total = match outcome {
             Outcome::Items(_) => &mut self.items,
             Outcome::Empty | Outcome::EmptyReason(_) => &mut self.empty,
+            Outcome::NotApplicable(_) => &mut self.not_applicable,
             Outcome::Unsupported(_) => &mut self.unsupported,
             Outcome::Failed { .. } | Outcome::FailedPlan(_) => &mut self.failed,
             Outcome::SkippedChild { .. } => &mut self.skipped,
@@ -111,8 +116,8 @@ impl fmt::Display for Totals {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             formatter,
-            "items {} empty {} unsupported {} failed {} skipped-child {}",
-            self.items, self.empty, self.unsupported, self.failed, self.skipped,
+            "items {} empty {} not-applicable {} unsupported {} failed {} skipped-child {}",
+            self.items, self.empty, self.not_applicable, self.unsupported, self.failed, self.skipped,
         )
     }
 }

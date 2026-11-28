@@ -100,6 +100,13 @@ pub fn script() -> Vec<Attempt> {
         attempt("sweep-1", GLOBAL, false, ScopeOutcome::Inaccessible, 1_300),
         attempt("sweep-1", LONG, false, ScopeOutcome::Unsupported, 1_400),
         attempt("sweep-1", CHILD, true, ScopeOutcome::Complete, 1_500),
+        attempt(
+            "sweep-1",
+            ("111111111111", "ca-central-1", "example", "ListThings"),
+            false,
+            ScopeOutcome::NotApplicable,
+            1_600,
+        ),
         attempt("sweep-2", EAST, false, ScopeOutcome::Partial, 5_000),
         attempt("sweep-2", WEST, false, ScopeOutcome::Complete, 5_100),
         attempt("sweep-2", OTHER_ACCOUNT, false, ScopeOutcome::Failed, 5_200),

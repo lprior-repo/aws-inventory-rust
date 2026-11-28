@@ -40,7 +40,7 @@ pub(super) async fn initialize(
     }
     super::relation_permissions::persist(&mut tx, registry).await?;
     create_scope_freshness_view(&mut tx).await?;
-    sqlx::query("PRAGMA user_version=17")
+    sqlx::query("PRAGMA user_version=18")
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
@@ -52,7 +52,7 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     let version: i64 = sqlx::query_scalar("PRAGMA user_version")
         .fetch_one(&mut *tx)
         .await?;
-    if !matches!(version, 14..=17) {
+    if !matches!(version, 14..=18) {
         return Err(StoreError::SchemaVersion { found: version });
     }
     sqlx::query("DROP TRIGGER IF EXISTS delete_resource_children")
@@ -164,6 +164,9 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     }
     create_scope_freshness_view(&mut tx).await?;
     super::tag_mapping::create(&mut tx).await?;
+    sqlx::query("PRAGMA user_version=18")
+        .execute(&mut *tx)
+        .await?;
     tx.commit().await?;
     Ok(())
 }

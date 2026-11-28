@@ -45,6 +45,13 @@ impl Field {
 }
 
 pub(super) fn error_header(headers: &http::HeaderMap) -> Result<Option<&str>, DecodeError> {
+    error_headers(headers).next().transpose()
+}
+
+/// Every recognized error-code header, highest priority first.
+pub(super) fn error_headers(
+    headers: &http::HeaderMap,
+) -> impl Iterator<Item = Result<&str, DecodeError>> {
     [
         "x-amzn-errortype",
         "x-amzn-query-error",
@@ -52,7 +59,7 @@ pub(super) fn error_header(headers: &http::HeaderMap) -> Result<Option<&str>, De
         "x-amz-error-code",
     ]
     .into_iter()
-    .find_map(|name| {
+    .filter_map(move |name| {
         let mut values = headers.get_all(name).into_iter();
         let first = values.next()?;
         Some(if values.any(|value| value != first) {
@@ -64,5 +71,4 @@ pub(super) fn error_header(headers: &http::HeaderMap) -> Result<Option<&str>, De
                 .and_then(normalized_code)
         })
     })
-    .transpose()
 }

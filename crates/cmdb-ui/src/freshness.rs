@@ -64,12 +64,13 @@ impl FreshnessPanel {
         let listed = u64::try_from(report.scopes.len()).unwrap_or(u64::MAX);
         Self {
             summary: format!(
-                "{} scopes: {} complete, {} partial, {} inaccessible, {} unsupported, {} failed, {} unobserved",
+                "{} scopes: {} complete, {} partial, {} inaccessible, {} unsupported, {} not applicable, {} failed, {} unobserved",
                 report.total_scopes,
                 counts.complete,
                 counts.partial,
                 counts.inaccessible,
                 counts.unsupported,
+                counts.not_applicable,
                 counts.failed,
                 counts.unobserved
             ),
@@ -127,11 +128,13 @@ mod tests {
             scopes: vec![
                 scope(ScopeOutcome::Partial, 120_000, Some(3_600_000)),
                 scope(ScopeOutcome::Failed, 1_000, None),
+                scope(ScopeOutcome::NotApplicable, 500, None),
             ],
-            total_scopes: 2,
+            total_scopes: 3,
             counts: ScopeOutcomeCounts {
                 partial: 1,
                 failed: 1,
+                not_applicable: 1,
                 ..ScopeOutcomeCounts::default()
             },
         };
@@ -151,11 +154,17 @@ mod tests {
                     age: "1s".to_owned(),
                     last_complete: "never".to_owned(),
                 },
+                FreshnessRow {
+                    scope: "111111111111/us-east-1 ec2:DescribeVpcs".to_owned(),
+                    outcome: "not_applicable",
+                    age: "0s".to_owned(),
+                    last_complete: "never".to_owned(),
+                },
             ]
         );
         assert_eq!(
             panel.summary,
-            "2 scopes: 0 complete, 1 partial, 0 inaccessible, 0 unsupported, 1 failed, 0 unobserved"
+            "3 scopes: 0 complete, 1 partial, 0 inaccessible, 0 unsupported, 1 not applicable, 1 failed, 0 unobserved"
         );
         assert!(!panel.truncated);
     }

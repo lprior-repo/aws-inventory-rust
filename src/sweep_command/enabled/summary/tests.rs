@@ -66,3 +66,24 @@ fn given_missing_child_sources_when_summary_printed_then_skipped_count_is_visibl
     assert!(std::str::from_utf8(&output)?.contains("child_requests_skipped=21"));
     Ok(())
 }
+
+#[test]
+fn given_not_applicable_scopes_when_summary_printed_then_outcome_extension_follows_legacy_lines()
+-> TestResult {
+    let mut summary = SweepSummary {
+        scopes: 1,
+        ..SweepSummary::default()
+    };
+    summary.outcomes.not_applicable = 2;
+    let mut output = Vec::new();
+    write_summary(&mut output, summary, 0)?;
+    let text = std::str::from_utf8(&output)?;
+    let mut lines = text.lines();
+    let first = lines.next().ok_or("summary line missing")?;
+    assert!(first.contains("scopes=1 complete=0 partial=0"));
+    let metrics = lines.next().ok_or("metrics line missing")?;
+    assert!(metrics.starts_with("metrics "));
+    assert_eq!(lines.next(), Some("outcomes_v1 not_applicable=2"));
+    assert_eq!(lines.next(), None);
+    Ok(())
+}

@@ -47,6 +47,47 @@ fn given_absent_feature_when_probed_then_empty_row_keeps_the_reason()
 }
 
 #[test]
+fn given_not_enabled_scope_when_probed_then_outcome_is_separate_from_empty_and_failure()
+-> Result<(), Box<dyn std::error::Error>> {
+    let catalog = catalog()?;
+    let plan = plan(&catalog)?;
+    let error = SweepError::NotEnabled("account is in the sandbox".into());
+    assert!(matches!(
+        super::failed(plan, &error),
+        Outcome::NotApplicable(detail) if detail.contains("account is in the sandbox")
+    ));
+    assert!(matches!(
+        sampled(plan, 0, &[error]),
+        Outcome::NotApplicable(_)
+    ));
+    Ok(())
+}
+
+#[test]
+fn given_not_enabled_mixed_with_other_outcomes_when_settled_then_it_yields_to_them()
+-> Result<(), Box<dyn std::error::Error>> {
+    let catalog = catalog()?;
+    let plan = plan(&catalog)?;
+    let not_enabled = || SweepError::NotEnabled("account is in the sandbox".into());
+    assert!(matches!(
+        sampled(plan, 3, &[not_enabled()]),
+        Outcome::Items(3)
+    ));
+    let unsupported = SweepError::Api(ApiError::UnsupportedType("unavailable".into()));
+    assert!(matches!(
+        sampled(plan, 0, &[not_enabled(), unsupported]),
+        Outcome::Unsupported(detail)
+            if detail == "API executor error: provider does not support this type: unavailable"
+    ));
+    let denied = SweepError::Api(ApiError::Denied("policy".into()));
+    assert!(matches!(
+        sampled(plan, 0, &[not_enabled(), denied]),
+        Outcome::Failed { class: "denied", .. }
+    ));
+    Ok(())
+}
+
+#[test]
 fn given_mixed_sample_outcomes_when_settled_then_hard_failure_precedes_items_and_unsupported()
 -> Result<(), Box<dyn std::error::Error>> {
     let catalog = catalog()?;

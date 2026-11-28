@@ -47,6 +47,41 @@ async fn postgres_given_wrong_digest_when_opened_then_refused() -> TestResult {
     with_database(check_digest).await
 }
 
+#[tokio::test]
+#[ignore = "requires INVENTORY_POSTGRES_URL"]
+async fn postgres_given_wrong_catalog_when_opening_v14_then_marker_remains_14() -> TestResult {
+    with_database(check_wrong_catalog_v14).await
+}
+
+#[tokio::test]
+#[ignore = "requires INVENTORY_POSTGRES_URL"]
+async fn postgres_given_malformed_stored_registry_when_opening_v14_then_marker_remains_14()
+-> TestResult {
+    with_database(check_malformed_registry_v14).await
+}
+
+#[tokio::test]
+#[ignore = "requires INVENTORY_POSTGRES_URL"]
+async fn postgres_rejects_oversized_v14_catalog_before_returning_its_bytes() -> TestResult {
+    with_database(async |url, pool| {
+        create(url).await?;
+        set_schema_version(pool, b"14").await?;
+        sqlx::query(
+            "UPDATE inventory.metadata SET value=convert_to(repeat('x',67108865),'UTF8') \
+             WHERE key='reviewed_catalog'",
+        )
+        .execute(pool)
+        .await?;
+        assert!(matches!(
+            PgStore::open(url, PgWriteConfig::default()).await,
+            Err(StoreError::Sqlite(sqlx::Error::RowNotFound))
+        ));
+        assert_eq!(schema_version(pool).await?.as_slice(), b"14");
+        Ok(())
+    })
+    .await
+}
+
 async fn with_database(check: impl AsyncFn(&DatabaseUrl, &PgPool) -> TestResult) -> TestResult {
     let database = TestDatabase::create(&admin_url()?).await?;
     let url = DatabaseUrl::parse(database.url())?;
@@ -57,7 +92,7 @@ async fn with_database(check: impl AsyncFn(&DatabaseUrl, &PgPool) -> TestResult)
     result
 }
 
-async fn check_reopen(url: &DatabaseUrl, _: &PgPool) -> TestResult {
+async fn check_reopen(url: &DatabaseUrl, pool: &PgPool) -> TestResult {
     let (registry, bytes) = registry(1, None)?;
     let expected = *registry.digest();
     let store = PgStore::create(url, registry, PgWriteConfig::default()).await?;
@@ -67,9 +102,12 @@ async fn check_reopen(url: &DatabaseUrl, _: &PgPool) -> TestResult {
         Err(StoreError::CatalogMismatch)
     ));
     store.close().await;
-    let reopened = PgStore::open(url, PgWriteConfig::default()).await?;
+    set_schema_version(pool, b"14").await?;
+    let reopened =
+        PgStore::open_with_catalog(url, PgWriteConfig::default(), &bytes).await?;
     assert_eq!(*reopened.registry().digest(), expected);
     assert_eq!(reopened.config().max_connections(), 8);
+    assert_eq!(schema_version(pool).await?.as_slice(), b"15");
     reopened.close().await;
     Ok(())
 }
@@ -112,6 +150,57 @@ async fn check_digest(url: &DatabaseUrl, pool: &PgPool) -> TestResult {
         Err(StoreError::CatalogMismatch)
     ));
     Ok(())
+}
+
+async fn check_wrong_catalog_v14(url: &DatabaseUrl, pool: &PgPool) -> TestResult {
+    let (stored_registry, _) = registry(1, None)?;
+    let (_, other_catalog) = registry(2, None)?;
+    PgStore::create(url, stored_registry, PgWriteConfig::default())
+        .await?
+        .close()
+        .await;
+    set_schema_version(pool, b"14").await?;
+    assert!(matches!(
+        PgStore::open_with_catalog(url, PgWriteConfig::default(), &other_catalog).await,
+        Err(StoreError::CatalogMismatch)
+    ));
+    assert_eq!(schema_version(pool).await?.as_slice(), b"14");
+    Ok(())
+}
+
+async fn check_malformed_registry_v14(url: &DatabaseUrl, pool: &PgPool) -> TestResult {
+    let (stored_registry, catalog) = registry(1, None)?;
+    PgStore::create(url, stored_registry, PgWriteConfig::default())
+        .await?
+        .close()
+        .await;
+    set_schema_version(pool, b"14").await?;
+    sqlx::query("UPDATE inventory.metadata SET value=$1 WHERE key='reviewed_catalog'")
+        .bind(b"malformed catalog".as_slice())
+        .execute(pool)
+        .await?;
+    assert!(matches!(
+        PgStore::open_with_catalog(url, PgWriteConfig::default(), &catalog).await,
+        Err(_)
+    ));
+    assert_eq!(schema_version(pool).await?.as_slice(), b"14");
+    Ok(())
+}
+
+async fn set_schema_version(pool: &PgPool, version: &[u8]) -> TestResult {
+    sqlx::query("UPDATE inventory.metadata SET value=$1 WHERE key='schema_version'")
+        .bind(version)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+async fn schema_version(pool: &PgPool) -> TestResult<Vec<u8>> {
+    Ok(sqlx::query_scalar(
+        "SELECT value FROM inventory.metadata WHERE key='schema_version'",
+    )
+    .fetch_one(pool)
+    .await?)
 }
 
 #[tokio::test]

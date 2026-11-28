@@ -89,6 +89,7 @@ fn outcome_counts(rows: &[Expected]) -> ScopeOutcomeCounts {
         partial: count_of(ScopeOutcome::Partial),
         inaccessible: count_of(ScopeOutcome::Inaccessible),
         unsupported: count_of(ScopeOutcome::Unsupported),
+        not_applicable: count_of(ScopeOutcome::NotApplicable),
         failed: count_of(ScopeOutcome::Failed),
         unobserved: count_of(ScopeOutcome::Unobserved),
     }

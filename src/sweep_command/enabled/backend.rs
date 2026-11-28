@@ -109,12 +109,7 @@ fn postgres_config_value(
 }
 
 async fn open_current(url: &DatabaseUrl, config: PgWriteConfig, bytes: &[u8]) -> Result<PgStore> {
-    let store = PgStore::open(url, config).await?;
-    if let Err(error) = store.validate_catalog(bytes).await {
-        store.close().await;
-        return Err(error.into());
-    }
-    Ok(store)
+    Ok(PgStore::open_with_catalog(url, config, bytes).await?)
 }
 
 async fn open_file(options: &SweepArgs, catalog: &RuntimeCatalog<'_>) -> Result<BinaryStore> {

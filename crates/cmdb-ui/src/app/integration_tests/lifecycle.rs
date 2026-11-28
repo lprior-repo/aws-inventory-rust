@@ -81,7 +81,7 @@ fn given_failed_real_database_when_repaired_and_filter_action_retries_then_close
                 ..WorkerConfig::default()
             },
         );
-        let failure = "Database error · unsupported schema version 0; expected 15, 16, or 17 (open with the writer to migrate schema 14/15/16)";
+        let failure = format!("Database error · {}", cmdb_view::ViewError::Version(0));
         wait_for(&mut app, &mut cx, |app, cx| {
             status(app, cx) == failure && app.worker.as_ref().is_some_and(DataWorker::is_closed)
         })?;

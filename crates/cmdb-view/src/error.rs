@@ -9,7 +9,7 @@ pub enum ViewError {
     #[error(transparent)]
     Record(#[from] inventory_core::record::RecordError),
     #[error(
-        "unsupported schema version {0}; expected 15, 16, or 17 (open with the writer to migrate schema 14/15/16)"
+        "unsupported schema version {0}; expected 15, 16, 17, or 18 (open with the writer to migrate schema 14/15/16/17)"
     )]
     Version(i64),
     #[error("PostgreSQL connection failed")]
@@ -20,7 +20,7 @@ pub enum ViewError {
     PostgresDatabase,
     #[error("PostgreSQL inventory schema is missing")]
     PostgresSchema,
-    #[error("unsupported PostgreSQL inventory schema; expected 14")]
+    #[error("unsupported PostgreSQL inventory schema; expected 14 or 15")]
     PostgresVersion,
     #[error("invalid stored resource row")]
     StoredRow,

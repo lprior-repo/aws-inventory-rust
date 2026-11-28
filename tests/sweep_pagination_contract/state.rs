@@ -10,6 +10,7 @@ pub(super) struct Summary {
     pub(super) requests: u64,
     pub(super) pages: u64,
     pub(super) claims: u64,
+    pub(super) not_applicable: u64,
 }
 
 pub(super) fn assert_summary(output: &Output, expected: Summary) -> Result<()> {

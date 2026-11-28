@@ -163,3 +163,52 @@ fn given_service_filter_when_reported_then_unselected_kinds_are_not_run() -> Tes
     );
     Ok(())
 }
+
+#[test]
+fn given_not_applicable_probes_when_reported_then_only_a_sole_prerequisite_is_not_applicable()
+-> TestResult {
+    let work = tempfile::tempdir()?;
+    let output = work.path().join("coverage-status.report");
+    let plans = Plans::from([
+        ("AWS::A::Sole".into(), BTreeSet::from(["a:ListSole".into()])),
+        (
+            "AWS::B::Mixed".into(),
+            BTreeSet::from(["b:ListComplete".into(), "b:ListNotApplicable".into()]),
+        ),
+        (
+            "AWS::C::Unsupported".into(),
+            BTreeSet::from(["c:ListUnsupported".into(), "c:ListNotApplicable".into()]),
+        ),
+        (
+            "AWS::D::Rejected".into(),
+            BTreeSet::from(["d:ListNotApplicable".into()]),
+        ),
+        (
+            "AWS::E::Failed".into(),
+            BTreeSet::from(["e:ListNotApplicable".into(), "e:ListFailed".into()]),
+        ),
+    ]);
+    let mut evidence = Evidence::default();
+    evidence.probe("a:ListSole".into(), Probe::NotApplicable);
+    evidence.probe("b:ListComplete".into(), Probe::Complete);
+    evidence.probe("b:ListNotApplicable".into(), Probe::NotApplicable);
+    evidence.probe("c:ListUnsupported".into(), Probe::Unsupported);
+    evidence.probe("c:ListNotApplicable".into(), Probe::NotApplicable);
+    evidence.probe("d:ListNotApplicable".into(), Probe::NotApplicable);
+    evidence.reject("AWS::D::Rejected", "BadRequest");
+    evidence.probe("e:ListNotApplicable".into(), Probe::NotApplicable);
+    evidence.probe("e:ListFailed".into(), Probe::Failed("AError"));
+    publish(&output, &plans, &evidence, Selection::default())?;
+    assert_eq!(
+        std::fs::read_to_string(output)?,
+        concat!(
+            "totals\tcallable=5\temulator_verified=0\timplemented=5\n",
+            "AWS::A::Sole\timplemented\tnot applicable: prerequisite disabled\n",
+            "AWS::B::Mixed\timplemented\tempty: nothing seeded\n",
+            "AWS::C::Unsupported\timplemented\tunsupported\n",
+            "AWS::D::Rejected\timplemented\tseed rejected: BadRequest\n",
+            "AWS::E::Failed\timplemented\tfailed: AError\n",
+        )
+    );
+    Ok(())
+}

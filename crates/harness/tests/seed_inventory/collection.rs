@@ -28,6 +28,7 @@ pub(super) async fn compare(native: &NativeRuntime, oracles: &[ScenarioSeedOracl
     let database = native.work().join("inventory.sqlite");
     let mut command = collector(native, &database)?;
     let output = tokio::time::timeout(Duration::from_secs(300), command.output()).await??;
+    let probes = tokio::time::timeout(Duration::from_secs(1200), outcomes::probe(native)).await??;
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
@@ -37,7 +38,7 @@ pub(super) async fn compare(native: &NativeRuntime, oracles: &[ScenarioSeedOracl
         )
         .await?;
     let missing = missing(&pool, oracles).await?;
-    let outcomes = outcomes::violations(&pool).await?;
+    let outcomes = outcomes::violations(&pool, &probes).await?;
     pool.close().await;
     database_evidence(&database)?;
     let violation = sweep_exit::exit_violation(output.status.code(), &output.stdout)?;

@@ -103,6 +103,7 @@ pub enum ScopeOutcome {
     Partial,
     Inaccessible,
     Unsupported,
+    NotApplicable,
     Failed,
     Unobserved,
 }
@@ -114,6 +115,7 @@ impl ScopeOutcome {
             Self::Partial => "partial",
             Self::Inaccessible => "inaccessible",
             Self::Unsupported => "unsupported",
+            Self::NotApplicable => "not_applicable",
             Self::Failed => "failed",
             Self::Unobserved => "unobserved",
         }

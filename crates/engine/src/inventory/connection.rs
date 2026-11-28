@@ -1,4 +1,5 @@
 use super::{BinaryStore, SchemaRegistry, StoreError};
+use sha2::{Digest, Sha256};
 use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use std::path::Path;
@@ -55,7 +56,7 @@ pub(super) async fn create(
 /// What a database path holds, as far as choosing between `open` and `create`.
 ///
 /// `schema::initialize` publishes its work atomically (one transaction ending in
-/// `PRAGMA user_version=17`), so a file that exists but reports version 0 with no
+/// `PRAGMA user_version=18`), so a file that exists but reports version 0 with no
 /// tables is an interrupted or never-started initialization that `create` may
 /// safely resume; it must never be handed to `open`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -96,6 +97,20 @@ async fn probe_open(pool: &SqlitePool) -> Result<StoreState, StoreError> {
 }
 
 pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
+    open_expected(path, None).await
+}
+
+pub(super) async fn open_with_catalog(
+    path: &Path,
+    catalog: &[u8],
+) -> Result<BinaryStore, StoreError> {
+    open_expected(path, Some(catalog)).await
+}
+
+async fn open_expected(
+    path: &Path,
+    expected_catalog: Option<&[u8]>,
+) -> Result<BinaryStore, StoreError> {
     let writer = pool()
         .connect_with(options(path, false)?.journal_mode(SqliteJournalMode::Wal))
         .await?;
@@ -103,7 +118,7 @@ pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
         .fetch_one(&writer)
         .await?
         .try_get(0)?;
-    if !matches!(version, 14..=17) {
+    if !matches!(version, 14..=18) {
         writer.close().await;
         return Err(StoreError::SchemaVersion { found: version });
     }
@@ -114,6 +129,26 @@ pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
             return Err(error);
         }
     };
+    if let Some(catalog) = expected_catalog {
+        // Compare the digest before parsing the caller's catalog: a different
+        // catalog must report `CatalogMismatch`, not whatever its bytes fail on.
+        let requested: [u8; 32] = Sha256::digest(catalog).into();
+        if &requested != registry.digest() {
+            writer.close().await;
+            return Err(StoreError::CatalogMismatch);
+        }
+        let expected = match SchemaRegistry::new(catalog, registry.schemas().to_vec()) {
+            Ok(expected) => expected,
+            Err(error) => {
+                writer.close().await;
+                return Err(error);
+            }
+        };
+        if expected.operations() != registry.operations() {
+            writer.close().await;
+            return Err(StoreError::CatalogMismatch);
+        }
+    }
     if let Err(error) = super::schema::migrate_inventory(&writer).await {
         writer.close().await;
         return Err(error);

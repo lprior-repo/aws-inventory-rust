@@ -71,6 +71,28 @@ async fn given_absent_feature_when_settled_then_durable_scope_completes_without_
 }
 
 #[tokio::test]
+async fn given_prerequisite_not_enabled_when_settled_then_scope_is_not_applicable() -> TestResult {
+    let (directory, store, sweep, lease) = fixture().await?;
+    let result = finish_error(
+        &store,
+        lease,
+        SweepError::NotEnabled("feature prerequisite is disabled".into()),
+        None,
+    )
+    .await?;
+    assert_eq!(result.outcomes.not_applicable, 1);
+    assert_eq!(result.outcomes.complete, 0);
+    let stored = store.sweep_summary(&sweep).await?;
+    assert_eq!(stored.not_applicable_scopes, 1);
+    assert_eq!(stored.complete_scopes, 0);
+    assert_eq!(
+        stored_reasons(&directory).await?,
+        [Some("feature prerequisite is disabled".to_owned())]
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn given_access_denied_when_settled_then_scope_is_not_reported_as_empty() -> TestResult {
     let (directory, store, sweep, lease) = fixture_for(
         "iam",

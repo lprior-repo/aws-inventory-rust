@@ -8,16 +8,19 @@ async fn outcomes(fixture: &pg::Fixture) -> TestResult {
     fixture
         .commit("six", "111111111111", "ap-south-1", 0, &["shared"], 60)
         .await?;
-    sqlx::query("DELETE FROM inventory.scope_outcomes WHERE (sweep_id,observed_at) NOT IN (('one',10),('two',20),('three',30),('four',40),('five',50),('six',60))")
+    fixture
+        .commit("seven", "111111111111", "ca-central-1", 0, &["shared"], 65)
+        .await?;
+    sqlx::query("DELETE FROM inventory.scope_outcomes WHERE (sweep_id,observed_at) NOT IN (('one',10),('two',20),('three',30),('four',40),('five',50),('six',60),('seven',65))")
         .execute(&fixture.pool).await?;
-    sqlx::query("UPDATE inventory.scope_outcomes SET outcome=CASE sweep_id WHEN 'two' THEN 'inaccessible' WHEN 'three' THEN 'failed' WHEN 'five' THEN 'unobserved' WHEN 'six' THEN 'unsupported' ELSE outcome END").execute(&fixture.pool).await?;
+    sqlx::query("UPDATE inventory.scope_outcomes SET outcome=CASE sweep_id WHEN 'two' THEN 'inaccessible' WHEN 'three' THEN 'failed' WHEN 'five' THEN 'unobserved' WHEN 'six' THEN 'unsupported' WHEN 'seven' THEN 'not_applicable' ELSE outcome END").execute(&fixture.pool).await?;
     sqlx::query("INSERT INTO inventory.scope_outcomes SELECT 'later',scope_key,'partial',70,NULL FROM inventory.scope_outcomes WHERE sweep_id='one'").execute(&fixture.pool).await?;
     Ok(())
 }
 
 fn assert_totals(report: &ScopeFreshnessReport) {
     assert_eq!(report.now_ms, 100);
-    assert_eq!(report.total_scopes, 6);
+    assert_eq!(report.total_scopes, 7);
     assert_eq!(
         report.counts,
         ScopeOutcomeCounts {
@@ -25,6 +28,7 @@ fn assert_totals(report: &ScopeFreshnessReport) {
             partial: 1,
             inaccessible: 1,
             unsupported: 1,
+            not_applicable: 1,
             failed: 1,
             unobserved: 1
         },
@@ -66,6 +70,7 @@ fn assert_observed_outcomes(report: &ScopeFreshnessReport) {
             ("us-west-2", ScopeOutcome::Complete, 40),
             ("ap-east-1", ScopeOutcome::Unobserved, 50),
             ("ap-south-1", ScopeOutcome::Unsupported, 60),
+            ("ca-central-1", ScopeOutcome::NotApplicable, 65),
             ("global", ScopeOutcome::Partial, 70),
         ]
     );
@@ -92,6 +97,7 @@ fn assert_ages(report: &ScopeFreshnessReport) {
             ("four", Some(40), 60, Some(60)),
             ("five", None, 50, None),
             ("six", None, 40, None),
+            ("seven", None, 35, None),
             ("later", Some(10), 30, Some(90)),
         ]
     );

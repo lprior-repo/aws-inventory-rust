@@ -177,15 +177,13 @@ fn given_missing_path_or_invalid_schema_when_real_worker_starts_then_database_di
             .execute(&pool)
             .await?;
         pool.close().await;
+        let version_error = cmdb_view::ViewError::Version(0).to_string();
         for (path, diagnostic) in [
             (
                 directory.path().join("missing.sqlite"),
                 "unable to open database file",
             ),
-            (
-                invalid,
-                "unsupported schema version 0; expected 15, 16, or 17 (open with the writer to migrate schema 14/15/16)",
-            ),
+            (invalid, version_error.as_str()),
         ] {
             let worker = DataWorker::start(
                 WorkerConfig {

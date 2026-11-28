@@ -48,7 +48,7 @@ async fn given_tag_plan_when_probed_then_dedicated_binding_is_skipped_without_a_
     assert_row(&report, "total skipped-child 1");
     assert_row(
         &report,
-        "protocol restJson1 items 2 empty 0 unsupported 0 failed 0 skipped-child 1",
+        "protocol restJson1 items 2 empty 0 not-applicable 0 unsupported 0 failed 0 skipped-child 1",
     );
     Ok(())
 }

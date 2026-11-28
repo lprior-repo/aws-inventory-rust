@@ -7,7 +7,7 @@ fn given_no_enumerations_when_rendered_then_every_outcome_total_is_zero() -> Res
 {
     assert_eq!(
         render(Vec::new())?,
-        "total items 0\ntotal empty 0\ntotal unsupported 0\ntotal failed 0\ntotal skipped-child 0\n"
+        "total items 0\ntotal empty 0\ntotal not-applicable 0\ntotal unsupported 0\ntotal failed 0\ntotal skipped-child 0\n"
     );
     Ok(())
 }
@@ -53,8 +53,28 @@ fn given_skipped_children_with_and_without_detail_when_rendered_then_both_count(
         concat!(
             "fixture ListChildren restJson1 skipped child no sampled parent item satisfies all bindings and row eligibility: no caller identity\n",
             "fixture ListTags restJson1 skipped child tag endpoint uses dedicated resource tag binding\n",
-            "total items 0\ntotal empty 0\ntotal unsupported 0\ntotal failed 0\ntotal skipped-child 2\n",
-            "protocol restJson1 items 0 empty 0 unsupported 0 failed 0 skipped-child 2\n",
+            "total items 0\ntotal empty 0\ntotal not-applicable 0\ntotal unsupported 0\ntotal failed 0\ntotal skipped-child 2\n",
+            "protocol restJson1 items 0 empty 0 not-applicable 0 unsupported 0 failed 0 skipped-child 2\n",
+        )
+    );
+    Ok(())
+}
+
+#[test]
+fn given_not_applicable_outcome_when_rendered_then_it_has_an_independent_total()
+-> Result<(), ProbeError> {
+    let rows = vec![Row {
+        service: "sesv2",
+        operation: "ListImportJobs",
+        protocol: RuntimeProtocol::RestJson1,
+        outcome: Outcome::NotApplicable("account is in the sandbox".into()),
+    }];
+    assert_eq!(
+        render(rows)?,
+        concat!(
+            "sesv2 ListImportJobs restJson1 not-applicable account is in the sandbox\n",
+            "total items 0\ntotal empty 0\ntotal not-applicable 1\ntotal unsupported 0\ntotal failed 0\ntotal skipped-child 0\n",
+            "protocol restJson1 items 0 empty 0 not-applicable 1 unsupported 0 failed 0 skipped-child 0\n",
         )
     );
     Ok(())

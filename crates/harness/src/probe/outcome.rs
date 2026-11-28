@@ -33,7 +33,9 @@ fn sampled(plan: &CallablePlan<'_>, items: u64, errors: &[SweepError]) -> Outcom
     let hard_failure = errors.iter().find(|error| {
         !matches!(
             error,
-            SweepError::Absent(_) | SweepError::Api(ApiError::UnsupportedType(_))
+            SweepError::Absent(_)
+                | SweepError::NotEnabled(_)
+                | SweepError::Api(ApiError::UnsupportedType(_))
         )
     });
     if let Some(error) = hard_failure {
@@ -53,6 +55,7 @@ pub(super) fn failed(plan: &CallablePlan<'_>, error: &SweepError) -> Outcome {
     match detail(plan, error) {
         Ok(detail) => match error {
             SweepError::Absent(_) => Outcome::EmptyReason(detail),
+            SweepError::NotEnabled(_) => Outcome::NotApplicable(detail),
             SweepError::Api(ApiError::UnsupportedType(_)) => Outcome::Unsupported(detail),
             _ => Outcome::Failed {
                 class: class(error),

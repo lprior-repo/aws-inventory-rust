@@ -21,10 +21,9 @@ pub(super) async fn drain_sweep(
         return Ok(ChangeStats::default());
     }
     super::unobserved::record(tx, sweep).await?;
-    // Freshness records successful sweeps only: a drained sweep with any scope that did not
-    // finish `complete` keeps `completed=0`, so a restart does not demote the account's
-    // last successful collection behind healthier accounts.
-    sqlx::query("UPDATE sweeps SET completed=1,ended_at=?2 WHERE sweep_id=?1 AND completed=0 AND NOT EXISTS(SELECT 1 FROM work_queue work LEFT JOIN scope_outcomes outcomes ON outcomes.sweep_id=work.sweep_id AND outcomes.scope_key=work.scope_key WHERE work.sweep_id=?1 AND work.authority_generation=work.generation AND work.generation>0 AND coalesce(outcomes.outcome,'partial')<>'complete')")
+    // Freshness records drained sweeps whose scopes either completed or were
+    // explicitly not applicable; other non-complete outcomes do not advance cadence.
+    sqlx::query("UPDATE sweeps SET completed=1,ended_at=?2 WHERE sweep_id=?1 AND completed=0 AND NOT EXISTS(SELECT 1 FROM work_queue work LEFT JOIN scope_outcomes outcomes ON outcomes.sweep_id=work.sweep_id AND outcomes.scope_key=work.scope_key WHERE work.sweep_id=?1 AND work.authority_generation=work.generation AND work.generation>0 AND coalesce(outcomes.outcome,'partial') NOT IN ('complete','not_applicable'))")
         .bind(sweep.as_str())
         .bind(at)
         .execute(&mut **tx)

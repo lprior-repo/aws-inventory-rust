@@ -32,7 +32,7 @@ const FIRST_ROWS: [&str; 3] = [
     "bindings ListParents1 awsJson1_1 empty",
 ];
 const PROTOCOL_TOTAL: &str =
-    "protocol awsJson1_1 items 2 empty 1 unsupported 1 failed 1 skipped-child 0";
+    "protocol awsJson1_1 items 2 empty 1 not-applicable 0 unsupported 1 failed 1 skipped-child 0";
 
 #[tokio::test]
 async fn given_four_outcomes_when_probed_twice_then_rows_and_totals_are_stable() -> TestResult {

@@ -4,7 +4,7 @@ use crate::inventory::{
 };
 use sqlx::{Row, postgres::PgRow};
 
-const SUMMARY: &str = "SELECT count(*) FILTER(WHERE outcome='complete') AS complete_scopes,count(*) FILTER(WHERE outcome='partial') AS partial_scopes,count(*) FILTER(WHERE outcome='inaccessible') AS inaccessible_scopes,count(*) FILTER(WHERE outcome='unsupported') AS unsupported_scopes,count(*) FILTER(WHERE outcome='failed') AS failed_scopes,count(*) FILTER(WHERE outcome='unobserved') AS unobserved_scopes,(SELECT count(*) FROM (SELECT account,region,kind,id FROM resource_scopes WHERE observed_sweep=$1 GROUP BY account,region,kind,id) r) AS resources_observed,(SELECT count(*) FROM work_queue WHERE sweep_id=$1 AND state IN(0,1)) AS work_pending FROM scope_outcomes WHERE sweep_id=$1";
+const SUMMARY: &str = "SELECT count(*) FILTER(WHERE outcome='complete') AS complete_scopes,count(*) FILTER(WHERE outcome='partial') AS partial_scopes,count(*) FILTER(WHERE outcome='inaccessible') AS inaccessible_scopes,count(*) FILTER(WHERE outcome='unsupported') AS unsupported_scopes,count(*) FILTER(WHERE outcome='not_applicable') AS not_applicable_scopes,count(*) FILTER(WHERE outcome='failed') AS failed_scopes,count(*) FILTER(WHERE outcome='unobserved') AS unobserved_scopes,(SELECT count(*) FROM (SELECT account,region,kind,id FROM resource_scopes WHERE observed_sweep=$1 GROUP BY account,region,kind,id) r) AS resources_observed,(SELECT count(*) FROM work_queue WHERE sweep_id=$1 AND state IN(0,1)) AS work_pending FROM scope_outcomes WHERE sweep_id=$1";
 
 impl PgStore {
     pub async fn sweep_summary(&self, sweep: &SweepId) -> Result<SweepSummary, StoreError> {
@@ -17,6 +17,7 @@ impl PgStore {
             partial_scopes: count(&row, "partial_scopes")?,
             inaccessible_scopes: count(&row, "inaccessible_scopes")?,
             unsupported_scopes: count(&row, "unsupported_scopes")?,
+            not_applicable_scopes: count(&row, "not_applicable_scopes")?,
             failed_scopes: count(&row, "failed_scopes")?,
             unobserved_scopes: count(&row, "unobserved_scopes")?,
             resources_observed: count(&row, "resources_observed")?,

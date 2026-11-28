@@ -6,6 +6,7 @@ mod messages;
 pub(super) enum ValidatedResponse {
     Page(Response),
     Absent(String),
+    NotEnabled(String),
 }
 
 impl ValidatedResponse {
@@ -19,6 +20,7 @@ impl ValidatedResponse {
                 super::decode_response(plan, response, emulator_numeric_timestamps)
             }
             Self::Absent(reason) => Err(SweepError::Absent(reason)),
+            Self::NotEnabled(reason) => Err(SweepError::NotEnabled(reason)),
         }
     }
 }
@@ -32,20 +34,32 @@ pub(super) fn classify(
 ) -> Result<ValidatedResponse, inventory_engine::limiter::ApiError> {
     let service = plan.service_name();
     let operation = plan.operation_name();
-    let absent = context.status.is_client_error()
+    if context.status.is_client_error()
         && context.status != http::StatusCode::TOO_MANY_REQUESTS
-        && error.code.as_deref().is_some_and(|code| {
-            if known(service, operation, code) {
-                !errors::header_body_codes_disagree(context)
-            } else {
-                messages::confirms(service, operation, code, context, account, region)
+        && !errors::header_body_codes_disagree(context)
+    {
+        if error
+            .code
+            .as_deref()
+            .is_some_and(|code| known(service, operation, code))
+        {
+            return Ok(ValidatedResponse::Absent(error.to_string()));
+        }
+        if let Some(code) = error.code.as_deref() {
+            match messages::classify(service, operation, code, context, account, region) {
+                Some(messages::Classification::Empty) => {
+                    return Ok(ValidatedResponse::Absent(error.to_string()));
+                }
+                Some(messages::Classification::NotEnabled(reason))
+                    if !errors::header_codes_conflict(context) =>
+                {
+                    return Ok(ValidatedResponse::NotEnabled(reason));
+                }
+                Some(messages::Classification::NotEnabled(_)) | None => {}
             }
-        });
-    if absent {
-        Ok(ValidatedResponse::Absent(error.to_string()))
-    } else {
-        Err(super::classify_service(error, context.status))
+        }
     }
+    Err(super::classify_service(error, context.status))
 }
 
 fn known(service: &str, operation: &str, code: &str) -> bool {

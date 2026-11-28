@@ -32,24 +32,3 @@ pub(super) async fn connect(
     Ok(pool)
 }
 
-pub(super) async fn check_version(pool: &PgPool) -> Result<(), StoreError> {
-    let bytes = match super::schema::state(pool).await? {
-        super::schema::SchemaState::Ready => {
-            super::schema::metadata(pool, "schema_version").await?
-        }
-        super::schema::SchemaState::Incomplete => {
-            return Err(StoreError::InitializationIncomplete);
-        }
-        super::schema::SchemaState::Absent => {
-            return Err(StoreError::Invalid("inventory schema is missing"));
-        }
-    };
-    let found = std::str::from_utf8(&bytes)
-        .ok()
-        .and_then(|value| value.parse::<i64>().ok())
-        .ok_or(StoreError::Invalid("invalid PostgreSQL schema version"))?;
-    if found != 14 {
-        return Err(StoreError::SchemaVersion { found });
-    }
-    Ok(())
-}

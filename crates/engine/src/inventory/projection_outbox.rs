@@ -101,6 +101,7 @@ fn update_summary(summary: &mut SweepSummary, outcome: &str, count: u64) -> Resu
         "partial" => summary.partial_scopes = count,
         "inaccessible" => summary.inaccessible_scopes = count,
         "unsupported" => summary.unsupported_scopes = count,
+        "not_applicable" => summary.not_applicable_scopes = count,
         "failed" => summary.failed_scopes = count,
         "unobserved" => summary.unobserved_scopes = count,
         _ => return Err(StoreError::Invalid("unknown stored scope outcome")),

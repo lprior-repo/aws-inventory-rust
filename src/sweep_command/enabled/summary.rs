@@ -28,7 +28,11 @@ fn write_summary(output: &mut impl Write, summary: SweepSummary, unattributed: u
         summary.work_remaining,
         unattributed
     )?;
-    write_metrics(output, &summary.metrics)
+    write_metrics(output, &summary.metrics)?;
+    if outcomes.not_applicable > 0 {
+        writeln!(output, "outcomes_v1 not_applicable={}", outcomes.not_applicable)?;
+    }
+    Ok(())
 }
 
 fn write_metrics(output: &mut impl Write, metrics: &SweepMetrics) -> Result<()> {

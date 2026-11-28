@@ -32,6 +32,7 @@ impl Selection<'_> {
 pub(super) enum Probe<'a> {
     Complete,
     Unsupported,
+    NotApplicable,
     Failed(&'a str),
 }
 
@@ -39,6 +40,7 @@ pub(super) enum Probe<'a> {
 struct Probes {
     complete: bool,
     unsupported: bool,
+    not_applicable: bool,
     failed: Option<String>,
 }
 
@@ -55,6 +57,7 @@ impl Evidence {
         match probe {
             Probe::Complete => outcomes.complete = true,
             Probe::Unsupported => outcomes.unsupported = true,
+            Probe::NotApplicable => outcomes.not_applicable = true,
             Probe::Failed(code) => {
                 if outcomes
                     .failed
@@ -111,6 +114,9 @@ impl Evidence {
         if !probes().any(|probe| probe.complete) && probes().any(|probe| probe.unsupported) {
             return Status::Unsupported;
         }
+        if !probes().any(|probe| probe.complete) && probes().any(|probe| probe.not_applicable) {
+            return Status::NotApplicable;
+        }
         Status::Empty
     }
 }
@@ -119,6 +125,7 @@ impl Evidence {
 enum Status<'a> {
     Verified(&'a str),
     Unsupported,
+    NotApplicable,
     Empty,
     Rejected(&'a str),
     Failed(&'a str),
@@ -130,6 +137,9 @@ impl fmt::Display for Status<'_> {
         match self {
             Self::Verified(operation) => write!(output, "emulator-verified\t{operation}"),
             Self::Unsupported => output.write_str("implemented\tunsupported"),
+            Self::NotApplicable => {
+                output.write_str("implemented\tnot applicable: prerequisite disabled")
+            }
             Self::Empty => output.write_str("implemented\tempty: nothing seeded"),
             Self::Rejected(code) => write!(output, "implemented\tseed rejected: {code}"),
             Self::Failed(code) => write!(output, "implemented\tfailed: {code}"),

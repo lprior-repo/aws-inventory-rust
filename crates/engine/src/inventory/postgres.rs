@@ -82,8 +82,24 @@ impl PgStore {
     }
 
     pub async fn open(url: &DatabaseUrl, config: PgWriteConfig) -> Result<Self, StoreError> {
+        Self::open_expected(url, config, None).await
+    }
+
+    pub async fn open_with_catalog(
+        url: &DatabaseUrl,
+        config: PgWriteConfig,
+        catalog: &[u8],
+    ) -> Result<Self, StoreError> {
+        Self::open_expected(url, config, Some(catalog)).await
+    }
+
+    async fn open_expected(
+        url: &DatabaseUrl,
+        config: PgWriteConfig,
+        expected_catalog: Option<&[u8]>,
+    ) -> Result<Self, StoreError> {
         let pool = connection::connect(url, config).await?;
-        let registry = match reopen(&pool).await {
+        let registry = match schema::open_writer_registry(&pool, expected_catalog).await {
             Ok(registry) => registry,
             Err(error) => {
                 pool.close().await;
@@ -141,7 +157,3 @@ impl PgStore {
     }
 }
 
-async fn reopen(pool: &PgPool) -> Result<SchemaRegistry, StoreError> {
-    connection::check_version(pool).await?;
-    schema::load_registry(pool).await
-}

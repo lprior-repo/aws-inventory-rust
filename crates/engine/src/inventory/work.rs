@@ -180,6 +180,7 @@ pub struct SweepSummary {
     pub partial_scopes: u64,
     pub inaccessible_scopes: u64,
     pub unsupported_scopes: u64,
+    pub not_applicable_scopes: u64,
     pub failed_scopes: u64,
     pub unobserved_scopes: u64,
     pub resources_observed: u64,

@@ -7,7 +7,7 @@ mod field;
 mod json;
 mod xml;
 
-use field::{Field, MAX_FIELD_BYTES, error_header};
+use field::{Field, MAX_FIELD_BYTES, error_header, error_headers};
 
 #[cfg(test)]
 mod tests;
@@ -95,10 +95,23 @@ pub fn header_body_codes_disagree(context: super::ResponseContext<'_>) -> bool {
     if context.body.is_empty() || context.body.len() > context.limits.body_bytes() {
         return false;
     }
-    let Ok(Some(header)) = error_header(context.headers) else {
+    let Ok(Some(body)) = body_field(context, Field::Code) else {
         return false;
     };
-    matches!(body_field(context, Field::Code), Ok(Some(body)) if body != header)
+    error_headers(context.headers).any(|header| !matches!(header, Ok(header) if header == body))
+}
+
+/// True when the recognized error-code headers name different codes, or a
+/// header is unreadable. Such a response has no single code to trust.
+pub fn header_codes_conflict(context: super::ResponseContext<'_>) -> bool {
+    let mut first: Option<&str> = None;
+    for header in error_headers(context.headers) {
+        match header {
+            Ok(code) if first.is_none_or(|seen| seen == code) => first = Some(code),
+            _ => return true,
+        }
+    }
+    false
 }
 
 fn body_field(

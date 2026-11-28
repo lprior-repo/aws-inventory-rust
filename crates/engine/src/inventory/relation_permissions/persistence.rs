@@ -84,8 +84,7 @@ pub(in crate::inventory) async fn open_with_catalog(
     if catalog.is_empty() || catalog.len() > super::super::MAX_CATALOG_BYTES {
         return Err(StoreError::Invalid("catalog size exceeds storage bounds"));
     }
-    let mut store = super::super::connection::open(path).await?;
-    store.validate_catalog(catalog).await?;
+    let mut store = super::super::connection::open_with_catalog(path, catalog).await?;
     let registry = SchemaRegistry::new(catalog, store.registry.schemas().to_vec())?;
     if registry.operations() != store.registry.operations() {
         return Err(StoreError::CatalogMismatch);

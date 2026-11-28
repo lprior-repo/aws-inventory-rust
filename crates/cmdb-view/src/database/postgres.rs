@@ -61,7 +61,10 @@ impl Database {
                 return Err(open_error(error));
             }
         };
-        if version.as_deref() != Some(b"14".as_slice()) {
+        if !matches!(
+            version.as_deref(),
+            Some(value) if value == b"14" || value == b"15"
+        ) {
             pool.close().await;
             return Err(ViewError::PostgresVersion);
         }

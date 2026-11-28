@@ -52,6 +52,27 @@ async fn reverse_order(store: &PgStore, pool: &PgPool, _: &DatabaseUrl) -> TestR
 
 #[tokio::test]
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
+async fn postgres_work_given_complete_and_not_applicable_scopes_when_drained_then_freshness_is_recorded()
+-> TestResult {
+    run(not_applicable_sweep).await
+}
+
+async fn not_applicable_sweep(store: &PgStore, pool: &PgPool, _: &DatabaseUrl) -> TestResult {
+    manifest(store, "s", &["us-east-1", "us-west-2"]).await?;
+    let complete = claim(store, "s", 100).await?;
+    let not_applicable = claim(store, "s", 100).await?;
+    store
+        .finish_scope(complete, ScopeOutcome::Complete, 101, None)
+        .await?;
+    store
+        .finish_scope(not_applicable, ScopeOutcome::NotApplicable, 102, None)
+        .await?;
+    assert_eq!(freshness(pool, "s").await?, (1, 102));
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_work_given_partial_scope_when_drained_then_freshness_is_not_recorded()
 -> TestResult {
     run(partial_sweep).await

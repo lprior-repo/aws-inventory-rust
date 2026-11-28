@@ -1,13 +1,13 @@
 use super::*;
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
-"n.pagination#Service":{"type":"service","version":"1","operations":[{"target":"n.pagination#GetCallerIdentity"},{"target":"n.pagination#DescribeRegions"},{"target":"n.pagination#ListItems"}],"traits":{"aws.api#service":{"sdkId":"Pagination","endpointPrefix":"pagination","arnNamespace":"pagination"},"aws.auth#sigv4":{"name":"pagination"},"aws.protocols#restJson1":{}}},
+"n.pagination#Service":{"type":"service","version":"1","operations":[{"target":"n.pagination#GetCallerIdentity"},{"target":"n.pagination#DescribeRegions"},{"target":"n.pagination#@OP@"}],"traits":{"aws.api#service":{"sdkId":"@SDK@","endpointPrefix":"@SERVICE@","arnNamespace":"@SERVICE@"},"aws.auth#sigv4":{"name":"@SERVICE@"},"aws.protocols#restJson1":{}}},
 "n.pagination#GetCallerIdentity":{"type":"operation","output":{"target":"n.pagination#IdentityOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/identity"}}},
 "n.pagination#IdentityOutput":{"type":"structure","members":{"Account":{"target":"smithy.api#String"}}},
 "n.pagination#DescribeRegions":{"type":"operation","output":{"target":"n.pagination#RegionsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/regions"}}},
 "n.pagination#RegionsOutput":{"type":"structure","members":{"Regions":{"target":"n.pagination#RegionList"}}},
 "n.pagination#RegionList":{"type":"list","member":{"target":"n.pagination#Region"}},
 "n.pagination#Region":{"type":"structure","members":{"RegionName":{"target":"smithy.api#String"}}},
-"n.pagination#ListItems":{"type":"operation","input":{"target":"n.pagination#ListInput"},"output":{"target":"n.pagination#ListOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/items"}}},
+"n.pagination#@OP@":{"type":"operation","input":{"target":"n.pagination#ListInput"},"output":{"target":"n.pagination#ListOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/items"}}},
 "n.pagination#ListInput":{"type":"structure","members":{"StartName":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"name"}},"StartType":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"type"}},"StartIdentifier":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"identifier"}}}},
 "n.pagination#ListOutput":{"type":"structure","members":{"Items":{"target":"n.pagination#Items"},"NextName":{"target":"smithy.api#String"},"NextType":{"target":"smithy.api#String"},"NextIdentifier":{"target":"smithy.api#String"},"IsTruncated":{"target":"smithy.api#Boolean"}}},
 "n.pagination#Items":{"type":"list","member":{"target":"smithy.api#String"}}
@@ -31,7 +31,30 @@ const EC2_MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n.ec2#Tag":{"type":"structure","members":{"Key":{"target":"smithy.api#String"},"Value":{"target":"smithy.api#String"}}}
 }}"#;
 
-fn fixture_policy() -> Result<overlay::ServiceOverlay> {
+/// One modeled service whose only enumeration is `operation` with the shared `/items` tuple paging.
+pub(super) struct Service {
+    pub(super) name: &'static str,
+    sdk: &'static str,
+    pub(super) operation: &'static str,
+    kinds: &'static kind_map::MappingSource<'static>,
+}
+
+pub(super) const PAGINATION: Service = Service {
+    name: "pagination",
+    sdk: "Pagination",
+    operation: "ListItems",
+    kinds: &PAGINATION_KINDS,
+};
+
+/// The sesv2 `ListImportJobs` classifier rule maps a sandbox 400 to NotEnabled.
+pub(super) const SESV2: Service = Service {
+    name: "sesv2",
+    sdk: "SESv2",
+    operation: "ListImportJobs",
+    kinds: &SESV2_KINDS,
+};
+
+fn fixture_policy(service: &Service) -> Result<overlay::ServiceOverlay> {
     let plan = |scope, items, identity| -> Result<overlay::OperationOverlay> {
         let mut plan = overlay::OperationOverlay::default();
         plan.class = Some(overlay::OverlayClass::Enumerate);
@@ -61,7 +84,7 @@ fn fixture_policy() -> Result<overlay::ServiceOverlay> {
         truncated: Some(overlay::MemberPath::new("IsTruncated")?),
     });
     Ok(overlay::ServiceOverlay::new(
-        "pagination",
+        service.name,
         vec![
             (
                 "GetCallerIdentity",
@@ -71,7 +94,7 @@ fn fixture_policy() -> Result<overlay::ServiceOverlay> {
                 "DescribeRegions",
                 plan(overlay::Scope::Region, "Regions", "RegionName")?,
             ),
-            ("ListItems", items),
+            (service.operation, items),
         ],
     )?)
 }
@@ -164,23 +187,23 @@ const EC2_KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
     ],
 };
 
-fn assert_fixture_metadata(bytes: &[u8]) -> Result<()> {
+fn assert_fixture_metadata(bytes: &[u8], service: &Service) -> Result<()> {
     let catalog = RuntimeCatalog::from_bytes(bytes)?;
     assert_eq!(catalog.plans().len(), 3);
     let account = catalog
-        .lookup("pagination", "GetCallerIdentity")
+        .lookup(service.name, "GetCallerIdentity")
         .context("account bootstrap absent")?;
     assert!(matches!(account.purpose(),
         PlanPurpose::AccountIdentity { account_path } if account_path.as_ref() == [FieldId::new(1)?]));
     let regions = catalog
-        .lookup("pagination", "DescribeRegions")
+        .lookup(service.name, "DescribeRegions")
         .context("region bootstrap absent")?;
     assert!(matches!(regions.purpose(),
         PlanPurpose::RegionDiscovery { regions_path, region_name_path, opt_in_status_path }
         if regions_path.as_ref() == [FieldId::new(8)?]
             && region_name_path.as_ref() == [FieldId::new(7)?] && opt_in_status_path.is_none()));
     let items = catalog
-        .lookup("pagination", "ListItems")
+        .lookup(service.name, service.operation)
         .context("scalar plan absent")?;
     assert_eq!(items.purpose(), &PlanPurpose::Enumeration);
     let pagination = items.pagination();
@@ -202,105 +225,129 @@ fn assert_fixture_metadata(bytes: &[u8]) -> Result<()> {
     Ok(())
 }
 
-const KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
-    version: 1,
-    reviewed: "2026-11-15",
-    reviewer: "Pagination fixture",
-    default_unmapped_reason: None,
-    cfn: &[],
-    relations: &[],
-    parent_relations: &[],
-    compound_relations: &[],
-    additional_emissions: &[],
-    relation_targets: &[],
-    api_only: &[
-        kind_map::ApiOnlyMapping {
-            kind: "AWS::ApiOnly::PaginationAccount",
-            reason: "Bootstrap account",
-        },
-        kind_map::ApiOnlyMapping {
-            kind: "AWS::ApiOnly::PaginationRegion",
-            reason: "Bootstrap region",
-        },
-        kind_map::ApiOnlyMapping {
-            kind: "AWS::ApiOnly::PaginationScalar",
-            reason: "Scalar items",
-        },
-    ],
-    operations: &[
-        kind_map::OperationMapping {
-            service: "pagination",
-            operation: "GetCallerIdentity",
-            kind: "AWS::ApiOnly::PaginationAccount",
-        },
-        kind_map::OperationMapping {
-            service: "pagination",
-            operation: "DescribeRegions",
-            kind: "AWS::ApiOnly::PaginationRegion",
-        },
-        kind_map::OperationMapping {
-            service: "pagination",
-            operation: "ListItems",
-            kind: "AWS::ApiOnly::PaginationScalar",
-        },
-    ],
-    bootstraps: &[
-        kind_map::BootstrapMapping::AccountIdentity {
-            service: "pagination",
-            operation: "GetCallerIdentity",
-            account_path: "Account",
-        },
-        kind_map::BootstrapMapping::RegionDiscovery {
-            service: "pagination",
-            operation: "DescribeRegions",
-            regions_path: "Regions",
-            region_name_path: "RegionName",
-            opt_in_status_path: None,
-        },
-    ],
-};
+macro_rules! kinds {
+    ($service:literal, $operation:literal) => {
+        kind_map::MappingSource {
+            version: 1,
+            reviewed: "2026-11-15",
+            reviewer: "Pagination fixture",
+            default_unmapped_reason: None,
+            cfn: &[],
+            relations: &[],
+            parent_relations: &[],
+            compound_relations: &[],
+            additional_emissions: &[],
+            relation_targets: &[],
+            api_only: &[
+                kind_map::ApiOnlyMapping {
+                    kind: "AWS::ApiOnly::PaginationAccount",
+                    reason: "Bootstrap account",
+                },
+                kind_map::ApiOnlyMapping {
+                    kind: "AWS::ApiOnly::PaginationRegion",
+                    reason: "Bootstrap region",
+                },
+                kind_map::ApiOnlyMapping {
+                    kind: "AWS::ApiOnly::PaginationScalar",
+                    reason: "Scalar items",
+                },
+            ],
+            operations: &[
+                kind_map::OperationMapping {
+                    service: $service,
+                    operation: "GetCallerIdentity",
+                    kind: "AWS::ApiOnly::PaginationAccount",
+                },
+                kind_map::OperationMapping {
+                    service: $service,
+                    operation: "DescribeRegions",
+                    kind: "AWS::ApiOnly::PaginationRegion",
+                },
+                kind_map::OperationMapping {
+                    service: $service,
+                    operation: $operation,
+                    kind: "AWS::ApiOnly::PaginationScalar",
+                },
+            ],
+            bootstraps: &[
+                kind_map::BootstrapMapping::AccountIdentity {
+                    service: $service,
+                    operation: "GetCallerIdentity",
+                    account_path: "Account",
+                },
+                kind_map::BootstrapMapping::RegionDiscovery {
+                    service: $service,
+                    operation: "DescribeRegions",
+                    regions_path: "Regions",
+                    region_name_path: "RegionName",
+                    opt_in_status_path: None,
+                },
+            ],
+        }
+    };
+}
+
+static PAGINATION_KINDS: kind_map::MappingSource<'static> = kinds!("pagination", "ListItems");
+static SESV2_KINDS: kind_map::MappingSource<'static> = kinds!("sesv2", "ListImportJobs");
+
 pub(super) struct Fixture {
     pub(super) root: tempfile::TempDir,
     catalog: PathBuf,
     pub(super) database: PathBuf,
+    profile: &'static str,
     credentials: PathBuf,
     config: PathBuf,
 }
 
 impl Fixture {
     pub(super) fn create() -> Result<Self> {
+        Self::create_for(&PAGINATION)
+    }
+
+    pub(super) fn create_for(service: &Service) -> Result<Self> {
         let root = tempfile::tempdir()?;
         let source = root.path().join("source");
-        let models = source.join("models/pagination/service/2026-01-01");
+        let models = source.join(format!("models/{}/service/2026-01-01", service.name));
         std::fs::create_dir_all(&models)?;
-        std::fs::write(models.join("model.json"), MODEL)?;
+        let model = MODEL
+            .replace("@SERVICE@", service.name)
+            .replace("@SDK@", service.sdk)
+            .replace("@OP@", service.operation);
+        std::fs::write(models.join("model.json"), model)?;
         let checked = overlay::check_policies(
             &source,
-            &[fixture_policy()?],
+            &[fixture_policy(service)?],
             &catalog_tool::classes::DenyList::builtin(),
         )?;
         let registry = smithy::Registry::parse(
             "Account\nIsTruncated\nItems\nNextIdentifier\nNextName\nNextType\nRegionName\nRegions\nStartIdentifier\nStartName\nStartType\n",
         )?;
         let base = smithy::build_catalog(&source, &registry, "pagination-consumer-fixture")?;
-        let kinds = KINDS.compile(&names::Exceptions::none())?;
-        let endpoints = BTreeMap::from([("pagination".to_owned(), verified_endpoint()?)]);
+        let kinds = service.kinds.compile(&names::Exceptions::none())?;
+        let endpoints = BTreeMap::from([(service.name.to_owned(), verified_endpoint_for(service.name)?)]);
         let catalog = root.path().join("fixture.catalog");
         let bytes = runtime_catalog::augment(&base, &checked, &kinds, &endpoints)?;
-        assert_fixture_metadata(&bytes)?;
+        assert_fixture_metadata(&bytes, service)?;
         std::fs::write(&catalog, bytes)?;
         let credentials = root.path().join("credentials");
         let config = root.path().join("config");
         std::fs::write(
             &credentials,
-            "[pagination]\naws_access_key_id=AKIAPAGINATIONCONTRACT\naws_secret_access_key=local-only-pagination-secret\n",
+            format!(
+                "[{0}]\naws_access_key_id=AKIAPAGINATIONCONTRACT\naws_secret_access_key=local-only-pagination-secret\n",
+                service.name
+            ),
         )?;
-        std::fs::write(&config, "[profile pagination]\nregion=us-east-1\n")?;
+        std::fs::write(
+            &config,
+            format!("[profile {0}]\nregion=us-east-1\n", service.name),
+        )?;
         let database = root.path().join("inventory.sqlite");
         Ok(Self {
             root,
             catalog,
             database,
+            profile: service.name,
             credentials,
             config,
         })
@@ -337,14 +384,15 @@ impl Fixture {
         let config = root.path().join("config");
         std::fs::write(
             &credentials,
-            "[pagination]\naws_access_key_id=AKIAPAGINATIONCONTRACT\naws_secret_access_key=local-only-pagination-secret\n",
+            "[ec2]\naws_access_key_id=AKIAPAGINATIONCONTRACT\naws_secret_access_key=local-only-pagination-secret\n",
         )?;
-        std::fs::write(&config, "[profile pagination]\nregion=us-east-1\n")?;
+        std::fs::write(&config, "[profile ec2]\nregion=us-east-1\n")?;
         let database = root.path().join("inventory.sqlite");
         Ok(Self {
             root,
             catalog,
             database,
+            profile: "ec2",
             credentials,
             config,
         })
@@ -373,7 +421,7 @@ impl Fixture {
             .arg(&self.database)
             .arg("--catalog")
             .arg(&self.catalog)
-            .args(["--profile", "pagination", "--region", REGION, "--endpoint"])
+            .args(["--profile", self.profile, "--region", REGION, "--endpoint"])
             .arg(&peer.endpoint)
             .arg("--ca-bundle")
             .arg(&peer.ca)
@@ -404,10 +452,6 @@ impl Fixture {
         }
         Ok(tokio::time::timeout(DEADLINE, child.wait_with_output()).await??)
     }
-}
-
-fn verified_endpoint() -> Result<endpoints::VerifiedEndpoint> {
-    verified_endpoint_for("pagination")
 }
 
 fn verified_endpoint_for(service: &str) -> Result<endpoints::VerifiedEndpoint> {

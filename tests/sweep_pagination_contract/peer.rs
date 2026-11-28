@@ -4,6 +4,8 @@ pub(super) enum Pages {
     Advancing,
     Repeated,
     MissingRequired,
+    FirstPrerequisite,
+    ContinuationPrerequisite,
     Ec2,
 }
 
@@ -238,11 +240,19 @@ fn page_response(uri: &http::Uri, tuple: Tuple<'_>, pages: Pages) -> (&'static s
     let body = match (uri.path(), tuple) {
         ("/identity", None) => json!({"Account": ACCOUNT}),
         ("/regions", None) => json!({"Regions": [{"RegionName": REGION}]}),
+        ("/items", None) if matches!(pages, Pages::FirstPrerequisite) => {
+            return sandbox_refusal();
+        }
         ("/items", None) if matches!(pages, Pages::MissingRequired) => {
             json!({"Items":["must-not-commit"],"IsTruncated":true,"NextName":"same.example."})
         }
         ("/items", None) => {
             json!({"Items":["zero","one"],"IsTruncated":true,"NextName":"same.example.","NextType":"A","NextIdentifier":"blue"})
+        }
+        ("/items", Some(("same.example.", "A", Some("blue"))))
+            if matches!(pages, Pages::ContinuationPrerequisite) =>
+        {
+            return sandbox_refusal();
         }
         ("/items", Some(("same.example.", "A", Some("blue"))))
             if matches!(pages, Pages::Repeated) =>
@@ -267,6 +277,15 @@ fn page_response(uri: &http::Uri, tuple: Tuple<'_>, pages: Pages) -> (&'static s
     };
     ("200 OK", body.to_string())
 }
+
+fn sandbox_refusal() -> (&'static str, String) {
+    (
+        "400 Bad Request",
+        json!({"__type":"BadRequestException","message":"Your account is still in the sandbox."})
+            .to_string(),
+    )
+}
+
 fn ec2_response(uri: &http::Uri, pages: Pages) -> (&'static str, String) {
     if !matches!(pages, Pages::Ec2) {
         return (

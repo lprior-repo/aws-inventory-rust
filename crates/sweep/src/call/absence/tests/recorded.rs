@@ -3,6 +3,7 @@ use inventory_engine::limiter::ApiError;
 
 mod captured_messages;
 mod code_only;
+mod not_enabled;
 
 const MACIE_ABSENT: &[u8] =
     br#"{"__type":"AccessDeniedException","message":"Macie is not enabled."}"#;
@@ -130,6 +131,20 @@ fn given_macie_header_and_conflicting_body_code_when_decoded_then_scope_remains_
         Err(ApiError::Denied(reason))
             if reason == "AWS service failure: AccessDenied (AccessDeniedException)"
     ));
+    Ok(())
+}
+
+#[test]
+fn header_only_expired_token_is_retryable_and_not_empty() -> TestResult {
+    let compiled = fixture::compile("macie2", "2020-01-01", &["ListMembers"])?;
+    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
+    let plan = catalog.lookup("macie2", "ListMembers").ok_or("plan absent")?;
+    let mut response = wire(403, "application/json", b"")?;
+    response.headers.insert(
+        "x-amzn-errortype",
+        http::HeaderValue::from_static("ExpiredToken"),
+    );
+    assert!(matches!(validate_status(plan, response), Err(ApiError::Transient(_))));
     Ok(())
 }
 

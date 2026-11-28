@@ -122,6 +122,7 @@ pub(super) async fn apply_persisted_summary(
         partial: stored.partial_scopes,
         inaccessible: stored.inaccessible_scopes,
         unsupported: stored.unsupported_scopes,
+        not_applicable: stored.not_applicable_scopes,
         failed: stored.failed_scopes,
         unobserved: stored.unobserved_scopes,
     };
@@ -152,6 +153,7 @@ pub(super) fn scope_total(outcomes: &ScopeOutcomes) -> Result<u64, SweepError> {
         outcomes.partial,
         outcomes.inaccessible,
         outcomes.unsupported,
+        outcomes.not_applicable,
         outcomes.failed,
         outcomes.unobserved,
     ]

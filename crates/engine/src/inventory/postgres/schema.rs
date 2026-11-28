@@ -9,6 +9,7 @@ use crate::inventory::{SchemaRegistry, StoreError, schema::decode_schema};
 use futures_util::{TryStreamExt, stream};
 use inventory_core::inventory::KindSchema;
 use sqlx::{PgPool, Postgres, Row, Transaction, postgres::PgRow};
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 
 /// Publication state of the `inventory` schema.
@@ -107,7 +108,7 @@ async fn publish(pool: &PgPool) -> Result<(), StoreError> {
     let mut tx = pool.begin().await?;
     kinds::lock(&mut tx).await?;
     sqlx::query("INSERT INTO inventory.metadata(key,value) VALUES('schema_version',$1) ON CONFLICT(key) DO NOTHING")
-        .bind(b"14".as_slice())
+        .bind(b"15".as_slice())
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
@@ -193,7 +194,74 @@ fn decode_row(row: PgRow) -> Result<Arc<KindSchema>, StoreError> {
     decode_schema(&kind, &table, &bytes).map(Arc::new)
 }
 
+pub(super) async fn open_writer_registry(
+    pool: &PgPool,
+    expected_catalog: Option<&[u8]>,
+) -> Result<SchemaRegistry, StoreError> {
+    match state(pool).await? {
+        SchemaState::Ready => {}
+        SchemaState::Incomplete => return Err(StoreError::InitializationIncomplete),
+        SchemaState::Absent => return Err(StoreError::Invalid("inventory schema is missing")),
+    }
+    if expected_catalog.is_some_and(|catalog| catalog.len() > super::super::MAX_CATALOG_BYTES) {
+        return Err(StoreError::Invalid("catalog size exceeds bounds"));
+    }
+    let mut tx = pool.begin().await?;
+    sqlx::query("LOCK TABLE inventory.metadata, inventory.kind_schemas IN SHARE ROW EXCLUSIVE MODE")
+        .execute(&mut *tx)
+        .await?;
+    let version = bounded_metadata(&mut *tx, "schema_version").await?;
+    let found = std::str::from_utf8(&version)
+        .ok()
+        .and_then(|text| text.parse::<i64>().ok())
+        .ok_or(StoreError::Invalid("invalid PostgreSQL schema version"))?;
+    if !matches!(found, 14 | 15) {
+        return Err(StoreError::SchemaVersion { found });
+    }
+    let registry = load_registry_tx(&mut tx).await?;
+    if expected_catalog.is_some_and(|catalog| {
+        Sha256::digest(catalog).as_slice() != registry.digest()
+    }) {
+        return Err(StoreError::CatalogMismatch);
+    }
+    if found == 14 {
+        sqlx::query("UPDATE inventory.metadata SET value='15' WHERE key='schema_version'")
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    Ok(registry)
+}
+
+async fn load_registry_tx(
+    tx: &mut Transaction<'_, Postgres>,
+) -> Result<SchemaRegistry, StoreError> {
+    let catalog = bounded_metadata(&mut **tx, "reviewed_catalog").await?;
+    let rows = sqlx::query(
+        "SELECT kind,table_name,definition FROM inventory.kind_schemas ORDER BY kind LIMIT 65537",
+    )
+    .fetch_all(&mut **tx)
+    .await?;
+    if rows.len() > 65_536 {
+        return Err(StoreError::Invalid("stored schema count exceeds bounds"));
+    }
+    let schemas = rows.into_iter().map(decode_row).collect::<Result<Vec<_>, _>>()?;
+    let registry = SchemaRegistry::new(&catalog, schemas)?;
+    let stored_digest = bounded_metadata(&mut **tx, "catalog_digest").await?;
+    if registry.digest().as_slice() != stored_digest.as_slice() {
+        return Err(StoreError::CatalogMismatch);
+    }
+    Ok(registry)
+}
+
 pub(super) async fn metadata(pool: &PgPool, key: &str) -> Result<Vec<u8>, StoreError> {
+    bounded_metadata(pool, key).await
+}
+
+async fn bounded_metadata<'e>(
+    executor: impl sqlx::Executor<'e, Database = Postgres>,
+    key: &str,
+) -> Result<Vec<u8>, StoreError> {
     Ok(
         sqlx::query(
             "SELECT value FROM inventory.metadata WHERE key=$1 AND octet_length(value)<=$2",
@@ -203,7 +271,7 @@ pub(super) async fn metadata(pool: &PgPool, key: &str) -> Result<Vec<u8>, StoreE
             i64::try_from(super::super::MAX_CATALOG_BYTES)
                 .map_err(|_| StoreError::Invalid("catalog size bound overflow"))?,
         )
-        .fetch_one(pool)
+        .fetch_one(executor)
         .await?
         .try_get("value")?,
     )

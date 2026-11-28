@@ -273,4 +273,28 @@ mod tests {
             ExitCode::SUCCESS
         );
     }
+
+    #[test]
+    fn given_not_applicable_scopes_when_sweep_finishes_then_exit_succeeds_but_unsupported_is_incomplete() {
+        let state = ProjectionState {
+            pending: 0,
+            rebuild_required: false,
+        };
+        let not_applicable = ScopeOutcomes {
+            not_applicable: 1,
+            ..ScopeOutcomes::default()
+        };
+        assert_eq!(
+            exit_code(&not_applicable, 0, 0, false, false, &state),
+            ExitCode::SUCCESS
+        );
+        let unsupported = ScopeOutcomes {
+            unsupported: 1,
+            ..ScopeOutcomes::default()
+        };
+        assert_eq!(
+            exit_code(&unsupported, 0, 0, false, false, &state),
+            ExitCode::from(2)
+        );
+    }
 }

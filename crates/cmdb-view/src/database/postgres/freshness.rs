@@ -44,6 +44,7 @@ impl Snapshot {
                     ScopeOutcome::Partial => &mut counts.partial,
                     ScopeOutcome::Inaccessible => &mut counts.inaccessible,
                     ScopeOutcome::Unsupported => &mut counts.unsupported,
+                    ScopeOutcome::NotApplicable => &mut counts.not_applicable,
                     ScopeOutcome::Failed => &mut counts.failed,
                     ScopeOutcome::Unobserved => &mut counts.unobserved,
                 };
@@ -125,6 +126,7 @@ fn outcome(value: &str) -> Result<ScopeOutcome, ViewError> {
         "partial" => Ok(ScopeOutcome::Partial),
         "inaccessible" => Ok(ScopeOutcome::Inaccessible),
         "unsupported" => Ok(ScopeOutcome::Unsupported),
+        "not_applicable" => Ok(ScopeOutcome::NotApplicable),
         "failed" => Ok(ScopeOutcome::Failed),
         "unobserved" => Ok(ScopeOutcome::Unobserved),
         _ => Err(ViewError::StoredRow),

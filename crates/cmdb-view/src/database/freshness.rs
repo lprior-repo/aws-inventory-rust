@@ -23,6 +23,7 @@ pub struct ScopeOutcomeCounts {
     pub partial: u64,
     pub inaccessible: u64,
     pub unsupported: u64,
+    pub not_applicable: u64,
     pub failed: u64,
     pub unobserved: u64,
 }
@@ -34,6 +35,7 @@ impl ScopeOutcomeCounts {
             ScopeOutcome::Partial => &mut self.partial,
             ScopeOutcome::Inaccessible => &mut self.inaccessible,
             ScopeOutcome::Unsupported => &mut self.unsupported,
+            ScopeOutcome::NotApplicable => &mut self.not_applicable,
             ScopeOutcome::Failed => &mut self.failed,
             ScopeOutcome::Unobserved => &mut self.unobserved,
         }
@@ -54,6 +56,7 @@ pub(super) fn parse_outcome(value: &str) -> Result<ScopeOutcome, ViewError> {
         "partial" => Ok(ScopeOutcome::Partial),
         "inaccessible" => Ok(ScopeOutcome::Inaccessible),
         "unsupported" => Ok(ScopeOutcome::Unsupported),
+        "not_applicable" => Ok(ScopeOutcome::NotApplicable),
         "failed" => Ok(ScopeOutcome::Failed),
         "unobserved" => Ok(ScopeOutcome::Unobserved),
         _ => Err(ViewError::StoredRow),

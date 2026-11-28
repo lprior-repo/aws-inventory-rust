@@ -67,7 +67,7 @@ async fn collect(connection: &mut PgConnection, expected: &Keys) -> Result<Evide
 
 async fn probes(connection: &mut PgConnection, sweep: &str) -> Result<Evidence, HarnessError> {
     let rows: Vec<(Vec<u8>, String, Option<String>)> = sqlx::query_as(
-        "SELECT scope_key,outcome,detail FROM inventory.scope_outcomes WHERE sweep_id=$1 AND outcome IN ('complete','unsupported','failed') LIMIT 100001",
+        "SELECT scope_key,outcome,detail FROM inventory.scope_outcomes WHERE sweep_id=$1 AND outcome IN ('complete','unsupported','not_applicable','failed') LIMIT 100001",
     )
     .bind(sweep).fetch_all(connection).await?;
     check_limit(rows.len())?;
@@ -77,6 +77,7 @@ async fn probes(connection: &mut PgConnection, sweep: &str) -> Result<Evidence, 
             let probe = match outcome.as_str() {
                 "complete" => Probe::Complete,
                 "unsupported" => Probe::Unsupported,
+                "not_applicable" => Probe::NotApplicable,
                 "failed" => Probe::Failed(failed_code(detail.as_deref())),
                 _ => return Err(HarnessError::invalid("invalid coverage scope outcome")),
             };

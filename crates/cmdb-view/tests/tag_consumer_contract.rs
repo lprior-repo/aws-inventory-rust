@@ -360,7 +360,7 @@ async fn given_legacy_metadata_without_tag_status_when_writer_records_complete_e
 }
 
 #[tokio::test]
-async fn given_schema_version_other_than_fourteen_when_reader_or_writer_opens_then_both_reject_with_typed_errors_and_recover_at_fourteen()
+async fn postgres_given_schema_14_reads_and_writer_upgrades_to_15_but_other_versions_are_rejected()
 -> TestResult {
     bounded(async {
         let fixture = fixture().await?;
@@ -380,7 +380,7 @@ async fn given_schema_version_other_than_fourteen_when_reader_or_writer_opens_th
             100,
         )
         .await?;
-        for found in [13_i64, 15] {
+        for found in [13_i64, 16] {
             fixture
                 .set_schema_version(found.to_string().as_bytes())
                 .await?;
@@ -412,6 +412,18 @@ async fn given_schema_version_other_than_fourteen_when_reader_or_writer_opens_th
             status(TagCoverage::Complete, 100, Some(100))
         );
         drop(database);
+        let writer = PgStore::open(
+            &DatabaseUrl::parse(fixture.url())?,
+            PgWriteConfig::default(),
+        )
+        .await?;
+        writer.close().await;
+        let version: Vec<u8> = sqlx::query_scalar(
+            "SELECT value FROM inventory.metadata WHERE key='schema_version'",
+        )
+        .fetch_one(&fixture.pool)
+        .await?;
+        assert_eq!(version.as_slice(), b"15");
         fixture.finish().await?;
         Ok(())
     })

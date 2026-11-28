@@ -269,8 +269,8 @@ mod tests {
             concat!(
                 "sns ListSubscriptionsByTopic awsQuery failed plan sweep operation failed: consumer index could not load\n",
                 "sns ListTopics awsQuery items 4\n",
-                "total items 1\ntotal empty 0\ntotal unsupported 0\ntotal failed 1\ntotal skipped-child 0\n",
-                "protocol awsQuery items 1 empty 0 unsupported 0 failed 1 skipped-child 0\n",
+                "total items 1\ntotal empty 0\ntotal not-applicable 0\ntotal unsupported 0\ntotal failed 1\ntotal skipped-child 0\n",
+                "protocol awsQuery items 1 empty 0 not-applicable 0 unsupported 0 failed 1 skipped-child 0\n",
             )
         );
         Ok(())

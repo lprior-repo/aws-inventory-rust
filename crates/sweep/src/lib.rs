@@ -67,6 +67,7 @@ pub struct ScopeOutcomes {
     pub partial: u64,
     pub inaccessible: u64,
     pub unsupported: u64,
+    pub not_applicable: u64,
     pub failed: u64,
     pub unobserved: u64,
 }
@@ -89,8 +90,9 @@ impl ScopeOutcomes {
             ScopeOutcome::Partial => &mut self.partial,
             ScopeOutcome::Inaccessible => &mut self.inaccessible,
             ScopeOutcome::Unsupported => &mut self.unsupported,
-            ScopeOutcome::Failed => &mut self.failed,
+            ScopeOutcome::NotApplicable => &mut self.not_applicable,
             ScopeOutcome::Unobserved => &mut self.unobserved,
+            ScopeOutcome::Failed => &mut self.failed,
         };
         *count = count.saturating_add(1);
     }
@@ -143,6 +145,8 @@ pub enum SweepError {
     Signing(#[from] aws_wire::sign::Error),
     #[error("inventory feature or singleton absent: {0}")]
     Absent(String),
+    #[error("inventory prerequisite is not enabled: {0}")]
+    NotEnabled(String),
     #[error("sweep operation failed: {0}")]
     Operation(&'static str),
 }

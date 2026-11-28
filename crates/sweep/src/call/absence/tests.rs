@@ -176,3 +176,34 @@ fn given_organizations_not_in_use_when_wire_call_finishes_then_absence_retains_r
     ));
     Ok(())
 }
+
+#[test]
+fn given_lower_priority_header_disagrees_with_absent_body_when_classified_then_absence_is_rejected()
+-> TestResult {
+    let compiled = fixture::compile("organizations", "2016-11-28", &["ListAccounts"])?;
+    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
+    let plan = catalog
+        .lookup("organizations", "ListAccounts")
+        .ok_or("plan absent")?;
+    let mut headers = http::HeaderMap::new();
+    headers.insert(
+        http::header::CONTENT_TYPE,
+        http::HeaderValue::from_static("application/x-amz-json-1.1"),
+    );
+    headers.insert(
+        "x-amzn-errortype",
+        http::HeaderValue::from_static("AWSOrganizationsNotInUseException"),
+    );
+    headers.insert(
+        "smithy-error-code",
+        http::HeaderValue::from_static("AccessDeniedException"),
+    );
+    let conflicting = Response {
+        status: http::StatusCode::BAD_REQUEST,
+        headers,
+        body: bytes::Bytes::from_static(br#"{"__type":"AWSOrganizationsNotInUseException"}"#),
+        version: http::Version::HTTP_11,
+    };
+    assert!(validate_status(plan, conflicting).is_err());
+    Ok(())
+}

@@ -36,9 +36,9 @@ pub struct LastSweep {
     pub ended_at_ms: i64,
 }
 
-/// The account's latest successful sweep. Only drained sweeps with every scope complete
-/// are marked `completed`, so failed or partial sweeps never qualify. Ties on `ended_at`
-/// resolve to the greatest sweep id so the answer is deterministic.
+/// The account's latest successful sweep. Only drained sweeps whose scopes are all complete
+/// or explicitly not applicable are marked `completed`; failed or partial sweeps never qualify.
+/// Ties on `ended_at` resolve to the greatest sweep id so the answer is deterministic.
 pub async fn last_completed_sweep(
     store: &PgStore,
     account: &str,

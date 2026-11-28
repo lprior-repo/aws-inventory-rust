@@ -17,7 +17,7 @@ use inventory_core::{
     record::Record,
 };
 use inventory_engine::inventory::{InventoryStore, PageCommit, StoreError, WorkLease};
-use settlement::{finalize, finish_error, summary};
+use settlement::{finalize, finish_error, finish_page_error, summary};
 
 use super::{RuntimeContext, now_ms};
 use crate::{CredentialSource, ScopeOutcomes, SweepError, SweepSummary, call, input};
@@ -86,13 +86,13 @@ async fn process_lease(
     let prepared = match preparation::prepare(context, &lease, plan, cursor).await {
         Ok(prepared) => prepared,
         Err(error) => {
-            return settled(finish_error(store, lease, error, output_shape(plan)).await);
+            return settled(finish_page_error(store, lease, error, output_shape(plan), cursor.pages).await);
         }
     };
     let (response, request) = match execute_page(context, plan, prepared).await {
         Ok(response) => response,
         Err(error) => {
-            return settled(finish_error(store, lease, error, output_shape(plan)).await);
+            return settled(finish_page_error(store, lease, error, output_shape(plan), cursor.pages).await);
         }
     };
     commit_response(context, lease, keep, setup, response, request).await

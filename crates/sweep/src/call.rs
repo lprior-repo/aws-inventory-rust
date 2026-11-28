@@ -82,6 +82,7 @@ impl<C: CredentialSource> Call<'_, '_, C> {
         let response = match response {
             ValidatedResponse::Page(response) => response,
             ValidatedResponse::Absent(reason) => return Err(SweepError::Absent(reason)),
+            ValidatedResponse::NotEnabled(reason) => return Err(SweepError::NotEnabled(reason)),
         };
         if response.body.len() > 1_048_576 {
             return Err(SweepError::Operation(

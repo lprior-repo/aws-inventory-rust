@@ -5,13 +5,12 @@ type Field = (&'static str, Option<u64>);
 
 pub(super) fn assert(actual: &str, expected: &Summary) -> Result<()> {
     ensure!(actual.len() <= 2048, "sweep stdout exceeds golden bound");
-    let (_, metrics) = actual.split_once('\n').context("summary line missing")?;
-    let metrics = metrics
-        .strip_suffix('\n')
-        .context("final newline missing")?;
+    let (_, rest) = actual.split_once('\n').context("summary line missing")?;
+    let (metrics, _) = rest.split_once('\n').context("metrics line missing")?;
     let mut golden = String::with_capacity(actual.len());
     write_summary(&mut golden, expected)?;
     write_metrics(&mut golden, metrics, expected)?;
+    write_outcomes(&mut golden, expected)?;
     assert_eq!(actual, golden);
     Ok(())
 }
@@ -30,6 +29,13 @@ fn write_summary(golden: &mut String, expected: &Summary) -> Result<()> {
         golden,
         "resource_writes_scope=invocation resource_writes={writes} rows={rows} scopes=1 complete={complete} partial={partial} inaccessible=0 unsupported=0 failed={failed} unobserved=0 graph_pending={pending} work_remaining=0 unattributed_resources=0"
     )?;
+    Ok(())
+}
+
+fn write_outcomes(golden: &mut String, expected: &Summary) -> Result<()> {
+    if expected.not_applicable > 0 {
+        writeln!(golden, "outcomes_v1 not_applicable={}", expected.not_applicable)?;
+    }
     Ok(())
 }
 

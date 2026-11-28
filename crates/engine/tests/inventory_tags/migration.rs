@@ -28,6 +28,79 @@ pub(super) async fn reconstruct_schema14(pool: &SqlitePool) -> TestResult {
 }
 
 #[tokio::test]
+async fn mismatched_catalog_does_not_commit_schema_upgrade() -> TestResult {
+    let (directory, store, _) = support::fixture().await?;
+    drop(store);
+    let pool = state::pool(&directory).await?;
+    sqlx::query("PRAGMA user_version=17").execute(&pool).await?;
+    pool.close().await;
+    let error = BinaryStore::open_with_catalog(
+        &directory.path().join("inventory.sqlite"),
+        b"different catalog",
+    )
+    .await
+    .err()
+    .ok_or("catalog mismatch unexpectedly opened")?;
+    assert!(matches!(error, StoreError::CatalogMismatch));
+    let pool = state::pool(&directory).await?;
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("PRAGMA user_version")
+            .fetch_one(&pool)
+            .await?,
+        17
+    );
+    pool.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn operations_mismatch_does_not_commit_schema_upgrade() -> TestResult {
+    let (directory, store, catalog) = support::fixture().await?;
+    drop(store);
+    let pool = state::pool(&directory).await?;
+    let removed: (String, String) = sqlx::query_as(
+        "SELECT service,operation FROM catalog_operations ORDER BY service,operation LIMIT 1",
+    )
+    .fetch_one(&pool)
+    .await?;
+    sqlx::query("DELETE FROM catalog_operations WHERE service=?1 AND operation=?2")
+        .bind(&removed.0)
+        .bind(&removed.1)
+        .execute(&pool)
+        .await?;
+    sqlx::query("PRAGMA user_version=17")
+        .execute(&pool)
+        .await?;
+    let operations_before = catalog_operations(&pool).await?;
+    assert!(!operations_before.contains(&removed));
+    let before = state::database_state(&pool).await?;
+    pool.close().await;
+
+    let error = BinaryStore::open_with_catalog(
+        &directory.path().join("inventory.sqlite"),
+        &catalog,
+    )
+    .await
+    .err()
+    .ok_or("operations mismatch unexpectedly opened")?;
+    assert!(matches!(error, StoreError::CatalogMismatch));
+
+    let pool = state::pool(&directory).await?;
+    assert_eq!(state::database_state(&pool).await?, before);
+    assert_eq!(catalog_operations(&pool).await?, operations_before);
+    pool.close().await;
+    Ok(())
+}
+
+async fn catalog_operations(pool: &SqlitePool) -> TestResult<Vec<(String, String)>> {
+    Ok(sqlx::query_as(
+        "SELECT service,operation FROM catalog_operations ORDER BY service,operation",
+    )
+    .fetch_all(pool)
+    .await?)
+}
+
+#[tokio::test]
 async fn tags_upgrade_preserves_legacy_record_hash_timestamps_pairs_and_pending_revision()
 -> TestResult {
     let (directory, store, _) = support::fixture().await?;
@@ -65,7 +138,7 @@ async fn tags_upgrade_preserves_legacy_record_hash_timestamps_pairs_and_pending_
         sqlx::query_scalar::<_, i64>("PRAGMA user_version")
             .fetch_one(&pool)
             .await?,
-        17
+        18
     );
     assert_eq!(state::resource_image(&pool).await?, image);
     assert_eq!(store.drain_projection(100).await?, pending);
@@ -219,7 +292,7 @@ async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it()
         sqlx::query_scalar::<_, i64>("PRAGMA user_version")
             .fetch_one(&pool)
             .await?,
-        17
+        18
     );
     let context: Vec<Vec<u8>> =
         sqlx::query_scalar("SELECT context FROM work_queue ORDER BY sweep_id")
@@ -275,7 +348,7 @@ async fn failed_upgrade_leaves_pre_provenance_schema14_unmutated_and_retry_compl
         sqlx::query_scalar::<_, i64>("PRAGMA user_version")
             .fetch_one(&pool)
             .await?,
-        17
+        18
     );
     let provenance: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM sqlite_schema WHERE name='reviewed_reference_grants'",

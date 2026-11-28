@@ -11,6 +11,10 @@ pub(super) async fn finish_error(
             tracing::debug!(reason, "inventory scope is empty");
             return finalize(store, lease, StoredOutcome::Complete, None).await;
         }
+        SweepError::NotEnabled(reason) => {
+            tracing::debug!(reason, "inventory prerequisite is not enabled");
+            return finalize(store, lease, StoredOutcome::NotApplicable, Some(reason)).await;
+        }
         SweepError::Api(inventory_engine::limiter::ApiError::Cancelled) => {
             release(store, lease).await?;
             return Err(error);
@@ -28,6 +32,23 @@ pub(super) async fn finish_error(
         warn_failed(&lease, &error, &detail);
     }
     finalize(store, lease, outcome, Some(&detail)).await
+}
+
+/// Settles a page error. A prerequisite refusal is "not applicable" before any page is
+/// committed; after a committed prefix the scope is kept as partial, with the refusal detail.
+pub(super) async fn finish_page_error(
+    store: &impl InventoryStore,
+    lease: WorkLease,
+    error: SweepError,
+    output_shape: Option<&str>,
+    committed_pages: u32,
+) -> Result<SweepSummary, SweepError> {
+    if committed_pages == 0 || !matches!(error, SweepError::NotEnabled(_)) {
+        return finish_error(store, lease, error, output_shape).await;
+    }
+    let detail = crate::error_detail::detail(&error, output_shape);
+    tracing::debug!(detail, "inventory prerequisite refused after a committed prefix");
+    finalize(store, lease, StoredOutcome::Partial, Some(&detail)).await
 }
 
 fn warn_failed(lease: &WorkLease, error: &SweepError, detail: &str) {

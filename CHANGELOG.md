@@ -27,6 +27,13 @@
 - Catalog-driven S3 `ListBuckets` requests now include the signed
   `x-amz-content-sha256` header even when endpoint rules use standard path
   handling. Other standard-path operations retain generic signing behavior.
+- Inventory SQLite opens now accept schema 18 and validate the supplied catalog
+  before committing an upgrade. PostgreSQL readers continue to accept schema 14;
+  writers upgrade it to 15 transactionally. Drained sweeps containing only
+  complete or not-applicable scopes now persist success, while not-applicable
+  scopes remain outside freshness and deletion authority. The emulator probe
+  reports not-applicable outcomes separately, and `sweep` preserves its legacy
+  summary lines before emitting the versioned outcome extension.
 
 - IAM policy generation and its reproducibility check now name the destination
   partition and account explicitly. The documented `aws` / `123456789012`

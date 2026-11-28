@@ -108,6 +108,7 @@ fn scope_outcome(outcomes: &crate::ScopeOutcomes) -> Option<ScopeOutcome> {
         (outcomes.partial, ScopeOutcome::Partial),
         (outcomes.inaccessible, ScopeOutcome::Inaccessible),
         (outcomes.unsupported, ScopeOutcome::Unsupported),
+        (outcomes.not_applicable, ScopeOutcome::NotApplicable),
         (outcomes.failed, ScopeOutcome::Failed),
         (outcomes.unobserved, ScopeOutcome::Unobserved),
     ]

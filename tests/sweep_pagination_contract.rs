@@ -65,6 +65,7 @@ async fn sweep_persists_every_scalar_when_full_tuple_advances_and_optional_token
             requests: 6,
             pages: 4,
             claims: 1,
+            not_applicable: 0,
         },
     )?;
     assert_resources(
@@ -92,6 +93,7 @@ async fn sweep_flattens_ec2_reservations_keeps_owner_tags_and_continues() -> Res
             writes: 3,
             rows: 3,
             complete: 1,
+            not_applicable: 0,
             partial: 0,
             failed: 0,
             pending: 3,
@@ -123,6 +125,7 @@ async fn sweep_reports_partial_and_stops_when_the_entire_continuation_tuple_repe
             requests: 4,
             pages: 2,
             claims: 1,
+            not_applicable: 0,
         },
     )?;
     assert_resources(&fixture.database, &["one", "two", "zero"]).await?;
@@ -149,6 +152,7 @@ async fn sweep_rejects_a_truncated_page_missing_a_required_tuple_component_atomi
             requests: 3,
             pages: 0,
             claims: 1,
+            not_applicable: 0,
         },
     )?;
     assert_resources(&fixture.database, &[]).await?;
@@ -197,6 +201,7 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
             requests: 4,
             pages: 2,
             claims: 1,
+            not_applicable: 0,
         },
     )?;
     assert_resources(
@@ -205,5 +210,59 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
     )
     .await?;
     assert_queue(&fixture.database, 0, &[("complete", 1)], 3).await?;
+    peer.stop().await
+}
+
+#[tokio::test]
+async fn sweep_classifies_a_sandbox_refusal_on_the_first_page_as_not_applicable()
+-> Result<()> {
+    let fixture = Fixture::create_for(&catalog::SESV2)?;
+    let peer = Peer::start(fixture.root.path(), Pages::FirstPrerequisite, None).await?;
+    let output = fixture.collect(&peer, false).await?;
+    assert_summary(
+        &output,
+        Summary {
+            code: 0,
+            writes: 0,
+            rows: 0,
+            complete: 0,
+            partial: 0,
+            failed: 0,
+            pending: 0,
+            requests: 3,
+            pages: 0,
+            claims: 1,
+            not_applicable: 1,
+        },
+    )?;
+    assert_resources(&fixture.database, &[]).await?;
+    assert_queue(&fixture.database, 0, &[("not_applicable", 1)], 0).await?;
+    peer.stop().await
+}
+
+#[tokio::test]
+async fn sweep_keeps_a_committed_prefix_partial_when_a_sandbox_refusal_follows()
+-> Result<()> {
+    let fixture = Fixture::create_for(&catalog::SESV2)?;
+    let peer = Peer::start(fixture.root.path(), Pages::ContinuationPrerequisite, None).await?;
+    let output = fixture.collect(&peer, false).await?;
+    assert_summary(
+        &output,
+        Summary {
+            code: 2,
+            writes: 2,
+            rows: 2,
+            complete: 0,
+            partial: 1,
+            failed: 0,
+            pending: 2,
+            requests: 4,
+            pages: 1,
+            claims: 1,
+            not_applicable: 0,
+        },
+    )?;
+    assert_resources(&fixture.database, &["one", "zero"]).await?;
+    assert_queue(&fixture.database, 0, &[("partial", 1)], 1).await?;
     peer.stop().await
 }

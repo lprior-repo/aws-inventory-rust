@@ -135,8 +135,15 @@ fn given_reviewed_operation_when_captured_and_iam_errors_decode_then_only_captur
                 "AWS service failure: {:?} ({})",
                 family.original_class, family.code
             );
-            assert_absence(plan, wire(family.status, family.media_type, body)?, &reason)
-                .map_err(|error| format!("{row}: {error}"))?;
+            let response = wire(family.status, family.media_type, body)?;
+            if matches!(family.service, "billingconductor" | "fms") {
+                assert!(
+                    matches!(validate_status(plan, response), Err(ApiError::Denied(actual)) if actual == reason),
+                    "{row}: expected a denial"
+                );
+            } else {
+                assert_absence(plan, response, &reason).map_err(|error| format!("{row}: {error}"))?;
+            }
             assert_denials(family, plan, &row, &reason)?;
         }
     }
@@ -183,8 +190,17 @@ fn given_scoped_provider_messages_when_request_account_or_region_differs_then_de
                 plan, response, account, region,
             ))
         };
-        let matching = classify(account, region)?.map(|response| response.decode(plan, false));
-        assert!(matches!(matching, Ok(Err(SweepError::Absent(actual))) if actual == reason));
+        let matching = classify(account, region)?;
+        if matches!(service, "billingconductor" | "fms") {
+            assert!(
+                matches!(matching, Err(ApiError::Denied(actual)) if actual == reason),
+                "{service}:{operation} denial became empty coverage"
+            );
+        } else {
+            assert!(
+                matches!(matching.map(|response| response.decode(plan, false)), Ok(Err(SweepError::Absent(actual))) if actual == reason)
+            );
+        }
         let mismatches = [(ACCOUNT, region), (account, REGION)];
         for (account, region) in mismatches
             .into_iter()
