@@ -110,10 +110,9 @@ fn judge(stored: &[StoredRow], probes: &ProbeTable) -> Vec<String> {
         let Some(probed) = probes.get(key) else {
             continue;
         };
-        if probed == "skipped" {
-            continue;
+        if matches!(probed.as_str(), "items" | "empty" | "not_applicable") {
+            compared = compared.saturating_add(1);
         }
-        compared = compared.saturating_add(1);
         if contradicts(outcome, probed) {
             violations.push(format!(
                 "{} {} stored {outcome} (detail: {}) but probe records {probed}",
@@ -124,7 +123,7 @@ fn judge(stored: &[StoredRow], probes: &ProbeTable) -> Vec<String> {
         }
     }
     if compared == 0 {
-        violations.push("no stored scope matched any non-skipped probe entry".to_owned());
+        violations.push("no stored scope matched any informative probe entry".to_owned());
     }
     violations
 }
@@ -211,8 +210,35 @@ mod tests {
         let violations = judge(&[row("ec2", "DescribeVpcs", "complete")], &probes);
         assert_eq!(
             violations,
-            vec!["no stored scope matched any non-skipped probe entry".to_owned()]
+            vec!["no stored scope matched any informative probe entry".to_owned()]
         );
+        Ok(())
+    }
+
+    #[test]
+    fn given_only_inconclusive_matches_when_judged_then_comparison_fails() -> TestResult<()> {
+        for outcome in ["failed", "unsupported"] {
+            let probes = probe_table(&format!("ec2 DescribeVpcs ec2Query {outcome} fixture\n"))?;
+            let violations = judge(&[row("ec2", "DescribeVpcs", "complete")], &probes);
+            assert_eq!(
+                violations,
+                ["no stored scope matched any informative probe entry"],
+                "{outcome}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn given_failed_and_informative_matches_when_judged_then_comparison_passes() -> TestResult<()> {
+        let probes = probe_table(
+            "ec2 DescribeVpcs ec2Query failed fixture transport error\nsesv2 ListImportJobs restJson1 empty no items\n",
+        )?;
+        let stored = [
+            row("ec2", "DescribeVpcs", "complete"),
+            row("sesv2", "ListImportJobs", "complete"),
+        ];
+        assert!(judge(&stored, &probes).is_empty());
         Ok(())
     }
 
@@ -237,7 +263,7 @@ mod tests {
         let violations = judge(&[row("ec2", "DescribeVpcs", "complete")], &probes);
         assert_eq!(
             violations,
-            vec!["no stored scope matched any non-skipped probe entry".to_owned()]
+            vec!["no stored scope matched any informative probe entry".to_owned()]
         );
         Ok(())
     }
