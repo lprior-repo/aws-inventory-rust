@@ -1,6 +1,6 @@
 use super::{
-    Emission, Identity, ItemSelector, MemberPath, OperationOverlay, Origin, OverlayClass,
-    OverlayError, Paginator, Scope, ServiceOverlay, TokenPair,
+    Emission, Identity, ItemSelector, MemberPath, NestedItems, OperationOverlay, Origin,
+    OverlayClass, OverlayError, Paginator, Scope, ServiceOverlay, TokenPair,
 };
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -22,6 +22,9 @@ struct Entry {
     defer_reason: Option<String>,
     scope: Option<String>,
     items: Option<String>,
+    nested_items: Option<NestedItemsEntry>,
+    tags: Option<String>,
+    page_size: Option<i64>,
     emit: Option<String>,
     identity: Option<IdentityEntry>,
     paginator: Option<PaginatorEntry>,
@@ -31,6 +34,14 @@ struct Entry {
     skip_evidence: BTreeMap<String, super::SkipEvidence>,
     #[serde(default)]
     bind: BTreeMap<String, BindingEntry>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NestedItemsEntry {
+    parents: String,
+    items: String,
+    owner: String,
 }
 
 #[derive(Deserialize)]
@@ -81,7 +92,11 @@ impl ServiceOverlay {
         let entries = document
             .operation
             .iter()
-            .map(|(name, entry)| entry.overlay().map(|entry| (name.as_str(), entry)))
+            .map(|(name, entry)| {
+                entry
+                    .overlay(document.format)
+                    .map(|entry| (name.as_str(), entry))
+            })
             .collect::<Result<Vec<_>, _>>()?;
         let mut policy = Self::new(service, entries)?;
         apply_metadata(&mut policy, &document, origin);
@@ -101,7 +116,9 @@ fn apply_metadata(policy: &mut ServiceOverlay, document: &Document, origin: Orig
 }
 
 fn validate_header(document: &Document, origin: Origin) -> Result<(), OverlayError> {
-    if document.format != 1 || document.operation.len() > super::MAX_OPERATIONS {
+    if !(1..=2).contains(&document.format)
+        || document.operation.len() > super::MAX_OPERATIONS
+    {
         return Err(invalid("format or operation limit"));
     }
     if (document.reviewer == "generated") != (origin == Origin::Generated) {
@@ -116,7 +133,11 @@ fn validate_header(document: &Document, origin: Origin) -> Result<(), OverlayErr
 }
 
 impl Entry {
-    fn overlay(&self) -> Result<OperationOverlay, OverlayError> {
+    fn overlay(&self, format: i64) -> Result<OperationOverlay, OverlayError> {
+        let items = self.items(format)?;
+        if self.page_size.is_some_and(|size| size <= 0) {
+            return Err(invalid("invalid page size"));
+        }
         Ok(OperationOverlay {
             class: Some(class(&self.class)?),
             defer_reason: self.defer_reason.clone(),
@@ -141,7 +162,9 @@ impl Entry {
                 None => Emission::default(),
             },
             emission_explicit: self.emit.is_some(),
-            items: self.items.as_deref().map(ItemSelector::parse).transpose()?,
+            items,
+            page_size: self.page_size,
+            tags: self.tags.as_deref().map(MemberPath::selected).transpose()?,
             identity: self
                 .identity
                 .as_ref()
@@ -154,6 +177,21 @@ impl Entry {
                 .transpose()?,
             ..OperationOverlay::default()
         })
+    }
+}
+impl Entry {
+    fn items(&self, format: i64) -> Result<Option<ItemSelector>, OverlayError> {
+        match (&self.items, &self.nested_items) {
+            (Some(_), Some(_)) => Err(invalid("multiple item selectors")),
+            (Some(items), None) => Ok(Some(ItemSelector::parse(items)?)),
+            (None, Some(nested)) if format == 2 => Ok(Some(ItemSelector::Nested(NestedItems {
+                parents: MemberPath::selected(&nested.parents)?,
+                items: MemberPath::selected(&nested.items)?,
+                owner: MemberPath::selected(&nested.owner)?,
+            }))),
+            (None, Some(_)) => Err(invalid("nested item selectors require format 2")),
+            (None, None) => Ok(None),
+        }
     }
 }
 

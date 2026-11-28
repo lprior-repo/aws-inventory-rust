@@ -184,7 +184,7 @@ fn identifiers(
             }
             plan.resource_emissions().iter().try_for_each(|emission| {
                 let fallback = match emission.items() {
-                    ItemPlan::Root => None,
+                    ItemPlan::Root | ItemPlan::Nested { .. } => None,
                     ItemPlan::Path(path) | ItemPlan::Select { path, .. } => path.last().copied(),
                 };
                 let names = match emission.identity() {
@@ -426,7 +426,7 @@ fn root_name(
 ) -> Result<Option<String>, SeedError> {
     let path = match items {
         ItemPlan::Path(path) | ItemPlan::Select { path, .. } => path,
-        ItemPlan::Root => return Ok(None),
+        ItemPlan::Root | ItemPlan::Nested { .. } => return Ok(None),
     };
     for id in path {
         let Some(mut shape) = values::shape(service, target)? else {

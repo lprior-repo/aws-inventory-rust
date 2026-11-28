@@ -205,6 +205,13 @@ pub struct OperationOverlay {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct NestedItems {
+    pub parents: MemberPath,
+    pub items: MemberPath,
+    pub owner: MemberPath,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ItemSelector {
     Root,
     Member(MemberPath),
@@ -212,6 +219,7 @@ pub enum ItemSelector {
         path: MemberPath,
         kind: super::SelectionKind,
     },
+    Nested(NestedItems),
 }
 
 impl ItemSelector {

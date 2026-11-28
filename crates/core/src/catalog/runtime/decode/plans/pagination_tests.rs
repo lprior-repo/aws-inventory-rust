@@ -70,7 +70,7 @@ fn given_all_optional_tuple_when_decoding_then_catalog_is_rejected() -> TestResu
         ),
     ])?;
     let record = Record::encode(&value)?;
-    assert!(page(record.root()).is_err());
+    assert!(page(5, record.root()).is_err());
     Ok(())
 }
 
@@ -104,7 +104,7 @@ fn given_typed_page_limits_when_decoded_then_only_string_and_integer_are_seriali
         ),
     ] {
         let record = page_with_size(kind, 100)?;
-        let page = page(record.root())?;
+        let page = page(5, record.root())?;
         let size = page.page_size.ok_or("page size")?;
         assert_eq!(size.value_type, expected);
         assert_eq!(size.value(), literal);
@@ -116,10 +116,10 @@ fn given_typed_page_limits_when_decoded_then_only_string_and_integer_are_seriali
         Value::Null,
         Value::Bool(true),
     ] {
-        assert!(page(page_with_size(Some(kind), 100)?.root()).is_err());
+        assert!(page(5, page_with_size(Some(kind), 100)?.root()).is_err());
     }
     for maximum in [-1, 0, i64::MAX] {
-        assert!(page(page_with_size(Some(Value::Int(0)), maximum)?.root()).is_err());
+        assert!(page(5, page_with_size(Some(Value::Int(0)), maximum)?.root()).is_err());
     }
     Ok(())
 }
@@ -127,10 +127,10 @@ fn given_typed_page_limits_when_decoded_then_only_string_and_integer_are_seriali
 #[test]
 fn given_a_cap_when_the_page_size_is_built_then_it_is_the_smaller_of_cap_and_model_maximum()
 -> TestResult {
-    let integer = page(page_with_size(Some(Value::Int(1)), 100)?.root())?
+    let integer = page(5, page_with_size(Some(Value::Int(1)), 100)?.root())?
         .page_size
         .ok_or("integer page size")?;
-    let text = page(page_with_size(Some(Value::Int(0)), 100)?.root())?
+    let text = page(5, page_with_size(Some(Value::Int(0)), 100)?.root())?
         .page_size
         .ok_or("string page size")?;
     for (cap, expected) in [

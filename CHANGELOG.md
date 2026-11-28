@@ -12,8 +12,10 @@
   preserves explicit denials for Wisdom content and the five Voice ID
   directory and enrollment operations; they are no longer called.
 
-- Generated runtime catalogs use extension v5 for string membership
-  predicates. The new runtime also reads v4; older runtimes require v4.
+- `DescribeInstances` collects `AWS::EC2::Instance` resources, not reservation
+  wrappers. Each instance inherits its reservation owner; foreign-owned instances
+  are skipped. Nested item selection requires runtime catalog extension v6.
+  The new reader still accepts v4 and v5 catalogs; older readers cannot open v6.
 
 - The catalog sweep lists ECS task definitions across `ACTIVE`, `INACTIVE`,
   and `DELETE_IN_PROGRESS`, following each status's pagination token separately.

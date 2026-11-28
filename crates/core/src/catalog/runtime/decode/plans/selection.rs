@@ -10,10 +10,10 @@ use crate::{
 pub(super) use identity::read as identity;
 pub(super) use validation::{validate_identity, validate_item, validate_projection};
 
-pub(super) fn item(fields: MapRef<'_>) -> Result<ItemPlan, RuntimeCatalogError> {
+pub(super) fn item(version: i64, fields: MapRef<'_>) -> Result<ItemPlan, RuntimeCatalogError> {
     let tag = metadata::integer(fields, 1)?;
-    if tag <= 1 {
-        return super::item_plan(fields);
+    if tag <= 1 || tag == 8 {
+        return super::item_plan(version, fields);
     }
     metadata::only_fields(fields, &[1, 2])?;
     let kind = match tag {

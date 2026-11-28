@@ -95,6 +95,7 @@ fn contextual_plan(
 fn context_path(overlay: &OperationOverlay) -> String {
     match overlay.items.as_ref() {
         Some(ItemSelector::Member(path) | ItemSelector::Explicit { path, .. }) => path.to_string(),
+        Some(ItemSelector::Nested(nested)) => nested.parents.to_string(),
         Some(ItemSelector::Root) => "response".to_owned(),
         None => "operation metadata".to_owned(),
     }

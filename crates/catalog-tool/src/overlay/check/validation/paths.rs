@@ -53,6 +53,9 @@ pub(in crate::overlay) fn selected_for_parent<'m>(
     vocabulary: &Vocabulary,
 ) -> Option<crate::plans::model::ShapeRef<'m>> {
     let explicit = overlay.and_then(|overlay| overlay.items.as_ref());
+    if let Some(ItemSelector::Nested(nested)) = explicit {
+        return nested_selected(model, operation, nested);
+    }
     if let Some(ItemSelector::Explicit { path, kind }) = explicit {
         return explicit_selected(model, operation, path.as_str(), *kind);
     }
@@ -63,6 +66,35 @@ pub(in crate::overlay) fn selected_for_parent<'m>(
         explicit_path(explicit).or_else(|| inferred_item_path(model, operation, vocabulary))?;
     selected_aggregate(model, operation, path)
 }
+fn nested_selected<'m>(
+    model: &Model<'m>,
+    operation: &str,
+    nested: &crate::overlay::NestedItems,
+) -> Option<crate::plans::model::ShapeRef<'m>> {
+    if nested.items.as_str().contains('.') || nested.owner.as_str().contains('.') {
+        return None;
+    }
+    let parent_list = model
+        .resolve_path(operation, "output", nested.parents.as_str())
+        .ok()??;
+    if plans::model::shape_type(parent_list.value) != Some("list") {
+        return None;
+    }
+    let parent = model.unwrap_aggregates(parent_list).ok()?;
+    let item_list = model
+        .resolve_path_from(parent, nested.items.as_str())
+        .ok()?;
+    let owner = model
+        .resolve_path_from(parent, nested.owner.as_str())
+        .ok()?;
+    if plans::model::shape_type(item_list.value) != Some("list")
+        || plans::model::shape_type(owner.value) != Some("string")
+    {
+        return None;
+    }
+    model.unwrap_aggregates(item_list).ok()
+}
+
 
 fn root_selection<'m>(
     model: &Model<'m>,

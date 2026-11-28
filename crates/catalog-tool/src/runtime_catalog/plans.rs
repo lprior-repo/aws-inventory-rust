@@ -49,10 +49,30 @@ fn item_value(
             (2, encode::path(services, &path.to_string())?),
         ]),
         Some(ItemSelector::Explicit { path, kind }) => selection::item(path, *kind, services),
+        Some(ItemSelector::Nested(nested)) => nested_item_value(nested, services),
         None => Err(RuntimeCatalogCompileError::Path {
             path: "item selector".to_owned(),
         }),
     }
+}
+
+fn nested_item_value(
+    nested: &crate::overlay::NestedItems,
+    services: &super::ServiceIndex<'_>,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    if nested.items.as_str().contains('.') || nested.owner.as_str().contains('.') {
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "nested item fields must be direct members".to_owned(),
+        });
+    }
+    let items = services.field_id(nested.items.as_str())?;
+    let owner = services.field_id(nested.owner.as_str())?;
+    encode::map([
+        (1, Value::Int(8)),
+        (2, encode::path(services, nested.parents.as_str())?),
+        (3, Value::Int(i64::from(items.value()))),
+        (4, Value::Int(i64::from(owner.value()))),
+    ])
 }
 
 fn identity_value(

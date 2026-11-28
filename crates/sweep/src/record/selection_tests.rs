@@ -6,6 +6,35 @@ use inventory_core::{
 use std::collections::BTreeMap;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+#[test]
+fn compiled_ec2_query_xml_projects_instance_ids_and_reservation_owners() -> TestResult {
+    use aws_wire::{request::Protocol, response::{DecodeLimits, ResponseContext}};
+    use inventory_core::catalog::runtime::{RuntimeCatalog, RuntimeProtocol};
+    let catalog = std::fs::read(concat!(env!("CARGO_MANIFEST_DIR"), "/../../catalog/aws-api.catalog"))?;
+    let catalog = RuntimeCatalog::from_bytes(&catalog)?;
+    let plan = catalog.lookup("ec2", "DescribeInstances").ok_or("DescribeInstances absent")?;
+    assert_eq!(plan.kind().as_str(), "AWS::EC2::Instance");
+    assert_eq!(plan.protocol(), RuntimeProtocol::Ec2Query);
+    let xml = br#"<DescribeInstancesResponse xmlns="http://ec2.amazonaws.com/doc/2016-11-15/"><reservationSet>
+      <item><ownerId>123456789012</ownerId><instancesSet><item><instanceId>i-one</instanceId></item><item><instanceId>i-two</instanceId></item></instancesSet></item>
+      <item><ownerId>999999999999</ownerId><instancesSet><item><instanceId>i-other</instanceId></item></instancesSet></item>
+      </reservationSet><nextToken>page-two</nextToken></DescribeInstancesResponse>"#;
+    let record = aws_wire::response::decode(ResponseContext {
+        service: plan.service(), operation: plan.operation(), protocol: Protocol::Ec2Query,
+        body: xml, headers: &http::HeaderMap::new(), status: http::StatusCode::OK,
+        limits: DecodeLimits::default(),
+    })?;
+    let account = AccountId::parse("123456789012")?;
+    let expected = [("i-one", false), ("i-two", false), ("i-other", true)];
+    let rows = item_records(&record, plan.items())?;
+    assert_eq!(rows.len(), expected.len());
+    for (row, (id, foreign)) in rows.iter().zip(expected) {
+        assert_eq!(resource_id(row, plan.identity(), None)?.as_str(), id);
+        assert_eq!(nested_foreign_owned(row, plan.items(), &account)?, foreign);
+    }
+    Ok(())
+}
+
 fn page(value: Value) -> Result<Record, inventory_core::record::RecordError> {
     Record::encode(&Value::Map(BTreeMap::from([(
         Key::Field(FieldId::new(1)?),

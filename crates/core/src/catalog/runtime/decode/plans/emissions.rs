@@ -10,6 +10,7 @@ use crate::{
 };
 
 pub(super) fn additional(
+    version: i64,
     fields: MapRef<'_>,
     service_name: &str,
     service: Service<'_>,
@@ -20,12 +21,13 @@ pub(super) fn additional(
     };
     metadata::bounded(
         super::super::list_value(value)?,
-        |value| descriptor(value, service_name, service, operation),
+        |value| descriptor(version, value, service_name, service, operation),
         7,
     )
 }
 
 fn descriptor(
+    version: i64,
     value: ValueRef<'_>,
     service_name: &str,
     service: Service<'_>,
@@ -38,7 +40,7 @@ fn descriptor(
         return Err(RuntimeCatalogError::Capability);
     }
     let kind = Kind::parse(&metadata::text(fields, 3)?)?;
-    let items = selection::item(metadata::map_field(fields, 5)?)?;
+    let items = selection::item(version, metadata::map_field(fields, 5)?)?;
     selection::validate_item(service, operation, &items)?;
     let identity = selection::identity(metadata::map_field(fields, 6)?)?;
     namespace::validate(&identity, service_name, operation.name()?)?;

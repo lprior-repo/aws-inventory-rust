@@ -53,8 +53,8 @@ pub use check::{
 };
 pub use error::NameError;
 pub use types::{
-    Identity, ItemSelector, MemberPath, OperationName, OperationOverlay, OverlayClass, Paginator,
-    ReviewEvidence, Scope, ServiceOverlay, TokenPair,
+    Identity, ItemSelector, MemberPath, NestedItems, OperationName, OperationOverlay, OverlayClass,
+    Paginator, ReviewEvidence, Scope, ServiceOverlay, TokenPair,
 };
 
 pub fn embedded() -> Result<Vec<ServiceOverlay>, NameError> {

@@ -221,12 +221,23 @@ fn selector(plan: &CallablePlan<'_>) -> Result<String, ProbeError> {
     use inventory_core::catalog::runtime::ItemPlan;
     match plan.items() {
         ItemPlan::Root => Ok("$".into()),
-        ItemPlan::Path(path) | ItemPlan::Select { path, .. } => path
-            .iter()
-            .map(|id| Ok(plan.service().field_name(*id)?.to_owned()))
-            .collect::<Result<Vec<_>, ProbeError>>()
-            .map(|names| names.join(".")),
+        ItemPlan::Path(path) | ItemPlan::Select { path, .. } => item_path(plan, path),
+        ItemPlan::Nested { parents, items, .. } => {
+            let parents = item_path(plan, parents)?;
+            let item = plan.service().field_name(*items)?;
+            Ok(format!("{parents}.{item}"))
+        }
     }
+}
+
+fn item_path(
+    plan: &CallablePlan<'_>,
+    path: &[inventory_core::record::FieldId],
+) -> Result<String, ProbeError> {
+    path.iter()
+        .map(|id| Ok(plan.service().field_name(*id)?.to_owned()))
+        .collect::<Result<Vec<_>, ProbeError>>()
+        .map(|names| names.join("."))
 }
 
 fn overlays(evidence: Vec<Evidence>, when: &str) -> Result<String, ProbeError> {

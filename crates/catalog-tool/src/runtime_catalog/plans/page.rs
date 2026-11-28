@@ -79,6 +79,7 @@ fn selected_items(overlay: &OperationOverlay) -> Option<&crate::overlay::MemberP
     use crate::overlay::{ItemSelector, TagEndpointSelector};
     match overlay.items.as_ref()? {
         ItemSelector::Member(path) | ItemSelector::Explicit { path, .. } => Some(path),
+        ItemSelector::Nested(nested) => Some(&nested.parents),
         ItemSelector::Root => {
             overlay
                 .tag_endpoint

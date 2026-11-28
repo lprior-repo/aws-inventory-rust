@@ -4,6 +4,7 @@ pub(super) enum Pages {
     Advancing,
     Repeated,
     MissingRequired,
+    Ec2,
 }
 
 pub(super) struct Gate {
@@ -151,7 +152,11 @@ async fn serve_connection(
 ) -> Result<()> {
     let mut tls = acceptor.accept(stream).await?;
     let uri = read_request(&mut tls).await?;
-    let tuple = query_tuple(&uri)?;
+    let tuple = if uri.path() == "/items" {
+        query_tuple(&uri)?
+    } else {
+        None
+    };
     if uri.path() == "/items"
         && tuple == Some(("same.example.", "A", None))
         && let Some(checkpoint) = gate.take()
@@ -227,6 +232,9 @@ fn query_tuple(uri: &http::Uri) -> Result<Tuple<'_>> {
 }
 
 fn page_response(uri: &http::Uri, tuple: Tuple<'_>, pages: Pages) -> (&'static str, String) {
+    if uri.path() == "/instances" {
+        return ec2_response(uri, pages);
+    }
     let body = match (uri.path(), tuple) {
         ("/identity", None) => json!({"Account": ACCOUNT}),
         ("/regions", None) => json!({"Regions": [{"RegionName": REGION}]}),
@@ -254,6 +262,49 @@ fn page_response(uri: &http::Uri, tuple: Tuple<'_>, pages: Pages) -> (&'static s
             return (
                 "400 Bad Request",
                 json!({"message":"unknown resource or invalid continuation tuple"}).to_string(),
+            );
+        }
+    };
+    ("200 OK", body.to_string())
+}
+fn ec2_response(uri: &http::Uri, pages: Pages) -> (&'static str, String) {
+    if !matches!(pages, Pages::Ec2) {
+        return (
+            "400 Bad Request",
+            json!({"message":"unexpected EC2 request"}).to_string(),
+        );
+    }
+    let query = uri.query().map_or("", |query| query);
+    let fields = query
+        .split('&')
+        .filter_map(|entry| entry.split_once('='))
+        .collect::<BTreeMap<_, _>>();
+    if fields.get("MaxResults") != Some(&"1000") {
+        return (
+            "400 Bad Request",
+            json!({"message":"MaxResults was not 1000"}).to_string(),
+        );
+    }
+    let body = match fields.get("NextToken").copied() {
+        None => json!({"Reservations":[
+            {"OwnerId":ACCOUNT,"Instances":[
+                {"InstanceId":"i-owned-one","Tags":[{"Key":"Name","Value":"owned-one"}]},
+                {"InstanceId":"i-owned-two","Tags":[{"Key":"Name","Value":"owned-two"}]}
+            ]},
+            {"OwnerId":"999999999999","Instances":[
+                {"InstanceId":"i-foreign","Tags":[{"Key":"Name","Value":"foreign"}]}
+            ]},
+            {"OwnerId":ACCOUNT,"Instances":[]}
+        ],"NextToken":"ec2-next"}),
+        Some("ec2-next") => json!({"Reservations":[
+            {"OwnerId":ACCOUNT,"Instances":[
+                {"InstanceId":"i-owned-three","Tags":[{"Key":"Name","Value":"owned-three"}]}
+            ]}
+        ]}),
+        _ => {
+            return (
+                "400 Bad Request",
+                json!({"message":"invalid EC2 continuation token"}).to_string(),
             );
         }
     };

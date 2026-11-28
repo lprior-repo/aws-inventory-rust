@@ -50,13 +50,14 @@ use crate::{
 use bindings::{binding, bindings};
 use bounds::{optional_u32, positive_u32};
 pub(super) fn read<'a>(
+    version: i64,
     services: &Services<'a>,
     list: crate::record::ListRef<'_>,
 ) -> Result<Vec<CallablePlan<'a>>, RuntimeCatalogError> {
     let mut cache = IdentityPatternCache::default();
     let mut plans = metadata::bounded(
         list,
-        |value| plan(services, value, &mut cache),
+        |value| plan(version, services, value, &mut cache),
         metadata::MAX_ITEMS,
     )?;
     dependencies::validate(&mut plans)?;
@@ -65,6 +66,7 @@ pub(super) fn read<'a>(
 }
 
 fn plan<'a>(
+    version: i64,
     services: &Services<'a>,
     value: ValueRef<'_>,
     cache: &mut IdentityPatternCache<'a>,
@@ -81,6 +83,7 @@ fn plan<'a>(
     let operation_name = metadata::text(fields, 2)?;
     let (service, operation) = services.operation(&service_name, &operation_name)?;
     decode_plan(
+        version,
         fields,
         service,
         operation,
@@ -90,6 +93,7 @@ fn plan<'a>(
     )
 }
 fn decode_plan<'a>(
+    version: i64,
     fields: crate::record::MapRef<'_>,
     service: crate::catalog::Service<'a>,
     operation: crate::catalog::Operation<'a>,
@@ -98,7 +102,7 @@ fn decode_plan<'a>(
     cache: &mut IdentityPatternCache<'a>,
 ) -> Result<CallablePlan<'a>, RuntimeCatalogError> {
     let kind = Kind::parse(&metadata::text(fields, 3)?)?;
-    let items = selection::item(metadata::map_field(fields, 5)?)?;
+    let items = selection::item(version, metadata::map_field(fields, 5)?)?;
     let tags = tags::read(fields, service, operation, &items)?;
     let emission = selection::emission(fields)?;
     let effective_emission = match fields.get_field(FieldId::new(25)?)? {
@@ -120,7 +124,7 @@ fn decode_plan<'a>(
             projection.as_ref(),
             classification.as_ref(),
         ),
-        emissions::additional(fields, &service_name, service, operation)?,
+        emissions::additional(version, fields, &service_name, service, operation)?,
     )?;
     protocol_check::validate(service, protocol)?;
     let parts = PlanParts {
@@ -135,7 +139,7 @@ fn decode_plan<'a>(
         tags,
         bindings: bindings(metadata::list(fields, 7)?)?.into_boxed_slice(),
         skips: skips::read(fields)?,
-        pagination: page(metadata::map_field(fields, 8)?)?,
+        pagination: page(version, metadata::map_field(fields, 8)?)?,
         exclusions,
         endpoint: endpoint(metadata::map_field(fields, 10)?)?,
         review: review(metadata::map_field(fields, 11)?)?,
@@ -253,18 +257,32 @@ fn scope(value: i64) -> Result<PlanScope, RuntimeCatalogError> {
     }
 }
 
-fn item_plan(map_value: crate::record::MapRef<'_>) -> Result<ItemPlan, RuntimeCatalogError> {
-    metadata::only_fields(map_value, &[1, 2])?;
-    match metadata::integer(map_value, 1)? {
-        0 if map_value
-            .get_field(crate::record::FieldId::new(2)?)?
-            .is_none() =>
-        {
+fn item_plan(version: i64, map_value: crate::record::MapRef<'_>) -> Result<ItemPlan, RuntimeCatalogError> {
+    let tag = metadata::integer(map_value, 1)?;
+    metadata::only_fields(map_value, &[1, 2, 3, 4])?;
+    let path_absent = map_value.get_field(FieldId::new(2)?)?.is_none();
+    let item_absent = map_value.get_field(FieldId::new(3)?)?.is_none();
+    let owner_absent = map_value.get_field(FieldId::new(4)?)?.is_none();
+    match tag {
+        0 if path_absent && item_absent && owner_absent => Ok(ItemPlan::Root),
+        1 if item_absent && owner_absent => {
+            metadata::only_fields(map_value, &[1, 2])?;
+            Ok(ItemPlan::Path(metadata::id_path(metadata::list(
+                map_value, 2,
+            )?)?))
+        }
+        8 if version == 6 => {
+            metadata::only_fields(map_value, &[1, 2, 3, 4])?;
+            Ok(ItemPlan::Nested {
+                parents: metadata::id_path(metadata::list(map_value, 2)?)?,
+                items: FieldId::new(positive_u32(metadata::integer(map_value, 3)?)?)?,
+                owner: FieldId::new(positive_u32(metadata::integer(map_value, 4)?)?)?,
+            })
+        }
+        0 => {
+            metadata::only_fields(map_value, &[1])?;
             Ok(ItemPlan::Root)
         }
-        1 => Ok(ItemPlan::Path(metadata::id_path(metadata::list(
-            map_value, 2,
-        )?)?)),
         _ => Err(RuntimeCatalogError::Capability),
     }
 }

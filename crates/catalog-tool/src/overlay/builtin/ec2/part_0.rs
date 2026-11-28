@@ -1,7 +1,7 @@
 use super::super::{empty, path};
 use crate::overlay::{
-    FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass, Paginator,
-    Scope, TokenPair,
+    FixedValue, Identity, ItemSelector, NameError, NestedItems, OperationOverlay, OverlayClass,
+    Paginator, Scope, TokenPair,
 };
 
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -34,8 +34,17 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("DescribeInstances", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("Reservations[].Instances[] requires flattening with Reservations[].OwnerId retained for cross-account ownership; selecting Reservations incorrectly inventories reservation wrappers, not instances.".to_owned()),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::Nested(NestedItems {
+            parents: path("Reservations")?,
+            items: path("Instances")?,
+            owner: path("OwnerId")?,
+        })),
+        page_size: Some(1000),
+        tags: Some(path("Tags")?),
+        identity: Some(Identity::Key(vec![path("InstanceId")?])),
+        paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
     }),
 ("DescribeInternetGateways", OperationOverlay {

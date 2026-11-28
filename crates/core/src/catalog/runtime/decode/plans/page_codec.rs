@@ -3,8 +3,11 @@ use super::{
     ValueRef, map, metadata, optional_u32, positive_u32, selection,
 };
 use crate::catalog::runtime::{PageSizeType, TokenSelection};
-pub(super) fn page(map_value: crate::record::MapRef<'_>) -> Result<PagePlan, RuntimeCatalogError> {
-    let items = selection::item(metadata::map_field(map_value, 1)?)?;
+pub(super) fn page(
+    version: i64,
+    map_value: crate::record::MapRef<'_>,
+) -> Result<PagePlan, RuntimeCatalogError> {
+    let items = selection::item(version, metadata::map_field(map_value, 1)?)?;
     let tokens = page_tokens(map_value)?;
     let page_size = match map_value.get_field(crate::record::FieldId::new(3)?)? {
         Some(value) => Some(page_size(map(value)?)?),

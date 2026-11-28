@@ -318,6 +318,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "ec2",
+        operation: "DescribeInstances",
+        kind: "AWS::EC2::Instance",
+    },
+    OperationMapping {
+        service: "ec2",
         operation: "DescribeInstanceSqlHaStates",
         kind: "AWS::ApiOnly::Ec2SqlHaInstance",
     },

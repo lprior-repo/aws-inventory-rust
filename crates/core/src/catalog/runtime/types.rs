@@ -150,6 +150,11 @@ pub enum ItemPlan {
         path: Box<[FieldId]>,
         kind: SelectionKind,
     },
+    Nested {
+        parents: Box<[FieldId]>,
+        items: FieldId,
+        owner: FieldId,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -135,19 +135,9 @@ fn item(plan: &CallablePlan<'_>) -> Result<Target, ProbeError> {
         ItemPlan::Root => return Ok(plan.operation().output()?),
         ItemPlan::Path(path) => (path.as_ref(), None),
         ItemPlan::Select { path, kind } => (path.as_ref(), Some(kind)),
+        ItemPlan::Nested { parents, items, .. } => return nested_item(plan, parents, *items),
     };
-    let target = path
-        .iter()
-        .try_fold(plan.operation().output()?, |target, id| {
-            shape(plan.service(), target)?
-                .members()?
-                .find_map(|member| match member {
-                    Ok(member) if member.id == *id => Some(Ok(member.target)),
-                    Ok(_) => None,
-                    Err(error) => Some(Err(ProbeError::from(error))),
-                })
-                .ok_or(ProbeError::Invalid("comparison selected member is missing"))?
-        })?;
+    let target = path_target(plan, path)?;
     let selected = shape(plan.service(), target)?;
     match kind {
         Some(SelectionKind::MapValues | SelectionKind::MapEntries) => selected
@@ -164,6 +154,45 @@ fn item(plan: &CallablePlan<'_>) -> Result<Target, ProbeError> {
             .ok_or(ProbeError::Invalid("comparison list element missing")),
         _ => Ok(target),
     }
+}
+fn path_target(
+    plan: &CallablePlan<'_>,
+    path: &[inventory_core::record::FieldId],
+) -> Result<Target, ProbeError> {
+    path.iter()
+        .try_fold(plan.operation().output()?, |target, id| {
+            shape(plan.service(), target)?
+                .members()?
+                .find_map(|member| match member {
+                    Ok(member) if member.id == *id => Some(Ok(member.target)),
+                    Ok(_) => None,
+                    Err(error) => Some(Err(ProbeError::from(error))),
+                })
+                .ok_or(ProbeError::Invalid("comparison selected member is missing"))?
+        })
+}
+
+fn nested_item(
+    plan: &CallablePlan<'_>,
+    parents: &[inventory_core::record::FieldId],
+    items: inventory_core::record::FieldId,
+) -> Result<Target, ProbeError> {
+    let parent_list = path_target(plan, parents)?;
+    let parent_element = shape(plan.service(), parent_list)?
+        .element()?
+        .ok_or(ProbeError::Invalid("nested parent element is missing"))?;
+    let parent = shape(plan.service(), parent_element)?;
+    let item_list = parent
+        .members()?
+        .find_map(|member| match member {
+            Ok(member) if member.id == items => Some(Ok(member.target)),
+            Ok(_) => None,
+            Err(error) => Some(Err(ProbeError::from(error))),
+        })
+        .ok_or(ProbeError::Invalid("nested item member is missing"))??;
+    shape(plan.service(), item_list)?
+        .element()?
+        .ok_or(ProbeError::Invalid("nested item element is missing"))
 }
 
 #[cfg(test)]

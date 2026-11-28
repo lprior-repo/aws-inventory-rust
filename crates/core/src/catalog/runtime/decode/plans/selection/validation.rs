@@ -12,6 +12,9 @@ pub(in crate::catalog::runtime::decode::plans) fn validate_item(
     items: &ItemPlan,
 ) -> Result<Target, RuntimeCatalogError> {
     let (path, kind) = match items {
+        ItemPlan::Nested { parents, items, owner } => {
+            return nested_item(service, operation, parents, *items, *owner);
+        }
         ItemPlan::Root => return Ok(operation.output()?),
         ItemPlan::Path(path) => {
             let target = tags::resolve(service, operation.output()?, path)?;
@@ -46,6 +49,40 @@ pub(in crate::catalog::runtime::decode::plans) fn validate_item(
         }
         _ => Err(RuntimeCatalogError::Capability),
     }
+}
+fn nested_item(
+    service: Service<'_>,
+    operation: Operation<'_>,
+    parents: &[FieldId],
+    items: FieldId,
+    owner: FieldId,
+) -> Result<Target, RuntimeCatalogError> {
+    let parent_list = tags::resolve(service, operation.output()?, parents)?;
+    if tags::target_kind(service, parent_list)? != "list" {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    let parent = tags::shape(service, parent_list)?
+        .element()?
+        .ok_or(RuntimeCatalogError::Capability)?;
+    let parent_shape = tags::shape(service, parent)?;
+    if parent_shape.kind()? != "structure" {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    let nested_list = tags::member(parent_shape, items)?.target;
+    if tags::target_kind(service, nested_list)? != "list" {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    let owner_target = tags::member(parent_shape, owner)?.target;
+    if tags::target_kind(service, owner_target)? != "string" {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    let child = tags::shape(service, nested_list)?
+        .element()?
+        .ok_or(RuntimeCatalogError::Capability)?;
+    if tags::target_kind(service, child)? != "structure" {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    Ok(child)
 }
 
 pub(in crate::catalog::runtime::decode::plans) fn validate_identity(
@@ -316,7 +353,7 @@ pub(in crate::catalog::runtime::decode::plans) fn validate_projection(
                         Some(path.as_ref())
                     } else {
                         match &parts.items {
-                            ItemPlan::Root => Some(path.as_ref()),
+                            ItemPlan::Root | ItemPlan::Nested { .. } => Some(path.as_ref()),
                             ItemPlan::Path(prefix) | ItemPlan::Select { path: prefix, .. } => {
                                 path.strip_prefix(prefix.as_ref())
                             }

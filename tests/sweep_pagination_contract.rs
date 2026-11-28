@@ -10,7 +10,9 @@ mod state;
 mod stdout;
 use catalog::Fixture;
 use peer::{Gate, Pages, Peer};
-use state::{Summary, assert_queue, assert_resources, assert_summary, expire_leases};
+use state::{
+    Summary, assert_nested_resources, assert_queue, assert_resources, assert_summary, expire_leases,
+};
 
 use anyhow::{Context, Result, ensure};
 use catalog_tool::{endpoints, kind_map, names, overlay, runtime_catalog, smithy};
@@ -71,6 +73,34 @@ async fn sweep_persists_every_scalar_when_full_tuple_advances_and_optional_token
     )
     .await?;
     assert_queue(&fixture.database, 0, &[("complete", 1)], 3).await?;
+    peer.stop().await
+}
+#[tokio::test]
+async fn sweep_flattens_ec2_reservations_keeps_owner_tags_and_continues() -> Result<()> {
+    // Given: DescribeInstances returns multiple reservations, a foreign owner, and an empty reservation.
+    let fixture = Fixture::create_ec2()?;
+    let peer = Peer::start(fixture.root.path(), Pages::Ec2, None).await?;
+
+    // When: the public sweep CLI traverses both DescribeInstances pages.
+    let output = fixture.collect(&peer, false).await?;
+
+    // Then: only owned instances are stored, each with its reservation owner and tags.
+    assert_summary(
+        &output,
+        Summary {
+            code: 0,
+            writes: 3,
+            rows: 3,
+            complete: 1,
+            partial: 0,
+            failed: 0,
+            pending: 3,
+            requests: 4,
+            pages: 2,
+            claims: 1,
+        },
+    )?;
+    assert_nested_resources(&fixture.database, fixture.owner_field()?).await?;
     peer.stop().await
 }
 

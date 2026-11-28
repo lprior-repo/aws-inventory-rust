@@ -19,14 +19,14 @@ fn operation<'a>(
 }
 
 #[test]
-fn ec2_instances_remain_deferred_until_owner_context_is_preserved() -> TestResult {
+fn ec2_instances_select_children_with_their_reservation_owner() -> TestResult {
     let overlays = overlay::embedded()?;
     let plan = operation(&overlays, "ec2", "DescribeInstances")?;
 
-    assert_eq!(plan.class, Some(OverlayClass::Defer));
-    let reason = plan.defer_reason.as_deref().ok_or("defer reason missing")?;
-    assert!(reason.contains("Reservations[].Instances[]"));
-    assert!(reason.contains("Reservations[].OwnerId"));
+    assert_eq!(plan.class, Some(OverlayClass::Enumerate));
+    assert!(matches!(&plan.items, Some(ItemSelector::Nested(nested))
+        if nested.parents.as_str() == "Reservations" && nested.items.as_str() == "Instances"
+            && nested.owner.as_str() == "OwnerId"));
     Ok(())
 }
 

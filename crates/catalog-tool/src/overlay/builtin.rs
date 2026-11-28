@@ -60,7 +60,7 @@ fn primary() -> Result<Vec<ServiceOverlay>, NameError> {
     ])
 }
 
-use super::{MemberPath, NameError, OperationName, OperationOverlay, ServiceOverlay};
+use super::{ItemSelector, MemberPath, NameError, OperationName, OperationOverlay, ServiceOverlay};
 use std::collections::BTreeMap;
 
 pub(super) fn empty() -> OperationOverlay {
@@ -73,10 +73,20 @@ pub(super) fn service(
 ) -> Result<ServiceOverlay, NameError> {
     validate_service(service, operations.len())?;
     let operations = operation_map(service, operations)?;
+    let format = if operations.iter().any(|(_, operation)| {
+        operation
+            .items
+            .as_ref()
+            .is_some_and(|items| matches!(items, ItemSelector::Nested(_)))
+    }) {
+        2
+    } else {
+        1
+    };
     super::policy::validate(&operations)?;
     Ok(ServiceOverlay {
         service: service.to_owned(),
-        format: 1,
+        format,
         reviewed: "2026-11-15".to_owned(),
         reviewer: "Automated pinned-model review".to_owned(),
         evidence: super::ReviewEvidence {

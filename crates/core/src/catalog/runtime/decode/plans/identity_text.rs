@@ -106,7 +106,7 @@ fn selected_model<'a>(
 ) -> Result<(Target, Option<ValueConstraints<'a>>), RuntimeCatalogError> {
     let selected = tags::selected_item(service, operation, items)?;
     let (path, kind) = match items {
-        ItemPlan::Root => return Ok((selected, None)),
+        ItemPlan::Root | ItemPlan::Nested { .. } => return Ok((selected, None)),
         ItemPlan::Path(path) => (path.as_ref(), None),
         ItemPlan::Select { path, kind } => (path.as_ref(), Some(*kind)),
     };

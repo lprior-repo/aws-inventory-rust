@@ -12,6 +12,24 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n.pagination#ListOutput":{"type":"structure","members":{"Items":{"target":"n.pagination#Items"},"NextName":{"target":"smithy.api#String"},"NextType":{"target":"smithy.api#String"},"NextIdentifier":{"target":"smithy.api#String"},"IsTruncated":{"target":"smithy.api#Boolean"}}},
 "n.pagination#Items":{"type":"list","member":{"target":"smithy.api#String"}}
 }}"#;
+const EC2_MODEL: &str = r#"{"smithy":"2.0","shapes":{
+"n.ec2#Service":{"type":"service","version":"2026-01-01","operations":[{"target":"n.ec2#GetCallerIdentity"},{"target":"n.ec2#DescribeRegions"},{"target":"n.ec2#DescribeInstances"}],"traits":{"aws.api#service":{"sdkId":"EC2Fixture","endpointPrefix":"ec2","arnNamespace":"ec2"},"aws.auth#sigv4":{"name":"ec2"},"aws.protocols#restJson1":{}}},
+"n.ec2#GetCallerIdentity":{"type":"operation","output":{"target":"n.ec2#IdentityOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/identity"}}},
+"n.ec2#IdentityOutput":{"type":"structure","members":{"Account":{"target":"smithy.api#String"}}},
+"n.ec2#DescribeRegions":{"type":"operation","output":{"target":"n.ec2#RegionsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/regions"}}},
+"n.ec2#RegionsOutput":{"type":"structure","members":{"Regions":{"target":"n.ec2#RegionList"}}},
+"n.ec2#RegionList":{"type":"list","member":{"target":"n.ec2#Region"}},
+"n.ec2#Region":{"type":"structure","members":{"RegionName":{"target":"smithy.api#String"}}},
+"n.ec2#DescribeInstances":{"type":"operation","input":{"target":"n.ec2#InstancesInput"},"output":{"target":"n.ec2#InstancesOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/instances"},"smithy.api#paginated":{"inputToken":"NextToken","outputToken":"NextToken","items":"Reservations","pageSize":"MaxResults"}}},
+"n.ec2#InstancesInput":{"type":"structure","members":{"MaxResults":{"target":"smithy.api#Integer","traits":{"smithy.api#httpQuery":"MaxResults"}},"NextToken":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"NextToken"}}}},
+"n.ec2#InstancesOutput":{"type":"structure","members":{"Reservations":{"target":"n.ec2#ReservationList"},"NextToken":{"target":"smithy.api#String"}}},
+"n.ec2#ReservationList":{"type":"list","member":{"target":"n.ec2#Reservation"}},
+"n.ec2#Reservation":{"type":"structure","members":{"OwnerId":{"target":"smithy.api#String"},"Instances":{"target":"n.ec2#InstanceList"}}},
+"n.ec2#InstanceList":{"type":"list","member":{"target":"n.ec2#Instance"}},
+"n.ec2#Instance":{"type":"structure","members":{"InstanceId":{"target":"smithy.api#String"},"Tags":{"target":"n.ec2#TagList"}}},
+"n.ec2#TagList":{"type":"list","member":{"target":"n.ec2#Tag"}},
+"n.ec2#Tag":{"type":"structure","members":{"Key":{"target":"smithy.api#String"},"Value":{"target":"smithy.api#String"}}}
+}}"#;
 
 fn fixture_policy() -> Result<overlay::ServiceOverlay> {
     let plan = |scope, items, identity| -> Result<overlay::OperationOverlay> {
@@ -57,6 +75,94 @@ fn fixture_policy() -> Result<overlay::ServiceOverlay> {
         ],
     )?)
 }
+fn ec2_fixture_policy() -> Result<overlay::ServiceOverlay> {
+    let bootstrap = |scope, items, identity| -> Result<overlay::OperationOverlay> {
+        let mut plan = overlay::OperationOverlay::default();
+        plan.class = Some(overlay::OverlayClass::Enumerate);
+        plan.scope = Some(scope);
+        plan.items = Some(overlay::ItemSelector::parse(items)?);
+        plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new(identity)?]));
+        plan.paginator = Some(overlay::Paginator::None);
+        Ok(plan)
+    };
+    let instances = overlay::embedded()?.iter()
+        .find(|service| service.service() == "ec2")
+        .and_then(|service| service.operations().get("DescribeInstances"))
+        .cloned()
+        .context("missing embedded EC2 DescribeInstances policy")?;
+    Ok(overlay::ServiceOverlay::new(
+        "ec2",
+        vec![
+            (
+                "GetCallerIdentity",
+                bootstrap(overlay::Scope::Account, "$", "Account")?,
+            ),
+            (
+                "DescribeRegions",
+                bootstrap(overlay::Scope::Region, "Regions", "RegionName")?,
+            ),
+            ("DescribeInstances", instances),
+        ],
+    )?)
+}
+
+const EC2_KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
+    version: 1,
+    reviewed: "2026-11-15",
+    reviewer: "Nested EC2 fixture",
+    default_unmapped_reason: None,
+    cfn: &[],
+    relations: &[],
+    parent_relations: &[],
+    compound_relations: &[],
+    additional_emissions: &[],
+    relation_targets: &[],
+    api_only: &[
+        kind_map::ApiOnlyMapping {
+            kind: "AWS::ApiOnly::NestedEc2Account",
+            reason: "Account bootstrap",
+        },
+        kind_map::ApiOnlyMapping {
+            kind: "AWS::ApiOnly::NestedEc2Region",
+            reason: "Region bootstrap",
+        },
+        kind_map::ApiOnlyMapping {
+            kind: "AWS::ApiOnly::NestedEc2Instance",
+            reason: "Nested instance fixture",
+        },
+    ],
+    operations: &[
+        kind_map::OperationMapping {
+            service: "ec2",
+            operation: "GetCallerIdentity",
+            kind: "AWS::ApiOnly::NestedEc2Account",
+        },
+        kind_map::OperationMapping {
+            service: "ec2",
+            operation: "DescribeRegions",
+            kind: "AWS::ApiOnly::NestedEc2Region",
+        },
+        kind_map::OperationMapping {
+            service: "ec2",
+            operation: "DescribeInstances",
+            kind: "AWS::ApiOnly::NestedEc2Instance",
+        },
+    ],
+    bootstraps: &[
+        kind_map::BootstrapMapping::AccountIdentity {
+            service: "ec2",
+            operation: "GetCallerIdentity",
+            account_path: "Account",
+        },
+        kind_map::BootstrapMapping::RegionDiscovery {
+            service: "ec2",
+            operation: "DescribeRegions",
+            regions_path: "Regions",
+            region_name_path: "RegionName",
+            opt_in_status_path: None,
+        },
+    ],
+};
 
 fn assert_fixture_metadata(bytes: &[u8]) -> Result<()> {
     let catalog = RuntimeCatalog::from_bytes(bytes)?;
@@ -199,6 +305,61 @@ impl Fixture {
             config,
         })
     }
+    pub(super) fn create_ec2() -> Result<Self> {
+        let root = tempfile::tempdir()?;
+        let source = root.path().join("source");
+        let models = source.join("models/ec2/service/2026-01-01");
+        std::fs::create_dir_all(&models)?;
+        std::fs::write(models.join("model.json"), EC2_MODEL)?;
+        let checked = overlay::check_policies(
+            &source,
+            &[ec2_fixture_policy()?],
+            &catalog_tool::classes::DenyList::builtin(),
+        )?;
+        let registry = smithy::Registry::parse(
+            "Account\nInstances\nInstanceId\nKey\nMaxResults\nNextToken\nOwnerId\nRegionName\nRegions\nReservations\nTags\nValue\n",
+        )?;
+        let base = smithy::build_catalog(&source, &registry, "nested-ec2-consumer-fixture")?;
+        let kinds = EC2_KINDS.compile(&names::Exceptions::none())?;
+        let endpoints = BTreeMap::from([("ec2".to_owned(), verified_endpoint_for("ec2")?)]);
+        let catalog = root.path().join("fixture.catalog");
+        let bytes = runtime_catalog::augment(&base, &checked, &kinds, &endpoints)?;
+        let runtime = RuntimeCatalog::from_bytes(&bytes)?;
+        let instances = runtime
+            .lookup("ec2", "DescribeInstances")
+            .context("nested EC2 plan absent")?;
+        ensure!(
+            matches!(instances.items(), inventory_core::catalog::runtime::ItemPlan::Nested { .. }),
+            "DescribeInstances did not compile as a nested item plan"
+        );
+        std::fs::write(&catalog, bytes)?;
+        let credentials = root.path().join("credentials");
+        let config = root.path().join("config");
+        std::fs::write(
+            &credentials,
+            "[pagination]\naws_access_key_id=AKIAPAGINATIONCONTRACT\naws_secret_access_key=local-only-pagination-secret\n",
+        )?;
+        std::fs::write(&config, "[profile pagination]\nregion=us-east-1\n")?;
+        let database = root.path().join("inventory.sqlite");
+        Ok(Self {
+            root,
+            catalog,
+            database,
+            credentials,
+            config,
+        })
+    }
+    pub(super) fn owner_field(&self) -> Result<FieldId> {
+        let bytes = std::fs::read(&self.catalog)?;
+        let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+        let plan = catalog
+            .lookup("ec2", "DescribeInstances")
+            .context("nested EC2 plan absent")?;
+        match plan.items() {
+            inventory_core::catalog::runtime::ItemPlan::Nested { owner, .. } => Ok(*owner),
+            _ => anyhow::bail!("DescribeInstances plan is not nested"),
+        }
+    }
 
     pub(super) fn spawn(&self, peer: &Peer, resume: bool) -> Result<Child> {
         let mut command = Command::new(env!("CARGO_BIN_EXE_aws-inventory"));
@@ -246,15 +407,20 @@ impl Fixture {
 }
 
 fn verified_endpoint() -> Result<endpoints::VerifiedEndpoint> {
-    let properties =
-        json!({"authSchemes":[{"name":"sigv4","signingName":"pagination","signingRegion":REGION}]});
-    let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://pagination.invalid","properties":properties}}]});
-    let rules = endpoints::RuleSet::parse(Path::new("pagination-endpoint.json"), &document)?;
+    verified_endpoint_for("pagination")
+}
+
+fn verified_endpoint_for(service: &str) -> Result<endpoints::VerifiedEndpoint> {
+    let url = format!("https://{service}.invalid");
+    let properties = json!({"authSchemes":[{"name":"sigv4","signingName":service,"signingRegion":REGION}]});
+    let endpoint = json!({"url":url,"properties":properties});
+    let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":endpoint}]});
+    let rules = endpoints::RuleSet::parse(Path::new("fixture-endpoint.json"), &document)?;
     let cases = serde_json::from_value::<Vec<endpoints::Case>>(
-        json!([{"params":{"Region":REGION},"expect":{"endpoint":{"url":"https://pagination.invalid","properties":properties}}}]),
+        json!([{"params":{"Region":REGION},"expect":{"endpoint":endpoint}}]),
     )?;
     rules
         .run_cases(&cases)?
-        .verified_endpoint(Some("pagination"))
+        .verified_endpoint(Some(service))
         .map_err(|error| anyhow::anyhow!("fixture endpoint derivation failed: {error:?}"))
 }

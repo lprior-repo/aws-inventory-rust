@@ -142,7 +142,9 @@ fn expansion_binding(
     let target = resolve_item_target(service, operation.output()?, Some(selector))?;
     let output_kind = match selector {
         crate::overlay::ItemSelector::Explicit { kind, .. } => *kind,
-        crate::overlay::ItemSelector::Root | crate::overlay::ItemSelector::Member(_) => {
+        crate::overlay::ItemSelector::Root
+        | crate::overlay::ItemSelector::Member(_)
+        | crate::overlay::ItemSelector::Nested(_) => {
             modeled_selection_kind(service, target)?
         }
     };

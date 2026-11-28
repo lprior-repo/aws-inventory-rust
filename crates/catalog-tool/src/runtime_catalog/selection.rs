@@ -9,6 +9,9 @@ pub(crate) fn target(
     output: Target,
     selector: Option<&ItemSelector>,
 ) -> Result<Target, RuntimeCatalogCompileError> {
+    if let Some(ItemSelector::Nested(nested)) = selector {
+        return nested_target(service, output, nested);
+    }
     let (path, kind) = match selector {
         Some(ItemSelector::Root) => return Ok(output),
         Some(ItemSelector::Member(path)) => {
@@ -23,6 +26,7 @@ pub(crate) fn target(
             };
         }
         Some(ItemSelector::Explicit { path, kind }) => (path, kind),
+        Some(ItemSelector::Nested(nested)) => return nested_target(service, output, nested),
         None => {
             return Err(RuntimeCatalogCompileError::Path {
                 path: "item selector".to_owned(),
@@ -58,6 +62,29 @@ pub(crate) fn target(
             path: path_str.to_owned(),
         }),
     }
+}
+fn nested_target(
+    service: Service<'_>,
+    output: Target,
+    nested: &crate::overlay::NestedItems,
+) -> Result<Target, RuntimeCatalogCompileError> {
+    let parent_list = model_path::resolve(service, output, nested.parents.as_str())?.1;
+    if model_path::kind(service, parent_list)? != "list" {
+        return Err(RuntimeCatalogCompileError::Path {
+            path: nested.parents.to_string(),
+        });
+    }
+    let parent = model_path::list_element(service, parent_list)?;
+    let item_list = model_path::resolve(service, parent, nested.items.as_str())?.1;
+    let owner = model_path::resolve(service, parent, nested.owner.as_str())?.1;
+    if model_path::kind(service, item_list)? != "list"
+        || model_path::kind(service, owner)? != "string"
+    {
+        return Err(RuntimeCatalogCompileError::Path {
+            path: nested.parents.to_string(),
+        });
+    }
+    model_path::list_element(service, item_list)
 }
 
 fn shape<'a>(

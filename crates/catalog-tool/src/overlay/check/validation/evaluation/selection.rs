@@ -21,6 +21,21 @@ pub(super) fn select_items(state: &mut State<'_, '_, '_>) {
             paths::explicit_selected(state.model, state.name, path.as_str(), kind)
                 .or_else(|| invalid_items(state, path.as_str(), ViolationRule::InvalidPath))
         }
+        Some(ItemSelector::Nested(nested)) => {
+            paths::selected_for_parent(
+                state.model,
+                state.name,
+                Some(&state.item),
+                state.vocabulary,
+            )
+            .or_else(|| {
+                invalid_items(
+                    state,
+                    nested.parents.as_str(),
+                    ViolationRule::InvalidPath,
+                )
+            })
+        }
         None => select_inferred(state),
     };
     state.selected = selected;

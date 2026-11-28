@@ -1,4 +1,4 @@
-format = 1
+format = 2
 reviewed = "2026-11-15"
 reviewer = "generated"
 
@@ -265,9 +265,17 @@ class = "defer"
 defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.DescribeInstances]
-class = "defer"
-defer_reason = "Reservations[].Instances[] requires flattening with Reservations[].OwnerId retained for cross-account ownership; selecting Reservations incorrectly inventories reservation wrappers, not instances."
-
+class = "enumerate"
+scope = "region"
+nested_items = { parents = "Reservations", items = "Instances", owner = "OwnerId" }
+tags = "Tags"
+page_size = 1000
+[operation.DescribeInstances.identity]
+key = ["InstanceId"]
+[operation.DescribeInstances.paginator]
+kind = "token"
+input = "NextToken"
+output = "NextToken"
 [operation.DescribeInternetGateways]
 class = "defer"
 defer_reason = "identity: no ARN member and no modeled identifiers"

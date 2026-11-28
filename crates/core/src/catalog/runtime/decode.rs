@@ -37,11 +37,11 @@ pub(crate) fn read<'a>(
         None => return Err(RuntimeCatalogError::MissingExtension),
     };
     let version = metadata::integer(extension, 1)?;
-    if version != 4 && version != 5 {
+    if version != 4 && version != 5 && version != 6 {
         return Err(RuntimeCatalogError::ExtensionVersion(version));
     }
     let services = services::Services::open(catalog)?;
-    let plans = plans::read(&services, metadata::list(extension, 2)?)?;
+    let plans = plans::read(version, &services, metadata::list(extension, 2)?)?;
     let schema_data = schemas::read(metadata::list(extension, 3)?)?;
     let relations = metadata::relations(metadata::list(extension, 4)?)?;
     let coverage = metadata::coverage(metadata::list(extension, 5)?)?;

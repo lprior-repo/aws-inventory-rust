@@ -63,6 +63,69 @@ pub(super) async fn assert_resources(path: &Path, ids: &[&str]) -> Result<()> {
     assert_eq!(actual, expected);
     Ok(())
 }
+pub(super) async fn assert_nested_resources(path: &Path, owner: FieldId) -> Result<()> {
+    let target = path.to_str().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "non-UTF-8 database path")
+    })?;
+    let database = Database::open(target).await?;
+    let page = database
+        .page(
+            &ResourceFilter::default(),
+            PageRequest {
+                limit: 100,
+                after: None,
+            },
+        )
+        .await?;
+    assert_eq!(page.total_matching, 3);
+    let actual = page
+        .resources
+        .iter()
+        .map(|resource| {
+            let owner = match resource.record.root().get_field(owner)? {
+                Some(ValueRef::Text(owner)) => owner,
+                _ => anyhow::bail!("nested owner was not retained on the instance"),
+            };
+            Ok((
+                resource.key.account.as_str(),
+                resource.key.region.as_str(),
+                resource.key.kind.as_str(),
+                resource.key.id.as_str(),
+                owner,
+            ))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    assert_eq!(
+        actual,
+        vec![
+            (ACCOUNT, REGION, "AWS::ApiOnly::NestedEc2Instance", "i-owned-one", ACCOUNT),
+            (ACCOUNT, REGION, "AWS::ApiOnly::NestedEc2Instance", "i-owned-three", ACCOUNT),
+            (ACCOUNT, REGION, "AWS::ApiOnly::NestedEc2Instance", "i-owned-two", ACCOUNT),
+        ]
+    );
+    let options = SqliteConnectOptions::new()
+        .filename(path)
+        .read_only(true)
+        .pragma("query_only", "ON");
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(options)
+        .await?;
+    let tags = sqlx::query_as::<_, (String, String, String)>(
+        "SELECT id,tag_key,tag_value FROM tags ORDER BY id,tag_key",
+    )
+    .fetch_all(&pool)
+    .await?;
+    assert_eq!(
+        tags,
+        vec![
+            ("i-owned-one".to_owned(), "Name".to_owned(), "owned-one".to_owned()),
+            ("i-owned-three".to_owned(), "Name".to_owned(), "owned-three".to_owned()),
+            ("i-owned-two".to_owned(), "Name".to_owned(), "owned-two".to_owned()),
+        ]
+    );
+    Ok(())
+}
 
 pub(super) async fn expire_leases(path: &Path) -> Result<()> {
     let options = SqliteConnectOptions::new().filename(path);

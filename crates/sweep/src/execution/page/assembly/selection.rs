@@ -39,6 +39,9 @@ pub(super) fn select(
             else {
                 return Ok::<_, SweepError>(());
             };
+            if record::nested_foreign_owned(&row, page.plan.items(), page.context.account)? {
+                return Ok(());
+            }
             if record::foreign_owned(
                 &row,
                 page.plan.identity(),

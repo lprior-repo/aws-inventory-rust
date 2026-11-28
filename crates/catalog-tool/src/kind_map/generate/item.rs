@@ -51,6 +51,13 @@ fn selected<'a>(
         .side_root(operation, "output")
         .ok_or("kind: output absent")?;
     let aggregate = path.map_or(Ok(output), |path| model.resolve_path_from(output, path))?;
+    let aggregate = match &plan.items {
+        Some(ItemSelector::Nested(nested)) => {
+            let parent = model.unwrap_aggregates(aggregate)?;
+            model.resolve_path_from(parent, nested.items.as_str())?
+        }
+        _ => aggregate,
+    };
     let item = model.unwrap_aggregates(aggregate)?;
     let resource = if matches!(shape_type(item.value), Some("structure" | "union")) {
         strip_suffix(name(item.id))
@@ -70,6 +77,7 @@ fn selected_path<'a>(
         Some(ItemSelector::Member(path) | ItemSelector::Explicit { path, .. }) => {
             Ok(Some(path.as_str()))
         }
+        Some(ItemSelector::Nested(nested)) => Ok(Some(nested.parents.as_str())),
         None => {
             let id = model
                 .operation_id(operation)

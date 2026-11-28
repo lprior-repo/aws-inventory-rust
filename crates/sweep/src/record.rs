@@ -38,6 +38,21 @@ mod selection_tests;
 mod tags;
 pub(crate) mod trusted_arn;
 pub(crate) use identity_choice::foreign_owned;
+pub(crate) fn nested_foreign_owned(
+    row: &Record,
+    plan: &ItemPlan,
+    account: &AccountId,
+) -> Result<bool, SweepError> {
+    let ItemPlan::Nested { owner, .. } = plan else {
+        return Ok(false);
+    };
+    let owner = match row.root().get_field(*owner)? {
+        Some(ValueRef::Text(owner)) => AccountId::parse(owner)
+            .map_err(|_| SweepError::Operation("nested item owner is invalid"))?,
+        _ => return Err(SweepError::Operation("nested item owner is missing or invalid")),
+    };
+    Ok(&owner != account)
+}
 pub(super) use identity_choice::is_identity_member;
 pub(super) use identity_validation::IdentityTextValidation;
 pub(super) use tags::tag_observation;

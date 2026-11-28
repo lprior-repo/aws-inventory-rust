@@ -27,9 +27,28 @@ fn emit_aware_reader_rejects_skip_extension_field_26() -> Result<(), Box<dyn std
 fn item_root_rejects_extra_fields() -> Result<(), Box<dyn std::error::Error>> {
     let bytes = map_bytes([(1, Value::Int(0)), (9, Value::Int(2))])?;
     assert!(matches!(
-        item_plan(MapRef::from_bytes_bounded(&bytes)?),
+        item_plan(5, MapRef::from_bytes_bounded(&bytes)?),
         Err(RuntimeCatalogError::Capability)
     ));
+    Ok(())
+}
+
+#[test]
+fn nested_item_requires_v6_while_legacy_paths_still_decode() -> Result<(), Box<dyn std::error::Error>> {
+    let path = Value::List(vec![Value::Int(11)]);
+    let old = map_bytes([(1, Value::Int(1)), (2, path.clone())])?;
+    let nested = map_bytes([(1, Value::Int(8)), (2, path), (3, Value::Int(12)), (4, Value::Int(13))])?;
+    for version in [4, 5, 6] {
+        assert!(matches!(selection::item(version, MapRef::from_bytes_bounded(&old)?)?,
+            ItemPlan::Path(path) if path.as_ref() == [FieldId::new(11)?]));
+        let result = selection::item(version, MapRef::from_bytes_bounded(&nested)?);
+        if version < 6 {
+            assert!(matches!(result, Err(RuntimeCatalogError::Capability)));
+        } else {
+            assert!(matches!(result?, ItemPlan::Nested { parents, items, owner }
+                if parents.as_ref() == [FieldId::new(11)?] && items == FieldId::new(12)? && owner == FieldId::new(13)?));
+        }
+    }
     Ok(())
 }
 

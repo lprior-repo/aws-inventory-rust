@@ -67,7 +67,16 @@ pub(super) fn render(policy: &ServiceOverlay) -> Result<String, OverlayError> {
         return Err(limit());
     }
     let mut output = Output::default();
-    output.append("format = 1\n")?;
+    let format = if policy
+        .operations()
+        .values()
+        .any(|entry| matches!(entry.items, Some(ItemSelector::Nested(_))))
+    {
+        2
+    } else {
+        1
+    };
+    output.append(&format!("format = {format}\n"))?;
     output.line("reviewed", super::GENERATED_RULES_DATE)?;
     output.line("reviewer", "generated")?;
     for (name, entry) in policy.operations() {
@@ -154,7 +163,22 @@ fn fields(output: &mut Output, entry: &OperationOverlay) -> Result<(), OverlayEr
             ItemSelector::Root => output.line("items", "$")?,
             ItemSelector::Member(path) => output.line("items", path.as_str())?,
             ItemSelector::Explicit { .. } => return Err(invalid("explicit generated selection")),
+            ItemSelector::Nested(nested) => {
+                output.append("nested_items = { parents = ")?;
+                output.quoted(nested.parents.as_str())?;
+                output.append(", items = ")?;
+                output.quoted(nested.items.as_str())?;
+                output.append(", owner = ")?;
+                output.quoted(nested.owner.as_str())?;
+                output.append(" }\n")?;
+            }
         }
+    }
+    if let Some(tags) = entry.tags.as_ref() {
+        output.line("tags", tags.as_str())?;
+    }
+    if let Some(page_size) = entry.page_size {
+        output.append(&format!("page_size = {page_size}\n"))?;
     }
     Ok(())
 }
