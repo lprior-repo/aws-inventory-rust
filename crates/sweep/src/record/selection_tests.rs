@@ -24,6 +24,17 @@ fn compiled_ec2_query_xml_projects_instance_ids_and_reservation_owners() -> Test
         body: xml, headers: &http::HeaderMap::new(), status: http::StatusCode::OK,
         limits: DecodeLimits::default(),
     })?;
+    use crate::execution::page::cursor::Cursor;
+    let next = Cursor::default().next(plan.pagination(), &record, &http::HeaderMap::new(), 10)?
+        .ok_or("XML nextToken did not produce a checkpoint")?;
+    let resumed = Cursor::decode(Some(next.cursor.as_bytes()))?;
+    let fields = resumed.request_fields(plan.pagination())?;
+    let base = crate::input::root_bindings(plan, None, None)?;
+    let request = crate::request::encode(plan, "https://ec2.example.test", &base, &fields)?;
+    assert_eq!(request.method(), http::Method::POST);
+    let form = std::str::from_utf8(request.body())?;
+    assert!(form.split('&').any(|field| field == "Action=DescribeInstances"));
+    assert_eq!(form.split('&').filter(|field| field.starts_with("NextToken=")).collect::<Vec<_>>(), ["NextToken=page-two"]);
     let account = AccountId::parse("123456789012")?;
     let expected = [("i-one", false), ("i-two", false), ("i-other", true)];
     let rows = item_records(&record, plan.items())?;
