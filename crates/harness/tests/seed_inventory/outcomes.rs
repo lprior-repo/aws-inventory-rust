@@ -104,13 +104,15 @@ pub(super) async fn violations(pool: &SqlitePool, probes: &ProbeTable) -> TestRe
 }
 
 fn judge(stored: &[StoredRow], probes: &ProbeTable) -> Vec<String> {
-    let mut matched = 0usize;
+    let mut compared = 0usize;
     let mut violations = Vec::new();
     for (key, outcome, detail) in stored {
         let Some(probed) = probes.get(key) else {
             continue;
         };
-        matched = matched.saturating_add(1);
+        if matches!(probed.as_str(), "items" | "empty" | "not_applicable") {
+            compared = compared.saturating_add(1);
+        }
         if contradicts(outcome, probed) {
             violations.push(format!(
                 "{} {} stored {outcome} (detail: {}) but probe records {probed}",
@@ -120,8 +122,8 @@ fn judge(stored: &[StoredRow], probes: &ProbeTable) -> Vec<String> {
             ));
         }
     }
-    if matched == 0 {
-        violations.push("no stored scope matched any probe report entry".to_owned());
+    if compared == 0 {
+        violations.push("no stored scope matched any informative probe entry".to_owned());
     }
     violations
 }
@@ -171,7 +173,9 @@ mod tests {
         )?;
         let key = |service: &str, operation: &str| (service.to_owned(), operation.to_owned());
         assert_eq!(
-            table.get(&key("sesv2", "ListImportJobs")).map(String::as_str),
+            table
+                .get(&key("sesv2", "ListImportJobs"))
+                .map(String::as_str),
             Some("not_applicable")
         );
         assert_eq!(
@@ -185,7 +189,8 @@ mod tests {
 
     #[test]
     fn given_duplicate_live_probe_entries_when_parsed_then_it_is_rejected() {
-        let report = "sesv2 ListImportJobs restJson1 items one\nsesv2 ListImportJobs restJson1 empty two\n";
+        let report =
+            "sesv2 ListImportJobs restJson1 items one\nsesv2 ListImportJobs restJson1 empty two\n";
         assert!(probe_table(report).is_err());
     }
 
@@ -200,13 +205,65 @@ mod tests {
     }
 
     #[test]
-    fn given_stored_row_absent_from_live_probe_then_no_fallback_report_is_consulted() -> TestResult<()>
+    fn given_only_skipped_probe_matches_when_judged_then_comparison_fails() -> TestResult<()> {
+        let probes = probe_table("ec2 DescribeVpcs ec2Query skipped no usable probe\n")?;
+        let violations = judge(&[row("ec2", "DescribeVpcs", "complete")], &probes);
+        assert_eq!(
+            violations,
+            vec!["no stored scope matched any informative probe entry".to_owned()]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn given_only_inconclusive_matches_when_judged_then_comparison_fails() -> TestResult<()> {
+        for outcome in ["failed", "unsupported"] {
+            let probes = probe_table(&format!("ec2 DescribeVpcs ec2Query {outcome} fixture\n"))?;
+            let violations = judge(&[row("ec2", "DescribeVpcs", "complete")], &probes);
+            assert_eq!(
+                violations,
+                ["no stored scope matched any informative probe entry"],
+                "{outcome}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn given_failed_and_informative_matches_when_judged_then_comparison_passes() -> TestResult<()> {
+        let probes = probe_table(
+            "ec2 DescribeVpcs ec2Query failed fixture transport error\nsesv2 ListImportJobs restJson1 empty no items\n",
+        )?;
+        let stored = [
+            row("ec2", "DescribeVpcs", "complete"),
+            row("sesv2", "ListImportJobs", "complete"),
+        ];
+        assert!(judge(&stored, &probes).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn given_skipped_and_observed_matches_when_judged_then_observed_match_counts() -> TestResult<()>
     {
+        let probes = probe_table(
+            "ec2 DescribeVpcs ec2Query skipped no usable probe\nsesv2 ListImportJobs restJson1 empty no items\n",
+        )?;
+        let stored = [
+            row("ec2", "DescribeVpcs", "complete"),
+            row("sesv2", "ListImportJobs", "complete"),
+        ];
+        assert!(judge(&stored, &probes).is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn given_stored_row_absent_from_live_probe_then_no_fallback_report_is_consulted()
+    -> TestResult<()> {
         let probes = probe_table("sesv2 ListImportJobs restJson1 items found\n")?;
         let violations = judge(&[row("ec2", "DescribeVpcs", "complete")], &probes);
         assert_eq!(
             violations,
-            vec!["no stored scope matched any probe report entry".to_owned()]
+            vec!["no stored scope matched any informative probe entry".to_owned()]
         );
         Ok(())
     }

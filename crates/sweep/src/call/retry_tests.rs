@@ -142,6 +142,124 @@ async fn given_catalog_s3_list_buckets_with_endpoint_override_when_sent_then_emp
 }
 
 #[tokio::test]
+async fn given_s3_xml_503_when_retried_then_only_the_authoritative_code_counts_as_throttle()
+-> TestResult {
+    let compiled = fixture::compile("s3", "2006-03-01", &["ListBuckets"])?;
+    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
+    let plan = catalog.lookup("s3", "ListBuckets").ok_or("plan absent")?;
+    let name = compiled
+        .fields
+        .id("Name")
+        .ok_or("bucket name field absent")?;
+    for (body, header, expected) in [
+        (
+            "<Error><Code>SlowDown</Code></Error>",
+            "ServiceUnavailable",
+            (1, 0),
+        ),
+        (
+            "<Error><Code>ServiceUnavailable</Code></Error>",
+            "SlowDown",
+            (0, 0),
+        ),
+        (
+            "<Error><Code>",
+            "ThrottlingException\r\nRetry-After: 1",
+            (1, 1),
+        ),
+    ] {
+        s3_retry_case(plan, name, body, header, expected).await?;
+    }
+    Ok(())
+}
+
+async fn s3_retry_case(
+    plan: &CallablePlan<'_>,
+    name: inventory_core::record::FieldId,
+    error: &str,
+    header: &str,
+    (throttles, server_delays): (u64, u64),
+) -> TestResult {
+    let listener = TcpListener::bind("127.0.0.1:0").await?;
+    let url = format!("http://{}", listener.local_addr()?);
+    let fixture = RetryFixture::new()?;
+    let region = RegionId::parse("us-east-1")?;
+    let scope = inventory_core::inventory::Region::Regional(region.clone());
+    let endpoint = plan.endpoint(&region, &scope)?;
+    let base = Record::encode(&Value::Map(BTreeMap::new()))?;
+    let call = Call {
+        client: &fixture.client,
+        executor: &fixture.executor,
+        credentials: &fixture.credentials,
+        plan,
+        endpoint: &endpoint,
+        url: &url,
+        emulator_endpoint_override: false,
+        base: &base,
+        fields: &[],
+        metrics: &fixture.metrics,
+        account: "123456789012",
+        scope: &scope,
+    };
+    let (response, peer) = tokio::time::timeout(Duration::from_secs(5), async {
+        tokio::join!(call.run(), serve_s3_retry(listener, error, header))
+    })
+    .await?;
+    peer?;
+    let response = response?;
+    let buckets = crate::record::item_records(&response.record, plan.items())?;
+    let [bucket] = buckets.as_slice() else {
+        return Err("retry did not return exactly one bucket".into());
+    };
+    assert!(matches!(
+        bucket.root().get_field(name)?,
+        Some(inventory_core::record::ValueRef::Text(
+            "inventory-access-logs"
+        ))
+    ));
+    let stats = fixture.executor.stats();
+    assert_eq!(
+        (
+            stats.attempts,
+            stats.retries,
+            stats.throttles,
+            stats.server_delays,
+            stats.successes
+        ),
+        (2, 1, throttles, server_delays, 1),
+        "{error} / {header}"
+    );
+    Ok(())
+}
+
+const S3_PAGE: &str = "<ListAllMyBucketsResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Owner><ID>fixture</ID></Owner><Buckets><Bucket><Name>inventory-access-logs</Name><CreationDate>2026-01-01T00:00:00Z</CreationDate></Bucket></Buckets></ListAllMyBucketsResult>";
+
+async fn serve_s3_retry(listener: TcpListener, error: &str, header: &str) -> TestResult {
+    let error_header = format!("x-amzn-errortype: {header}\r\n");
+    for (status, extra, body) in [
+        ("503 Service Unavailable", error_header.as_str(), error),
+        ("200 OK", "", S3_PAGE),
+    ] {
+        let (mut socket, _) = listener.accept().await?;
+        let (headers, payload) = read_request(&mut socket).await?;
+        let request = SignedRequest::parse(&headers, payload)?;
+        assert_eq!(request.request_line, "GET /?x-id=ListBuckets HTTP/1.1");
+        assert!(request.body.is_empty());
+        assert_eq!(
+            request.content_sha256.as_deref(),
+            Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+        );
+        let response = format!(
+            "HTTP/1.1 {status}\r\nContent-Type: application/xml\r\nContent-Length: {}\r\nConnection: close\r\n{extra}\r\n{body}",
+            body.len()
+        );
+        socket.write_all(response.as_bytes()).await?;
+        socket.shutdown().await?;
+    }
+    Ok(())
+}
+
+#[tokio::test]
 async fn given_retryable_response_when_page_is_retried_then_signed_bodies_are_byte_identical()
 -> TestResult {
     let compiled = fixture::compile("firehose", "2015-08-04", &["ListDeliveryStreams"])?;
@@ -301,7 +419,11 @@ impl SignedRequest {
             authorization,
             signed_headers,
             content_sha256,
-            request_line: headers.lines().next().ok_or("request line absent")?.to_owned(),
+            request_line: headers
+                .lines()
+                .next()
+                .ok_or("request line absent")?
+                .to_owned(),
             host: header("host")?,
         })
     }
