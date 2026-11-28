@@ -315,7 +315,9 @@ fn classify_service(
     };
     let class = match status {
         http::StatusCode::TOO_MANY_REQUESTS => ErrorClass::Throttle,
-        http::StatusCode::SERVICE_UNAVAILABLE => ErrorClass::Retryable,
+        http::StatusCode::SERVICE_UNAVAILABLE if error.class != ErrorClass::Throttle => {
+            ErrorClass::Retryable
+        }
         _ => error.class,
     };
     match class {

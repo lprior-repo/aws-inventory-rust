@@ -32,6 +32,45 @@ fn given_code_free_service_error_when_classified_then_status_is_reported() {
     ));
 }
 
+#[test]
+fn throttle_codes_survive_service_unavailable_but_message_text_does_not_classify() -> TestResult {
+    let compiled = fixture::compile("s3", "2006-03-01", &["ListBuckets"])?;
+    let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
+    let plan = catalog.lookup("s3", "ListBuckets").ok_or("plan absent")?;
+    let failure = |status, body: &'static [u8]| {
+        validate_status(
+            plan,
+            Response {
+                status,
+                headers: http::HeaderMap::new(),
+                body: bytes::Bytes::from_static(body),
+                version: http::Version::HTTP_11,
+            },
+            "123456789012",
+            "us-east-1",
+        )
+    };
+    for body in [
+        b"<Error><Code>SlowDown</Code></Error>".as_slice(),
+        b"<Error><Code>PriorRequestNotComplete</Code></Error>".as_slice(),
+    ] {
+        assert!(matches!(
+            failure(http::StatusCode::SERVICE_UNAVAILABLE, body),
+            Err(ApiError::Throttled(_))
+        ));
+    }
+    let message_only = b"<Error><Code>NoSuchBucket</Code><Message>SlowDown</Message></Error>";
+    assert!(matches!(
+        failure(http::StatusCode::BAD_REQUEST, message_only),
+        Err(ApiError::Permanent(_))
+    ));
+    assert!(matches!(
+        failure(http::StatusCode::SERVICE_UNAVAILABLE, message_only),
+        Err(ApiError::Transient(_))
+    ));
+    Ok(())
+}
+
 const FIREHOSE_OMITTED: &str = r#"{"DeliveryStreamNames":["alpha"]}"#;
 const FIREHOSE_FALSE: &str = r#"{"DeliveryStreamNames":["alpha"],"HasMoreDeliveryStreams":false}"#;
 const FIREHOSE_TRUE: &str = r#"{"DeliveryStreamNames":["alpha"],"HasMoreDeliveryStreams":true}"#;

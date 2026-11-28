@@ -243,7 +243,9 @@ fn class_from_code(code: Option<&str>) -> Option<ErrorClass> {
         "Throttling"
         | "ThrottlingException"
         | "TooManyRequestsException"
-        | "RequestLimitExceeded" => Some(ErrorClass::Throttle),
+        | "RequestLimitExceeded"
+        | "SlowDown"
+        | "PriorRequestNotComplete" => Some(ErrorClass::Throttle),
         "AmbiguousService" => Some(ErrorClass::Fatal),
         _ => None,
     }

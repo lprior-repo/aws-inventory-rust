@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The sweep treats `SlowDown` and `PriorRequestNotComplete` error codes as
+  throttling even on HTTP 503. Message text alone does not trigger backoff
+  for a throttled bucket.
 - Marketplace agreement discovery searches separately as proposer and
   acceptor, preserving each party's filter and continuation token.
 - Database discovery collects RDS, DocumentDB, and Neptune instances and
